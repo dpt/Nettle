@@ -105,6 +105,13 @@ extern enum nettle_terminal default_terminal;
 extern struct coords defaultsize;
 extern int defaultscroll;
 
+struct paste_buffer
+{
+  struct paste_buffer *next;
+  int length;
+  char data[1]; /* malloc'ed appropriately */
+};
+
 struct session_struct
 {
   struct session_struct *next;	/* next session in linked list */
@@ -176,6 +183,9 @@ struct session_struct
 
   bool mouse_terminal_attached; /* Whether the mouse is attached to the terminal or not */
   char mouse_mode;              /* The type of the mouse connection - eg. click, click/release */
+
+  struct paste_buffer *paste;   /* paste buffer(s): e.g. from file */
+  struct paste_buffer *paste_head; /* the most recent paste buffer */
 };
 
 extern struct session_struct *sessions;

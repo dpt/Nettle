@@ -5,12 +5,15 @@
  * $Id$
  */
 
+#include <stddef.h>
+
 #include "generic.h"
 #include "globals.h"
 
 #include "graphics.h"
 #include "keyboard.h"
 #include "lineedit.h"
+#include "main.h"
 #include "messages.h"
 #include "misc.h"
 #include "mouse.h"
@@ -2831,6 +2834,21 @@ void process_data(struct session_struct *session, char byte)
   }
 }
 
+static void append_paste_block (struct session_struct *session,
+                                struct paste_buffer *paste, size_t size)
+{
+  paste->next = NULL;
+  paste->length = size;
+
+  if (! session->paste)
+    session->paste = paste;
+  if (session->paste_head)
+    session->paste_head->next = paste;
+  session->paste_head = paste;
+
+  main_requirenull = true;
+}
+
 
 void process_wimp_key(struct session_struct *session, int key, int extra)
 {
@@ -2929,8 +2947,6 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
     }
   }
 
-  nettle_senddata(session,block,size_of_block);
-
   pos=get_cursor_position(session);
 
   /* OR back in the cursor flags */
@@ -2953,6 +2969,21 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
     changedbox_update_char (pos.x, pos.y);
     force_redraw_changedbox ();
   }
+
+  /* send it now unless data is alreeady queued (in which case queue it) */
+  if (session->paste)
+  {
+    struct paste_buffer *paste = malloc (size_of_block + offsetof (struct paste_buffer, data));
+    if (paste)
+    {
+      memcpy (paste->data, block, size_of_block);
+      append_paste_block (session, paste, size_of_block);
+    }
+    else
+      generror ("CantAlloc", true);
+  }
+  else
+    nettle_senddata(session,block,size_of_block);
 }
 
 void process_line_editor(struct session_struct *session)
@@ -3006,8 +3037,9 @@ void process_data_transmission(struct session_struct *session,
   int size_of_block=0;
   struct coords pos;
   char cursor_flags;
-  char *send_block=0;
+  struct paste_buffer *send_block=0;
   int size_of_send_block=0;
+  int allocated_send_size=0;
   int icon_text_loop;
 
   if (session->other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
@@ -3106,12 +3138,19 @@ void process_data_transmission(struct session_struct *session,
         }
       }
     }
-    send_block=realloc(send_block,size_of_send_block+size_of_block); /* FIXME: Dangerous use of realloc() */
-    strncpy(send_block+size_of_send_block,block,size_of_block);
+    if (size_of_send_block + size_of_block + offsetof (struct paste_buffer, data) > allocated_send_size)
+    {
+      allocated_send_size += 16384;
+      send_block = realloc (send_block, allocated_send_size);
+      if (!send_block)
+      {
+        generror ("CantAlloc", true);
+        return;
+      }
+    }
+    memcpy(send_block->data+size_of_send_block,block,size_of_block);
     size_of_send_block+=size_of_block;
   }
-
-  nettle_senddata(session,send_block,size_of_send_block);
 
   pos=get_cursor_position(session);
 
@@ -3136,7 +3175,9 @@ void process_data_transmission(struct session_struct *session,
     force_redraw_changedbox ();
   }
 
-  free(send_block);
+  /* queue the data for sending... */
+  if (send_block)
+    append_paste_block (session, send_block, size_of_send_block);
 }
 
 

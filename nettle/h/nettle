@@ -115,7 +115,7 @@ void write_out_strings(struct session_struct *, ...); /* term with NUL ptr */
 void write_out_data(struct session_struct *, const char *, int);
 
 void remove_session(struct session_struct *);
-void nettle_senddata(struct session_struct *, const char *, int);
+int nettle_senddata(struct session_struct *, const char *, int);
 void reset_terminal(struct session_struct *);
 
 bool valid_x(struct session_struct *, int);

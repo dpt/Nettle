@@ -295,6 +295,26 @@ static void wimp_pollsessions(void)
         if (session->socket_handle >= fdupperbound)
           fdupperbound = session->socket_handle + 1;
 
+        /* Anything to be pasted in...? */
+        if (session->paste)
+        {
+          int sent = nettle_senddata (session, session->paste->data,
+                                      session->paste->length);
+          if (sent == session->paste->length)
+          {
+            struct paste_buffer *paste = session->paste;
+            session->paste = paste->next;
+            if (! paste->next)
+              session->paste_head = NULL;
+            free (paste);
+          } else {
+            memmove (session->paste->data, session->paste->data+sent,
+                     session->paste->length - sent);
+            session->paste->length -= sent;
+             main_requirenull = true;
+          }
+        }
+
         /* Try and close the spool (if open for 5 secs without output currently) */
         if (session->spool_file_name!=NULL)
           spool_close(session, false);
@@ -2544,7 +2564,7 @@ static void create_terminal_menu(void)
   char *menu_title          =get_menu_item("Terminal");
   char *menu_selection;
   char *menu_resize         =get_menu_item("Resize");
-  char *menu_paste_clipboard=get_grey_menu_item("PasteClip");
+  char *menu_paste_clipboard=get_menu_item("PasteClip");
   char *menu_options        =get_grey_menu_item("Options");
   char *menu_spool          =get_last_menu_item("Spool>");
 
@@ -2552,7 +2572,7 @@ static void create_terminal_menu(void)
   char *menu_save	    =get_menu_item("Save");
   char *menu_launch_url     =get_grey_menu_item("LaunchURL");
   char *menu_send           =get_menu_item("Send");
-  char *menu_copy_clipboard =get_grey_menu_item("CopyClip");
+  char *menu_copy_clipboard =get_menu_item("CopyClip");
   char *menu_clear          =get_last_menu_item("Clear");
 
   char *menu_spool_title    =get_menu_item("Spool");
@@ -2935,8 +2955,21 @@ void clipboard_claim (void)
 
 void clipboard_datarequest (struct session_struct *session)
 {
+  user_message block;
+
   paste_session = session;
-  /* need paste-from-file (DataLoad) before more can be done here */
+  block.length = 48;
+  block.your_ref = 0;
+  block.message_code = WIMP_MESSAGE_CLIP_DATAREQUEST;
+  block.contents.clip_datarequest.window_handle = session->window_handle;
+  block.contents.clip_datarequest.internal_handle = -1;
+  block.contents.clip_datarequest.pos.x = 0;
+  block.contents.clip_datarequest.pos.y = 0;
+  block.contents.clip_datarequest.opcode = 4;
+  block.contents.clip_datarequest.types[0] = 0xFFF;
+  block.contents.clip_datarequest.types[1] = -1;
+
+  _swi (Wimp_SendMessage, _INR(0,3), 18, &block, 0, 0);
 }
 
 
@@ -3028,6 +3061,24 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
 
 static bool paste_text_file (union wimp_poll_block *block)
 {
-  /* dummy implementation */
-  return true;
+  int size;
+  char *text;
+  struct session_struct *session = sessions;
+  const int window_handle = block->user_message.contents.data_load.window_handle;
+
+  while (session &&
+         session->window_handle != window_handle &&
+         session->pane_handle != window_handle)
+    session = session->next;
+
+  if (!session)
+    return false;
+
+  text = load_file (block->user_message.contents.data_load.file_name, &size);
+  if (text)
+  {
+    process_data_transmission (session, text, size);
+    free (text);
+  }
+  return false;
 }

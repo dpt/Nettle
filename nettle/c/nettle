@@ -353,6 +353,8 @@ static void start_connection_int (struct connection_params *params )
   session->pos.y=session->scrollback;
   session->connection_type=params->connection_type;
   session->terminal_type=params->terminal_type;
+  session->paste=NULL;
+  session->paste_head=NULL;
   reset_terminal(session);
 
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
@@ -602,6 +604,17 @@ void remove_session(struct session_struct *session)
 
   }
 
+  /* free any paste buffers */
+  {
+    struct paste_buffer *paste = session->paste;
+    while (paste)
+    {
+      struct paste_buffer *next_paste = paste->next;
+      free (paste);
+      paste = next_paste;
+    }
+  }
+
   /* free lineeditor space */
   if (session->line_editor_type!=LINEEDIT_NONE)
   {
@@ -644,35 +657,39 @@ void remove_session(struct session_struct *session)
   free(session);
 }
 
-void nettle_senddata(struct session_struct *session, const char *data, int length)
+int nettle_senddata(struct session_struct *session, const char *data, int length)
 {
+  int ret = length;
+
   switch (session->connection_type)
   {
     case NETTLE_TELNET:
       /* just use socket_senddata */
-      socket_senddata(session->socket_handle,data,length);
+      return socket_senddata(session->socket_handle,data,length);
       break;
     case NETTLE_TASKWINDOW:
+      while (length)
       {
         /* send a WIMP message */
-        int loop=0;
         union wimp_poll_block block;
+        int copy = (length > 63) ? 63 : length;
 
-        while (loop<length)
-        {
-          block.user_message.contents.task_window_input.data[loop]=data[loop];
-          loop++;
-        }
+        memcpy (block.user_message.contents.task_window_input.data, data, copy);
 
-        block.user_message.length                         =(27+length) & ~3;
+        block.user_message.length                         =(27+copy) & ~3;
         block.user_message.my_ref                         =0;
         block.user_message.message_code                   =WIMP_MESSAGE_TASKWINDOW_INPUT;
         block.user_message.contents.task_window_input.size=length;
 
         _swi(Wimp_SendMessage, _INR(0,2), 17, &block, session->socket_handle);
+
+        data += copy;
+        length -= copy;
       }
+      return ret;
       break;
   }
+  return 0;
 }
 
 void reset_terminal(struct session_struct *session)
