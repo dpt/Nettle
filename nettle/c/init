@@ -201,7 +201,6 @@ static void load_templates(void)
 
   win_resize=load_template(LOAD_TEMPLATE_NO_FONTS,"resize",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
   win_sizebar=load_template(LOAD_TEMPLATE_NO_FONTS,"sizebar",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 1);
-  win_furniture=load_template(LOAD_TEMPLATE_NO_FONTS,"furniture",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
 
   win_save=load_template(LOAD_TEMPLATE_NO_FONTS,"save",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
   win_spoolsave=load_template(LOAD_TEMPLATE_NO_FONTS,"spoolsave",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);

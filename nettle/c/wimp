@@ -2311,7 +2311,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       if (tmp_filename)
       {
         strcpy( tmp_filename, filename );
-        if ( strstr( misc_string_lower( filename ),"wimp$scrap" ) )
+        if ( strstr( misc_string_lower( tmp_filename ),"wimp$scrap" ) )
           is_scrap = true;
         free( tmp_filename );
       }
@@ -2673,7 +2673,7 @@ void mode_change(void)
   /* Work out the height of toolbars - 40 is a nominal default */
   toolheight = 40;
 
-  sizes.window_handle = win_furniture;
+  sizes.window_handle = 0;
   if (_swix(Wimp_Extend, _INR(0,1), 11 /* Read furniture sizes */, &sizes)==NULL)
   {
     /* Great we're running on a WIMP that can tell us toolsizes cleanly (RISC OS 4) */
@@ -3300,12 +3300,20 @@ void clipboard_datarequest (struct session_struct *session)
 static char *load_file (const char *name, int *size)
 {
   int filesize;
+  int objtype;
   char *data;
   _kernel_oserror *err;
 
-  err = _swix (OS_File, _INR(0,1) | _OUT(4), 17, name, &filesize);
+  err = _swix (OS_File, _INR(0,1) | _OUT(0) | _OUT(4), 17, name, &objtype, &filesize);
   if (err)
   {
+    generror (err->errmess, false);
+    return NULL;
+  }
+
+  if (objtype!=1 && objtype!=3)
+  {
+    err=_swix(OS_File,_INR(0,2),19, name, objtype);
     generror (err->errmess, false);
     return NULL;
   }
