@@ -13,6 +13,9 @@ IconSprites <Nettle$Dir>.!Sprites
 Set Nettle$ZapRedrawPath <Zap$Redraw>
 If "<Nettle$ZapRedrawPath>"="" Then Set Nettle$ZapRedrawPath <Nettle$Dir>.Resources.ZapRedraw
 RMEnsure ZapRedraw 0.39 RMLoad <Nettle$ZapRedrawPath>
+
+| If there's a legacy version of ZapRedraw at Zap$Redraw, then load our one
+RMEnsure ZapRedraw 0.39 RMLoad <Nettle$Dir>.Resources.ZapRedraw
 Unset Nettle$ZapRedrawPath
 
 RMEnsure SocketWatch 0.00 RMLoad System:Modules.Network.SockWatch
