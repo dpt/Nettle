@@ -16,12 +16,12 @@
 #include "socket.h"
 #include "wimp.h"
 #include "zapredraw.h"
+#include "hotlist.h"
 
 static int menu_data[64];
 static int menu_data2[64];
 static int *bitmaps_area=0;
 static int bitmaps_area_number=0;
-static int menu_open=0;
 static int drag_window_handle=0;
 static int drag_icon_handle=0;
 static struct session_struct *terminal_menu_session = NULL;
@@ -327,6 +327,9 @@ static void iconbar_click(int x, int y, int buttons, int icon_handle)
        case 2:
   	 create_iconbar_menu();
   	 break;
+       case 1:
+         create_hotlist_menu();
+         break;
      }
   }
 }
@@ -944,6 +947,7 @@ void menu_choice()
           close_program();
       }
       break;
+
     case MENU_TERMINAL:
       switch (wimp_block.menu_selection.menu[0])
       {
@@ -969,6 +973,7 @@ void menu_choice()
           break;
       }
       break;
+
     case MENU_CONNECTION:
       {
         char connection[MESSAGE_MAX_CONNECTION];
@@ -988,6 +993,7 @@ void menu_choice()
         open_open_window(false);
       }
       break;
+
     case MENU_TERMINAL_TYPE:
       {
         char terminal[MESSAGE_MAX_TERMINAL];
@@ -995,6 +1001,47 @@ void menu_choice()
         sprintf(string, "Term%d", wimp_block.menu_selection.menu[0]);
 
         set_icon_data(win_open, 9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
+      }
+      break;
+      
+    case MENU_HOTLIST:
+      {
+        char tmpbuf[100];
+        char connection[MESSAGE_MAX_CONNECTION];
+        unsigned short port;
+	char *command;
+	char *host;
+	hotlisttype type = get_hotlist_entry(wimp_block.menu_selection.menu[0], &host, &port, &command);
+
+        switch(type)
+	{
+	  case ht_telnet:
+	    set_icon_data(win_open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
+	    if (port!=23) sprintf(tmpbuf, "%s:%d", host, port);
+	      else strcpy(tmpbuf, host);
+	    set_icon_data(win_open, 0, tmpbuf);
+	    set_icon_data(win_open, 7, "");
+	    break;
+	  case ht_ssh:
+	    set_icon_data(win_open, 4, lookup("SSH",  connection, MESSAGE_MAX_CONNECTION));
+	    if (port!=22) sprintf(tmpbuf, "%s:%d", host, port);
+	      else strcpy(tmpbuf, host);
+	    set_icon_data(win_open, 0, tmpbuf);
+	    set_icon_data(win_open, 7, command);
+	    break;
+	  case ht_task:
+	    set_icon_data(win_open, 4, lookup("Taskwindow", connection, MESSAGE_MAX_CONNECTION));
+	    set_icon_data(win_open, 0, "");
+	    set_icon_data(win_open, 7, command);
+	    break;
+	  case ht_invalid:
+	    break;   /* Just to keep the compiler quiet - handle all enums! */
+	}
+	
+	if (type != ht_invalid)
+	{
+	  start_connection();
+	}
       }
       break;
   }
@@ -1012,14 +1059,21 @@ void menu_choice()
         case MENU_ICONBAR:
           create_iconbar_menu();
           break;
+
         case MENU_TERMINAL:
           create_terminal_menu();
           break;
+
         case MENU_CONNECTION:
           create_connection_menu();
           break;
+
         case MENU_TERMINAL_TYPE:
           create_terminal_type_menu();
+          break;
+
+        case MENU_HOTLIST:
+          create_hotlist_menu();
           break;
       }
     }
@@ -1663,25 +1717,26 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
 
     if (strlen(item)<13)
     {
-      strncpy((char *) menu_defn+(position*4),item,pos-item+1);
+      strncpy(((char *) menu_defn)+(position*4),item,pos-item+1);
 
       {
         char *menu_data_char=(char *) menu_defn;
         menu_data_char[(position*4)+pos-item+1]='\0';
       }
 
-      position++;
+      position+=3;
     }
     else
     {
+      assert(indirected);
+
       strncpy(indirected, item, pos-item+1);
       indirected[pos-item+1]='\0';
-      menu_defn[position]=(int) indirected;
-      position++;
-      menu_defn[position]=strlen(indirected);
-      indirected+=strlen(indirected);
+      menu_defn[position++]=(int) indirected;
+      menu_defn[position++]=(int) indirected+strlen(indirected);
+      menu_defn[position++]=strlen(indirected)+1;
+      indirected+=strlen(indirected)+1;
     }
-    position+=2;
 
     item=va_arg(args,char *);
   }
