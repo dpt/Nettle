@@ -217,6 +217,7 @@ void save_selection(char *filename, bool ansi_colour)
   int xpos;
   int ypos=0;
   int old_ypos=-1;
+  bool already_written_newline=false;
 
   file_handle=fopen(filename,"wb");
 
@@ -237,6 +238,7 @@ void save_selection(char *filename, bool ansi_colour)
 
     if (ypos!=old_ypos)
     {
+      already_written_newline=false;
       last_valid_char=selection_session->terminal_size.x-1;
 
       while (last_valid_char>=0 &&
@@ -288,8 +290,11 @@ void save_selection(char *filename, bool ansi_colour)
     if (xpos<=last_valid_char)
       fputc(read_assigned_character(selection_session, xpos, ypos), file_handle);
 
-    if (xpos==last_valid_char)
+    if (xpos>last_valid_char && !already_written_newline)
+    {
       fputc('\n', file_handle);
+      already_written_newline=true;
+    }
 
     if (ferror(file_handle))
       break;
@@ -442,6 +447,7 @@ void selection_paste(struct session_struct *session)
   int     xpos;
   int     ypos=0;
   int     old_ypos=-1;
+  bool already_written_newline=false;
 
   if (selection_session == NULL)
     return;
@@ -462,6 +468,7 @@ void selection_paste(struct session_struct *session)
 
     if (ypos!=old_ypos)
     {
+      already_written_newline=false;
       last_valid_char=selection_session->terminal_size.x-1;
 
       while (last_valid_char>=0 &&
@@ -477,10 +484,11 @@ void selection_paste(struct session_struct *session)
       bufferptr++;
     }
 
-    if (xpos==last_valid_char)
+    if (xpos>last_valid_char && !already_written_newline)
     {
       *(buffer+bufferptr) = '\r';
       bufferptr++;
+      already_written_newline=true;
     }
   }
 
