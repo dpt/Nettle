@@ -1,0 +1,70 @@
+// ZapRedraw structure code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+// ZapRedraw module (C) Zap Developers
+
+#ifndef ZAPREDRAW_H
+#define ZAPREDRAW_H
+
+// Slightly lazy, but I couldn't be bothered doing all the SWIs
+#ifndef ZapRedraw_RedrawArea
+
+#define ZapRedraw_RedrawArea          	0x48480
+#define ZapRedraw_GetPaletteEntry	0x48481
+#define ZapRedraw_RedrawRaster		0x48482
+#define ZapRedraw_ConvertBitmap		0x48483
+#define ZapRedraw_PrepareDataLine	0x48484
+#define ZapRedraw_AddCursor		0x48485
+#define ZapRedraw_FindCharacter		0x48486
+#define ZapRedraw_MoveBytes		0x48487
+#define ZapRedraw_CachedCharSize	0x48488
+#define ZapRedraw_ConvBitmapChar	0x48489
+#define ZapRedraw_CreatePalette		0x4848A
+#define ZapRedraw_InsertChar		0x4848B
+#define ZapRedraw_ReadSystemChars	0x4848C
+#define ZapRedraw_ReverseBitmaps	0x4848D
+#define ZapRedraw_ReadVduVars		0x4848E
+#define ZapRedraw_GetRectangle		0x4848F
+#define ZapRedraw_AddVduBitmaps		0x48490
+#define	ZapRedraw_CacheFontChars	0x48491
+#define ZapRedraw_SpriteSize		0x48492
+#define ZapRedraw_RedrawWindow		0x48493
+#define ZapRedraw_Divide		0x48494
+#define ZapRedraw_PlotRectangle		0x48495
+
+#endif
+
+struct zapredraw_block
+{
+  int r_flags       /*=0*/;    // Redraw flags
+  int r_minx        /*=0*/;    // min x in pixs inc
+  int r_miny        /*=0*/;    // min y in pixs inc (from top)
+  int r_maxx        /*=0*/;    // max x in pixs exc
+  int r_maxy        /*=0*/;    // max y in pixs exc (from top)
+  int r_screen      /*=0*/;    // address of the screen
+  int r_bpl         /*=0*/;    // bytes per raster line
+  int r_bpp         /*=0*/;    // log base 2 of bpp
+  int r_charw       /*=0*/;    // width of a character in pixs
+  int r_charh       /*=0*/;    // height of a character in pixs
+  int *r_caddr      /*=0*/;    // cache address / font name
+  int r_cbpl        /*=0*/;    // bytes per cached line
+  int r_cbpc        /*=0*/;    // bytes per cached character
+  int r_linesp      /*=0*/;    // line spacing in pixels
+  int *r_data       /*=0*/;    // address of data to print
+  int r_scrollx     /*=0*/;    // x scroll offset in pixs
+  int r_scrolly     /*=0*/;    // y scroll offset in pixs
+  int *r_palette    /*=0*/;    // address of palette data
+  int r_for         /*=0*/;    // start forground colour
+  int r_bac         /*=0*/;    // start background colour
+  int *r_workarea   /*=0*/;    // address of work area
+  int r_magx        /*=0*/;    // log 2 of num of x os per pixel
+  int r_magy        /*=0*/;    // log 2 of num of y os per pixel
+  int r_xsize       /*=0*/;    // screen width in pixels
+  int r_ysize       /*=0*/;    // screen height in pixels
+  int r_mode        /*=0*/;    // screen mode
+};
+
+extern int zapgen_code(int *, char *, int, int, int);
+
+#endif

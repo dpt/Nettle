@@ -1,0 +1,10 @@
+// Nettle closedown code headers
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#ifndef QUIT_H
+#define QUIT_H
+
+extern void closedown_application(void);
+
+#endif

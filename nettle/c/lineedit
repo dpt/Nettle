@@ -1,0 +1,165 @@
+// Line editor code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#include "generic.h"
+#include "globals.h"
+
+#include "lineedit.h"
+#include "misc.h"
+#include "wimp.h"
+
+void open_pane_window(int session_handle, int *main_block)
+{
+  int block[9];
+  int width;
+
+  width=main_block[3];
+
+  block[0]=session[session_handle].window_handle;
+
+  regs.r[1]=(int) block;
+  _kernel_swi(Wimp_GetWindowOutline, &regs, &regs);
+
+  block[0]=session[session_handle].pane_handle;
+  block[1]=main_block[1];
+
+  // This is right, but it's the old window outline, so pane is always opened in the wrong place
+  //block[4]=block[2];
+
+  // This is wrong as it assumes a toolsprite height
+  block[4]=main_block[2]-40;
+
+  block[2]=block[4]-48;
+
+  block[3]=width;
+  block[5]=0;
+  block[6]=0;
+  block[7]=main_block[7];
+
+  create_line_editor_icons(session_handle, block[3]-block[1]);
+
+  regs.r[1]=(int) block;
+  _kernel_swi(Wimp_OpenWindow,&regs, &regs);
+}
+
+void create_line_editor_icons(int session_handle, int width)
+{
+  int block[9];
+  int loop;
+  int old_width;
+  bool selected;
+
+  int caret_window_handle;
+  int caret_icon_handle;
+  int caret_index;
+
+  regs.r[1]=(int) block;
+  _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
+
+  caret_window_handle=block[0];
+  caret_icon_handle=block[1];
+  caret_index=block[5];
+
+  block[0]=session[session_handle].pane_handle;
+  block[1]=0;
+
+  regs.r[1]=(int) block;
+  _kernel_swi(Wimp_GetIconState, &regs, &regs);
+
+  old_width=block[4];
+
+  if (width==old_width) { return; }
+
+  if (block[6] & (1<<21))
+    selected=true;
+  else
+    selected=false;
+
+  for (loop=0; loop<2; loop++)
+  {
+    block[0]=session[session_handle].pane_handle;
+    block[1]=loop;
+
+    regs.r[1]=(int) block;
+    _kernel_swi(Wimp_DeleteIcon, &regs, &regs);
+  }
+
+  block[0]=session[session_handle].pane_handle;
+  block[1]=width-48;
+  block[2]=-48;
+  block[3]=width;
+  block[4]=0;
+
+  if (selected)
+  {
+    block[5]=binary("00010111001000001011000100010011");
+  }
+  else
+  {
+    block[5]=binary("00010111000000001011000100010011");
+  }
+  block[6]=(int) line_editor_icon_text;
+  block[7]=(int) line_editor_icon_sprite;
+  block[8]=1;
+
+  regs.r[1]=(int) block;
+  _kernel_swi(Wimp_CreateIcon,&regs, &regs);
+
+  block[0]=session[session_handle].pane_handle;
+  block[1]=-4;
+  block[2]=-52;
+  block[3]=width-54;
+  block[4]=4;
+  if (selected)
+  {
+    block[5]=binary("00000111000000001111000100110101");
+  }
+  else
+  {
+    block[5]=binary("00000111100000001111000100110101");
+  }
+  block[6]=(int) session[session_handle].line_editor_buffer;
+  block[7]=(int) line_editor_buffer_indirected;
+  block[8]=512;
+
+  regs.r[1]=(int) block;
+  _kernel_swi(Wimp_CreateIcon, &regs, &regs);
+
+  if (width<old_width)
+  {
+    force_redraw(session[session_handle].pane_handle,width-56,-48,old_width,0);
+  }
+
+  if (width>old_width)
+  {
+    force_redraw(session[session_handle].pane_handle,old_width-56,-48,width,0);
+  }
+
+  if (caret_window_handle==session[session_handle].pane_handle)
+  {
+    set_caret_position(caret_window_handle, caret_icon_handle, -1, caret_index);
+  }
+}
+
+bool line_editor_active(int session_handle)
+{
+  int block[9];
+
+  if (!line_editor) { return false; }
+
+  block[0]=session[session_handle].pane_handle;
+  block[1]=0;
+
+  regs.r[1]=(int) block;
+  _kernel_swi(Wimp_GetIconState, &regs, &regs);
+
+  if (block[6] & (1<<21))
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}

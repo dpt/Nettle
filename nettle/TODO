@@ -1,0 +1,28 @@
+Implement tests.
+Implement Selective Erase (it only erases characters marked as erasable)
+Implement delete characters.
+Implement insert characters.
+Implement delete line.
+Implement insert line.
+Implement selective erasable.
+
+Make it check for open sessions on quitting - ie. ask for confirmation
+
+Ian         >Chocks and I
+             were discussing how it could be made quicker. It's currently
+             faster than FreeTerm, but actually quite "chuggy" even with the
+             new accellerated ZapRedrawForViewFinder module.  I guess
+             hotlists would be something I'd appreciate... a-la freeterm
+             hotlists etc.
+
+Mouse events - need to prod pico -m  a bit, and find out how mouse events are done.
+
+Window resizing
+
+Memory leak? F12, then RETURN, Nettle allocates some memory - I'm assuming this is just Zap space that it allocates, but I would've thought this should get allocated on start up (ie. I thought it called mode_change after setting things up)...
+
+Source files need more comments
+
+Try 'links' in Nettle (I've put it on Tardis now)
+Choices!
+c.socket            	- needs finished (not needed for Nettle, but should be done sometime)

@@ -1,0 +1,70 @@
+// Nettle specific code headers
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#ifndef NETTLE_H
+#define NETTLE_H
+
+#define NETTLE_TELNET      1
+#define NETTLE_SSH         2
+#define NETTLE_TASKWINDOW  3
+
+#define NETTLE_SESSION_NONE        0
+#define NETTLE_SESSION_RESOLVE     1
+#define NETTLE_SESSION_CONNECT     2
+#define NETTLE_SESSION_CONNECTED   3
+
+#define NETTLE_ESCAPE_NONE         0
+#define NETTLE_ESCAPE_ESCAPE       1
+
+#define NETTLE_FLAG_CURSOR        (1<<0)
+#define NETTLE_FLAG_NO_INPUT      (1<<1)
+#define NETTLE_FLAG_INVERTED      (1<<2)
+#define NETTLE_FLAG_PLUS100       (1<<3)
+#define NETTLE_FLAG_SELECTED	  (1<<4)
+
+#define NETTLE_OTHER_VT52_MODE	   (1<<0)
+#define NETTLE_OTHER_INSERT_MODE   (1<<1)
+#define NETTLE_OTHER_KEYLOCK_MODE  (1<<2)
+#define NETTLE_OTHER_LINEFEED_MODE (1<<3)
+#define NETTLE_OTHER_CURSOR_VIS	   (1<<4)
+#define NETTLE_OTHER_ORIGIN_MODE   (1<<5)
+#define NETTLE_OTHER_WRAP_MODE	   (1<<6)
+#define NETTLE_OTHER_REVERSE_VIDEO (1<<7)
+#define NETTLE_OTHER_APPLI_MODE	   (1<<8)
+
+#define NETTLE_TERMINAL_VT100	0
+#define NETTLE_TERMINAL_VT102	1
+#define NETTLE_TERMINAL_VT220	2
+#define NETTLE_TERMINAL_VT320	3
+#define NETTLE_TERMINAL_VT420	4
+#define NETTLE_TERMINAL_VT510	5
+#define NETTLE_TERMINAL_RXVT	6
+#define NETTLE_TERMINAL_XTERM	7
+
+#define NETTLE_CHSET_G0	0
+#define NETTLE_CHSET_G1	1
+#define NETTLE_CHSET_G2	2
+#define NETTLE_CHSET_G3	3
+
+#define NETTLE_CHSET_GRAPHICS	48
+#define NETTLE_CHSET_ALTROMSTD	49
+#define NETTLE_CHSET_ALTROMSPC	50
+#define NETTLE_CHSET_UK		65
+#define NETTLE_CHSET_US		66
+
+extern void start_connection(void);
+extern void write_out_string(int, char *);
+extern void write_out_data(int, char *, int);
+extern void remove_session(int);
+extern void nettle_senddata(int, char *, int);
+extern void reset_terminal(int);
+
+extern void write_assigned(int, int, char, char, char, char);
+
+extern char read_assigned_flags(int, int);
+extern void write_assigned_flags(int, int, char);
+
+extern void write_assigned_character(int, int, char);
+
+#endif

@@ -1,0 +1,96 @@
+// Choices code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#include "generic.h"
+#include "globals.h"
+
+#include "choices.h"
+#include "misc.h"
+
+void load_choices(void)
+{
+  FILE *file_handle;
+  char choices_path[256];
+  char string[256];
+
+  get_system_variable(choices_path,"Choices$Write");
+
+  if (strlen(choices_path)==0)
+  {
+    sprintf(string,"<%s$Dir>.Choices.Choices",application_name);
+  }
+  else
+  {
+    sprintf(string,"Choices:%s.Choices",application_name);
+  }
+
+  file_handle=fopen(string,"r");
+  if (file_handle==0)
+  {
+    /* If the file doesn't exist, drop back to using default choices file */
+    sprintf(string,"<%s$Dir>.Choices.Default",application_name);
+    file_handle=fopen(string,"r");
+    if (file_handle==0)
+      return;
+  }
+
+  while (!feof(file_handle))
+  {
+    char *str=fgets(string,256,file_handle);
+    if (str)
+    {
+      int len=strlen(string);
+      if (string[len-1]=='\n')
+        string[len-1]='\0';
+
+      read_choice(zap_font,string,"ZapFontHi:");
+      read_choice(zap_lowres_font,string,"ZapFontLo:");
+
+      read_boolean_choice(&logging,string,"Logging:");
+      read_boolean_choice(&line_editor,string,"LineEditor:");
+      read_boolean_choice(&pass_f12,string,"PassF12:");
+
+      read_integer_choice(&line_editor_size,string,"LineEditorSize:");
+    }
+  }
+
+  fclose(file_handle);
+}
+
+void read_choice(char *variable, char *line, char *lookfor)
+{
+  int len=strlen(lookfor);
+  if (strncmp(line,lookfor,len)==0)
+  {
+    strcpy(variable,line+len);
+  }
+}
+
+void read_boolean_choice(bool *var, char *line, char *lookfor)
+{
+  int len=strlen(lookfor);
+  if (strncmp(line,lookfor,len)==0)
+  {
+    if (strncmp(line+len,"1",1)==0)
+    {
+      *var=true;
+    }
+    else
+    {
+      *var=false;
+    }
+  }
+  return;
+}
+
+void read_integer_choice(int *var, char *line, char *lookfor)
+{
+  int len=strlen(lookfor);
+  if (strncmp(line,lookfor,len)==0)
+  {
+    *var=atoi(line+len);
+  }
+  return;
+}
+

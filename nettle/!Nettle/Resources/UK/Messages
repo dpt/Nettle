@@ -1,0 +1,47 @@
+# Messages for Nettle
+# Last modified on 14-Jul-2001
+
+AppName:Nettle
+AppPurpose:Arachnid telnet client
+AppAuthor:© Archifishal Software, 2001
+AppVersion:v0.1507b (14-Jul-2001)
+
+Info:Info>
+Choices:.Choices...
+Quit:Quit
+
+Terminal:Terminal
+Selection>:Selection>
+Resize:Resize>
+Options:Options...
+
+Selection:Selection
+Save:Save>
+LaunchURL:Launch URL
+Send:.Send
+Clear:Clear
+
+Connection:Connection
+
+NoTemplates:No Templates file was found.
+NoSprites:No Sprites file was found.
+
+ConnectionOpen:This connection is currently open. Are you sure you wish to close it?
+ConnectionMultiOpen:There are connections currently open. Are you sure you wish to quit?
+InvalidAddr:The remote address you entered is invalid. Please check and try again.
+InvalidPort:The port you entered was either malformed or too large.
+InvalidComm:You must enter a command to start a Nettle taskwindow.
+TooMany:There are too many telnet sessions already open.
+
+Telnet:telnet
+SSH:ssh
+Taskwindow:taskwindow
+
+Term0:vt100
+Term1:vt102
+Term2:vt220
+Term3:vt320
+Term4:vt420
+Term5:vt510
+Term6:rxvt
+Term7:xterm

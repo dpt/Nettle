@@ -1,0 +1,222 @@
+;R0	rn	0
+;R1	rn	1
+;R2	rn	2
+;R3	rn	3
+;R4	rn	4
+;R5	rn	5
+;R6	rn	6
+;R7	rn	7
+;R8	rn	8
+;R9	rn	9
+;R10	rn	10
+;R11	rn	11
+;R12	rn	12
+;R13	rn	13
+;R14	rn	14
+;PC	rn	15
+
+	AREA    |C$$code|, CODE, READONLY
+
+	EXPORT	zapgen_code
+
+zapgen_code
+; On entry
+;    R0 = area to write data to
+;    R1 = area to read data from
+;    R2 = total X size
+;    R3 = total Y size
+;    R4 = other session flags
+;
+; On exit
+;    R0 = last address in R0 written to
+
+	STMFD   R13!,{R1-R12}
+
+        MOV     R11,R4 ; shift other session flags out of the way
+
+	ADD     R4,R3,#1
+	MOV     R4,R4,LSL#2 ; R4 is current_pointer%
+	MOV     R5,#0 ; y_loop
+code_y_loop
+	MOV     R6,R5,LSL#2 ; y_loop*4
+	STR     R4,[R0,R6]
+	ADD     R9,R4,R0
+	MOV     R6,R2 ; x_loop
+	MUL     R7,R2,R5 ; y_loop*terminal_size_x
+	MOV     R7,R7,LSL#2 ; *4
+	ADD     R7,R7,R1
+code_x_loop
+	LDRB    R10,[R7,#2]
+	TST     R10,#1 ; cursor bit
+	BNE     code_draw_cursor ; branch if bit 0 is set
+
+	MOV     R8,#0
+	STRB    R8,[R9],#1   ; 0
+
+	MOV     R8,#1
+	STRB    R8,[R9],#1   ; 1
+
+	TST	R10,#16 ; selected bit
+	BNE	code_selected ; branch if this char is selected
+
+	TST     R11,#128 ; test reverse video
+	BNE     code_reverse_video
+	BEQ     code_not_reverse_video
+
+code_reverse_video
+	TST     R10,#4 ; invert bit
+	BEQ     code_inverted
+	BNE     code_not_inverted
+
+code_not_reverse_video
+	TST     R10,#4 ; invert bit
+        BEQ     code_not_inverted
+        BNE	code_inverted
+
+code_not_inverted
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9],#1   ; foreground
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9],#1   ; background
+	B       code_after_inverted
+
+code_inverted
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9,#1]   ; foreground
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9],#2   ; background
+
+code_after_inverted
+
+	B	code_skip_selected
+
+code_selected
+
+	TST     R11,#128 ; test reverse video
+	BNE     code_selected_reverse_video
+	BEQ     code_selected_not_reverse_video
+
+code_selected_reverse_video
+	TST     R10,#4 ; invert bit
+	BEQ     code_selected_inverted
+	BNE     code_selected_not_inverted
+
+code_selected_not_reverse_video
+	TST     R10,#4 ; invert bit
+        BEQ     code_selected_not_inverted
+        BNE	code_selected_inverted
+
+code_selected_not_inverted
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9,#1]   ; foreground
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9],#2   ; background
+	B       code_skip_selected
+
+code_selected_inverted
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9],#1   ; foreground
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9],#1   ; background
+
+code_skip_selected
+	LDRB    R8,[R7],#1   ; flags (dealt with elsewhere)
+
+	TST     R10,#8       ; set if +&100
+
+	; if not set
+	LDREQB  R8,[R7],#1
+	STREQB  R8,[R9],#1   ; byte
+	ADDEQ   R4,R4,#5
+
+	; if set
+
+	MOVNE   R8,#0
+	STRNEB  R8,[R9],#1 ; 0
+	MOVNE   R8,#3
+	STRNEB  R8,[R9],#1 ; 3
+
+	LDRNE   R8,[R7],#1
+	STRNEB  R8,[R9],#1 ; byte
+	MOVNE   R8,#&01
+	STRNEB  R8,[R9],#1 ; &100+
+	ADDNE   R4,R4,#8
+
+	B       code_next_stage
+
+code_draw_cursor
+
+	MOV     R8,#0
+	STRB    R8,[R9],#1 ; 0
+
+	MOV     R8,#4
+	STRB    R8,[R9],#1 ; 4
+
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9,#1] ; foreground
+
+	LDRB    R8,[R7],#1
+	STRB    R8,[R9],#2 ; background
+
+	LDRB    R8,[R7],#1 ; flags (dealt with elsewhere)
+
+	TST     R10,#8     ; +&100 bit
+	LDREQB  R8,[R7],#1
+	STREQB  R8,[R9],#1 ; character
+	ADDEQ   R4,R4,#9
+
+	MOVNE   R8,#0
+	STRNEB  R8,[R9],#1 ; 0
+	MOVNE   R8,#3
+	STRNEB  R8,[R9],#1 ; 3
+
+	LDRNE   R8,[R7],#1
+	STRNEB  R8,[R9],#1 ; byte
+	MOVNE   R8,#&01
+	STRNEB  R8,[R9],#1 ; &100+
+	ADDNE   R4,R4,#12
+
+	MOV     R8,#0
+	STRB    R8,[R9],#1 ; 0
+	MOV     R8,#3
+	STRB    R8,[R9],#1 ; 3
+
+	TST     R10,#2     ; got cursor bit
+	MOVEQ   R8,#&00
+	STREQB  R8,[R9],#1 ; &100
+	MOVEQ   R8,#&01
+	STREQB  R8,[R9],#1 ;
+
+	MOVNE   R8,#&01
+	STRNEB  R8,[R9],#1 ; &101
+	MOVNE   R8,#&01
+	STRNEB  R8,[R9],#1 ;
+
+code_next_stage
+
+	SUBS    R6,R6,#1
+	BNE     code_x_loop
+
+	MOV     R8,#0
+	STRB    R8,[R9],#1
+
+	MOV     R8,#2
+	STRB    R8,[R9],#1
+
+	ADD     R4,R4,#2
+
+	ADD     R5,R5,#1
+	CMP     R5,R3
+	BNE     code_y_loop
+
+	MOV     R6,R5,LSL#2 ; y_loop*4
+	MOV     R8,#0
+	STR     R8,[R0,R6]
+
+	MOV     R0,R4 ; put last addr written to in R0
+
+	LDMFD   R13!,{R1-R12}
+
+	MOV     PC,R14
+
+	END

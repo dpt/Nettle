@@ -1,0 +1,40 @@
+// Closedown code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#include "generic.h"
+#include "globals.h"
+
+#include "misc.h"
+#include "nettle.h"
+#include "quit.h"
+
+void closedown_application(void)
+{
+  // Quit!
+  int loop;
+
+  if (current_session>0)
+  {
+    for (loop=0; loop<current_session; loop++)
+    {
+      remove_session(loop);
+    }
+  }
+
+  regs.r[0]=(int) messagetrans_area;
+  _kernel_swi(MessageTrans_CloseFile, &regs, &regs);
+
+  free(bitmaps_area);
+  free(messagetrans_buffer);
+  free(sprite_area);
+  free(zap_font_area);
+  free(zap_lowres_font_area);
+  free(zapredraw_area);
+
+  close_log();
+
+  _kernel_swi(Wimp_CloseDown, &regs, &regs);
+
+  exit(0);
+}

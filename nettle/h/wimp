@@ -1,0 +1,52 @@
+// Nettle Wimp_Poll / Wimp code headers
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#ifndef WIMP_H
+#define WIMP_H
+
+#define MENU_ICONBAR       1
+#define MENU_TERMINAL	   2
+#define MENU_CONNECTION	   3
+#define MENU_TERMINAL_TYPE 4
+
+#define RECEIVE_BLOCK_LENGTH	0x400
+
+extern void null_reason_code(void);
+extern void redraw_window(void);
+extern void open_window(int, bool);
+extern void close_window(int);
+extern void mouse_click(int, int, int, int, int);
+extern void drag_finished(void);
+extern void key_pressed(int, int, int);
+extern void menu_selection(void);
+extern void lose_caret(void);
+extern void gain_caret(void);
+extern void wimp_message(int, int, int);
+extern void mode_change(void);
+
+extern void generror(char *);
+extern int generror_question(char *);
+extern void set_caret_position(int, int, int, int);
+extern void set_icon_data(int, int, char *);
+extern void set_icon_validation(int, int, char *);
+extern char *read_icon_data(int, int);
+
+extern int *create_menu(int *, char *, char *, char *, ...);
+extern char *get_menu_item(char *);
+extern char *get_last_menu_item(char *);
+extern char *get_grey_menu_item(char *);
+extern char *get_grey_last_menu_item(char *);
+
+extern void create_iconbar_menu(void);
+extern void create_terminal_menu(void);
+extern void create_connection_menu(void);
+extern void create_terminal_type_menu(void);
+
+extern void set_title_bar(int, char *);
+extern void force_redraw(int,int,int,int,int);
+
+extern void drag_start(int,int);
+extern void open_open_window(bool);
+
+#endif

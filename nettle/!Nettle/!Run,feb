@@ -1,0 +1,25 @@
+|
+| !Nettle.!Run
+|   by A. Macfarlane Smith
+|   © Archifishal Software 2000-2001
+
+Set Nettle$Dir <Obey$Dir>
+IconSprites <Nettle$Dir>.!Sprites
+
+Set Nettle$ZapRedraw Loaded
+RMEnsure ZapRedraw 0.00 Set Nettle$ZapRedraw NotLoaded
+
+Set Nettle$ZapRedrawPath <Zap$Redraw>
+If "<Nettle$ZapRedrawPath>"="" Then Set Nettle$ZapRedrawPath <Nettle$Dir>.Resources.ZapRedraw
+If "<Nettle$ZapRedraw>"="NotLoaded" Then RMLoad <Nettle$ZapRedrawPath>
+
+Unset Nettle$ZapRedraw
+Unset Nettle$ZapRedrawPath
+
+RMEnsure Resolver 0.49 RMLoad System:Modules.Network.Resolver
+RMEnsure Resolver 0.49 Error Nettle requires Resolver 0.49 or later
+
+Set Alias$@RunType_FD3 DebugAIF %*0
+
+WimpSlot -min 256K -max 256K
+Run <Nettle$Dir>.!RunImage ><Nettle$Dir>.stdout 2><Nettle$Dir>.stderr

@@ -1,0 +1,142 @@
+// Global variables header
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+// This is basically the same as c.globals, but with externs
+
+#ifndef GLOBALS_H
+#define GLOBALS_H
+
+#define MAX_TAB_NUMBER		32
+
+extern char *application_name;
+extern char *application_icon_name;
+extern bool quit_flag;
+
+extern _kernel_swi_regs regs;
+
+extern char zap_font[256];
+extern char zap_lowres_font[256];
+
+extern int menu_data[64];
+extern int menu_data2[64];
+
+extern int *zap_font_area;
+extern int *zap_lowres_font_area;
+extern struct zapredraw_block redraw;
+extern int palette[16];
+extern int zap_palette[16];
+
+extern int zapredraw_block[128];
+extern int *zapredraw_area;
+extern int size_of_zapredraw_area;
+
+extern int *bitmaps_area;
+
+extern int wimp_block[64];
+extern int temp_block[256];
+extern int *sprite_area;
+extern int messagetrans_area[4];
+extern int *messagetrans_buffer;
+
+extern FILE *log_file;
+extern int log_file_time;
+extern int task_handle;
+extern int iconbar_handle;
+extern int menu_open;
+
+extern int info;
+extern int choices;
+extern int terminal;
+extern int open;
+extern int resize;
+extern int save;
+extern int pane;
+
+extern bool logging;
+extern bool line_editor;
+extern bool pass_f12;
+extern int line_editor_size;
+
+extern bool socket_from_file;
+
+struct session_struct
+{
+  int window_handle;		// window handle
+  int pane_handle;		// pane window handle
+  char *assigned_area;		// data area for terminal
+  char terminal_type;		// terminal type
+  int xpos;			// current x position
+  int ypos;			// current y position
+  int terminal_size_x;		// size of terminal in X
+  int terminal_size_y;		// size of terminal in Y
+  int scrollback;		// size of scrollback
+  int socket_handle;		// socket handle (or task handle etc.)
+  char socket_host[256];	// hostname
+  int socket_port;		// port number
+  unsigned int socket_ip;	// IP
+  char socket_state;		// state of socket (see nettle.h for states)
+  char current_fg;		// current foreground colour
+  char current_bg;		// current background colour
+  int current_flags;		// current flags
+  char *title;			// titlebar contents
+  char escape_string[256];	// Escape array
+  int escape_string_length;	// length of escape array so far
+  signed char escape_state;	// escape state (see nettle.h for states)
+  bool session_flags[256];	// session flags (same as telnet options so far)
+  int scroll_start;		// start of scroll area
+  int scroll_end;		// end of scroll area
+  int other_session_flags;	// other session flags (see nettle.h)
+  char connection_type;		// connection type: telnet, ssh, etc.
+
+  int old_xpos;			// old X position
+  int old_ypos;			// old Y position
+  char old_current_fg;		// old fg colour
+  char old_current_bg;		// old bg colour
+  int old_current_flags;	// old current flags
+  int old_other_session_flags;  // old other session flags
+  char old_character_set;	// old character set
+  char old_character_set_g0;	// old character set G0
+  char old_character_set_g1;	// old character set G1
+  char old_character_set_g2;	// old character set G2
+  char old_character_set_g3;	// old character set G3
+
+  char *line_editor_history;    // line editor history
+  int line_editor_position;	// current position in the line editor
+  int line_editor_total;	// total number of items in the history
+  char line_editor_buffer[512]; // line editor buffer
+
+  char character_set;		// currently selected character set
+  char character_set_g0;	// character set G0
+  char character_set_g1;	// character set G1
+  char character_set_g2;	// character set G2
+  char character_set_g3;	// character set G3
+
+  int tabs[MAX_TAB_NUMBER];	// tab positions
+  int number_of_tabs;		// number of tabs
+};
+
+extern struct session_struct session[64];
+extern int current_session;
+extern int current_socket;
+
+extern bool selection_in_progress;
+extern int selection_session;
+extern int selection_start;
+extern int selection_end;
+extern int selection_adjust_dragging;
+
+extern int terminal_menu_session;
+extern int drag_window_handle;
+extern int drag_icon_handle;
+
+extern int pane_attached_session;
+
+extern char line_editor_buffer[512];
+extern char *line_editor_buffer_indirected;
+extern char *line_editor_icon_text;
+extern char *line_editor_icon_sprite;
+
+extern char terminal_name[8][6];
+
+#endif

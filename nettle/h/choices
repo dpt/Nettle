@@ -1,0 +1,13 @@
+// Choices code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#ifndef CHOICES_H
+#define CHOICES_H
+
+extern void load_choices(void);
+extern void read_choice(char *, char *, char *);
+extern void read_boolean_choice(bool *, char *, char *);
+extern void read_integer_choice(int *, char *, char *);
+
+#endif

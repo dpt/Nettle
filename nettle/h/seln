@@ -1,0 +1,19 @@
+// Selection code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#ifndef SELN_H
+#define SELN_H
+
+#define SELECTION_ADJUST_NONE	0
+#define SELECTION_ADJUST_START	1
+#define SELECTION_ADJUST_END	2
+
+extern void refresh_selection_set(void);
+extern void refresh_selection_clear(void);
+extern void selection_adjust(int, int, int, int);
+extern void selection_adjust_drag(int,int,int,int);
+extern void save_selection(char *, bool);
+extern void handle_selection_drag(void);
+
+#endif

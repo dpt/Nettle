@@ -1,0 +1,12 @@
+// Line editor code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#ifndef LINEEDIT_H
+#define LINEEDIT_H
+
+void open_pane_window(int, int *);
+void create_line_editor_icons(int, int);
+bool line_editor_active(int);
+
+#endif

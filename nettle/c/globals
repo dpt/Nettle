@@ -1,0 +1,87 @@
+// Global variables
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#include "generic.h"
+#include "globals.h"
+
+#include "zapredraw.h"
+
+char *application_name="Nettle";
+char *application_icon_name="!nettle";
+bool quit_flag=false;
+
+_kernel_swi_regs regs;
+
+int wimp_block[64];
+int temp_block[256];
+int *sprite_area;
+int messagetrans_area[4];
+int *messagetrans_buffer;
+
+char zap_font[256]="07x14";
+char zap_lowres_font[256]="08x08.0";
+
+int menu_data[64];
+int menu_data2[64];
+
+int *zap_font_area;
+int *zap_lowres_font_area;
+struct zapredraw_block redraw;
+int palette[16]={0x00000000, 0x0000D000, 0x00D00000, 0x00D0D000,
+  		 0xD0000000, 0xD000D000, 0xD0D00000, 0xD0D0D000,
+  		 0x40404000, 0x0000FF00, 0x00FF0000, 0x00FFFF00,
+  		 0xFF000000, 0xFF00FF00, 0xFFFF0000, 0xFFFFFF00};
+
+int zap_palette[16];
+
+int zapredraw_block[128];
+int *zapredraw_area=0;
+int size_of_zapredraw_area=0;
+
+int *bitmaps_area=0;
+
+FILE *log_file;
+int log_file_time;
+int task_handle;
+int iconbar_handle;
+int menu_open;
+
+// Template windows
+int info;
+int choices;
+int terminal;
+int open;
+int resize;
+int save;
+int pane;
+
+bool logging=false;
+bool line_editor=false;
+bool pass_f12=false;
+int line_editor_size=32;
+
+// Change this line to force socket reading from "<Nettle$Dir>.Spool"
+bool socket_from_file=false;
+
+struct session_struct session[64];
+int current_session=0;
+int current_socket=0;
+
+bool selection_in_progress=false;
+int selection_session=-1;
+int selection_start=0;
+int selection_end=0;
+int selection_adjust_dragging=0;
+
+int terminal_menu_session;
+int drag_window_handle;
+int drag_icon_handle;
+
+int pane_attached_session;
+
+char *line_editor_buffer_indirected="Pptr_write";
+char *line_editor_icon_text="";
+char *line_editor_icon_sprite="Soptoff,opton";
+
+char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};

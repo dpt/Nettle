@@ -1,0 +1,601 @@
+// Nettle specific code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#include "generic.h"
+#include "globals.h"
+
+#include "misc.h"
+#include "nettle.h"
+#include "process.h"
+#include "seln.h"
+#include "socket.h"
+#include "wimp.h"
+#include "zapredraw.h"
+
+void start_connection(void)
+{
+  char string[1024];
+  int loop;
+  int zap_yeig;
+  int connection_type;
+  int terminal_type;
+
+  // get the yeig of the mode we're in
+  regs.r[0]=-1;
+  regs.r[1]=5;
+  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
+  zap_yeig=regs.r[2];
+
+  // give up if too many sessions
+  if (current_session==64)
+  {
+    generror(lookup("TooMany"));
+    return;
+  }
+
+  // clear all the session flags
+  for (loop=0; loop<256; loop++)
+  {
+    session[current_session].session_flags[loop]=false;
+  }
+
+  strcpy(string,read_icon_data(open,4));
+
+  if (strcmp(string,lookup("Telnet"))==0)     { connection_type=NETTLE_TELNET;     }
+  if (strcmp(string,lookup("SSH"))==0)        { connection_type=NETTLE_SSH;        }
+  if (strcmp(string,lookup("Taskwindow"))==0) { connection_type=NETTLE_TASKWINDOW; }
+
+  strcpy(string,read_icon_data(open,9));
+
+  for (loop=0; loop<8; loop++)
+  {
+    char term[7];
+    sprintf(term,"Term%d",loop);
+    if (strcmp(string,lookup(term))==0) { terminal_type=loop; }
+  }
+
+  switch (connection_type)
+  {
+    case NETTLE_TELNET:
+      strcpy(string,read_icon_data(open,0));
+
+      if (strlen(string)==0)
+      {
+        generror(lookup("InvalidAddr"));
+        return;
+      }
+
+      // strip off telnet: if it's there
+      if (strncmp(string,"telnet:",strlen("telnet:"))==0)
+      {
+        strcpy(string,string+strlen("telnet:")+1);
+      }
+
+      // strip out any /s anywhere in the string
+      loop=0;
+      while (loop<strlen(string))
+      {
+        char temp_string[256];
+
+        if (string[loop]=='/')
+        {
+          if (loop>0)
+          {
+            strncpy(temp_string,string,loop-1);
+            temp_string[loop]='\0';
+          }
+          else
+          {
+            strcpy(temp_string,"");
+          }
+
+          strcat(temp_string,string+loop+1);
+          strcpy(string,temp_string);
+        }
+        else
+        {
+          loop++;
+        }
+      }
+
+      // look at the string to find a port if any (separated by colon or comma)
+      if (instr(string,",")>=0)
+      {
+        strncpy(session[current_session].socket_host,string,instr(string,","));
+        session[current_session].socket_host[instr(string,",")]='\0';
+        session[current_session].socket_port=atoi(string+instr(string,",")+1);
+      }
+      else
+      {
+        if (instr(string,":")>=0)
+        {
+          strncpy(session[current_session].socket_host,string,instr(string,":"));
+          session[current_session].socket_host[instr(string,":")]='\0';
+          session[current_session].socket_port=atoi(string+instr(string,":")+1);
+        }
+        else
+        {
+          strcpy(session[current_session].socket_host,string);
+          session[current_session].socket_port=23;
+        }
+      }
+
+      // if the port is <1, then it's either invalid or was too big and got wrapped
+      if (session[current_session].socket_port<1)
+      {
+        generror(lookup("InvalidPort"));
+        return;
+      }
+
+      session[current_session].socket_handle=0;
+      session[current_session].socket_state=NETTLE_SESSION_RESOLVE;
+
+      close_window(open);
+
+      break;
+    case NETTLE_TASKWINDOW:
+      strcpy(string,read_icon_data(open,7));
+      if (strlen(string)==0)
+      {
+        generror(lookup("InvalidComm"));
+        return;
+      }
+
+      // start the task window
+      {
+        char temp_string[1024];
+        sprintf(temp_string,"%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X \
+        		     -txt &%X",string,task_handle,current_session);
+
+        regs.r[0]=(int) temp_string;
+        _kernel_swi(Wimp_StartTask, &regs, &regs);
+      }
+
+      // set ECHO bit to true
+      session[current_session].session_flags[1]=true;
+
+      close_window(open);
+
+      break;
+  }
+
+  // set all the attributes to their defaults
+  session[current_session].terminal_size_x=80;
+  session[current_session].terminal_size_y=24;
+  session[current_session].scrollback=96;
+  session[current_session].title=malloc(256);
+  strcpy(session[current_session].title,"");
+  session[current_session].assigned_area=malloc(session[current_session].terminal_size_x*
+                                                (session[current_session].terminal_size_y+
+                                                 session[current_session].scrollback)*4);
+  session[current_session].xpos=0;
+  session[current_session].ypos=session[current_session].scrollback;
+  session[current_session].connection_type=connection_type;
+  session[current_session].terminal_type=terminal_type;
+  reset_terminal(current_session);
+
+  // clear out the assigned area with black bg, white fg, no flags and ' '
+  {
+    int loop_limit=((session[current_session].terminal_size_x)*
+                   (session[current_session].terminal_size_y+
+                    session[current_session].scrollback)*4);
+
+    for (loop=0; loop<loop_limit; loop+=4)
+    {
+      write_assigned(current_session,loop,7,0,0,32);
+    }
+  }
+
+  // create tabs
+  session[current_session].number_of_tabs=0;
+  for (loop=0; loop<session[current_session].terminal_size_x; loop+=8)
+  {
+    session[current_session].tabs[session[current_session].number_of_tabs]=loop;
+    session[current_session].number_of_tabs++;
+  }
+
+  // if line editor is turned on, allocate all the lineeditor space
+  if (line_editor)
+  {
+    int loop;
+    session[current_session].line_editor_history=malloc(line_editor_size*512*sizeof(char));
+    session[current_session].line_editor_position=0;
+    session[current_session].line_editor_total=1;
+
+    for (loop=0; loop<line_editor_size; loop++)
+    {
+      strcpy(session[current_session].line_editor_history+(loop*512),"");
+    }
+  }
+
+  // and make new windows
+  {
+    int block[40];
+
+    block[0]=terminal;
+
+    regs.r[1]=((int) block)+1;
+    _kernel_swi(Wimp_GetWindowInfo, &regs, &regs);
+
+    block[2]=block[4]-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
+    block[3]=block[1]+(session[current_session].terminal_size_x*redraw.r_charw*2);
+    block[6]=-((session[current_session].terminal_size_y+session[current_session].scrollback)
+               *(redraw.r_charh*2*zap_yeig));
+    block[12]=-((session[current_session].terminal_size_y+session[current_session].scrollback)
+                 *(redraw.r_charh*2*zap_yeig));
+    block[13]=session[current_session].terminal_size_x*redraw.r_charw*2;
+    block[19]=(int) session[current_session].title;
+
+
+    regs.r[1]=((int) block)+4;
+    _kernel_swi(Wimp_CreateWindow, &regs, &regs);
+    session[current_session].window_handle=regs.r[0];
+
+    set_title_bar(session[current_session].window_handle,"nettle");
+
+    if (line_editor)
+    {
+      block[0]=pane;
+
+      regs.r[1]=(int) block;
+      _kernel_swi(Wimp_GetWindowInfo, &regs, &regs);
+
+      regs.r[1]=((int) block)+4;
+      _kernel_raise_error(_kernel_swi(Wimp_CreateWindow, &regs, &regs));
+
+      session[current_session].pane_handle=regs.r[0];
+    }
+
+    open_window(session[current_session].window_handle,false);
+  }
+
+  if (line_editor)
+  {
+    set_caret_position(session[current_session].pane_handle,1,-1,
+				strlen(read_icon_data(session[current_session].pane_handle,1)));
+  }
+  else
+  {
+    set_caret_position(session[current_session].window_handle,-1,-1,-1);
+  }
+
+  switch (connection_type)
+  {
+    case NETTLE_TELNET:
+      set_title_bar(session[current_session].window_handle,"nettle (Connecting)");
+      write_out_string(current_session,"nettle: Looking up host ");
+      write_out_string(current_session,session[current_session].socket_host);
+      write_out_string(current_session,"...\r\n");
+      break;
+  }
+
+  // make a ZapRedraw area big enough - note: the assembly is quite inefficient, so writes out
+  // the stuff to change the colour every 'character', which means typically each character
+  // takes up 5 bytes, so 6 is a number >5. Basically if you start getting screens full of
+  // graphics characters and stuff, 6 isn't enough. Possibly the draw routine should stop
+  // writing when it falls outside the area, and the number returned at the end - it could
+  // make a larger buffer, but not done yet.
+
+  if (size_of_zapredraw_area<(session[current_session].terminal_size_x*
+                              (session[current_session].terminal_size_y+
+                               session[current_session].scrollback)*6)) // 6 is 'some value'
+  {
+    size_of_zapredraw_area=(session[current_session].terminal_size_x*
+                              (session[current_session].terminal_size_y+
+                               session[current_session].scrollback)*6); // same here
+
+    zapredraw_area=realloc(zapredraw_area,size_of_zapredraw_area);
+
+  }
+
+  current_session++;
+}
+
+void write_out_string(int session_handle, char *string)
+{
+  write_out_data(session_handle,string,strlen(string));
+}
+
+void write_out_data(int session_handle, char *data, int length_data)
+{
+  int loop,calc,zap_yeig;
+  char cursor_flags;
+
+  if (length_data==0) { return; }
+
+  calc=get_cursor_position(session_handle);
+
+  // get the cursor flags
+  cursor_flags=read_assigned_flags(session_handle, calc) &
+  						     (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
+
+  // if the cursor flags don't have cursor set, make it so
+  if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
+  {
+    cursor_flags=(cursor_flags | (NETTLE_FLAG_CURSOR));
+  }
+
+  // remove the cursor from the position
+  write_assigned_flags(session_handle, calc, read_assigned_flags(session_handle,calc) &
+  					~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
+
+  loop=0;
+  while (loop<length_data)
+  {
+    // log the byte
+    log_byte(data[loop]);
+
+    //fclose(log_file);
+    //log_file=0;
+
+    // process the current byte at this position
+    process_data(data[loop],session_handle);
+
+    loop++;
+  }
+
+  calc=get_cursor_position(session_handle);
+
+  // OR back in the cursor flags
+  if (session[session_handle].other_session_flags & NETTLE_OTHER_CURSOR_VIS)
+  {
+    write_assigned_flags(session_handle, calc, read_assigned_flags(session_handle, calc)
+    										 | cursor_flags);
+  }
+
+  regs.r[0]=-1;
+  regs.r[1]=5;
+  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
+  zap_yeig=regs.r[2];
+
+  // force the selection back on (it may have got overwritten by new data)
+  refresh_selection_set();
+
+  // and redraw the window
+  force_redraw(session[session_handle].window_handle,0,
+               (-session[session_handle].terminal_size_y-session[session_handle].scrollback)*
+               redraw.r_charh*2*zap_yeig,
+                      session[session_handle].terminal_size_x*redraw.r_charw*2,0);
+}
+
+
+void remove_session(int session_handle)
+{
+  if (session[session_handle].socket_handle!=0)
+  {
+    switch (session[session_handle].connection_type)
+    {
+      case NETTLE_TELNET:
+        socket_close(session[session_handle].socket_handle);
+        break;
+      case NETTLE_TASKWINDOW:
+        {
+          // terminate the taskwindow
+          int block[5];
+          block[0]=20;
+          block[3]=0;
+          block[4]=0x808C4;
+
+          regs.r[0]=17;
+          regs.r[1]=(int) block;
+          regs.r[2]=session[session_handle].socket_handle;
+
+          _kernel_swi(Wimp_SendMessage, &regs, &regs);
+        }
+        break;
+    }
+  }
+
+  {
+    // delete the windows
+    int block[1];
+
+    block[0]=session[session_handle].window_handle;
+
+    regs.r[1]=(int) block;
+    _kernel_swi(Wimp_DeleteWindow, &regs, &regs);
+
+    if (line_editor)
+    {
+      block[0]=session[session_handle].pane_handle;
+
+      regs.r[1]=(int) block;
+      _kernel_swi(Wimp_DeleteWindow, &regs, &regs);
+    }
+  }
+
+  // free lineeditor space
+  if (line_editor)
+  {
+    free(session[session_handle].line_editor_history);
+  }
+
+  // free the assigned area and title
+  free(session[session_handle].assigned_area);
+  free(session[session_handle].title);
+
+  {
+    // shuffle down all the other data
+    int loop;
+    for (loop=session_handle; loop<current_session-1; loop++)
+    {
+      session[loop].window_handle=session[loop+1].window_handle;
+      session[loop].pane_handle=session[loop+1].pane_handle;
+      session[loop].assigned_area=session[loop+1].assigned_area;
+      session[loop].terminal_type=session[loop+1].terminal_type;
+      session[loop].xpos=session[loop+1].xpos;
+      session[loop].ypos=session[loop+1].ypos;
+      session[loop].terminal_size_x=session[loop+1].terminal_size_x;
+      session[loop].terminal_size_y=session[loop+1].terminal_size_y;
+      session[loop].scrollback=session[loop+1].scrollback;
+      session[loop].socket_handle=session[loop+1].socket_handle;
+      strcpy(session[loop].socket_host,session[loop+1].socket_host);
+      session[loop].socket_port=session[loop+1].socket_port;
+      session[loop].socket_ip=session[loop+1].socket_ip;
+      session[loop].socket_state=session[loop+1].socket_state;
+      session[loop].current_fg=session[loop+1].current_fg;
+      session[loop].current_bg=session[loop+1].current_bg;
+      session[loop].current_flags=session[loop+1].current_flags;
+      session[loop].title=session[loop+1].title;
+      {
+        int loop_escape;
+        for (loop_escape=0; loop_escape<session[loop+1].escape_string_length; loop_escape++)
+        {
+          session[loop].escape_string[loop_escape]=session[loop+1].escape_string[loop_escape];
+        }
+      }
+      session[loop].escape_string_length=session[loop+1].escape_string_length;
+      session[loop].escape_state=session[loop+1].escape_state;
+      {
+        int loop_flags;
+        for (loop_flags=0; loop_flags<256; loop_flags++)
+        {
+          session[loop].session_flags[loop_flags]=session[loop+1].session_flags[loop_flags];
+        }
+      }
+      session[loop].scroll_start=session[loop+1].scroll_start;
+      session[loop].scroll_end=session[loop+1].scroll_end;
+      session[loop].other_session_flags=session[loop+1].other_session_flags;
+      session[loop].connection_type=session[loop+1].connection_type;
+      session[loop].old_xpos=session[loop+1].old_xpos;
+      session[loop].old_ypos=session[loop+1].old_ypos;
+      session[loop].line_editor_history=session[loop+1].line_editor_history;
+      session[loop].line_editor_position=session[loop+1].line_editor_position;
+      session[loop].line_editor_total=session[loop+1].line_editor_total;
+      strcpy(session[loop].line_editor_buffer,session[loop+1].line_editor_buffer);
+    }
+  }
+
+  // cancel the selection if there was one in this session
+  if (selection_session==session_handle)
+  {
+    selection_session=-1;
+  }
+
+  // or if it was above this session, shuffle it down
+  if (selection_session>session_handle)
+  {
+    selection_session--;
+  }
+
+  current_session--;
+}
+
+void nettle_senddata(int session_handle, char *data, int length)
+{
+  if (socket_from_file==true)
+  {
+    return;
+  }
+
+  switch (session[session_handle].connection_type)
+  {
+    case NETTLE_TELNET:
+      // just use socket_senddata
+      socket_senddata(session[session_handle].socket_handle,data,length);
+      break;
+    case NETTLE_TASKWINDOW:
+      {
+        // send a WIMP message
+        int loop=0;
+        int *block=malloc((27+length) & ~3);
+
+        while (loop<length)
+        {
+          ((char *)block)[24+loop]=data[loop];
+          loop++;
+        }
+
+        block[0]=(27+length) & ~3;
+        block[3]=0;
+        block[4]=0x808C0;
+        block[5]=length;
+
+        regs.r[0]=17;
+        regs.r[1]=(int) block;
+        regs.r[2]=session[session_handle].socket_handle;
+        _kernel_swi(Wimp_SendMessage, &regs, &regs);
+
+        free(block);
+      }
+      break;
+  }
+}
+
+void reset_terminal(int session_handle)
+{
+  session[session_handle].other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE;
+  session[session_handle].current_fg=7;
+  session[session_handle].current_bg=0;
+  session[session_handle].current_flags=0;
+  session[session_handle].escape_string_length=0;
+  session[session_handle].escape_state=NETTLE_ESCAPE_NONE;
+  session[session_handle].scroll_start=1;
+  session[session_handle].scroll_end=session[session_handle].terminal_size_y;
+  session[session_handle].character_set=NETTLE_CHSET_G0;
+
+  session[session_handle].character_set_g0=NETTLE_CHSET_US;
+  session[session_handle].character_set_g1=NETTLE_CHSET_US;
+  session[session_handle].character_set_g2=NETTLE_CHSET_US;
+  session[session_handle].character_set_g3=NETTLE_CHSET_US;
+}
+
+void write_assigned(int session_handle,int pointer, char fg, char bg, char flags, char character)
+{
+  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
+    			    session[session_handle].scrollback)*
+    			    session[session_handle].terminal_size_x*4)
+  {
+    printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    generror("Erk");
+    return;
+  }
+
+  *(session[session_handle].assigned_area+(pointer+0))=fg;
+  *(session[session_handle].assigned_area+(pointer+1))=bg;
+  *(session[session_handle].assigned_area+(pointer+2))=flags;
+  *(session[session_handle].assigned_area+(pointer+3))=character;
+}
+
+char read_assigned_flags(int session_handle, int pointer)
+{
+  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
+    			    session[session_handle].scrollback)*
+    			    session[session_handle].terminal_size_x*4)
+  {
+    printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    generror("Erk");
+    return 0;
+  }
+
+  return *(session[session_handle].assigned_area+(pointer+2));
+}
+
+void write_assigned_flags(int session_handle, int pointer, char flags)
+{
+  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
+    			    session[session_handle].scrollback)*
+    			    session[session_handle].terminal_size_x*4)
+  {
+    printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    generror("Erk");
+    return;
+  }
+
+  *(session[session_handle].assigned_area+(pointer+2))=flags;
+}
+
+void write_assigned_character(int session_handle, int pointer, char character)
+{
+  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
+    			    session[session_handle].scrollback)*
+    			    session[session_handle].terminal_size_x*4)
+  {
+    printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    generror("Erk");
+    return;
+  }
+
+  *(session[session_handle].assigned_area+(pointer+3))=character;
+}

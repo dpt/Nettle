@@ -1,0 +1,49 @@
+// Processing code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#ifndef PROCESS_H
+#define PROCESS_H
+
+extern void process_data(char, int);
+
+extern bool process_escape(int);
+
+extern bool process_escape_length_2(int);
+extern bool process_escape_length_3(int);
+extern bool process_escape_length_x(int);
+
+extern int status_positive(int);
+extern int status_negative(int);
+extern void clear_screen(int, int, int, char, char, char, char);
+
+extern void reprocess_position(int);
+extern void reprocess_position_scroll(int);
+
+extern void byte_null(int);
+extern void byte_enquiry(int);
+extern void byte_bell(int);
+extern void byte_backspace(int);
+extern void byte_horizontal_tabulation(int);
+extern void byte_linefeed(int);
+extern void byte_carriage_return(int);
+extern void byte_shift_out(int);
+extern void byte_shift_in(int);
+extern void byte_device_control_1(int);
+extern void byte_device_control_3(int);
+extern void byte_cancel(int);
+extern void byte_substitute(int);
+extern void byte_escape(int);
+extern void byte_delete(int);
+extern void byte_telnet(int);
+extern void byte_default(char, int);
+
+extern void process_wimp_key(int, int);
+extern void process_line_editor(int);
+extern void snap_cursor_to_terminal(int);
+extern int get_cursor_position(int);
+
+extern int decode_key(int, int, char *);
+extern void work_out_character(int, int, char);
+
+#endif

@@ -1,0 +1,26 @@
+// socket.h Header file
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#ifndef SOCKET_H
+#define SOCKET_H
+
+#define Resolver_GetHost   0x46001
+
+#define RESOLVER_FAILED		0
+#define RESOLVER_INPROGRESS	1
+#define RESOLVER_SUCCESS	2
+
+extern char socket_resolvehost(char *, unsigned int *);
+extern int socket_connecttoip(int, int);
+extern int socket_listen(int);
+extern void socket_close(int);
+extern int socket_connected(int);
+extern bool socket_closed(int);
+extern int socket_readdata(int,char *,int);
+extern int socket_readdata_flags(int,char *,int,int);
+extern char *socket_readline(int);
+extern int socket_senddata(int, char *, int);
+extern char *ip_to_string(int);
+
+#endif

@@ -1,0 +1,340 @@
+19/07/2001
+
+Fixed hanging bug - this was due to the escape sequence growing too long - now errors if it is going to break. VT52 mode should be implemented. Fixed socket_resolvehost so that it works properly (ie. that 255.255.255.255 is a valid address, rather than -1 meaning failed to resolve)
+
+18/07/2001
+
+Fixed (hopefully) the bugs in the scrolling code. Also wrote functions which check (theoretically) every read/write to the assigned area, so if it goes outside, it should say Erk. If it goes outside and doesn't say this, then it's broken. I think it is broken though, cos while I was fixing scrolling, Nettle still hung the machine when it went outside the area. Ho hum. Hangs when attempted to enter VT52 mode (which doesn't exist - but still it shouldn't hang)
+Rewrote Nettle using _kernel_swi so that it can compile with gcc (I don't entirely trust the 32-bit CLib).
+
+14/07/2001
+
+Changed some stuff to do with cursor repositioning - means that certain scrolling things work (which incidentally don't in antterm), *but* it may cause other things to break and the entire machine to hang, so if you spot any of these, let me know ;)
+
+And drew a diamond so that one of the vttests looks better. If you can do better, off you go and write the code to do it (c.chardefn).
+
+Implemented tabbing properly. Fixed the line editor (don't free() things before you've finished with them) Tabs are broken - don't increment the wrong variable, it causes hangs, and use the right variable otherwise the tabs aren't defined.
+
+13/07/2001
+
+Fixed make menuconfig! Just needed to implement [xxX ! ;) So scrolling did work in fact. Basic support for inverse video - cursors may disappear, I haven't looked at these yet. Bah, it's fscked - s.zapgen doesn't comply with APCS, so it doesn't work. Rewrote some of the escape routines to work better (eg. [00001;000031m wouldn't work) Reimplemented completely escape handling so that escapes are worked out 'on the fly', rather than guessing when they should finish. This means that things that aren't implemented may break it, but in the long term this is probably a better solution. Made PassF12 determine whether F12 (et al) is passed to telnet or not.
+
+12/07/2001
+
+OK, done a few things lately like implement various things. Certain things now work in vttest. Fixed the lineeditor again. Scrolling still completely fscked. Although in my 'test' scrolling cases, it works fine. Make antterm return its cursor position at each point, and then compare it with where nettle is placed at the same time - this might reveal things.
+
+09/07/2001
+
+Made scrolling down work. Scrolling up should work, but doesn't and I have no idea why (*cry*).
+
+08/07/2001
+
+Now built with TCPIPLibs: - apologies if this causes problems... Fixed all the output code (probably better than it was before). Note that keymap stuff may get rewritten again as I don't think the Wimp codes allow you to differentiate between the keyboard 1-0 and the numeric keypad. Lineeditor is still broken also.
+
+07/07/2001
+
+Changed choices to gerph's choices. Altered zap font loading so it could load fonts from within Nettle (so default without ZapFonts will work). Insertion bugs fixed, so you must now bingle (this accounted for the black square in bottom right of lokkit). VT52 and VT220 are conflicting now, so need to write proper mode stuff to determine what mode we are in.
+
+OK, redid templates to not make terminal type writable. Changed session struct to just hold terminal type, and not keymap. Done wodges of stuff, and I can't be bothered documenting. You'll see it all when it's finished...
+
+Basically I've changed the connection window to handle all connections (and things), and menus are now internationalised. Terminal types can be configured, but currently none of the c.nettle code sets up what the terminal type is, or pays any attention to it. The plan is to split the different term types into eg. c.vt220 etc. and just have c.nettle call the code in each to handle key presses, data etc.
+
+06/07/2001
+
+Added all the things to remove_session to shuffle the new things down (ie. line_editor stuff) Problems with title getting shuffled down - window still pointed to the old title, so when a new window created, windows were sharing the same title. Now malloc the title, and shuffle down the memory for it - should solve it. Fixed problem with c.socket (other than close() and the unfinished function) Fixed bug with line editor sending data even if socket not open. Made it so F12 can go to CLI from line editor. (ie. it only processes if 13, up arrow, or down arrow, not everything as before)
+
+05/07/2001
+
+setting caret was broken because gain_caret always set caret to end of string even if it already had focus, so only do this if pane doesn't already have focus. Rewrote Makefile a bit. Fixed pane code sort of - basically we were reading the outline so we could work out where to put the pane, but the outline is for the window pre-OpenWindow, so is the wrong place. So I'm assuming a toolsprite height of 40 just so pane opens in the right place. Probably can be worked around somehow... Implemented the clicky box fully so it puts the caret where it should be, deletes the writable icon etc. Now just need to write the actual line-editor/history code. Finished writing line editor code. Fixed bug in choices which meant it didn't always read them.
+
+04/07/2001
+
+Wrote icon generation code for the pane(s). Something weird happening with the set caret position - it always sets the position to the end of the string, seemingly regardless of what GetCaretPosition says...
+
+03/07/2001
+
+Fixed pane stuff, although when dragging around, the pane seems to get left behind and then jumps to the window, even though it is opened first. Bizarre.
+
+02/07/2001
+
+Added code to properly attach pane to window. But now input focus is given to the wrong window - eg. if a filer is open, it gets the input rather than the Nettle window. Grr. Found I'd disabled compiler warnings, so re-enabled them, and fixed most of the bugs. c.socket is buggy (apparently close() isn't defined)
+
+01/07/2001
+
+Fixed bug with palette corruption on mode change. Designed a pane window. Added Logging option to the Choices file - if it is 1 then it logs, otherwise doesn't. Saves on recompile anyway. Now added a LineEditor option to the Choices file too! (Note these are case sensitive names - this won't matter once a frontend is put on) Maybe do some more to line editor tomorrow - tired now...
+
+30/06/2001
+
+Implemented partial Choices - reads from Choices:Nettle.Choices or <Nettle$Dir>.Choices.Choices (depending on what boot sequence we have), format is:
+
+ZapFontHi:07x14
+ZapFontLo:08x08
+
+Substitute whatever fonts you like in. Hi is for hi-res modes, Lo for lo-res. Uncovered a bug in zap font loading, if the font didn't exist it looped constantly - fixed now (ie. it falls back to 08x16 inside Nettle). Finished all implementation of saving selections. Fixed saving of selections from bottom right to top left.
+
+28/06/2001
+
+Implemented \x1B 7 and 8 - Save/restore cursor. Changed escape string handling so that it is an array of chars, and that escape_string_length holds the current length. This should avoid problems with strings containing null bytes. Seems to work OK. Wrote my own instr method to accommodate this, but needs testing (need to use some telnet proggy that uses [...H as this is the only code that depends on instr). Added code to remove_session to remove selection_session if it was the session, or -- it if the session selected was above the one being removed. Tidied up the cursor code a bit - stops it writing stuff to the cursor outside the terminal area. reprocess_position should catch any character writes outside the area.
+
+Implemented fantastic scrolling(TM). Fixed some bugs with the way the selection stuff works (IMO it was wrong anyway) Changed it so that click cancels current selection (let me know if you disagree). Made right button be able to start selections too as well as extend existing ones. This now works at last! Found a ! which I changed to ~. Now I shall play NetHack.
+
+27/06/2001
+
+Made changes to cursor code (cursor was off screen, and this caused crashes). Try it and see... Basically if calc is greater than the size of the terminal, it -4s it until it's in the terminal. Not ideal, but it should stop it screwing up. Forgot *4. Fixed now. resize crashes nettle. Probably homing to 999;999 unconditionally is bad. Not sure what resize should actually do... ho hum. *grumbles about ISP*...
+
+[6n implemented (report cursor position), and home to odd places maps to the closest place that actually exists in the terminal, so home to 999;999 actually homes to 80;24 (on 80x24) ie. 79;(scrollback+23) in Nettle coordinates. The \x1B 7 \x1B [ r  at the beginning is a bit odd though, dunno what that does. Ah, I think \x1B 7 saves the cursor, and the r one probably just unsets any scroll area that's been set.
+
+26/06/2001
+
+Discovered ~ rather than !   - means that things are inverted properly (rather than 255-XXX that I was doing before). Wrote the insert code for c.nettle (it might be wrong). Graphics character code implemented (although not all characters defined yet).... Finished defining most of the characters now (which was fun). Anyone want to write ones to generate PI symbols on the fly etc., feel free ;) Note that for most things I haven't bothered implementing case 2 (this means that the font has width between 9 and 16), and you need to work out what bits to OR when it is split across two bytes etc. It can be done, but I can't be bothered really. Or maybe greater than 2 should be done too, but I doubt there's many fonts that wide.
+
+Funky selection stuff implemented!
+
+25/06/2001
+
+Altered bg/fg parsing so that anything other than 30-37m, 40-47m are ignored. Added character definition code, and wrote lose_caret and gain_caret. Defined cursor and blank cursor for characters, others will come later. See if Chocks still has the oddity of it flickering with a caret or something when clicking in the window...
+
+Taskwindows implemented. Plan to change the way these are started later (ie. telnet and taskwindow will start from one window)
+
+And I didn't break the invert code (cough). Fixed now.
+
+24/06/2001
+
+Menus implemented! Funky!
+
+23/06/2001
+
+Fixed bug in 'Home' ( [H ) code, so it actually homes to the right place. Messed up pine and the like. Chocks had a nice picture of some graphical madness for the background - quite what is causing this I dunno - either the clear screen code is clearing with the wrong character, or the zap font area is getting corrupted. Need to look at the log and then add some debugging code to screen clearing if necessary.
+
+22/06/2001
+
+Fixed invert bug. Fixed logging code. Changed val to atoi. Changed instr so it returns -1 on
+fail rather than 0 (as 0 could be possible).
+
+18/06/2001
+
+Implemented telnet protocol. Increased receive buffer size so it works faster.
+
+17/06/2001
+
+Fixed DNS lookup bug (probably). Should return 0 not -1 as it was before.
+Fixed bug in zap font loading for when ZapFontsSource not defined.
+Finished off 'ESCAPE' code in process_escape, still need to implement telnet code.
+
+16/06/2001
+
+Did a bit more work on process_escape.
+
+13/06/2001
+
+Started coding again after post-exams. Started implementation of process_escape. Logging still broken ATM - see TODO file about this (does fclose(file_handle) set file_handle=0 ?). When
+debugging with DDT, will sometimes just die too... reasons?
+
+22/05/2001
+
+Done a bit more... copied across reprocess_position, wrote generror_question and close_window code - still need to port process_escape and remove_session (both c.nettle). null_reason_code needs implemented in c.wimp.
+
+20/05/2001
+
+This is a bit out of date - Zap font loading is all fixed, and window opening is fixed - now displays window full of As which is exciting. Closing windows doesn't yet free up memory like it should. Menus not yet implemented in c.wimp. Sadly, Nettle's memory footprint is slightly larger than ANTTerm's - further efficiencies will be required as it must be smaller. Yay! Made bools chars instead of ints - now it's smaller! ;) Possibly can do better by using ints to represent 32 bits rather than 8 bits for a bit, but this will do for now.
+
+01/05/2001
+
+Began converting into C.
+
+29/04/2001
+
+Altered resize code to resize from the top downwards rather
+than the opposite. Renamed all task references to session since
+the task window concept is a bit out of date (for normal
+sessions)
+
+v0.1304b - 28/04/2001
+
+Unbodged bodge in 18/04/2001, and fixed it properly. When replying
+to telnet negotiation, I was using the same block for sending as
+receiving, so some data got corrupted. D'oh.
+
+Allowed taskwindows to be run in VT220 by right clicking on the
+icon and entering a command. Made it so you can't make terminals
+bigger than their Y size - so toggle size will only resize it
+to eg. 80x24 rather than including the scrollback. Chocks wants
+resizing by dragging rather than the menu thing, so I'll need
+to try and work out how to do that (ie. like Fresco and Oregano
+does)
+
+For some reason SunOS-type machines seem to turn echo on and
+then off again just before you type user/password, so you get
+to see your username twice, and also your password is displayed.
+Dunno what's going on here - maybe I'm responding wrongly to
+telnet requests.
+
+Implemented nettle_senddata, so that for taskwindows/sockets, the
+code is still the same, it's just sending is different. I also
+made checking out spool files work through this, so it doesn't
+moan about bad socket handles.
+
+18/04/2001
+
+Put a bodge in to hopefully resolve failed negotiation with
+SunOS-type machines... (see v0.1296b)
+
+v1.303b - 16/04/2001
+
+Resize code fixed - ZapRedraw_MoveBytes args start in R1, not R0...
+plus my calculations for what to move were wrong in some circumstances,
+so hopefully it should all work now.
+
+v1.302b - 07/04/2001
+
+Finished resize code - untested as yet though. Made FNcheck_calc
+return FALSE always for now - something not quite right...
+OK, the resize code is fscked... will probably fix it when I get back.
+
+04/04/2001
+
+Wrote quit code properly, so open terminal windows don't cause
+it to complain if they're not actually connected to anywhere.
+Changed version to 0.1301 - guess it'll be a while before I
+finish off the resize stuff properly ;) Also finally fixed the
+cursor code so that you can actually see the character through
+the cursor! Woo...
+
+03/04/2001
+
+Implemented [P - whether correctly or not I don't know, but
+the effect seems to be right.
+
+29/03/2001
+
+Fixed invert code so it resets on [0m or [m. Perhaps this
+should also reset other things which it doesn't currently.
+And implemented [4h and [4l so that insert mode works.
+And fixed a bug in [4m type things where it got confused
+about it being a background rather than an underline.
+
+08/03/2001
+
+Fixed memory allocation bug when resizing terminals - need to
+allocate 4* the size of the terminal... d'oh.
+
+Still need to write code to move old memory across to new memory
+though. Then that should be v0.1300b in my opinion.
+
+Fixed some bugs in the colour code - meant [1;3x;4xm type strings
+didn't work.
+
+v0.1299b - 01/03/2001
+
+Resize terminal window function partially implemented. Don't
+use it yet though, at the moment it just uses up memory... ;)
+I think all memory allocation is now dynamic area based (on RPCs).
+
+Fixed bug in [J , [K types - they were deleting too many characters.
+So mutt in theory now works fully! ;)
+
+v0.1298b - 24/02/2001
+
+Wrote hideous cursor generation code. I hate to think about
+doing the actual graphics characters...
+
+v0.1297b - 20/02/2001
+
+Wrote MemLib, which in theory makes Nettle RO3.11 compatible
+again, but need to write FNdynareas to check for dynamic areas
+or not. Still need to re-write bitmap dyn area code using MemLib
+though.
+
+v0.1296b - 14/02/2001
+
+Fixed low-res font code. Due to windows needing to be twice as
+big cos using a low-res font at double height. Bug in telnet
+negotiation - SunOS machines send IAC DO NAWS , then
+IAC DO NAWS 24 IAC SE
+
+Which ain't right as far as I can see. Unless it's some older
+version of the protocol. But AFAIK all IAC things are 3 bytes
+long unless it's IAC SB in which case it continues until IAC
+SE. Which isn't true in this case. Hmm. I'll leave this broken
+for now.
+
+Page up and page down should now be the right way round.
+
+08/02/2001
+
+Improved Zap font handling to allow redirection styley files.
+Tried to add code to use a different font for low-res modes,
+which 'seems' to work, but no fonts appear to be visible
+bizarrely... Ah well.
+
+0.1295b - 06/02/2001
+
+Now has proper-ish Zap font font handling.
+
+0.1294b - 28/01/2001
+
+Fixed 'lost caret' cursor.
+
+0.1293b - 27/01/2001
+
+mutt should now work correctly (or it seems to), pine should also work, but this is untested. This was due to me forgetting to implement [A [B [C [D , although I had implemented [ Pn A etc. Sorry ;) Cursor handling has now been fixed better - previously it would erase the flags of the square it was in, this should now be OK in theory. Also, I redid the icon and called it Nettle instead of ArcTalk cos I think it sounds better, and is an anagram of Telnet ;)
+
+Scrolling areas still not done ;) Graphics characters might get done after I've had a proper read through the ZapRedraw docs about how to define your own characters - also then the non-active cursor might look correct ;)
+
+Also in this version, the key codes are now configurable from !Nettle.Resources.TransMake - I may have mentioned this already. I've stuck a few key definitions in (based on experimentation). I think page up and page down might be the wrong way round, but due to my current lack of internet access most of the day, I haven't been able to test it fully of late. And I haven't found a complete list of what all the keys should send to the server, which is why quite a few are probably missing. Anyone know of any cheap unmetered ISPs now that RedHotAnt have gone down the tubes?
+
+0.129b - 07/01/2001
+
+Didn't get anything done as planned over Christmas due to circumstances...
+
+Invert now works correctly - was using AND instead of OR - doh!
+
+Still no scrolling - this'll get done once I can be bothered doing the maths to work out what needs to be scrolled
+
+20/11/2000
+
+Created windows to allow resizing of the terminal window, and colour selection, but neither implemented yet. Probably will use ColourPicker for colour selection rather than own stuff, but we'll see. Added Choices item to the main menu.
+
+0.128b - 19/11/2000
+
+Stopped output to screen being done by write_out_data
+Now cannot be quit immediately if sessions are currently open (by session, I mean window - even if it's not doing anything), needs user confirmation to quit
+Cursor code still slightly wrong - you can't see characters through the cursor which is wrong... need to look at ZapRedraw docs again ;)
+
+0.127b - 18/11/2000
+
+implemented quite a lot more commands (which may or may not work), and improved the logging code so it wasn't dreadfully slow. Scrolling areas aren't yet implemented. Inverted text should now be coloured correctly, although I haven't had a chance to test any of these.
+
+Known flaws:
+
+write_out_data shouldn't be used for data entered at the keyboard, instead should look at the data to be sent, and translate it to text - eg. CHR$27 -> ^[ etc.
+
+Get the entire keymap done properly for TransMake in !ArcTalk.Resources
+
+Still memory bugs somewhere... ;(
+
+A better name?
+
+0.126b - 18/11/2000
+
+cursor should now work correctly when positioned between two characters (although the highlighting may still be wrong, I haven't had time to check yet)
+
+0.122b - some time ago...
+
+colour coding done, basic telnet negotiation implemented
+
+Some time before that
+
+Started the rendering engine from scratch - mind you, before this point, ArcTalk seemed a lot more stable...
+
+Some time before that
+
+Re-wrote taskwindow code as proper socket code (which is why there are task_handle% references in the code)
+
+Some time before that
+
+Re-wrote really bad display routines as ZapRedraw routines
+
+../10/1999
+
+Started writing telnet client

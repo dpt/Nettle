@@ -1,0 +1,658 @@
+// Zap font character definitions
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#include "generic.h"
+#include "globals.h"
+
+#include "chardefn.h"
+#include "misc.h"
+
+// Define Zap graphics characters
+
+void define_zap_chars(int *int_area, int char_size, int width, int height)
+{
+  int loop;
+  int step=char_size/height;
+  char *area=(char *) int_area;
+  // define characters
+
+  //	Cursor		0x100
+
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("11111111");
+        break;
+      case 2:
+        area[loop+0]=binary("11111111");
+        area[loop+1]=binary("11111111");
+        break;
+    }
+  }
+  area+=char_size;
+
+  //	Blank cursor	0x101
+  switch (step)
+  {
+    case 1:
+      area[0]=binary("11111111");
+      break;
+    case 2:
+      area[0]=binary("11111111");
+      area[1]=binary("11111111");
+      break;
+  }
+
+  for (loop=step; loop<(char_size-step); loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000001") | (1<<(width-1));
+        break;
+      case 2:
+        area[loop+0]=binary("00000001");
+        area[loop+1]=binary("00000000") | (1<<(width-9));
+        break;
+    }
+  }
+
+  switch (step)
+  {
+    case 1:
+      area[loop+0]=binary("11111111");
+      break;
+    case 2:
+      area[loop+0]=binary("11111111");
+      area[loop+1]=binary("11111111");
+      break;
+  }
+  area+=char_size;
+
+  //	Diamond		0x102
+  {
+    char string[8];
+
+    strcpy(string,"00000000");
+    string[(width/2)+1]='1';
+
+    for (loop=0; loop<char_size/2; loop+=(2*step))
+    {
+      switch (step)
+      {
+        case 1:
+          area[loop+0]=binary(string);
+          area[loop+step+0]=binary(string);
+          break;
+        case 2:
+          // Not implemented
+          printf("Attempt to use a font of width > 8\n");
+         break;
+      }
+
+      {
+        int one_loop=0;
+        while (string[one_loop]!='1' && one_loop<width)
+        {
+          one_loop++;
+        }
+
+        if (one_loop<width && string[one_loop]=='1')
+        {
+          string[one_loop-1]='1';
+        }
+
+        while (string[one_loop]!='0' && one_loop<width)
+        {
+          one_loop++;
+        }
+
+        if (one_loop<width && string[one_loop]=='0')
+        {
+          string[one_loop]='1';
+        }
+      }
+    }
+
+    strcpy(string,"00000000");
+    string[(width/2)+1]='1';
+
+    for (loop=char_size-step; loop>(char_size/2)-step; loop-=(2*step))
+    {
+      switch (step)
+      {
+        case 1:
+          area[loop+0]=binary(string);
+          area[loop+step+0]=binary(string);
+          break;
+        case 2:
+          // Not implemented
+          printf("Attempt to use a font of width > 8\n");
+         break;
+      }
+
+      {
+        int one_loop=0;
+        while (string[one_loop]!='1' && one_loop<width)
+        {
+          one_loop++;
+        }
+
+        if (one_loop<width && string[one_loop]=='1')
+        {
+          string[one_loop-1]='1';
+        }
+
+        while (string[one_loop]!='0' && one_loop<width)
+        {
+          one_loop++;
+        }
+
+        if (one_loop<width && string[one_loop]=='0')
+        {
+          string[one_loop]='1';
+        }
+      }
+    }
+  }
+  area+=char_size;
+
+  //	Checkerboard	0x103
+  area+=char_size;
+
+  //	H topleft/T bottomright	0x104
+  area+=char_size;
+
+  //	F topleft/F bottomright	0x105
+  area+=char_size;
+
+  //	C topleft/R bottomright	0x106
+  area+=char_size;
+
+  //	L topleft/F bottomright	0x107
+  area+=char_size;
+
+  //	N topleft/L bottomright	0x108
+  area+=char_size;
+
+  //	V topleft/T bottomright	0x109
+  area+=char_size;
+
+  //	_| (bottomright of box)	0x10A
+  for (loop=0; loop<(char_size/2); loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	-, (topright of box)	0x10B
+  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  for (loop=0; loop<(char_size/2); loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	,- (topleft of box)	0x10C
+  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  for (loop=0; loop<(char_size/2); loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	|_ (bottomleft of box)	0x10D
+  for (loop=0; loop<(char_size/2); loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+
+  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	-|- (crossing lines)	0x10E
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("11111111");
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Horiz line - scan 1	0x10F
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[0]=binary("11111111");
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Scan 3			0x110
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[(step+(step*height/2))/2]=binary("11111111");
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Scan 5			0x111
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("11111111");
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Scan 7			0x112
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[((step*height/2)+(char_size-step))/2]=binary("11111111");
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Scan 9			0x113
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[char_size-step]=binary("11111111");
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Left T |-		0x114
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Right T -|	0x115
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Bottom T	0x116
+  for (loop=0; loop<(char_size/2); loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+
+  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
+  {
+    switch(step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("11111111");
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  //	Top T	T	0x117
+  for (loop=0; loop<(char_size/2); loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000");
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+
+  switch (step)
+  {
+    case 1:
+      area[step*height/2]=binary("11111111");
+      break;
+    case 2:
+      // Not implemented
+      printf("Attempt to use a font of width > 8\n");
+      break;
+  }
+  area+=char_size;
+
+  for (loop=0; loop<char_size; loop+=step)
+  {
+    switch (step)
+    {
+      case 1:
+        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        break;
+      case 2:
+        // Not implemented
+        printf("Attempt to use a font of width > 8\n");
+        break;
+    }
+  }
+  area+=char_size;
+
+  //	<=	0x119
+  area+=char_size;
+
+  //	>=	0x11A
+  area+=char_size;
+
+  //	PI	0x11B
+  area+=char_size;
+
+  //	Not equal	0x11C
+  area+=char_size;
+}
+

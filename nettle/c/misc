@@ -1,0 +1,186 @@
+// Miscellaneous code
+// by A. Macfarlane Smith
+// (C) Archifishal Software 2001
+
+#include "generic.h"
+#include "globals.h"
+
+#include "misc.h"
+
+// Looks up a messagetrans token
+
+char *lookup(char *token)
+{
+  regs.r[0]=(int) messagetrans_area;
+  regs.r[1]=(int) token;
+  regs.r[2]=(int) temp_block;
+  regs.r[3]=1024;
+
+  _kernel_swi(MessageTrans_Lookup, &regs, &regs);
+
+  return (char *)temp_block;
+}
+
+// Gets a system variable's contents
+
+char *get_system_variable(char *variable, char *variable_name)
+{
+  char *string;
+  string=getenv(variable_name);
+
+  // if it exists, copy it into variable
+  if (string!=0)
+  {
+    strncpy(variable,string,sizeof(variable));
+  }
+  else
+  {
+    strcpy(variable,"");
+  }
+
+  return variable;
+}
+
+// Converts a string into a binary integer
+
+int binary(char *string)
+{
+  int value;
+
+  while (*string!=0)
+  {
+    value*=2;
+    if (*string=='1')
+    {
+      value++;
+    }
+    string++;
+  }
+
+  return value;
+}
+
+// Implementation of BASIC's INSTR command
+int instr(char *string, char *test)
+{
+  return esc_instr(string,test,strlen(string));
+}
+
+// Implementation of BASIC's INSTR command with the length of the string too
+int esc_instr(char *string, char *test, int length)
+{
+  int loop;
+
+  for (loop=0; loop<length; loop++)
+  {
+    int loop2=0;
+    while (string[loop+loop2]==test[loop2] && loop2<strlen(test))
+    {
+      loop2++;
+    }
+    if (loop2==strlen(test))
+    {
+      return loop;
+    }
+  }
+
+  return -1;
+}
+
+// read a 'string'
+char *read_mem(char *dest, char *source)
+{
+  int loop=0;
+
+  while (source[loop]!='\0' && source[loop]!='\x0A' && source[loop]!='\x0D')
+  {
+    dest[loop]=source[loop];
+    loop++;
+  }
+
+  dest[loop]='\0';
+
+  return dest;
+}
+
+// log a string to the log file
+void log_string(char *string)
+{
+  if (!logging) { return; }
+
+  if (log_file==0)
+  {
+    log_file=fopen("<Nettle$Dir>.Log","a");
+  }
+  if (log_file==0)
+  {
+    log_file=fopen("<Nettle$Dir>.Log","w");
+  }
+  fputs(string,log_file);
+
+  _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);
+  log_file_time=regs.r[0];
+}
+
+// log a byte to the log file
+void log_byte(char character)
+{
+  if (!logging) { return; }
+
+  if (log_file==0)
+  {
+    log_file=fopen("<Nettle$Dir>.Log","a");
+  }
+  if (log_file==0)
+  {
+    log_file=fopen("<Nettle$Dir>.Log","w");
+  }
+  fputc(character,log_file);
+
+  _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);
+  log_file_time=regs.r[0];
+}
+
+// close the log file if we haven't used it for 5 seconds
+void close_log(void)
+{
+  int current_time;
+
+  if (!logging) { return; }
+  if (log_file==0) { return; }
+
+  _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);
+  current_time=regs.r[0];
+
+  if (current_time>log_file_time+500)
+  {
+    fclose(log_file);
+    log_file=0;
+  }
+}
+
+// Get what country we're in
+char *get_country(char *string)
+{
+  int country_number;
+
+  strcpy(string,"");
+
+  regs.r[0]=0x46;
+  regs.r[1]=127;
+
+  if (_kernel_swi(OS_Byte,&regs,&regs)==0)
+  {
+    country_number=regs.r[2];
+
+    regs.r[1]=0x43;
+    regs.r[2]=2;
+    regs.r[3]=country_number;
+    regs.r[4]=(int) string;
+    regs.r[5]=sizeof(string);
+
+    _kernel_swi(OS_ServiceCall,&regs, &regs);
+  }
+
+  return string;
+}
