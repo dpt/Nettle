@@ -783,7 +783,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
               {
                 _kernel_swi(OS_WriteI + 7, &regs, &regs);
               }
-              session[session_handle].line_editor_position+=1;
+              session[session_handle].line_editor_position++;
 
               if (session[session_handle].line_editor_position>
                 				session[session_handle].line_editor_total-1)
@@ -1869,7 +1869,7 @@ void drag_start(int window_handle, int icon_handle)
 
   if (regs.r[2] & 1)
   {
-    regs.r[0]=binary("011000101");
+    regs.r[0]=0xc5;
     regs.r[1]=1;
     regs.r[2]=(int) string;
     regs.r[3]=(int) block+8;

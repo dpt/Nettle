@@ -24,11 +24,11 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("11111111");
+        area[loop+0]=0xff;
         break;
       case 2:
-        area[loop+0]=binary("11111111");
-        area[loop+1]=binary("11111111");
+        area[loop+0]=0xff;
+        area[loop+1]=0xff;
         break;
     }
   }
@@ -38,11 +38,11 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[0]=binary("11111111");
+      area[0]=0xff;
       break;
     case 2:
-      area[0]=binary("11111111");
-      area[1]=binary("11111111");
+      area[0]=0xff;
+      area[1]=0xff;
       break;
   }
 
@@ -51,11 +51,11 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000001") | (1<<(width-1));
+        area[loop+0]=0x01 | (1<<(width-1));
         break;
       case 2:
-        area[loop+0]=binary("00000001");
-        area[loop+1]=binary("00000000") | (1<<(width-9));
+        area[loop+0]=0x01;
+        area[loop+1]=0x00 | (1<<(width-9));
         break;
     }
   }
@@ -63,11 +63,11 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[loop+0]=binary("11111111");
+      area[loop+0]=0xff;
       break;
     case 2:
-      area[loop+0]=binary("11111111");
-      area[loop+1]=binary("11111111");
+      area[loop+0]=0xff;
+      area[loop+1]=0xff;
       break;
   }
   area+=char_size;
@@ -187,7 +187,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -200,7 +200,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -211,7 +211,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
+      area[step*height/2]=0x00 | (((1<<width /2)*2)-1);
       break;
     case 2:
       /* Not implemented */
@@ -226,7 +226,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -239,7 +239,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -250,7 +250,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
+      area[step*height/2]=0x00 | (((1<<width /2)*2)-1);
       break;
     case 2:
       /* Not implemented */
@@ -265,7 +265,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -278,7 +278,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -290,7 +290,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
+      area[step*height/2]=0x00 | ~(((1<<width /2)/2)-1);
       break;
     case 2:
       /* Not implemented */
@@ -305,7 +305,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -319,7 +319,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -331,7 +331,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
+      area[step*height/2]=0x00 | ~(((1<<width /2)/2)-1);
       break;
     case 2:
       /* Not implemented */
@@ -346,7 +346,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -357,7 +357,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("11111111");
+      area[step*height/2]=0xff;
       break;
     case 2:
       /* Not implemented */
@@ -372,7 +372,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -383,7 +383,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[0]=binary("11111111");
+      area[0]=0xff;
       break;
     case 2:
       /* Not implemented */
@@ -398,7 +398,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -409,7 +409,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[(step+(step*height/2))/2]=binary("11111111");
+      area[(step+(step*height/2))/2]=0xff;
       break;
     case 2:
       /* Not implemented */
@@ -424,7 +424,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -435,7 +435,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("11111111");
+      area[step*height/2]=0xff;
       break;
     case 2:
       /* Not implemented */
@@ -450,7 +450,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -461,7 +461,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[((step*height/2)+(char_size-step))/2]=binary("11111111");
+      area[((step*height/2)+(char_size-step))/2]=0xff;
       break;
     case 2:
       /* Not implemented */
@@ -476,7 +476,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -487,7 +487,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[char_size-step]=binary("11111111");
+      area[char_size-step]=0xff;
       break;
     case 2:
       /* Not implemented */
@@ -502,7 +502,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -513,7 +513,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
+      area[step*height/2]=0x00 | ~(((1<<width /2)/2)-1);
       break;
     case 2:
       /* Not implemented */
@@ -528,7 +528,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -539,7 +539,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
+      area[step*height/2]=0x00 | (((1<<width /2)*2)-1);
       break;
     case 2:
       /* Not implemented */
@@ -554,7 +554,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -568,7 +568,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch(step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -579,7 +579,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("11111111");
+      area[step*height/2]=0xff;
       break;
     case 2:
       /* Not implemented */
@@ -594,7 +594,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000");
+        area[loop+0]=0x00;
         break;
       case 2:
         /* Not implemented */
@@ -607,7 +607,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */
@@ -619,7 +619,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   switch (step)
   {
     case 1:
-      area[step*height/2]=binary("11111111");
+      area[step*height/2]=0xff;
       break;
     case 2:
       /* Not implemented */
@@ -633,7 +633,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     switch (step)
     {
       case 1:
-        area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
+        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
         /* Not implemented */

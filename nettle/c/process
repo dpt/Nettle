@@ -630,7 +630,7 @@ bool process_escape_length_x(int session_handle)
                 switch (move)
                 {
                   case 0:
-                    session[session_handle].xpos+=1;
+                    session[session_handle].xpos++;
                     break;
                   default:
                     session[session_handle].xpos+=move;
@@ -2145,7 +2145,7 @@ void process_line_editor(int session_handle)
   _kernel_swi(Wimp_SetCaretPosition, &regs, &regs);
 
   session[session_handle].line_editor_position=0;
-  session[session_handle].line_editor_total+=1;
+  session[session_handle].line_editor_total++;
 
   if (session[session_handle].line_editor_total>line_editor_size)
   {

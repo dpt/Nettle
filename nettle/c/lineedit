@@ -102,11 +102,11 @@ void create_line_editor_icons(int session_handle, int width)
 
   if (selected)
   {
-    block[5]=binary("00010111001000001011000100010011");
+    block[5]=0x1720B113;
   }
   else
   {
-    block[5]=binary("00010111000000001011000100010011");
+    block[5]=0x1700B113;
   }
   block[6]=(int) line_editor_icon_text;
   block[7]=(int) line_editor_icon_sprite;
@@ -122,11 +122,11 @@ void create_line_editor_icons(int session_handle, int width)
   block[4]=4;
   if (selected)
   {
-    block[5]=binary("00000111000000001111000100110101");
+    block[5]=0x0700f135;
   }
   else
   {
-    block[5]=binary("00000111100000001111000100110101");
+    block[5]=0x0780f135;
   }
   block[6]=(int) session[session_handle].line_editor_buffer;
   block[7]=(int) line_editor_buffer_indirected;

@@ -415,7 +415,7 @@ void create_icon_bar_icon(void)
   block[2]=0;  /* min y */
   block[3]=68; /* max x */
   block[4]=68; /* max y */
-  block[5]=binary("10111000000000011000100011010");
+  block[5]=0x1700311a;
   block[6]=(int) application_icon_name;
   block[7]=(int) sprite_area;
   block[8]=strlen(application_icon_name);
