@@ -36,6 +36,7 @@
 #include "termlist.h"
 #include "wimp.h"
 #include "zapredraw.h"
+#include "templ.h"
 
 #define URI_Dispatch   0x4E381
 #define URI_RequestURI 0x4E382
@@ -419,22 +420,21 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     {
       switch (whichicon_block.icons[counter])
       {
-        case 4:
-          /* terminal selected */
+        case icon_choices_size:
           if (window_id_to_open==0)
             window_id_to_open=win_paneterm;
           else
             generror("More than one 'window' icon set in choices.", false);
           break;
-        case 5:
-          /* fonts selected */
+
+        case icon_choices_colour:
           if (window_id_to_open==0)
             window_id_to_open=win_panefonts;
           else
             generror("More than one 'window' icon set in choices.", false);
           break;
-        case 6:
-          /* hotlist selected */
+
+        case icon_choices_hotlist:
           if (window_id_to_open==0)
             window_id_to_open=win_panehot;
           else
@@ -602,16 +602,19 @@ static void win_open_click(int x, int y, int buttons, int icon_handle)
 {
   switch (icon_handle)
   {
-    case 2:
+    case icon_open_cancel:
       close_window(win_open);
       break;
-    case 3:
+
+    case icon_open_connect:
       start_connection();
       break;
-    case 5:
+
+    case icon_open_contypebut:
       create_connection_menu();
       break;
-    case 10:
+
+    case icon_open_termtypebut:
       create_terminal_type_menu();
       break;
   }
@@ -621,22 +624,22 @@ static void win_save_click(int x, int y, int buttons, int icon_handle)
 {
   switch (icon_handle)
   {
-    case 0:
+    case icon_save_cancel:
       _swi(Wimp_CreateMenu, _IN(1), -1);
       break;
 
-    case 1:
+    case icon_save_save:
       {
 	char save_data[1024];
 
-	read_icon_data(win_save, 2, save_data, sizeof(save_data));
+	read_icon_data(win_save, icon_save_filename, save_data, sizeof(save_data));
 
 	if ((instr(save_data, ":")>=0))
 	{
 	  struct wimp_geticonstate_block block;
 
 	  block.window_handle= win_save;
-	  block.icon_handle  =4;
+	  block.icon_handle  =icon_save_ansi;
 
 	  _swi(Wimp_GetIconState, _IN(1), &block);
 
@@ -662,7 +665,7 @@ static void win_save_click(int x, int y, int buttons, int icon_handle)
       }
       break;
 
-    case 3:
+    case icon_save_drag:
       switch (buttons)
       {
 	case 64: case 16:
@@ -679,15 +682,18 @@ static void win_resize_click(int x, int y, int buttons, int icon_handle)
 {
   switch (icon_handle)
   {
-    case 6:
+    case icon_resize_cancel:
       _swi(Wimp_CreateMenu, _IN(1), -1);
       break;
-    case 7:
+
+    case icon_resize_set:
       {
         struct coords new_size;
         int new_scrollback;
 
-        if (read_termsize_icons (win_resize, 0, 2, 4, &new_size, &new_scrollback))
+        if (read_termsize_icons (win_resize,\
+          icon_resize_width, icon_resize_height, icon_resize_scroll, \
+          &new_size, &new_scrollback))
 	{
 	  resize_terminal(terminal_menu_session, new_size.x, new_size.y, new_scrollback, true);
 	  if (buttons != 1)
@@ -704,16 +710,16 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
 {
   switch (icon_handle)
   {
-    case 4: /* terminal */
+    case icon_choices_size:
       if (win_is_open(win_panefonts))
         close_window(win_panefonts);
 
       if (win_is_open(win_panehot))
         close_window(win_panehot);
 
-      set_icon_state(win_choices, 4, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
-      set_icon_state(win_choices, 5, 0, WIMP_ICON_SELECTED_BIT);
-      set_icon_state(win_choices, 6, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_size, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_colour, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
 
       {
         struct wimp_openwindow_block block;
@@ -725,16 +731,17 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
       }
 
       break;
-    case 5: /* fonts */
+
+    case icon_choices_colour:
       if (win_is_open(win_paneterm))
         close_window(win_paneterm);
 
       if (win_is_open(win_panehot))
         close_window(win_panehot);
 
-      set_icon_state(win_choices, 4, 0, WIMP_ICON_SELECTED_BIT);
-      set_icon_state(win_choices, 5, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
-      set_icon_state(win_choices, 6, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_size, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_colour, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
 
       {
         struct wimp_openwindow_block block;
@@ -746,16 +753,17 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
       }
 
       break;
-    case 6: /* hotlist */
+
+    case icon_choices_hotlist:
       if (win_is_open(win_paneterm))
         close_window(win_paneterm);
 
       if (win_is_open(win_panefonts))
         close_window(win_panefonts);
 
-      set_icon_state(win_choices, 4, 0, WIMP_ICON_SELECTED_BIT);
-      set_icon_state(win_choices, 5, 0, WIMP_ICON_SELECTED_BIT);
-      set_icon_state(win_choices, 6, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_size, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_colour, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_hotlist, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
 
       {
         struct wimp_openwindow_block block;
@@ -767,17 +775,20 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
       }
 
       break;
-    case 3: /* save */
+
+    case icon_choices_save:
       if (win_choices_read(true) && save_choices() && (buttons & 1) == 0)
         close_choices_window();
       break;
-    case 1: /* cancel */
+
+    case icon_choices_cancel:
       if ((buttons & 1) == 0)
         close_choices_window();
       else
         open_choices_window();
       break;
-    case 2: /* set */
+
+    case icon_choices_set:
       if (win_choices_read(false) && (buttons & 1) == 0)
         close_choices_window();
       break;
@@ -1153,7 +1164,7 @@ void drag_finished(void)
     char string[1024];
     int loop;
 
-    read_icon_data(win_save, 2, string, sizeof(string));
+    read_icon_data(win_save, icon_save_filename, string, sizeof(string));
     loop = strlen(string);
 
     while (loop>=0 && string[loop]!='.' && string[loop]!=':')
@@ -1197,7 +1208,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
     char string[MESSAGE_MAX_CONNECTION];
     int connection_type;
 
-    read_icon_data(win_open, 4, string, sizeof(string));
+    read_icon_data(win_open, icon_open_contype, string, sizeof(string));
 
     if (strcmp(string, lookup("SSH", message, MESSAGE_MAX_CONNECTION))==0)
       connection_type=NETTLE_SSH;
@@ -1211,19 +1222,20 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
       case 13:
         switch (icon_handle)
         {
-          case 0:
+          case icon_open_host:
             switch (connection_type)
             {
               case NETTLE_TELNET:
                 start_connection();
                 break;
               case NETTLE_SSH:
-                set_caret_position(win_open,7,-1, get_icon_data_length(win_open, 7));
+                set_caret_position(win_open,icon_open_command,-1, get_icon_data_length(win_open, icon_open_command));
                 break;
             }
             key_status=true;
             break;
-          case 7:
+
+          case icon_open_command:
             switch (connection_type)
             {
               case NETTLE_SSH: case NETTLE_TASKWINDOW:
@@ -1234,6 +1246,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
             break;
         }
         break;
+
       case 27:
         close_window(win_open);
         break;
@@ -1244,7 +1257,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
   {
     switch (icon_handle)
     {
-      case 4:
+      case icon_open_contype:
         switch (key)
         {
           case 13:
@@ -1252,7 +1265,8 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
               struct coords new_size;
               int new_scrollback;
 
-              if (read_termsize_icons(win_resize, 0, 2, 4, &new_size, &new_scrollback))
+              if (read_termsize_icons(win_resize, icon_resize_width, icon_resize_height, icon_resize_scroll,\
+                &new_size, &new_scrollback))
                 resize_terminal(terminal_menu_session, new_size.x, new_size.y,
                                 new_scrollback, true);
 
@@ -1409,10 +1423,12 @@ void wimp_menuchoice(int *selection)
         case 1:
           open_choices_window();
           break;
+
         case 2:
           /* Open connect window */
           open_open_window(true);
           break;
+
         case 3:
           /* Bring a session window to the front */
           {
@@ -1421,6 +1437,7 @@ void wimp_menuchoice(int *selection)
               open_window(NULL, session->window_handle);
           }
           break;
+
         case 4:
           /* Quit */
           close_program();
@@ -1487,7 +1504,7 @@ void wimp_menuchoice(int *selection)
         char string[6];
         sprintf(string, "Term%d", selection[0]);
 
-        set_icon_data(win_open, 9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
+        set_icon_data(win_open, icon_open_termtype, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
       }
       break;
 
@@ -1731,7 +1748,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
           struct wimp_geticonstate_block block;
 
           block.window_handle=drag_window_handle;
-          block.icon_handle  =4;
+          block.icon_handle  =icon_save_ansi;
 
           _swi(Wimp_GetIconState, _IN(1), &block);
 
@@ -1747,7 +1764,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
 
         if (instr(string,"Wimp$Scrap")==-1)
         {
-          set_icon_data(drag_window_handle,2,string);
+          set_icon_data(drag_window_handle,icon_save_filename,string);
         }
 
         wimp_block->user_message.your_ref    =my_ref;
@@ -2045,7 +2062,7 @@ void set_icon_data(int window_handle, int icon_handle, const char *contents)
 
   _swi(Wimp_GetIconState, _IN(1), &block);
 
-  if (block.icon_flags & (1<<8))
+  if (block.icon_flags & WIMP_ICON_INDIRECTED_BIT)
   {
     if (strcmp(block.contents.it.text, contents) != 0)
     {
@@ -2376,8 +2393,8 @@ static void create_terminal_menu(void)
   char *menu_send           =get_menu_item("Send");
   char *menu_clear          =get_grey_last_menu_item("Clear");
 
-  set_termsize_icons(win_resize, 0, 2, 4, terminal_menu_session->terminal_size,
-                                          terminal_menu_session->scrollback);
+  set_termsize_icons(win_resize, icon_resize_width, icon_resize_height, icon_resize_scroll,\
+          terminal_menu_session->terminal_size, terminal_menu_session->scrollback);
 
   if (!selection_session || (selection_start==selection_end))
   {
@@ -2428,7 +2445,7 @@ static void create_connection_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    create_menu_by_icon (menu_data, win_open, 5);
+    create_menu_by_icon (menu_data, win_open, icon_open_contypebut);
   }
 
   free(menu_title);
@@ -2461,7 +2478,7 @@ static void create_terminal_type_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    create_menu_by_icon (menu_data, win_open, 10);
+    create_menu_by_icon (menu_data, win_open, icon_open_termtypebut);
   }
 
   free(menu_title);
@@ -2579,7 +2596,7 @@ static void open_open_window(bool open_window_flag)
   char string[MESSAGE_MAX_CONNECTION];
   int connection_type;
 
-  read_icon_data(win_open, 4, string, MESSAGE_MAX_CONNECTION);
+  read_icon_data(win_open, icon_open_contype, string, MESSAGE_MAX_CONNECTION);
 
   {
     char type[MESSAGE_MAX_CONNECTION];
@@ -2596,26 +2613,26 @@ static void open_open_window(bool open_window_flag)
   {
     case NETTLE_TELNET:
        /* unshade the host icons, shade the command icons */
-       set_icon_state (win_open, 0, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, 8, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, 7, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, 1, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_host, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_hostbut, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_command, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_commandbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
        break;
 
     case NETTLE_SSH:
        /* unshade the host and command icons */
-       set_icon_state (win_open, 0, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, 8, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, 7, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, 1, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_host, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_hostbut, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_command, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_commandbut, 0, WIMP_ICON_SHADED_BIT);
        break;
 
     case NETTLE_TASKWINDOW:
       /* shade the host icons, unshade the command icons */
-      set_icon_state (win_open, 0, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_open, 8, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_open, 7, 0, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_open, 1, 0, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_open, icon_open_host, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_open, icon_open_hostbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_open, icon_open_command, 0, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_open, icon_open_commandbut, 0, WIMP_ICON_SHADED_BIT);
       break;
   }
 
@@ -2655,11 +2672,11 @@ static void open_open_window(bool open_window_flag)
   {
     case NETTLE_TELNET:
     case NETTLE_SSH:
-      set_caret_position(win_open, 0, -1, get_icon_data_length(win_open, 0));
+      set_caret_position(win_open, icon_open_host, -1, get_icon_data_length(win_open, 0));
       break;
 
     case NETTLE_TASKWINDOW:
-      set_caret_position(win_open, 7, -1, get_icon_data_length(win_open, 7));
+      set_caret_position(win_open, icon_open_command, -1, get_icon_data_length(win_open, 7));
       break;
   }
 }
@@ -2671,29 +2688,29 @@ static void open_choices_window(void)
   char string[32];
 
   /* Select paneterm */
-  set_icon_state(win_choices, 4, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
-  set_icon_state(win_choices, 5, 0, WIMP_ICON_SELECTED_BIT);
-  set_icon_state(win_choices, 6, 0, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_choices, icon_choices_size, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_choices, icon_choices_colour, 0, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
 
   /* Set paneterm type options */
 
-  set_icon_data(win_paneterm, 9, terminal_name[default_terminal]);
-  set_termsize_icons(win_paneterm, 2, 3, 6, defaultsize, defaultscroll);
+  set_icon_data(win_paneterm, icon_paneterm_termtype, terminal_name[default_terminal]);
+  set_termsize_icons(win_paneterm, icon_paneterm_termwidth, icon_paneterm_termheight, icon_paneterm_scrollback, defaultsize, defaultscroll);
   sprintf(string, "%d", line_editor_size);
-  set_icon_data(win_paneterm, 13, string);
+  set_icon_data(win_paneterm, icon_paneterm_lineeditor, string);
 
   {
     char string_lineedit[32];
 
     sprintf(string_lineedit,"LineEd%d",line_editor);
-    set_icon_data(win_paneterm, 16, lookup(string_lineedit, string, sizeof(string)));
+    set_icon_data(win_paneterm, icon_paneterm_lineedittype, lookup(string_lineedit, string, sizeof(string)));
   }
 
-  set_icon_data(win_paneterm, 20, zap_font);
-  set_icon_data(win_paneterm, 23, zap_lowres_font);
+  set_icon_data(win_paneterm, icon_paneterm_hifont, zap_font);
+  set_icon_data(win_paneterm, icon_paneterm_lofont, zap_lowres_font);
 
   open_window_centred(win_choices);
-  set_caret_position(win_paneterm, 2, -1, get_icon_data_length(win_paneterm, 2));
+  set_caret_position(win_paneterm, icon_paneterm_termwidth, -1, get_icon_data_length(win_paneterm, icon_paneterm_termwidth));
 }
 
 static bool win_choices_read(int save)
@@ -2709,7 +2726,7 @@ static bool win_choices_read(int save)
     char terminal_type_string[32];
     int counter=0;
 
-    strcpy(terminal_type_string, read_icon_data(win_paneterm, 9, string, sizeof(string)));
+    strcpy(terminal_type_string, read_icon_data(win_paneterm, icon_paneterm_termtype, string, sizeof(string)));
 
     while (counter<NO_OF_TERMINAL_TYPES &&
            strcmp(terminal_type_string, terminal_name[counter]))
@@ -2728,11 +2745,11 @@ static bool win_choices_read(int save)
     }
   }
 
-  if (!read_termsize_icons (win_paneterm, 2, 3, 6,
+  if (!read_termsize_icons (win_paneterm, icon_paneterm_termwidth, icon_paneterm_termheight, icon_paneterm_scrollback,
 			    &new_termsize, &new_scrollback))
     return false;
 
-  new_line_editor_size = atoi (read_icon_data (win_paneterm, 13, string, sizeof (string)));
+  new_line_editor_size = atoi (read_icon_data (win_paneterm, icon_paneterm_lineeditor, string, sizeof (string)));
 
   if (new_termsize.x < MIN_TERMINAL_WIDTH || new_termsize.x > MAX_TERMINAL_WIDTH)
   {
@@ -2758,9 +2775,8 @@ static bool win_choices_read(int save)
     return false;
   }
 
-  /* Read panefont type options */
-  strcpy(zap_font, read_icon_data(win_panefonts, 2, string, sizeof(string)));
-  strcpy(zap_lowres_font, read_icon_data(win_panefonts, 5, string, sizeof(string)));
+  strcpy(zap_font, read_icon_data(win_paneterm, icon_paneterm_hifont, string, sizeof(string)));
+  strcpy(zap_lowres_font, read_icon_data(win_paneterm, icon_paneterm_lofont, string, sizeof(string)));
 
   /* make the choices in the new_* variables permanent */
   default_terminal = new_default_terminal;
@@ -2828,9 +2844,9 @@ bool read_termsize_icons (int window_handle, int xicon, int yicon, int sicon,
   tmpsize.y = atoi (read_icon_data (window_handle, yicon, string, sizeof (string)));
   tmpscroll = atoi (read_icon_data (window_handle, sicon, string, sizeof (string)));
 
-  if (tmpsize.x < 1 || tmpsize.x > 256 ||
-      tmpsize.y < 1 || tmpsize.y > 128 ||
-      tmpscroll < 0 || tmpscroll > 128)
+  if (tmpsize.x < 1 || tmpsize.x > 512 ||
+      tmpsize.y < 1 || tmpsize.y > 512 ||
+      tmpscroll < 0 || tmpscroll > 65535)
   {
     generror ("BadTermSize", true);
     return false;
