@@ -91,6 +91,28 @@ void force_redraw_changedbox (void)
 }
 
 
+static void primary_da_request(struct session_struct *session)
+{
+  /* Primary DA Request */
+  char block[16];
+
+  switch (session->terminal_type)
+  {
+    case NETTLE_TERMINAL_VT100:
+      sprintf(block, "%s?1;0c",csi_sequence);
+      break;
+    case NETTLE_TERMINAL_VT102:
+      sprintf(block, "%s?6c",csi_sequence);
+      break;
+    default:
+      sprintf(block,"%s?6x;1;6c",csi_sequence);
+      block[2+strlen(csi_sequence)]=session->terminal_mode+48;
+      break;
+  }
+
+  nettle_senddata(session,block,strlen(block));
+}
+
 static void shuffle_up(struct session_struct *session, int start, int end)
 {
   struct term_char *wrapped_line;
@@ -651,29 +673,36 @@ static void byte_telnet(struct session_struct *session)
   session->escape_string_length=1;
 }
 
-
 static void byte_default(struct session_struct *session, char byte)
 {
-  reprocess_position(session);
-
-  if (session->other_session_flags & NETTLE_OTHER_INSERT_MODE)
+  if (session->escape_state==NETTLE_ESCAPE_NONE)
   {
-    /* If we're inserting a character, then shuffle all the characters along a byte */
-    row_shift_right (session, 1);
+    if (session->spool_file_name!=NULL && !(session->spool_raw))
+    {
+      spool_byte(session, byte);
+    }
+
+    reprocess_position(session);
+
+    if (session->other_session_flags & NETTLE_OTHER_INSERT_MODE)
+    {
+      /* If we're inserting a character, then shuffle all the characters along a byte */
+      row_shift_right (session, 1);
+    }
+
+    changedbox_update_char (session->pos.x, session->pos.y);
+
+    /* write out the data */
+    write_assigned(session, session->pos.x, session->pos.y,
+                   session->current_fg,
+                   session->current_bg,
+                   session->current_flags,
+                   '?');
+
+    work_out_character(session, session->pos.x, session->pos.y, byte);
+
+    session->pos.x++;
   }
-
-  changedbox_update_char (session->pos.x, session->pos.y);
-
-  /* write out the data */
-  write_assigned(session, session->pos.x, session->pos.y,
-                 session->current_fg,
-                 session->current_bg,
-                 session->current_flags,
-                 '?');
-
-  work_out_character(session, session->pos.x, session->pos.y, byte);
-
-  session->pos.x++;
 }
 
 void clear_screen(struct session_struct *session, int calc, int calc2, char fg, char bg,
@@ -749,30 +778,37 @@ static void save_cursor_position (struct session_struct *session)
   session->old_current_flags=session->current_flags;
   session->old_current_fg=session->current_fg;
   session->old_current_bg=session->current_bg;
-  session->old_other_session_flags=session->other_session_flags;
+  session->old_other_session_flags=session->other_session_flags & ~NETTLE_OTHER_CURSOR_VIS;
   session->old_character_set_gl=session->character_set_gl;
   session->old_character_set_gr=session->character_set_gr;
   session->old_character_set_g0=session->character_set_g0;
   session->old_character_set_g1=session->character_set_g1;
   session->old_character_set_g2=session->character_set_g2;
   session->old_character_set_g3=session->character_set_g3;
+  session->cursor_saved=true;
+  session->position_saved=true;
 }
 
 static void restore_cursor_position (struct session_struct *session)
 {
-  session->pos.x=session->old_pos.x;
-  session->pos.y=session->old_pos.y+session->scrollback;
-  session->current_flags=session->old_current_flags;
-  session->current_fg=session->old_current_fg;
-  session->current_bg=session->old_current_bg;
-  session->other_session_flags=session->old_other_session_flags;
-  session->character_set_gl=session->old_character_set_gl;
-  session->character_set_gr=session->old_character_set_gr;
-  session->character_set_g0=session->old_character_set_g0;
-  session->character_set_g1=session->old_character_set_g1;
-  session->character_set_g2=session->old_character_set_g2;
-  session->character_set_g3=session->old_character_set_g3;
-  snap_cursor_to_terminal(session);
+  if (session->cursor_saved && session->position_saved)
+  {
+    session->pos.x=session->old_pos.x;
+    session->pos.y=session->old_pos.y+session->scrollback;
+    session->current_flags=session->old_current_flags;
+    session->current_fg=session->old_current_fg;
+    session->current_bg=session->old_current_bg;
+    session->other_session_flags|=session->old_other_session_flags & ~NETTLE_OTHER_CURSOR_VIS;
+    session->character_set_gl=session->old_character_set_gl;
+    session->character_set_gr=session->old_character_set_gr;
+    session->character_set_g0=session->old_character_set_g0;
+    session->character_set_g1=session->old_character_set_g1;
+    session->character_set_g2=session->old_character_set_g2;
+    session->character_set_g3=session->old_character_set_g3;
+    session->cursor_saved=false;
+    session->position_saved=false;
+    snap_cursor_to_terminal(session);
+  }
 }
 
 static void swap_alternate_main(struct session_struct *session)
@@ -1084,6 +1120,11 @@ static bool process_escape_length_2(struct session_struct *session)
             block[1]='/';
             block[2]='Z';
             nettle_senddata(session,block,3);
+            done=true;
+          }
+          else
+          {
+            primary_da_request(session);
             done=true;
           }
           break;
@@ -1953,16 +1994,8 @@ static bool process_escape_length_x(struct session_struct *session)
               switch (session->escape_string[2])
               {
                 case '0': case 'c':
-                  {
-                    /* Primary DA Request */
-                    char block[16];
-
-                    sprintf(block,"%s?6x;1;6c",csi_sequence);
-
-                    block[2+strlen(csi_sequence)]=session->terminal_mode+48;
-
-                    nettle_senddata(session,block,strlen(block));
-                  }
+                  primary_da_request(session);
+                  done=true;
                   break;
                 case '>':
                   switch (session->escape_string[3])
@@ -2157,7 +2190,7 @@ static bool process_escape_length_x(struct session_struct *session)
                         case 12:
                           /* Turn off local echo (NB. just using telnet's local echo stuff) */
                           /* session->session_flags[1]=true; */
-													session->local_echo = false;
+			  session->local_echo = false;
                           break;
                         case 20:
                           /* Make LF,FF,VT move to first column of next line */
@@ -2310,7 +2343,7 @@ static bool process_escape_length_x(struct session_struct *session)
                         case 12:
                           /* Turn on local echo (NB. just using telnet's echo stuff) */
                           /* session->session_flags[1]=false; */
-													session->local_echo = true;
+		          session->local_echo = true;
                           break;
                         case 20:
                           /* Make LF,FF,VT move to next line (normal behaviour) */
@@ -2550,6 +2583,7 @@ static bool process_escape_length_x(struct session_struct *session)
                   /* Save cursor location */
                   session->old_pos.x=session->pos.x;
                   session->old_pos.y=session->pos.y-session->scrollback;
+                  session->position_saved=true;
                 }
               }
               done = true;
@@ -2564,6 +2598,7 @@ static bool process_escape_length_x(struct session_struct *session)
                 /* Restore cursor location */
                 session->pos.x=session->old_pos.x;
                 session->pos.y=session->old_pos.y+session->scrollback;
+                session->position_saved=false;
               }
               done = true;
               break;
@@ -2745,6 +2780,16 @@ static bool process_escape(struct session_struct *session)
 
   if (done)
   {
+    /*printf("Processed escape sequence: ");
+    {
+      int loop;
+
+      for (loop=0; loop<session->escape_string_length; loop++)
+        printf("%c",session->escape_string[loop]);
+
+      printf("\n");
+    }*/
+
     session->escape_string_length=0;
     session->escape_state=NETTLE_ESCAPE_NONE;
   }
@@ -2841,56 +2886,60 @@ void process_data(struct session_struct *session, char byte)
       case 31:                                        break;
       case 127: byte_delete                (session); break;
 
-      /* VT C1 codes */
-      case 128:                                       break;
-      case 129:                                       break;
-      case 130:                                       break;
-      case 131:                                       break;
-      case 132: byte_index		   (session); break;
-      case 133: byte_next_line		   (session); break;
-      case 134:                                       break;
-      case 135:                                       break;
-      case 136: byte_horizontal_tab_set    (session); break;
-      case 137:                                       break;
-      case 138:                                       break;
-      case 139:                                       break;
-      case 140:                                       break;
-      case 141: byte_reverse_index         (session); break;
-      case 142: byte_single_shift_g2       (session); break;
-      case 143: byte_single_shift_g3       (session); break;
-      case 144: byte_device_control_string (session); break;
-      case 145:                                       break;
-      case 146:                                       break;
-      case 147:                                       break;
-      case 148:                                       break;
-      case 149:                                       break;
-      case 150:                                       break;
-      case 151:                                       break;
-      case 152:                                       break;
-      case 153:                                       break;
-      case 154:                                       break;
-      case 155: byte_control_sequence_intro(session); break;
-      case 156: byte_string_terminator     (session); break;
-      case 157:                                       break;
-      case 158:                                       break;
-      case 159:                                       break;
-      case 160:                                       break;
-
       /* Telnet codes */
       case 255: byte_telnet                (session); break;
 
       /* Other codes */
       default:
-        if (session->escape_state==NETTLE_ESCAPE_NONE)
+        if (session->bit_controls)
         {
-                byte_default          (session, byte);
-
-          if (session->spool_file_name!=NULL && !(session->spool_raw))
+          /* 8-bit control sequences */
+          switch (byte)
           {
-            spool_byte(session, byte);
+            /* VT C1 codes */
+            case 128:                                       break;
+            case 129:                                       break;
+            case 130:                                       break;
+            case 131:                                       break;
+            case 132: byte_index                 (session); break;
+            case 133: byte_next_line             (session); break;
+            case 134:                                       break;
+            case 135:                                       break;
+            case 136: byte_horizontal_tab_set    (session); break;
+            case 137:                                       break;
+            case 138:                                       break;
+            case 139:                                       break;
+            case 140:                                       break;
+            case 141: byte_reverse_index         (session); break;
+            case 142: byte_single_shift_g2       (session); break;
+            case 143: byte_single_shift_g3       (session); break;
+            case 144: byte_device_control_string (session); break;
+            case 145:                                       break;
+            case 146:                                       break;
+            case 147:                                       break;
+            case 148:                                       break;
+            case 149:                                       break;
+            case 150:                                       break;
+            case 151:                                       break;
+            case 152:                                       break;
+            case 153:                                       break;
+            case 154:                                       break;
+            case 155: byte_control_sequence_intro(session); break;
+            case 156: byte_string_terminator     (session); break;
+            case 157:                                       break;
+            case 158:                                       break;
+            case 159:                                       break;
+            case 160:                                       break;
+
+            /* Not a 7 or 8-bit control sequence, byte_default */
+            default:  byte_default         (session, byte); break;
           }
         }
-        break;
+        else
+        {
+          /* Not a 7-bit control sequence (8-bit sequences N/A), byte_default */
+                      byte_default         (session, byte); break;
+        }
     }
   }
 }
@@ -2922,10 +2971,6 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
     return;
 
   size_of_send_block = decode_key (session, key, extra, send_block->data);
-
-#ifdef FORTIFY
-  Fortify_CheckAllMemory();
-#endif
 
   process_handle_buffer(session, send_block, size_of_send_block);
 

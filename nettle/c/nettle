@@ -742,7 +742,18 @@ void reset_terminal(struct session_struct *session)
   session->character_set_g2=NETTLE_CHSET_ASCII;
   session->character_set_g3=NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS;
 
-  session->terminal_mode=2;
+  session->cursor_saved=false;
+
+  switch (session->terminal_type)
+  {
+    case NETTLE_TERMINAL_VT100: case NETTLE_TERMINAL_VT102:
+      session->terminal_mode=1;
+      break;
+    default:
+      session->terminal_mode=2;
+      break;
+  }
+
   session->bit_controls=false;
   session->want_blink = false;
   rehash_blink();
