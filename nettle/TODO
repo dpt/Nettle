@@ -1,3 +1,18 @@
+Very crude hotlist added - the menu's crap - will work on that very soon
+An example hotlist file (Choices:Nettle.Hotlist) would be:
+---
+#
+# Nettle hotlist
+#
+
+telnet electron.mono.org:23
+telnet absolute.spod.org:6250
+ssh    ijeffray@sourceforge.net:22 ls
+task   go
+task   basic
+----
+
+
 Implement tests.
 Implement Selective Erase (it only erases characters marked as erasable)
 Implement insert characters.
