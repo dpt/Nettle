@@ -1,0 +1,27 @@
+/**
+ * Script handling headers
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#ifndef SCRIPTS_H
+#define SCRIPTS_H
+
+struct script_struct
+{
+  struct script_struct *next; /* next session in linked list */
+  struct script_struct *prev; /* previous session in linked list */
+
+  char *file_name; /* filename */
+
+  char *name; /* name of script */
+};
+
+bool script_exist_items(void);
+void load_scripts(void);
+void script_closedown(void);
+void script_process(void);
+const int *create_scriptlist_menu(void);
+
+#endif
