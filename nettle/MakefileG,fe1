@@ -41,6 +41,9 @@ clean:
 .c.o:
 	$(CC) $(CFLAGS) -o $@ $<
 
+.s.o:
+	$(OBJASM) $(OBJASMFLAGS) $< -o $@ 
+
 
 hotlist.o:      hotlist.c hotlist.h generic.h globals.h misc.h
 chardefn.o:	chardefn.c generic.h globals.h chardefn.h misc.h
@@ -62,5 +65,4 @@ seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h
 socket.o:	socket.c generic.h globals.h socket.h
 wimp.o: 	wimp.c generic.h globals.h misc.h nettle.h process.h seln.h \
               	socket.h wimp.h zapredraw.h
-zapgen.o:    	zapgengc.s
-		$(OBJASM) $(OBJASMFLAGS) zapgengc.s -o zapgen.o
+zapgen.o:    	zapgen.s

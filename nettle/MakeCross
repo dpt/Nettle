@@ -22,11 +22,11 @@ LINKFLAGS = -debug $(LIBFLAGS) $(EXTRALIBS)
 WIPE = rm
 WIPEFLAGS = -rf
 
-OBJASM = $(CC)
-OBJASMFLAGS = -c
+ASM = $(CC)
+ASMFLAGS = -c
 
 OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o hotlist.o \
-       nettle.o process.o socket.o quit.o seln.o wimp.o zapgengc.o fortify.o
+       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
 
 RUNIMAGE = !Nettle/!RunImage,ff8
 
@@ -43,7 +43,7 @@ clean:
 
 .s.o:
 	@echo "### Assembling $<..."
-	@$(OBJASM) $(OBJASMFLAGS) $< -o $@
+	@$(ASM) $(ASMFLAGS) $< -o $@
 
 .c.o:
 	@echo "### Compiling $<..."
@@ -70,4 +70,4 @@ seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h
 socket.o:	socket.c generic.h globals.h socket.h
 wimp.o: 	wimp.c generic.h globals.h misc.h nettle.h process.h seln.h \
               	socket.h wimp.h zapredraw.h
-
+zapgen.o:       zapgen.s
