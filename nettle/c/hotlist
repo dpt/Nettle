@@ -9,6 +9,7 @@
 #include "globals.h"
 
 #include "hotlist.h"
+#include "lineedit.h"
 #include "misc.h"
 #include "messages.h"
 #include "nettle.h"
@@ -68,7 +69,7 @@ static hotlistnode *hotlist_createnew(void);
 static void enable_buttons(bool enabled)
 {
   int flag = enabled ? 0 : WIMP_ICON_SHADED_BIT;
-  
+
   set_icon_state( win_panehot, icon_panehot_edit, flag, WIMP_ICON_SHADED_BIT);
   set_icon_state( win_panehot, icon_panehot_copy, flag, WIMP_ICON_SHADED_BIT);
   set_icon_state( win_panehot, icon_panehot_delete, flag, WIMP_ICON_SHADED_BIT);
@@ -104,7 +105,7 @@ static bool hotlist_copynode(hotlistnode *node, hotlistnode **nodenew)
   newnode->terminal_width = node->terminal_width;
   newnode->terminal_height= node->terminal_height;
   newnode->scrollback	  = node->scrollback;
-  
+
   if (node->internal_state & 1)
     node->internal_state &= ~1;
 
@@ -139,7 +140,7 @@ err:
   free(newnode->host);
   free(newnode->command);
   free(newnode);
-  return false;  
+  return false;
 }
 
 /******************************************************************************/
@@ -395,6 +396,15 @@ static void create_entry(char *title, FILE *in)
         tmpy = node->lineeditor;
         if(read_hot_number(&tmpy                 , tail, str, "lned")) goto errbarf;
         node->lineeditor = (char) tmpy;
+        switch (choices_file_version_number)
+        {
+          case 0:
+            if (node->lineeditor==LINEEDIT_CHECKBOX_OFF)
+              node->lineeditor=LINEEDIT_CHECKBOX_ON;
+            else if (node->lineeditor==LINEEDIT_CHECKBOX_ON)
+              node->lineeditor=LINEEDIT_ANTTERM;
+        }
+
         if(read_hot_present(&tmp                 , tail, str, "type")) goto errbarf;
           else if (tmp) if (hash_type(&node->type, tail)) goto errbarf;
         if(read_hot_present(&tmp                 , tail, str, "term")) goto errbarf;
@@ -581,6 +591,15 @@ int *create_hotlist_menu(void)
     {
       menublock[position++]= node->next ? 0 : (1<<7);  /* Set "last" bit if this is the end of the list */
       menublock[position++]=-1;  /* No submenu */
+
+#ifdef HOTLIST_NO_SPRITES
+      menublock[position++]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | \
+  			    WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT;
+
+      menublock[position++]=(int) node->label;
+      menublock[position++]=0;
+      menublock[position++]=strlen(node->label)+1;
+#else
       menublock[position++]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | \
   			    WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_SPRITE_BIT;
 
@@ -589,6 +608,7 @@ int *create_hotlist_menu(void)
                                   node->type == ht_telnet ? "snettle_telnt" :
                                   "snettle_task");
       menublock[position++]=strlen(node->label)+1;
+#endif
 
     if (menublock[position-1]+1 * 16 > wide)
       wide =  menublock[position-1]+1 * 16;
@@ -707,7 +727,7 @@ static hotlistnode *hotlist_unlink_selected(void)
 static void hotlist_delete_selected(void)
 {
   hotlistnode *node = hotlist_unlink_selected();
-  
+
   if (node)
   {
     free(node->label);
@@ -906,7 +926,7 @@ static int hotlist_populate_selected(void)
 {
   char tmp[20];
   selectednode = hotlist_get_selected();
-  
+
   if(!selectednode)
     return 0;
 
@@ -1011,7 +1031,7 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
           -1, -1, -1, get_icon_data_length(win_hotedit, icon_hotedit_label));
       }
       break;
-      
+
     case icon_panehot_copy:
       close_window(win_hotedit);
       if (hotlist_populate_selected())
@@ -1079,7 +1099,7 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
   gwsblock.window_handle=win_hotpane;
   _swi(Wimp_GetWindowState, _IN(1), &gwsblock);
   y_pos=gwsblock.max.y-gwsblock.scroll.y;
-   
+
   item = -((y - y_pos) + 4) / ENTRYHEIGHT;
 
   node = decode_hotlist_menu(editlisthead, item);
@@ -1088,7 +1108,7 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
     _swi(0x107, 0);
     return;
   }
-  
+
   switch(buttons)
   {
   case ClickSelect:
@@ -1097,7 +1117,7 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
     sel = hotlist_get_selected();
     if(node == sel)
       if (buttons == ClickSelect) return;
-      
+
     if (sel && node!=sel)
     {
       sel->internal_state &= ~1;
@@ -1119,7 +1139,7 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
       {
         struct wimp_dragbox_block dragblock;
         struct wimp_autoscroll_block scrollblock;
-	
+
 	dragblock.window_handle = win_hotpane;
 	dragblock.drag_type = 5; /* Fixed size box */
 	dragblock.parent_min.x = gwsblock.min.x;
@@ -1130,10 +1150,10 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
 	dragblock.min.y = gwsblock.max.y -(item * ENTRYHEIGHT) - 4 - ENTRYHEIGHT - gwsblock.scroll.y;
 	dragblock.max.y = dragblock.min.y + ENTRYHEIGHT;
 	dragblock.max.x = dragblock.min.x + (gwsblock.max.x - gwsblock.min.x );
-	
+
 	_swi(Wimp_DragBox, _INR(1,3), &dragblock, 0x4b534154, 3);
 	drag_window_handle = win_hotpane;
-	
+
 	scrollblock.window_handle = win_hotpane;
 	scrollblock.left_pause = 0;
 	scrollblock.right_pause = 0;
@@ -1167,10 +1187,10 @@ void hotlist_dragdone(void)
   struct wimp_getwindowstate_block gwsblock;
   struct wimp_getpointerinfo_block wgpi;
   hotlistnode *node,*sel;
-  
+
   _swi(Wimp_DragBox, _IN(1), -1); /* Stop dragging */
   _swix(Wimp_AutoScroll, _IN(0), 0); /* Stop auto scrolling */
-  
+
   sel = hotlist_get_selected();
 
   if (!sel)
@@ -1187,7 +1207,7 @@ void hotlist_dragdone(void)
 
   if (node == sel || edititems<2)
     return; /* Dropped the thing back on itself, so don't do anything */
-    
+
   if (node==NULL || node==editlisthead)
   {
     if (item<=0)
@@ -1373,7 +1393,7 @@ void hotlist_inform(int icon, int menuselection)
     case icon_hotedit_termtype:
       seltype = menuselection;
       break;
-      
+
     default:
       BOGUSERROR("Inform: Bad icon");
       break;
