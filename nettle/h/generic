@@ -33,6 +33,10 @@ typedef enum
 
 #define NOT_USED(a) (a=a)
 
+/* minimum / maximum macros */
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+
 /* Unions/Structs */
 
 struct coords

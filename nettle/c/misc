@@ -231,3 +231,10 @@ bool dynamic_areas_available(void)
 
   return true;
 }
+
+
+
+void misc_setfiletype(const char *filename, int type)
+{
+  _swi(OS_File, _INR(0,2), 18, filename, type);
+}

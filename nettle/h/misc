@@ -19,5 +19,6 @@ void close_log(bool force);
 void create_log(void);
 char *get_country(char *, int);
 bool dynamic_areas_available(void);
+void misc_setfiletype(const char *filename, int type);
 
 #endif /* MISC_H */
