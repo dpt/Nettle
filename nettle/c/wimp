@@ -1039,6 +1039,10 @@ static void wimp_claimcaret(struct session_struct *session)
   }
 }
 
+static int is_urlchar(char c)
+{
+  return strchr(lookup_inbuffer("URL_Chars"), c) != NULL;
+}
 
 static void wimp_launchurl(struct session_struct *session, int x, int y)
 {
@@ -1066,22 +1070,18 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
 
   /* go back to the start of the clicked on 'word' */
   /* NOTE! We deliberately do not wrap-backwards over lines */
-  while ( x > 0 && !isspace( ICHR(x,y) ))
+  while ( x > 0 && is_urlchar( ICHR(x,y) ))
     x--;
 
   /* skip any initial space or colon or anything */
   if (!isalnum( ICHR(x,y) ))
     x++;
 
-  /* skip any leading punctuation */
-  while ( x<xmax && ispunct ( ICHR(x,y) ))
-    x++;
-
   /* go forward to the end of the form [ie. until we find whitespace] */
   /* NOTE! We currently allow the URL to flow to the next line */
   urlptr = url;
   urlend = url + sizeof(url) - 8; /* leave space for a '\0', and 'http://' */
-  while ( (urlptr < urlend) && (!isspace( ICHR(x,y) )) )
+  while ( (urlptr < urlend) && (is_urlchar( ICHR(x,y) )) )
   {
     *urlptr++ = (char) ICHR(x,y);
     x++;

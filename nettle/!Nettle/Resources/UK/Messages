@@ -140,3 +140,6 @@ SpoolFailNonPermanent:Cannot open spools to non-permanent locations (ie. other a
 # Match details for Login
 LoginMatch_User:ogin:
 LoginMatch_Pass:assword:
+
+# Characters for URL characters
+URL_Chars:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:/&+=;!$%-,.@?~_
