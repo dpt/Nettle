@@ -127,14 +127,46 @@ static int status_negative(int iac_type)
   return 0;
 }
 
+static void shuffle_up(struct session_struct *session, int start, int end)
+{
+  int *wrapped_line;
+  int loop;
+
+  /* copy the wrapped line to a temporary buffer */
+  wrapped_line=session->assigned_area[start];
+
+  for (loop=start+1; loop<end+1; loop++)
+  {
+    if (valid_y(session, loop-1) && valid_y(session, loop))
+    {
+      session->assigned_area[loop-1]=session->assigned_area[loop];
+    }
+  }
+
+  session->assigned_area[end]=wrapped_line;
+}
+
+static void shuffle_down(struct session_struct *session, int start, int end)
+{
+  int *wrapped_line;
+  int loop;
+
+  /* copy the wrapped line to a temporary buffer */
+  wrapped_line=session->assigned_area[end];
+
+  for (loop=end; loop>start; loop--)
+  {
+    if (valid_y(session, loop) && valid_y(session, loop-1))
+    {
+      session->assigned_area[loop]=session->assigned_area[loop-1];
+    }
+  }
+
+  session->assigned_area[start]=wrapped_line;
+}
+
 static void scroll_up(struct session_struct *session, bool wrap)
 {
-  int count;
-  char *wrapped_line = 0;
-
-  if (wrap)
-    wrapped_line = malloc (session->terminal_size.x * 4);
-
   if (selection_session == session)
   {
     selection_start-=session->terminal_size.x;
@@ -148,47 +180,27 @@ static void scroll_up(struct session_struct *session, bool wrap)
   if (session->scroll_start==1 &&
       (session->other_session_flags & NETTLE_OTHER_SCREEN_MODE) == 0)
   {
-    /* scroll scrollback as well */
-
-    /* copy the wrapped line to a temporary buffer */
-    if (wrapped_line)
-      MEMMOVE (session->assigned_area, wrapped_line, session->terminal_size.x * 4);
-
-    MEMMOVE (session->assigned_area+(session->terminal_size.x*4),
-             session->assigned_area,
-             (session->terminal_size.x*
-              (session->scroll_end+session->scrollback-1))*4);
+    shuffle_up(session, 0, session->scrollback+session->scroll_end-1);
   }
   else
   {
-    char *calc = session->assigned_area +
-                  ((session->terminal_size.x *
-                   (session->scroll_start + session->scrollback - 1)) * 4);
-
-    /* copy the wrapped line to a temporary buffer */
-    if (wrapped_line)
-      MEMMOVE (calc, wrapped_line, session->terminal_size.x * 4);
-
-    MEMMOVE (calc + session->terminal_size.x * 4,
-             calc,
-             session->terminal_size.x *
-              (session->scroll_end - session->scroll_start) * 4);
+    shuffle_up(session, session->scrollback+session->scroll_start-1,
+                        session->scrollback+session->scroll_end-1);
   }
 
   /* and clear or restore the new line */
+  if (!wrap)
   {
-    int calc=((session->scroll_end+session->scrollback-1)*
-              session->terminal_size.x)*4;
-    if (wrapped_line)
+    /* wrap is false, clear the wrapped line */
+    int count;
+
+    for (count=0; count<session->terminal_size.x; count++)
     {
-      MEMMOVE (wrapped_line,
-               session->assigned_area + calc,
-               session->terminal_size.x * 4);
-      free (wrapped_line);
+      write_assigned(session,
+                     count,
+                     session->scroll_end+session->scrollback-1,
+                     7, 0, 0, 32);
     }
-    else
-      for (count=0; count<session->terminal_size.x; count++)
-        write_assigned(session,calc+count*4,7,0,0,32);
   }
 
   if (session->scroll_start == 1 &&
@@ -204,12 +216,6 @@ static void scroll_up(struct session_struct *session, bool wrap)
 
 static void scroll_down (struct session_struct *session, bool wrap)
 {
-  int count;
-  char *wrapped_line = 0;
-
-  if (wrap)
-    wrapped_line = malloc (session->terminal_size.x * 4);
-
   if (selection_session == session)
   {
     selection_start+=session->terminal_size.x;
@@ -229,39 +235,24 @@ static void scroll_down (struct session_struct *session, bool wrap)
     }
   }
 
-  /* copy the wrapped line to a temporary buffer */
-  if (wrapped_line)
-    MEMMOVE (session->assigned_area
-             + (session->scroll_end + session->scrollback - 1)
-               * session->terminal_size.x * 4,
-             wrapped_line,
-             session->terminal_size.x * 4);
-  {
-    char *calc = session->assigned_area +
-		 ((session->terminal_size.x *
-		   (session->scroll_start + session->scrollback)) * 4);
-
-    MEMMOVE (calc - session->terminal_size.x * 4, calc,
-	     session->terminal_size.x *
-	       (session->scroll_end - session->scroll_start) * 4);
-  }
+  shuffle_down(session, session->scrollback+session->scroll_start-1,
+                        session->scrollback+session->scroll_end-1);
 
   /* and clear or restore the new line */
+  if (!wrap)
   {
-    int calc=((session->scroll_start+session->scrollback-1)*
-              session->terminal_size.x)*4;
+    /* wrap is false, clear the wrapped line */
+    int count;
 
-    if (wrapped_line)
+    for (count=0; count<session->terminal_size.x; count++)
     {
-      MEMMOVE (wrapped_line,
-               session->assigned_area + calc,
-               session->terminal_size.x * 4);
-      free (wrapped_line);
+      write_assigned(session,
+                     count,
+                     session->scroll_start+session->scrollback-1,
+                     7, 0, 0, 32);
     }
-    else
-      for (count=0; count<session->terminal_size.x; count++)
-        write_assigned(session,calc+count*4,7,0,0,32);
   }
+
 
   changedbox_update (0, session->scrollback + session->scroll_start - 1,
                      session->terminal_size.x - 1,
@@ -312,7 +303,7 @@ static void reprocess_position(struct session_struct *session)
 
 static void row_shift_right (struct session_struct *session, int chars)
 {
-  char *start, *end;
+  int loop;
 
   /* don't do too much */
   if (chars > session->terminal_size.x - session->pos.x)
@@ -325,33 +316,32 @@ static void row_shift_right (struct session_struct *session, int chars)
   changedbox_update (session->pos.x, session->pos.y,
                      session->terminal_size.x - 1, session->pos.y);
 
-  start = session->assigned_area +
-          (session->pos.y * session->terminal_size.x + session->pos.x) * 4;
-  end = session->assigned_area +
-        (session->pos.y + 1) * session->terminal_size.x * 4;
-
-  MEMMOVE (start, start + 4 * chars, end - start - 4 * chars);
+  for (loop=session->terminal_size.x-1; loop>session->pos.x+chars-1; loop--)
+  {
+    session->assigned_area[session->pos.y][loop]=
+             session->assigned_area[session->pos.y][loop-chars];
+  }
 }
 
 static void work_out_character_character_set(struct session_struct *session,int character_set,
-                                             int data, unsigned char byte)
+                                             int xpos, int ypos, unsigned char byte)
 {
   switch (character_set)
   {
     case NETTLE_CHSET_ASCII:
-      write_assigned_character(session, data, byte);
+      write_assigned_character(session, xpos, ypos, byte);
       break;
     case NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS:
-      write_assigned_character(session, data, byte | 0x80);
+      write_assigned_character(session, xpos, ypos, byte | 0x80);
       break;
     case NETTLE_CHSET_UK_NATIONAL:
       if (byte!='#')
       {
-        write_assigned_character(session, data, byte);
+        write_assigned_character(session, xpos, ypos, byte);
       }
       else
       {
-        write_assigned_character(session, data, '£');
+        write_assigned_character(session, xpos, ypos, '£');
       }
       break;
     case NETTLE_CHSET_DEC_SPECIAL_GRAPHICS:
@@ -360,23 +350,24 @@ static void work_out_character_character_set(struct session_struct *session,int 
 
         if (graphics_byte<0x100)
         {
-          write_assigned_character(session, data, (char) graphics_byte);
+          write_assigned_character(session, xpos, ypos, (char) graphics_byte);
         }
         else
         {
-          write_assigned_flags(session, data, read_assigned_flags(session,data) |
-                                                                          NETTLE_FLAG_PLUS100);
-          write_assigned_character(session, data, (char) graphics_byte-0x100);
+          write_assigned_flags(session, xpos, ypos,
+                               read_assigned_flags(session, xpos, ypos) | NETTLE_FLAG_PLUS100);
+          write_assigned_character(session, xpos, ypos, (char) graphics_byte-0x100);
         }
       }
       break;
     case NETTLE_CHSET_DOWNLINE_LOADABLE:
-      write_assigned_character(session, data, byte);
+      write_assigned_character(session, xpos, ypos, byte);
       break;
   }
 }
 
-static void work_out_character(struct session_struct *session, int data, unsigned char byte)
+static void work_out_character(struct session_struct *session, int xpos, int ypos,
+                               unsigned char byte)
 {
   int character_set_gl;
   int character_set_gr;
@@ -423,11 +414,11 @@ static void work_out_character(struct session_struct *session, int data, unsigne
 
   if (byte<0x80)
   {
-    work_out_character_character_set(session, character_set_gl, data, byte);
+    work_out_character_character_set(session, character_set_gl, xpos, ypos, byte);
   }
   else
   {
-    work_out_character_character_set(session, character_set_gr, data, byte & 0x7f);
+    work_out_character_character_set(session, character_set_gr, xpos, ypos, byte & 0x7f);
   }
 }
 
@@ -549,13 +540,11 @@ static void byte_device_control_3(struct session_struct *session)
 
 static void byte_cancel(struct session_struct *session)
 {
-  int data=((session->pos.y*session->terminal_size.x)+
-             session->pos.x)*4;
-
-  write_assigned(session,data,session->current_fg,
-  				     session->current_bg,
-  				     session->current_flags,
-  				     '?');
+  write_assigned(session, session->pos.x, session->pos.y,
+                 session->current_fg,
+  		 session->current_bg,
+  		 session->current_flags,
+  		 '?');
 
   session->escape_state=NETTLE_ESCAPE_NONE;
   session->escape_string_length=0;
@@ -699,8 +688,6 @@ static void byte_telnet(struct session_struct *session)
 
 static void byte_default(struct session_struct *session, char byte)
 {
-  int data;
-
   reprocess_position(session);
 
   if (session->other_session_flags & NETTLE_OTHER_INSERT_MODE)
@@ -711,28 +698,30 @@ static void byte_default(struct session_struct *session, char byte)
 
   changedbox_update_char (session->pos.x, session->pos.y);
 
-  data = ((session->pos.y*session->terminal_size.x)+session->pos.x)*4;
-
   /* write out the data */
-  write_assigned(session,data,session->current_fg,
-                                     session->current_bg,
-                                     session->current_flags,
-                                     '?');
+  write_assigned(session, session->pos.x, session->pos.y,
+                 session->current_fg,
+                 session->current_bg,
+                 session->current_flags,
+                 '?');
 
-  work_out_character(session,data,byte);
+  work_out_character(session, session->pos.x, session->pos.y, byte);
 
   session->pos.x++;
 }
 
-static void clear_screen(struct session_struct *session, int calc, int calc2, char fg, char bg,
-                         char flags, char character)
+void clear_screen(struct session_struct *session, int calc, int calc2, char fg, char bg,
+                  char flags, char character)
 {
   int loop;
 
   /* clear the specified area with the specified fg,bg,flags and character */
   for (loop=calc; loop<calc2; loop+=4)
   {
-    write_assigned(session,loop,fg,bg,flags,character);
+    write_assigned(session,
+                   (loop/4) % session->terminal_size.x,
+                   (loop/4) / session->terminal_size.x,
+                   fg, bg, flags, character);
   }
 }
 
@@ -744,7 +733,10 @@ static void clear_alt_screen(struct session_struct *session, int calc, int calc2
   /* clear the specified area with the specified fg,bg,flags and character */
   for (loop=calc; loop<calc2; loop+=4)
   {
-    write_alt_assigned(session,loop,fg,bg,flags,character);
+    write_alt_assigned(session,
+                      (loop/4) % session->terminal_size.x,
+                      (loop/4) / session->terminal_size.x,
+                      fg, bg, flags, character);
   }
 }
 
@@ -817,65 +809,76 @@ static void restore_cursor_position (struct session_struct *session)
   snap_cursor_to_terminal(session);
 }
 
-/* Alex's beta code */
-
 static void swap_alternate_main(struct session_struct *session)
 {
-  int loop;
-  int *main_pos=((int *)(void *)session->assigned_area)+
-                 (session->scrollback*session->terminal_size.x);
-  int *alt_pos=(int *)(void *)session->alternate_area;
-  int copy;
+  int xpos;
+  int ypos;
 
   if (!session->alternate_area)
     return;
 
-  for (loop=0; loop<session->terminal_size.y*session->terminal_size.x; loop++)
+  for (ypos=0; ypos<session->terminal_size.y; ypos++)
   {
-    copy=*main_pos;
-    *main_pos=*alt_pos;
-    *alt_pos=copy;
+    for (xpos=0; xpos<session->terminal_size.x; xpos++)
+    {
+      /* Can make this more efficient */
+      char fg       =read_alt_assigned_fg(session, xpos, ypos);
+      char bg       =read_alt_assigned_bg(session, xpos, ypos);
+      char flags    =read_alt_assigned_flags(session, xpos, ypos);
+      char character=read_alt_assigned_character(session, xpos, ypos);
 
-    main_pos++;
-    alt_pos++;
+      write_alt_assigned(session, xpos, ypos,
+                         read_assigned_fg(session, xpos, ypos+session->scrollback),
+                         read_assigned_bg(session, xpos, ypos+session->scrollback),
+                         read_assigned_flags(session, xpos, ypos+session->scrollback),
+                         read_assigned_character(session, xpos, ypos+session->scrollback));
+
+      write_assigned(session, xpos, ypos+session->scrollback, fg, bg, flags, character);
+    }
   }
 }
 
 static void copy_alternate_main(struct session_struct *session)
 {
-  int loop;
-  int *main_pos=((int *)(void *)session->assigned_area)+
-                 (session->scrollback*session->terminal_size.x);
-  int *alt_pos=(int *)(void *)session->alternate_area;
+  int xpos;
+  int ypos;
 
   if (!session->alternate_area)
     return;
 
-  for (loop=0; loop<session->terminal_size.y*session->terminal_size.x; loop++)
+  for (ypos=0; ypos<session->terminal_size.y; ypos++)
   {
-    *main_pos=*alt_pos;
-
-    main_pos++;
-    alt_pos++;
+    for (xpos=0; xpos<session->terminal_size.x; xpos++)
+    {
+      /* Can make this more efficient */
+      char fg       =read_alt_assigned_fg(session, xpos, ypos);
+      char bg       =read_alt_assigned_bg(session, xpos, ypos);
+      char flags    =read_alt_assigned_flags(session, xpos, ypos);
+      char character=read_alt_assigned_character(session, xpos, ypos);
+      write_assigned(session, xpos, ypos+session->scrollback, fg, bg, flags, character);
+    }
   }
 }
 
-static void copy_main_alternate(struct session_struct *session)
+void copy_main_alternate(struct session_struct *session)
 {
-  int loop;
-  int *main_pos=((int *)(void *)session->assigned_area)+
-                 (session->scrollback*session->terminal_size.x);
-  int *alt_pos=(int *)(void *)session->alternate_area;
+  int xpos;
+  int ypos;
 
   if (!session->alternate_area)
     return;
 
-  for (loop=0; loop<session->terminal_size.y*session->terminal_size.x; loop++)
+  for (ypos=0; ypos<session->terminal_size.y; ypos++)
   {
-    *alt_pos=*main_pos;
-
-    main_pos++;
-    alt_pos++;
+    for (xpos=0; xpos<session->terminal_size.x; xpos++)
+    {
+      /* Can make this more efficient */
+      char fg       =read_assigned_fg(session, xpos, ypos+session->scrollback);
+      char bg       =read_assigned_bg(session, xpos, ypos+session->scrollback);
+      char flags    =read_assigned_flags(session, xpos, ypos+session->scrollback);
+      char character=read_assigned_character(session, xpos, ypos+session->scrollback);
+      write_alt_assigned(session, xpos, ypos, fg, bg, flags, character);
+    }
   }
 }
 
@@ -1589,7 +1592,10 @@ static bool process_escape_length_x(struct session_struct *session)
                   ;
                 else if (session->escape_string[2] == '?')
                   for (; loop < limit; loop += 4)
-                    write_assigned_character (session, loop, ' ');
+                    write_assigned_character (session,
+                                              (loop/4) % session->terminal_size.x,
+                                              (loop/4) / session->terminal_size.x,
+                                              ' ');
                 else
                   clear_screen (session, loop, limit,
                                 session->current_fg,
@@ -1637,7 +1643,10 @@ static bool process_escape_length_x(struct session_struct *session)
                   ;
                 else if (session->escape_string[2] == '?')
                   for (; loop < limit; loop += 4)
-                    write_assigned_character (session, loop, ' ');
+                    write_assigned_character (session,
+                                              (loop/4) % session->terminal_size.x,
+                                              (loop/4) / session->terminal_size.x,
+                                              ' ');
                 else
                   clear_screen (session, loop, limit,
                                 session->current_fg,
@@ -1653,40 +1662,35 @@ static bool process_escape_length_x(struct session_struct *session)
                   &&
                   session->pos.y-session->scrollback>=session->scroll_start-1)
               {
-                char *calc, *calc2;
                 int move=atoi(session->escape_string+2);
 
                 if (move==0)
                   move=1;
-
-                calc = session->assigned_area+
-                            (session->pos.y*session->terminal_size.x)*4;
 
                 if (move>session->scroll_end-(session->pos.y-session->scrollback))
                 {
                   move=session->scroll_end-(session->pos.y-session->scrollback);
                 }
 
-                calc2 = session->assigned_area+
-                             ((session->pos.y+move)*session->terminal_size.x)*4;
+                while (move>0)
+                {
+                  shuffle_down(session, session->pos.y,
+                                        session->scrollback+session->scroll_end-1);
 
-                MEMMOVE (calc, calc2,
-                                          ((session->scroll_end+session->scrollback-
-                                            session->pos.y-move)*session->terminal_size.x*4));
+                  clear_screen(session,
+                               session->pos.y*session->terminal_size.x*4,
+                               (session->pos.y+1)*session->terminal_size.x*4,
+                               session->current_fg,
+                               session->current_bg,
+                               0,
+                               ' ');
+
+                  move--;
+                }
 
                 changedbox_update (0, session->pos.y,
                                    session->terminal_size.x - 1,
                                    session->scrollback + session->terminal_size.y - 1);
-
-                clear_screen(session,
-                             (session->pos.y*session->terminal_size.x)*4,
-
-                             ((session->pos.y+move)*session->terminal_size.x)*4,
-
-                             session->current_fg,
-                             session->current_bg,
-                             0,
-                             32);
               }
               done=true;
               break;
@@ -1696,43 +1700,37 @@ static bool process_escape_length_x(struct session_struct *session)
                   &&
                   session->pos.y-session->scrollback>=session->scroll_start-1)
               {
-                char *calc, *calc2;
                 int move=atoi(session->escape_string+2);
 
                 if (move==0)
                   move=1;
-
-                calc = session->assigned_area+
-                            (session->pos.y*session->terminal_size.x)*4;
 
                 if (move>session->scroll_end-(session->pos.y-session->scrollback))
                 {
                   move=session->scroll_end-(session->pos.y-session->scrollback);
                 }
 
-                calc2 = session->assigned_area+
-                             ((session->pos.y+move)*session->terminal_size.x)*4;
+                while (move>0)
+                {
+                  shuffle_up(session, session->pos.y,
+                                        session->scrollback+session->scroll_end-1);
 
-                MEMMOVE (calc2, calc,
-                                          ((session->scroll_end-(session->pos.y-
-                                            session->scrollback)-move)*
-                                            session->terminal_size.x*4));
+                  clear_screen(session,
+                               (session->scrollback+session->scroll_end-1)*
+                                         session->terminal_size.x*4,
+                               (session->scrollback+session->scroll_end)*
+                                         session->terminal_size.x*4,
+                               session->current_fg,
+                               session->current_bg,
+                               0,
+                               ' ');
+
+                  move--;
+                }
 
                 changedbox_update (0, session->pos.y,
                                    session->terminal_size.x - 1,
                                    session->scrollback + session->terminal_size.y - 1);
-
-                clear_screen(session,
-                             ((session->scrollback+session->scroll_end-move)*
-                              session->terminal_size.x)*4,
-
-                             ((session->scrollback+session->scroll_end)*
-                              session->terminal_size.x)*4,
-
-                             session->current_fg,
-                             session->current_bg,
-                             0,
-                             32);
               }
               done=true;
               break;
@@ -1749,19 +1747,17 @@ static bool process_escape_length_x(struct session_struct *session)
             case 'P':
               {
                 /* Delete character(s) */
-                char *calc, *calc2;
+                int loop;
                 int move=atoi(session->escape_string+2);
 
                 if (move==0)
                   move=1;
 
-                calc = session->assigned_area+
-                           ((session->pos.y*session->terminal_size.x)+
-                           session->pos.x)*4;
-                calc2 = session->assigned_area+
-                            ((session->pos.y+1)*session->terminal_size.x)*4;
-
-                MEMMOVE (calc+(4*move), calc, calc2-calc-(4*move));
+                for (loop=session->pos.x; loop<session->terminal_size.x-move; loop++)
+                {
+                  session->assigned_area[session->pos.y][loop]=
+                           session->assigned_area[session->pos.y][loop+move];
+                }
 
                 changedbox_update (session->pos.x, session->pos.y,
                                    session->terminal_size.x - 1, session->pos.y);
@@ -1774,12 +1770,11 @@ static bool process_escape_length_x(struct session_struct *session)
                               ((session->pos.y+1)*session->terminal_size.x)*4,
 
                               session->current_fg,
-                              0, /* always black (ref. rxvt behaviour) */
+                              0,
                               0,
                               32);
-
-                done=true;
               }
+              done=true;
               break;
             case 'Q':
               /* Select editing extent */
@@ -2635,8 +2630,11 @@ void process_data(struct session_struct *session, char byte)
     }
     else
     {
-      session->escape_string[session->escape_string_length]=byte;
-      session->escape_string_length++;
+      if (byte>=32 || (session->escape_string_length>0 && session->escape_string[0]==TELNET_IAC))
+      {
+        session->escape_string[session->escape_string_length]=byte;
+        session->escape_string_length++;
+      }
 
       done = process_escape(session);
     }
@@ -2742,25 +2740,28 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
 {
   char block[256];
   int size_of_block=0;
-  int calc;
+  struct coords pos;
   char cursor_flags;
 
   if (session->other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
     return;
 
-  calc=get_cursor_position(session);
+  pos=get_cursor_position(session);
 
   /* get the cursor flags */
-  cursor_flags=read_assigned_flags(session,calc) & (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
+  cursor_flags=read_assigned_flags(session, pos.x, pos.y) &
+                    (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
   cursor_flags |= NETTLE_FLAG_CURSOR;
 
   /* remove the cursor from the position */
   changedbox_init (session);
-  changedbox_update_offset (calc);
-  write_assigned_flags(session,calc,read_assigned_flags(session,calc)
-						 & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
+  changedbox_update_char (pos.x, pos.y);
+  write_assigned_flags(session, pos.x, pos.y,
+                       read_assigned_flags(session, pos.x, pos.y)
+		            & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
+
   force_redraw_changedbox ();
 
   changedbox_init (session);
@@ -2770,7 +2771,6 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
   if (session->session_flags[1]==false)
   {
     int loop;
-    int data;
 
     for (loop=0; loop<size_of_block; loop++)
     {
@@ -2780,13 +2780,11 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
         case 8: byte_backspace             (session);
 
           changedbox_update_char (session->pos.x, session->pos.y);
-          data=((session->pos.y*session->terminal_size.x)+
-             session->pos.x)*4;
-
-          write_assigned(session,data,session->current_fg,
-          				     session->current_bg,
-          				     session->current_flags,
-          				     32);
+          write_assigned(session, session->pos.x, session->pos.y,
+                         session->current_fg,
+          		 session->current_bg,
+          		 session->current_flags,
+          		 32);
          break;
 
         case 9:  byte_horizontal_tabulation(session); break;
@@ -2796,37 +2794,33 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
         default:
           reprocess_position(session);
 
-          data=((session->pos.y*session->terminal_size.x)+
-             session->pos.x)*4;
-
           if (block[loop]<32)
           {
             changedbox_update_char (session->pos.x, session->pos.y);
-            write_assigned(session,data,session->current_fg,
-            				       session->current_bg,
-            				       session->current_flags,
-            				       '^');
+            write_assigned(session, session->pos.x, session->pos.y,
+                           session->current_fg,
+            		   session->current_bg,
+            		   session->current_flags,
+            		   '^');
             session->pos.x++;
             reprocess_position(session);
-
-            data=((session->pos.y*session->terminal_size.x)+
-                 session->pos.x)*4;
           }
 
           /* write out the data */
           changedbox_update_char (session->pos.x, session->pos.y);
-          write_assigned(session,data,session->current_fg,
-            				     session->current_bg,
-            				     session->current_flags,
-            				     '?');
+          write_assigned(session, session->pos.x, session->pos.y,
+                         session->current_fg,
+            		 session->current_bg,
+            		 session->current_flags,
+            		 '?');
 
           if (block[loop]<32)
           {
-            write_assigned_character(session,data,block[loop]+64);
+            write_assigned_character(session, session->pos.x, session->pos.y, block[loop]+64);
           }
           else
           {
-            write_assigned_character(session,data,block[loop]);
+            write_assigned_character(session, session->pos.x, session->pos.y, block[loop]);
           }
           session->pos.x++;
 
@@ -2837,12 +2831,13 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
 
   nettle_senddata(session,block,size_of_block);
 
-  calc=get_cursor_position(session);
+  pos=get_cursor_position(session);
 
   /* OR back in the cursor flags */
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
-    write_assigned_flags(session,calc,read_assigned_flags(session,calc) | cursor_flags);
+    write_assigned_flags(session, pos.x, pos.y,
+                         read_assigned_flags(session, pos.x, pos.y) | cursor_flags);
   }
 
   /* redraw the window */
@@ -2856,7 +2851,7 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
     changedbox_init (session);
-    changedbox_update_offset (calc);
+    changedbox_update_char (pos.x, pos.y);
     force_redraw_changedbox ();
   }
 }
@@ -2910,7 +2905,7 @@ void process_data_transmission(struct session_struct *session,
 {
   char block[256];
   int size_of_block=0;
-  int calc;
+  struct coords pos;
   char cursor_flags;
   char *send_block=0;
   int size_of_send_block=0;
@@ -2923,18 +2918,19 @@ void process_data_transmission(struct session_struct *session,
   if (session->socket_state!=NETTLE_SESSION_CONNECTED)
     return;
 
-  calc=get_cursor_position(session);
+  pos=get_cursor_position(session);
 
   /* get the cursor flags */
-  cursor_flags=read_assigned_flags(session,calc) & (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
+  cursor_flags=read_assigned_flags(session, pos.x, pos.y)
+                    & (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
   cursor_flags |= NETTLE_FLAG_CURSOR;
 
   /* remove the cursor from the position */
   changedbox_init (session);
-  changedbox_update_offset (calc);
-  write_assigned_flags(session,calc,read_assigned_flags(session,calc)
+  changedbox_update_char (pos.x, pos.y);
+  write_assigned_flags(session, pos.x, pos.y, read_assigned_flags(session, pos.x, pos.y)
 						 & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
   force_redraw_changedbox ();
 
@@ -2948,7 +2944,6 @@ void process_data_transmission(struct session_struct *session,
 
     if (session->session_flags[1]==false)
     {
-      int data;
       int loop;
 
       for (loop=0; loop<size_of_block; loop++)
@@ -2959,14 +2954,11 @@ void process_data_transmission(struct session_struct *session,
           case 8: byte_backspace             (session);
 
             changedbox_update_char (session->pos.x, session->pos.y);
-
-            data=((session->pos.y*session->terminal_size.x)+
-               session->pos.x)*4;
-
-            write_assigned(session,data,session->current_fg,
-            				       session->current_bg,
-            				       session->current_flags,
-            				       32);
+            write_assigned(session, session->pos.x, session->pos.y,
+                           session->current_fg,
+            		   session->current_bg,
+            		   session->current_flags,
+            		   32);
             break;
 
           case 9:  byte_horizontal_tabulation(session); break;
@@ -2976,37 +2968,34 @@ void process_data_transmission(struct session_struct *session,
           default:
             reprocess_position(session);
 
-            data=((session->pos.y*session->terminal_size.x)+
-               session->pos.x)*4;
-
             if (block[loop]<32)
             {
               changedbox_update_char (session->pos.x, session->pos.y);
-              write_assigned(session,data,session->current_fg,
-              					 session->current_bg,
-              					 session->current_flags,
-              					 '^');
+              write_assigned(session, session->pos.x, session->pos.y,
+                             session->current_fg,
+              		     session->current_bg,
+              		     session->current_flags,
+              		     '^');
+
               session->pos.x++;
               reprocess_position(session);
-
-              data=((session->pos.y*session->terminal_size.x)+
-                   session->pos.x)*4;
             }
 
             /* write out the data */
             changedbox_update_char (session->pos.x, session->pos.y);
-            write_assigned(session,data,session->current_fg,
-              					 session->current_bg,
-              					 session->current_flags,
-              					 '?');
+            write_assigned(session, session->pos.x, session->pos.y,
+                           session->current_fg,
+              		   session->current_bg,
+              		   session->current_flags,
+              		   '?');
 
             if (block[loop]<32)
             {
-              write_assigned_character(session,data,block[loop]+64);
+              write_assigned_character(session, session->pos.x, session->pos.y ,block[loop]+64);
             }
             else
             {
-              work_out_character(session,data,block[loop]);
+              work_out_character(session, session->pos.x, session->pos.y, block[loop]);
             }
             session->pos.x++;
 
@@ -3021,12 +3010,13 @@ void process_data_transmission(struct session_struct *session,
 
   nettle_senddata(session,send_block,size_of_send_block);
 
-  calc=get_cursor_position(session);
+  pos=get_cursor_position(session);
 
   /* OR back in the cursor flags */
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
-    write_assigned_flags(session,calc,read_assigned_flags(session,calc) | cursor_flags);
+    write_assigned_flags(session, pos.x, pos.y,
+                         read_assigned_flags(session, pos.x, pos.y) | cursor_flags);
   }
 
   /* redraw the window */
@@ -3040,7 +3030,7 @@ void process_data_transmission(struct session_struct *session,
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
     changedbox_init (session);
-    changedbox_update_offset (calc);
+    changedbox_update_char (pos.x, pos.y);
     force_redraw_changedbox ();
   }
 
@@ -3049,17 +3039,23 @@ void process_data_transmission(struct session_struct *session,
 
 
 /* get the current cursor position */
-int get_cursor_position(struct session_struct *session)
+struct coords get_cursor_position(struct session_struct *session)
 {
-  int xpos = session->pos.x;
+  struct coords pos;
+
+  pos.x = session->pos.x;
+  pos.y = session->pos.y;
 
   /* get a sanitised x coordinate */
-  if (xpos >= session->terminal_size.x)
-    xpos = session->terminal_size.x - 1;
+  if (pos.x >= session->terminal_size.x)
+    pos.x = session->terminal_size.x - 1;
 
   /* return real offset or, if outside terminal, the last available offset */
-  return (session->pos.y >= session->terminal_size.y + session->scrollback)
-    ? (session->terminal_size.y + session->scrollback)
-       * session->terminal_size.x * 4 - 4
-    : ((session->pos.y * session->terminal_size.x) + xpos) * 4;
+  if (pos.y >= session->terminal_size.y + session->scrollback)
+  {
+    pos.x = session->terminal_size.x;
+    pos.y = session->terminal_size.y + session->scrollback - 1;
+  }
+
+  return pos;
 }

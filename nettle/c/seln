@@ -93,17 +93,19 @@ void refresh_selection_set(void)
   int start;
   int end;
   int loop;
-  
+
   if (selection_session == NULL)
     return;
-  
+
   start = MIN(selection_start, selection_end);
   end   = MAX(selection_start, selection_end);
 
   for (loop=start; loop<end; loop++)
   {
-    write_assigned_flags(selection_session, loop*4,
-                         read_assigned_flags(selection_session, loop*4) |
+    int xpos=loop % selection_session->terminal_size.x;
+    int ypos=loop / selection_session->terminal_size.x;
+    write_assigned_flags(selection_session, xpos, ypos,
+                         read_assigned_flags(selection_session, xpos, ypos) |
                          NETTLE_FLAG_SELECTED);
   }
 }
@@ -115,17 +117,19 @@ void refresh_selection_clear(void)
   int start;
   int end;
   int loop;
-  
+
   if (selection_session == NULL)
     return;
-  
+
   start = MIN(selection_start, selection_end);
   end   = MAX(selection_start, selection_end);
 
   for (loop=start; loop<end; loop++)
   {
-    write_assigned_flags(selection_session, loop*4,
-                         read_assigned_flags(selection_session, loop*4) &
+    int xpos=loop % selection_session->terminal_size.x;
+    int ypos=loop / selection_session->terminal_size.x;
+    write_assigned_flags(selection_session, xpos, ypos,
+                         read_assigned_flags(selection_session, xpos, ypos) &
                          ~NETTLE_FLAG_SELECTED);
   }
 }
@@ -137,14 +141,14 @@ void selection_click(int x, int x_pos, int y, int y_pos)
   int click_point;
   int start;
   int end;
-  
+
   start = MIN(selection_start, selection_end);
   end   = MAX(selection_start, selection_end);
 
   click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                 * selection_session->terminal_size.x
                 + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
-  
+
   if (click_point < start || click_point > end)
   {
     /* click is not within selection */
@@ -161,16 +165,16 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
 {
   int click_point;
   int selection_middle;
-  
+
   if (selection_session == NULL)
     return;
-  
+
   click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                 * selection_session->terminal_size.x
                 + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
 
   click_point = MAX(click_point, 0);
-  click_point = MIN(click_point, 
+  click_point = MIN(click_point,
                       selection_session->terminal_size.x*
                       (selection_session->terminal_size.y+
                                  selection_session->scrollback));
@@ -198,12 +202,12 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
     else
       selection_adjust_dragging=SELECTION_ADJUST_END;
   }
-  
+
   if (selection_adjust_dragging == SELECTION_ADJUST_START)
     selection_start = click_point;
   else
     selection_end = click_point;
-  
+
   refresh_selection_set();
   selection_changedbox_draw();
 }
@@ -214,7 +218,7 @@ static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 {
   if (selection_session == NULL)
     return;
-  
+
   if (selection_session)
   {
     int click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
@@ -277,11 +281,14 @@ void save_selection(char *filename, bool ansi_colour)
   loop_start = MIN(selection_start, selection_end);
   loop_end   = MAX(selection_start, selection_end);
 
-  for (loop=loop_start*4; loop<loop_end*4; loop+=4)
+  for (loop=loop_start; loop<loop_end; loop++)
   {
-    if (loop!=loop_start*4)
+    int xpos=loop % selection_session->terminal_size.x;
+    int ypos=loop / selection_session->terminal_size.x;
+
+    if (loop!=loop_start)
     {
-      if ((loop % (selection_session->terminal_size.x*4))==0)
+      if ((loop % selection_session->terminal_size.x)==0)
       {
         spacerun = 0; /* suppress spaces at end of line */
 	fputc('\n',file_handle);
@@ -290,9 +297,9 @@ void save_selection(char *filename, bool ansi_colour)
 
     if (ansi_colour)
     {
-      int inverted = read_assigned_flags(selection_session, loop) & NETTLE_FLAG_INVERTED;
-      int new_fg = read_assigned_fg(selection_session,loop);
-      int new_bg = read_assigned_bg(selection_session,loop);
+      int inverted = read_assigned_flags(selection_session, xpos, ypos) & NETTLE_FLAG_INVERTED;
+      int new_fg = read_assigned_fg(selection_session, xpos, ypos);
+      int new_bg = read_assigned_bg(selection_session, xpos, ypos);
 
       if (inverted && !was_inverted)
         fprintf(file_handle,"\x1B%s","7m");
@@ -319,7 +326,7 @@ void save_selection(char *filename, bool ansi_colour)
       }
     }
 
-    currentchar = read_assigned_character(selection_session,loop);
+    currentchar = read_assigned_character(selection_session, xpos, ypos);
     if (currentchar == ' ')
     {
       spacerun++;
@@ -490,18 +497,21 @@ void selection_paste(void)
 
   _swi(Hourglass_On, 0);
 
-  for (loop=loop_start*4; loop<loop_end*4; loop+=4)
+  for (loop=loop_start; loop<loop_end; loop++)
   {
-    if (loop!=loop_start*4)
+    int xpos=loop % selection_session->terminal_size.x;
+    int ypos=loop / selection_session->terminal_size.x;
+
+    if (loop!=loop_start)
     {
-      if ((loop % (selection_session->terminal_size.x*4))==0)
+      if ((loop % selection_session->terminal_size.x)==0)
       {
         *(buffer+bufferptr) = '\r';
         bufferptr++;
       }
     }
 
-    *(buffer+bufferptr) = read_assigned_character(selection_session,loop);
+    *(buffer+bufferptr) = read_assigned_character(selection_session, xpos, ypos);
     bufferptr++;
   }
 

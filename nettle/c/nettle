@@ -26,38 +26,6 @@ static void allocate_zapredraw_area(int, int, int);
 static void start_connection_int (struct connection_params *params );
 
 
-#ifdef DEBUG
-typedef struct assigned_data
-{
-  char fg;
-  char bg;
-  char flags;
-  char character;
-}
-assigned_data;
-
-void dumptermdata(struct session_struct *session)
-{
-  int x;
-  int y;
-
-  for (y = 0; y < session->terminal_size.y; y++)
-  {
-    for (x = 0; x < session->terminal_size.x; x++)
-    {
-      assigned_data *ptr;
-
-      ptr = (assigned_data *) session->assigned_area;
-      ptr += y * session->terminal_size.x + x;
-      printf("[%02d,%02d]: ", x, y);
-      printf("'%c' (bg %d, fg %d, flags %x)\n",
-             ptr->character, ptr->bg, ptr->fg, ptr->flags);
-    }
-  }
-}
-
-#endif /* DEBUG */
-
 
 int get_host_port (char *string, int *port)
 /* modifies string, returns true on error */
@@ -321,7 +289,7 @@ static void start_connection_int (struct connection_params *params )
       /* start the task window */
       {
         char temp_string[1024];
-        
+
         sprintf(temp_string, "%d", params->height);
         _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string)+1, 0, 4);
         sprintf(temp_string, "%d", params->width);
@@ -357,7 +325,7 @@ static void start_connection_int (struct connection_params *params )
                      " -task &%X -txt &%X", task_handle, (int)session);
         }
 
-        
+
 
         _swi(Wimp_StartTask, _IN(0), temp_string);
       }
@@ -376,12 +344,9 @@ static void start_connection_int (struct connection_params *params )
   session->title=malloc(256);
   assert(session->title != NULL);
   strcpy(session->title,"");
-  session->assigned_area=malloc(session->terminal_size.x*
-                                                (session->terminal_size.y+
-                                                 session->scrollback)*4);
-  session->alternate_area=malloc(session->terminal_size.x*
-                                 session->terminal_size.y*4);
-  assert(session->assigned_area);
+
+  create_terminal(session, session->terminal_size, session->scrollback);
+
   session->pos.x=0;
   session->pos.y=session->scrollback;
   session->connection_type=params->connection_type;
@@ -389,20 +354,15 @@ static void start_connection_int (struct connection_params *params )
   reset_terminal(session);
 
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
-  {
-    int loop_limit=((session->terminal_size.x)*
-                   (session->terminal_size.y+
-                    session->scrollback)*4);
+  clear_screen(session,
+               0,
+               session->terminal_size.x*(session->terminal_size.y+session->scrollback)*4,
+               7,
+               0,
+               0,
+               ' ');
 
-    for (loop=0; loop<loop_limit; loop+=4)
-    {
-      write_assigned(session,loop,7,0,0,32);
-    }
-
-    memcpy(session->alternate_area,
-           session->assigned_area+(session->terminal_size.x*session->scrollback*4),
-           session->terminal_size.x * session->terminal_size.y * 4);
-  }
+  copy_main_alternate(session);
 
   /* create tabs */
   session->number_of_tabs=0;
@@ -533,17 +493,18 @@ void write_out_strings (struct session_struct *session, ...)
 
 void write_out_data(struct session_struct *session, const char *data, int length_data)
 {
-  int loop, calc;
+  int loop;
+  struct coords pos;
   char cursor_flags;
 
   if (length_data == 0) {
     return;
   }
 
-  calc=get_cursor_position(session);
+  pos=get_cursor_position(session);
 
   /* get the cursor flags */
-  cursor_flags=read_assigned_flags(session, calc) &
+  cursor_flags=read_assigned_flags(session, pos.x, pos.y) &
         (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
@@ -551,9 +512,10 @@ void write_out_data(struct session_struct *session, const char *data, int length
 
   /* remove the cursor from the position */
   changedbox_init (session);
-  changedbox_update_offset (calc);
-  write_assigned_flags(session, calc, read_assigned_flags(session, calc) &
-      ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
+  changedbox_update_char (pos.x, pos.y);
+  write_assigned_flags(session, pos.x, pos.y,
+                       read_assigned_flags(session, pos.x, pos.y) &
+                            ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
   force_redraw_changedbox ();
 
   changedbox_init (session);
@@ -569,12 +531,13 @@ void write_out_data(struct session_struct *session, const char *data, int length
     process_data(session, data[loop]);
   }
 
-  calc=get_cursor_position(session);
+  pos=get_cursor_position(session);
 
   /* OR back in the cursor flags */
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
-    write_assigned_flags(session, calc, read_assigned_flags(session, calc) | cursor_flags);
+    write_assigned_flags(session, pos.x, pos.y,
+                         read_assigned_flags(session, pos.x, pos.y) | cursor_flags);
   }
 
   /* redraw the window */
@@ -588,7 +551,7 @@ void write_out_data(struct session_struct *session, const char *data, int length
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
     changedbox_init (session);
-    changedbox_update_offset (calc);
+    changedbox_update_char (pos.x, pos.y);
     force_redraw_changedbox ();
   }
 
@@ -642,9 +605,8 @@ void remove_session(struct session_struct *session)
     lineedit_free_space(session);
   }
 
-  /* free the assigned area and title */
-  free(session->assigned_area);
-  free(session->alternate_area);
+  /* free the data area and title */
+  delete_terminal(session);
   free(session->title);
 
   if (session->prev)
@@ -726,120 +688,207 @@ void reset_terminal(struct session_struct *session)
   session->bit_controls=false;
 }
 
-void write_assigned(struct session_struct *session ,int pointer, char fg, char bg, char flags, char character)
+bool valid_x(struct session_struct *session, int xpos)
 {
-  if (pointer<0 || pointer>=(session->terminal_size.y+
-    			    session->scrollback)*
-    			    session->terminal_size.x*4)
+  if (xpos<0 || xpos>=session->terminal_size.x)
   {
-    printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
-    return;
+    printf("Attempt to write outside alternate line, X position %d\n", xpos);
+    return false;
   }
-
-  *(session->assigned_area+(pointer+0))=fg;
-  *(session->assigned_area+(pointer+1))=bg;
-  *(session->assigned_area+(pointer+2))=flags;
-  *(session->assigned_area+(pointer+3))=character;
+  return true;
 }
 
-void write_alt_assigned(struct session_struct *session ,int pointer, char fg, char bg, char flags, char character)
+bool valid_y(struct session_struct *session, int ypos)
 {
-  if (pointer<0 || pointer>=session->terminal_size.y*
-    			    session->terminal_size.x*4)
+  if (ypos<0 || ypos>=session->terminal_size.y+session->scrollback)
   {
-    printf("Attempt to write to outside alternate area: session %p, pointer %d\n",session,pointer);
-    return;
+    printf("Attempt to write outside assigned area %p, Y position %d\n", session, ypos);
+    return false;
   }
-
-  *(session->alternate_area+(pointer+0))=fg;
-  *(session->alternate_area+(pointer+1))=bg;
-  *(session->alternate_area+(pointer+2))=flags;
-  *(session->alternate_area+(pointer+3))=character;
+  return true;
 }
 
-char read_assigned_fg(struct session_struct *session, int pointer)
+bool valid_alt_y(struct session_struct *session, int ypos)
 {
-  if (pointer<0 || pointer>=(session->terminal_size.y+
-    			    session->scrollback)*
-    			    session->terminal_size.x*4)
+  if (ypos<0 || ypos>=session->terminal_size.y)
   {
-    printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
-    return 0;
+    printf("Attempt to write outside alternate area %p, Y position %d\n", session, ypos);
+    return false;
   }
-
-  return *(session->assigned_area+(pointer+0));
+  return true;
 }
 
-char read_assigned_bg(struct session_struct *session, int pointer)
+void write_assigned(struct session_struct *session, int xpos, int ypos,
+                    char fg, char bg, char flags, char character)
 {
-  if (pointer<0 || pointer>=(session->terminal_size.y+
-    			    session->scrollback)*
-    			    session->terminal_size.x*4)
+  if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
-    return 0;
+    *((char *)(session->assigned_area[ypos]+xpos)+0)=fg;
+    *((char *)(session->assigned_area[ypos]+xpos)+1)=bg;
+    *((char *)(session->assigned_area[ypos]+xpos)+2)=flags;
+    *((char *)(session->assigned_area[ypos]+xpos)+3)=character;
   }
-
-  return *(session->assigned_area+(pointer+1));
 }
 
-char read_assigned_flags(struct session_struct *session, int pointer)
+void write_alt_assigned(struct session_struct *session, int xpos, int ypos,
+                        char fg, char bg, char flags, char character)
 {
-  if (pointer<0 || pointer>=(session->terminal_size.y+
-    			    session->scrollback)*
-    			    session->terminal_size.x*4)
+  if (valid_x(session, xpos) && valid_alt_y(session, ypos))
   {
-    printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
-    return 0;
+    *((char *)(session->alternate_area[ypos]+xpos)+0)=fg;
+    *((char *)(session->alternate_area[ypos]+xpos)+1)=bg;
+    *((char *)(session->alternate_area[ypos]+xpos)+2)=flags;
+    *((char *)(session->alternate_area[ypos]+xpos)+3)=character;
   }
-
-  return *(session->assigned_area+(pointer+2));
 }
 
-char read_assigned_character(struct session_struct *session, int pointer)
+char read_assigned_fg(struct session_struct *session, int xpos, int ypos)
 {
-  if (pointer<0 || pointer>=(session->terminal_size.y+
-    			    session->scrollback)*
-    			    session->terminal_size.x*4)
+  if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
-    return 0;
+    return *((char *)(session->assigned_area[ypos]+xpos)+0);
   }
 
-  return *(session->assigned_area+(pointer+3));
+  return 0;
 }
 
-void write_assigned_flags(struct session_struct *session, int pointer, char flags)
+char read_assigned_bg(struct session_struct *session, int xpos, int ypos)
 {
-  if (pointer<0 || pointer>=(session->terminal_size.y+
-    			    session->scrollback)*
-    			    session->terminal_size.x*4)
+  if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
-    return;
+    return *((char *)(session->assigned_area[ypos]+xpos)+1);
   }
 
-  *(session->assigned_area+(pointer+2))=flags;
+  return 0;
 }
 
-void write_assigned_character(struct session_struct *session, int pointer, char character)
+char read_assigned_flags(struct session_struct *session, int xpos, int ypos)
 {
-  if (pointer<0 || pointer>=(session->terminal_size.y+
-    			    session->scrollback)*
-    			    session->terminal_size.x*4)
+  if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
-    return;
+    return *((char *)(session->assigned_area[ypos]+xpos)+2);
   }
 
-  *(session->assigned_area+(pointer+3))=character;
+  return 0;
+}
+
+char read_assigned_character(struct session_struct *session, int xpos, int ypos)
+{
+  if (valid_x(session, xpos) && valid_y(session, ypos))
+  {
+    return *((char *)(session->assigned_area[ypos]+xpos)+3);
+  }
+
+  return 0;
+}
+
+char read_alt_assigned_fg(struct session_struct *session, int xpos, int ypos)
+{
+  if (valid_x(session, xpos) && valid_alt_y(session, ypos))
+  {
+    return *((char *)(session->alternate_area[ypos]+xpos)+0);
+  }
+
+  return 0;
+}
+
+char read_alt_assigned_bg(struct session_struct *session, int xpos, int ypos)
+{
+  if (valid_x(session, xpos) && valid_alt_y(session, ypos))
+  {
+    return *((char *)(session->alternate_area[ypos]+xpos)+1);
+  }
+
+  return 0;
+}
+
+char read_alt_assigned_flags(struct session_struct *session, int xpos, int ypos)
+{
+  if (valid_x(session, xpos) && valid_alt_y(session, ypos))
+  {
+    return *((char *)(session->alternate_area[ypos]+xpos)+2);
+  }
+
+  return 0;
+}
+
+char read_alt_assigned_character(struct session_struct *session, int xpos, int ypos)
+{
+  if (valid_x(session, xpos) && valid_alt_y(session, ypos))
+  {
+    return *((char *)(session->alternate_area[ypos]+xpos)+3);
+  }
+
+  return 0;
+}
+
+void write_assigned_flags(struct session_struct *session, int xpos, int ypos, char flags)
+{
+  if (valid_x(session, xpos) && valid_y(session, ypos))
+  {
+    *((char *)(session->assigned_area[ypos]+xpos)+2)=flags;
+  }
+}
+
+void write_assigned_character(struct session_struct *session, int xpos, int ypos, char character)
+{
+  if (valid_x(session, xpos) && valid_y(session, ypos))
+  {
+    *((char *)(session->assigned_area[ypos]+xpos)+3)=character;
+  }
+}
+
+void create_terminal(struct session_struct *session, struct coords terminal_size,
+                     int scrollback)
+{
+  int loop;
+
+  session->assigned_area=malloc((terminal_size.y+scrollback)*4);
+  assert(session->assigned_area);
+
+  for (loop=0; loop<terminal_size.y+scrollback; loop++)
+  {
+    session->assigned_area[loop]=malloc(terminal_size.x*4);
+    assert(session->assigned_area[loop]);
+  }
+
+  session->alternate_area=malloc(terminal_size.y*4);
+
+  if (session->alternate_area)
+  {
+    for (loop=0; loop<terminal_size.y; loop++)
+    {
+      session->alternate_area[loop]=malloc(terminal_size.x*4);
+      assert(session->alternate_area[loop]);
+    }
+  }
+}
+
+void delete_terminal(struct session_struct *session)
+{
+  int loop;
+
+  for (loop=0; loop<session->terminal_size.y+session->scrollback; loop++)
+  {
+    free(session->assigned_area[loop]);
+  }
+
+  free(session->assigned_area);
+
+  if (session->alternate_area)
+  {
+    for (loop=0; loop<session->terminal_size.y; loop++)
+    {
+      free(session->alternate_area[loop]);
+    }
+
+    free(session->alternate_area);
+  }
 }
 
 void resize_terminal(struct session_struct *session, int terminal_size_x, int terminal_size_y,
                      int scrollback, bool use_naws)
 {
-  char *old_assigned_area=session->assigned_area;
-  char *old_alternate_area=session->alternate_area;
   struct coords old_terminal_size;
   int old_scrollback;
 
@@ -850,36 +899,31 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   if (terminal_size_x != old_terminal_size.x || terminal_size_y !=
       old_terminal_size.y || old_scrollback != scrollback)
   {
-    session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
-    session->alternate_area =malloc(terminal_size_x*terminal_size_y*4);
-    assert(session->assigned_area != NULL);
-    assert(session->alternate_area != NULL);
+    struct coords terminal_size;
+
+    terminal_size.x=terminal_size_x;
+    terminal_size.y=terminal_size_y;
+
+    /* NB - this need fixed in order to allow copying of data from old to new */
+    delete_terminal(session);
+    create_terminal(session, terminal_size, scrollback);
+
     session->scroll_start   = 1;
     session->scroll_end     = terminal_size_y;
     session->terminal_size.x=terminal_size_x;
     session->terminal_size.y=terminal_size_y;
     session->scrollback     =scrollback;
 
-    /* Blank area */
-    /* remove once move is implemented */
-    {
-      int loop;
+    /* clear out the assigned area with black bg, white fg, no flags and ' ' */
+    clear_screen(session,
+                 0,
+                 session->terminal_size.x*(session->terminal_size.y+session->scrollback)*4,
+                 7,
+                 0,
+                 0,
+                 ' ');
 
-      for (loop=0; loop<terminal_size_x*(terminal_size_y+scrollback)*4; loop+=4)
-      {
-        write_assigned(session, loop, 7, 0, 0, 32);
-      }
-
-      memcpy(session->alternate_area,
-             session->assigned_area+(session->terminal_size.x*session->scrollback*4),
-             session->terminal_size.x * session->terminal_size.y * 4);
-    }
-
-    /* move old data to new area */
-    /* Implement... */
-
-    free(old_assigned_area);
-    free(old_alternate_area);
+    copy_main_alternate(session);
 
     allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
   }
@@ -963,9 +1007,7 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     /* If scrollback has changed, then shift the scroll offset */
     if (old_scrollback!=session->scrollback)
     {
-      printf("block.scroll.y is %d\n",block.scroll.y);
       block.scroll.y-=(session->scrollback-old_scrollback)*old_charh << eig.y;
-      printf("block.scroll.y is now %d\n",block.scroll.y);
     }
 
     /* Scale the scroll offset according to the old font size/new font size */

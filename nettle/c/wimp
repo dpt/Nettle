@@ -817,6 +817,7 @@ static void wimp_claimcaret(struct session_struct *session)
 
 static void wimp_launchurl(struct session_struct *session, int x, int y)
 {
+  /*
   int     x_pos;
   int     y_pos;
   char    url[1024];
@@ -845,63 +846,63 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   logf("clicked on '%c'\n",session->assigned_area[char_offset*4+3]);
 
   if (isspace((int) session->assigned_area[char_offset*4+3]))
-    return;
+    return;*/
 
   /* go back to the start of the clicked on 'word' */
-  while (char_offset > 0 && !isspace((int) session->assigned_area[char_offset*4+3]))
+  /*while (char_offset > 0 && !isspace((int) session->assigned_area[char_offset*4+3]))
     char_offset--;
   if (!isalpha((int) session->assigned_area[char_offset*4+3]))
-    char_offset++;
+    char_offset++;*/
 
   /* skip any leading punctuation */
-  while (ispunct ((int) session->assigned_area[char_offset*4+3]))
-    char_offset++;
+  /*while (ispunct ((int) session->assigned_area[char_offset*4+3]))
+    char_offset++;*/
 
   /* go forward to the end of the form [ie. until we find whitespace] */
-  urlptr = url;
-  urlend = url + sizeof(url) - 8; /* leave space for a '\0', and 'http://' */
-  while (char_offset < end_offset && urlptr < urlend &&
+  /*urlptr = url;
+  urlend = url + sizeof(url) - 8;*/ /* leave space for a '\0', and 'http://' */
+  /*while (char_offset < end_offset && urlptr < urlend &&
          !isspace((int) session->assigned_area[char_offset*4+3]))
   {
     *urlptr++ = session->assigned_area[char_offset*4+3];
     char_offset++;
   }
   *urlptr = '\0';
-  logf("url = '%s'\n", url);
+  logf("url = '%s'\n", url);*/
 
   /* lower-case the protocol (if present) and site name */
-  {
+  /*{
     const char *endptr = strchr (url, '/');
-    if (endptr > url && endptr[-1] == ':')
+    if (endptr > url && endptr[-1] == ':')*/
       /* we have a protocol; find the end of the site name */
-      endptr = strchr (endptr + 1 + (endptr[1] == '/'), '/');
+/*      endptr = strchr (endptr + 1 + (endptr[1] == '/'), '/');
     if (!endptr)
       endptr = urlend;
     for (urlptr = url; urlptr < endptr; urlptr++)
       *urlptr = tolower (*urlptr);
-  }
+  }*/
 
   /* we've got a url, check for full formedness */
-  urlptr = url;
+  /*urlptr = url;
   while (isalpha((int) (*urlptr)))
     urlptr++;
   if (*urlptr != ':')
   {
-    const char *scheme;
+    const char *scheme;*/
     /* there's no scheme section */
-    if (strncmp(url, "ftp.", 4) == 0)
+    /*if (strncmp(url, "ftp.", 4) == 0)
       scheme = "ftp://";
     else if (strchr(url, '@') != NULL)
       scheme = "mailto:";
     else
-      scheme = "http://";
+      scheme = "http://";*/
 
     /* prefix string we have with the scheme we've guessed */
-    memmove(url + strlen(scheme), url, strlen(url) + 1);
+    /*memmove(url + strlen(scheme), url, strlen(url) + 1);
     memcpy(url, scheme, strlen(scheme));
   }
 
-  url_launch (url);
+  url_launch (url);*/
 }
 
 
@@ -937,16 +938,16 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
         int seln_start;
         int seln_end;
         int click_point;
-        
+
         /* check to see if the drag is starting inside the current selection */
-        
+
         seln_start = MIN(selection_start, selection_end);
         seln_end   = MAX(selection_start, selection_end);
-        
+
         click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                           * session->terminal_size.x
                           + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
-        
+
         if (selection_session == session && click_point >= seln_start && click_point <= seln_end)
         {
           int dragbox[4];
@@ -965,10 +966,10 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
           /* start is */
           refresh_selection_clear();
           force_redraw_selection();
-    
+
           selection_session = session;
           selection_start = click_point;
-    
+
           if (selection_start > (selection_session->terminal_size.x*
                                 (selection_session->terminal_size.y+
                                         selection_session->scrollback)))
@@ -977,12 +978,12 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
                                 (selection_session->terminal_size.y+
                                         selection_session->scrollback));
           }
-    
+
           if (selection_start<0)
           {
             selection_start=0;
           }
-    
+
           selection_end=selection_start;
           selection_in_progress=true;
         }
@@ -1175,7 +1176,7 @@ static void wimp_initiatesave(const char *filename)
 {
   union wimp_poll_block block;
   struct wimp_getpointerinfo_block gpi_block;
-  
+
   _swi(Wimp_GetPointerInfo, _IN(1), &gpi_block);
 
   block.user_message.contents.data_save.window_handle=gpi_block.window_handle;
@@ -1194,7 +1195,7 @@ static void wimp_initiatesave(const char *filename)
   _swi(Wimp_SendMessage, _INR(0,3), 17, &block,
                          block.user_message.contents.data_save.window_handle,
                          block.user_message.contents.data_save.icon_handle);
-  
+
 }
 
 /* Drag finished */
@@ -1626,7 +1627,7 @@ void wimp_menu_selection(int *selection)
 void lose_caret(int window_handle)
 {
   struct session_struct *session = sessions;
-  int calc;
+  struct coords pos;
 
   while (session && window_handle != session->window_handle)
   {
@@ -1643,16 +1644,16 @@ void lose_caret(int window_handle)
     /* we have no input */
     if (!(line_editor_active(session)) || block.window_handle != session->pane_handle)
     {
-      calc=get_cursor_position(session);
-      write_assigned_flags(session, calc,
-      			   read_assigned_flags(session, calc) | NETTLE_FLAG_NO_INPUT);
+      pos=get_cursor_position(session);
+      write_assigned_flags(session, pos.x, pos.y,
+      			   read_assigned_flags(session, pos.x, pos.y) | NETTLE_FLAG_NO_INPUT);
       cursor_session = NULL;
 
       force_redraw(session->window_handle,
-      		   session->pos.x*redraw.r_charw << eig.x,
-		   (-session->pos.y-1)*redraw.r_charh << eig.y,
-		   (session->pos.x+1)*redraw.r_charw << eig.x,
-		   (-session->pos.y)*redraw.r_charh << eig.y);
+      		   pos.x*redraw.r_charw << eig.x,
+		   (-pos.y-1)*redraw.r_charh << eig.y,
+		   (pos.x+1)*redraw.r_charw << eig.x,
+		   (-pos.y)*redraw.r_charh << eig.y);
     }
     return;
   }
@@ -1667,16 +1668,17 @@ void lose_caret(int window_handle)
   if (session)
   {
     /* if the caret is being lost from the pane, then deselect the cursor too */
-    calc=get_cursor_position(session);
-    write_assigned_flags(session, calc,
-    			 read_assigned_flags(session, calc) | NETTLE_FLAG_NO_INPUT);
+    pos=get_cursor_position(session);
+    write_assigned_flags(session, pos.x, pos.y,
+    			 read_assigned_flags(session, pos.x, pos.y) | NETTLE_FLAG_NO_INPUT);
+
     cursor_session = NULL;
 
     force_redraw(session->window_handle,
-    		 session->pos.x*redraw.r_charw << eig.x,
-		 (-session->pos.y-1)*redraw.r_charh << eig.y,
-		 (session->pos.x+1)*redraw.r_charw << eig.x,
-		 (-session->pos.y)*redraw.r_charh << eig.y);
+    		 pos.x*redraw.r_charw << eig.x,
+		 (-pos.y-1)*redraw.r_charh << eig.y,
+		 (pos.x+1)*redraw.r_charw << eig.x,
+		 (-pos.y)*redraw.r_charh << eig.y);
   }
 }
 
@@ -1696,7 +1698,7 @@ static void set_cursor_session (const struct session_struct *session)
 void gain_caret(int window_handle)
 {
   struct session_struct *session = sessions;
-  int calc;
+  struct coords pos;
 
   while (session && window_handle != session->window_handle)
   {
@@ -1707,16 +1709,16 @@ void gain_caret(int window_handle)
   {
     /* if the handle is the window handle, get input back for the cursor */
     set_cursor_session (session);
-    calc=get_cursor_position(session);
+    pos=get_cursor_position(session);
 
-    write_assigned_flags(session, calc,
-    			 read_assigned_flags(session, calc) & ~NETTLE_FLAG_NO_INPUT);
+    write_assigned_flags(session, pos.x, pos.y,
+    			 read_assigned_flags(session, pos.x, pos.y) & ~NETTLE_FLAG_NO_INPUT);
 
     force_redraw(session->window_handle,
-    		 session->pos.x*redraw.r_charw << eig.x,
-		 (-session->pos.y-1)*redraw.r_charh << eig.y,
-		 (session->pos.x+1)*redraw.r_charw << eig.x,
-	         (-session->pos.y)*redraw.r_charh << eig.y);
+    		 pos.x*redraw.r_charw << eig.x,
+		 (-pos.y-1)*redraw.r_charh << eig.y,
+		 (pos.x+1)*redraw.r_charw << eig.x,
+	         (-pos.y)*redraw.r_charh << eig.y);
 
     if (line_editor_active(session) && session->line_editor_type==LINEEDIT_CHECKBOX)
     {
@@ -1745,17 +1747,17 @@ void gain_caret(int window_handle)
   if (session)
   {
     set_cursor_session (session);
-    calc=get_cursor_position(session);
+    pos=get_cursor_position(session);
 
     /* unset no input flag again */
-    write_assigned_flags(session, calc,
-    			 read_assigned_flags(session, calc) & ~NETTLE_FLAG_NO_INPUT);
+    write_assigned_flags(session, pos.x, pos.y,
+    			 read_assigned_flags(session, pos.x, pos.y) & ~NETTLE_FLAG_NO_INPUT);
 
     force_redraw(session->window_handle,
-    		 session->pos.x*redraw.r_charw << eig.x,
-		 (-session->pos.y-1)*redraw.r_charh << eig.y,
-		 (session->pos.x+1)*redraw.r_charw << eig.x,
-	         (-session->pos.y)*redraw.r_charh << eig.y);
+    		 pos.x*redraw.r_charw << eig.x,
+		 (-pos.y-1)*redraw.r_charh << eig.y,
+		 (pos.x+1)*redraw.r_charw << eig.x,
+	         (-pos.y)*redraw.r_charh << eig.y);
 
     {
       struct wimp_getcaretposition_block block;
@@ -1766,7 +1768,7 @@ void gain_caret(int window_handle)
       if (block.window_handle!=session->pane_handle &&
           session->line_editor_type==LINEEDIT_CHECKBOX)
       {
-        set_caret_position(session->pane_handle,1,-1,
+        set_caret_position(session->pane_handle, 1, -1,
            		   get_icon_data_length(session->pane_handle,1));
       }
     }
@@ -2173,7 +2175,6 @@ void set_caret_position(int window_handle, int icon_handle, int flags, int strin
     if (window_handle == session->window_handle ||
         window_handle == session->pane_handle)
     {
-      session = session->next;
       cursor_session=session;
       break;
     }

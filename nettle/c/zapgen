@@ -45,12 +45,12 @@
 
 
 char *
-zapgen_code (int *output_buffer, const char *input_buffer,
+zapgen_code (int *output_buffer, int **input_line_offsets,
 	     int width, int first_line, int last_line, int session_flags)
 {
   int *line_offsets = output_buffer;
   char *write = (char *)(line_offsets + last_line + 1);
-  const struct term_char *input = (const struct term_char *)(const void *) input_buffer;
+  const struct term_char *input;
   int line_number = 0;
 
   /* line_offsets -> list of offsets of lines (in the data block) */
@@ -68,11 +68,12 @@ zapgen_code (int *output_buffer, const char *input_buffer,
     int current_fg = redraw.r_for;
     int current_bg = redraw.r_bac;
 
+    input=(struct term_char *) input_line_offsets[line_number];
+
     if (line_number < first_line)
     {
       /* if not in the window, mark the line as blank and move on */
       *line_offsets++ = write - 2 - (char *) output_buffer;
-      input += width;
       continue;
     }
 
@@ -266,8 +267,7 @@ int *load_font(char *font)
 
     /* Actually, if the 1st arg is the destination for the move and the 2nd is the source, */
     /* I have no idea why this works... */
-    MEMMOVE(area+0x20, area+0x20+(first_char*char_size),
-            (last_char-first_char)*char_size);
+    memmove(area+0x20+(first_char*char_size), area+0x20, (last_char-first_char)*char_size);
   }
 
   /* fill in graphics chars */

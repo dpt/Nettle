@@ -68,7 +68,7 @@ struct zapredraw_block
   int r_mode          /*=0*/;    /* screen mode */
 };
 
-extern char *zapgen_code(int *, const char *, int, int, int, int);
+extern char *zapgen_code(int *, int **, int, int, int, int);
 
 extern int *load_font(char *);
 

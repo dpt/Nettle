@@ -39,12 +39,15 @@ extern void changedbox_update_offset (int calc);
 extern void changedbox_update_whole (void);
 extern void force_redraw_changedbox (void);
 
+extern void clear_screen(struct session_struct *, int, int, char, char, char, char);
+extern void copy_main_alternate(struct session_struct *);
+
 extern void process_data(struct session_struct *, char);
 
 extern void process_wimp_key(struct session_struct *, int, int);
 extern void process_data_transmission(struct session_struct *, const char *, int);
 extern void process_line_editor(struct session_struct *);
 
-extern int get_cursor_position(struct session_struct *);
+extern struct coords get_cursor_position(struct session_struct *);
 
 #endif

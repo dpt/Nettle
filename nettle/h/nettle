@@ -46,7 +46,8 @@ enum nettle_terminal {
   NETTLE_TERMINAL_VT420,
   NETTLE_TERMINAL_VT510,
   NETTLE_TERMINAL_RXVT,
-  NETTLE_TERMINAL_XTERM
+  NETTLE_TERMINAL_XTERM,
+  NETTLE_TERMINAL_XTERM_COLOR
 };
 
 
@@ -117,16 +118,28 @@ void remove_session(struct session_struct *);
 void nettle_senddata(struct session_struct *, const char *, int);
 void reset_terminal(struct session_struct *);
 
-void write_assigned(struct session_struct *, int, char, char, char, char);
-void write_alt_assigned(struct session_struct *, int, char, char, char, char);
+bool valid_x(struct session_struct *, int);
+bool valid_y(struct session_struct *, int);
+bool valid_alt_y(struct session_struct *, int);
 
-char read_assigned_fg(struct session_struct *, int);
-char read_assigned_bg(struct session_struct *, int);
-char read_assigned_flags(struct session_struct *, int);
-char read_assigned_character(struct session_struct *, int);
+void write_assigned(struct session_struct *, int, int, char, char, char, char);
+void write_alt_assigned(struct session_struct *, int, int, char, char, char, char);
 
-void write_assigned_flags(struct session_struct *, int, char);
-void write_assigned_character(struct session_struct *, int, char);
+char read_assigned_fg(struct session_struct *, int, int);
+char read_assigned_bg(struct session_struct *, int, int);
+char read_assigned_flags(struct session_struct *, int, int);
+char read_assigned_character(struct session_struct *, int, int);
+
+char read_alt_assigned_fg(struct session_struct *, int, int);
+char read_alt_assigned_bg(struct session_struct *, int, int);
+char read_alt_assigned_flags(struct session_struct *, int, int);
+char read_alt_assigned_character(struct session_struct *, int, int);
+
+void write_assigned_flags(struct session_struct *, int, int, char);
+void write_assigned_character(struct session_struct *, int, int, char);
+
+void create_terminal(struct session_struct *, struct coords, int);
+void delete_terminal(struct session_struct *);
 
 void resize_terminal(struct session_struct *, int, int, int, bool);
 void reopen_and_size_window(struct session_struct *, int, int, int, int, int);

@@ -49,13 +49,6 @@
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
 
-/* allow compile-time selection of memmove or ZapRedraw_MoveBytes */
-#ifdef USE_MEMMOVE
-# define MEMMOVE(src,dest,len) memmove ((dest), (src), (len))
-#else
-# define MEMMOVE(src,dest,len) _swi(ZapRedraw_MoveBytes, _INR(1,3), (int)(src), (int)(dest), (len))
-#endif
-
 struct term_char
 {
   char fg, bg, flags, chr;
@@ -116,8 +109,10 @@ struct session_struct
   struct session_struct *prev;	/* previous session in linked list */
   int window_handle;		/* window handle */
   int pane_handle;		/* pane window handle */
-  char *assigned_area;		/* data area for terminal */
-  char *alternate_area;		/* ditto, alternate (no scrollback) */
+
+  int **assigned_area;           /* pointer to list of pointers for each line in terminal */
+  int **alternate_area;          /* ditto, alternate (no scrollback) */
+
   enum nettle_terminal terminal_type; /* terminal type */
   struct coords pos;		/* current position */
   struct coords terminal_size;	/* size of terminal */
