@@ -351,7 +351,7 @@ read_zap_font_selection (const int *selection, char *string, int length)
 static int
 menu_strcoll (const void *s1, const void *s2)
 {
-  return strcoll ((const char *)s1 + 12, (const char *)s2 + 12);
+  return strcoll (*((const char **)s1 + 3), *((const char **)s2 + 3));
 }
 
 
