@@ -66,8 +66,8 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   /* define characters */
   area += 0x100 * char_size;
 
-  /* currently defining 0x100 - 0x11C - initialise this area to 0 */
-  memset (area, 0, 0x1D * char_size);
+  /* initialise extra character area (chars 0x100-<end>) to 0 */
+  memset (area, 0, EXTRA_ZAP_CHARS * char_size);
 
   /*	Active Cursor	0x100 */
   switch (cursor_type)
@@ -313,6 +313,29 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[loop] = ptr1[loop] | ptr2[loop];
   }
   area+=char_size;
+
+  /*	Underline	0x11D */
+  {
+    /* Principle: locate _ and make /any/ pixels that are set span the
+       entire row. */
+    const char *ptr1 = base + '_' * char_size;
+    char *ptr2 = area;
+    for (loop = 0; loop<height; loop++)
+    {
+      int loop2;
+      int anyset=0;
+      for (loop2 = 0; loop2<step; loop2++)
+        anyset|=*ptr1++;
+
+      if (anyset)
+      {
+        for (loop2 = 0; loop2<step; loop2++)
+          *ptr2++=0xff;
+      }
+      else
+        ptr2+=step;
+    }
+  }
 }
 
 
