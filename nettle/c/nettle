@@ -288,12 +288,12 @@ static void start_connection_int (struct connection_params *params )
            }
            else
            {
-             fprintf(pipefile, "*fx 229,1\n%s\n", params->command);
+             fprintf(pipefile, "fx 229 1\n%s\n", params->command);
              fclose(pipefile);
              misc_setfiletype("Pipe:$.NettleTask", 0xfeb);
 
-             sprintf (temp_string, "%%TaskWindow Pipe:$.NettleTask -ctrl -name \"Nettle task\"" \
-                        " -quit -task &%X -txt &%X", task_handle, (int)session);
+             sprintf (temp_string, "%%TaskWindow \"%%Obey -c Pipe:$.NettleTask\" -ctrl -name \"Nettle task - %s\"" \
+                        " -quit -task &%X -txt &%X", params->command, task_handle, (int)session);
            }
         }
         else
