@@ -1047,7 +1047,7 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   char    url[1024];
   char   *urlptr;
   char   *urlend;
-  char   *urlchars;
+  const char *urlchars;
   int     ymax = session->terminal_size.y + session->scrollback;
   int     xmax = session->terminal_size.x;
 
@@ -1062,7 +1062,9 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
 
   logf("\nclicked on '%c'\n", (char) ICHR(x,y) );
 
-  urlchars = lookup_inbuffer("URL_Chars");
+  urlchars = lookup_static("URL_Chars");
+
+  logf("\nURLChars = %s\n", urlchars);
 
   if ( strchr( urlchars, ICHR(x,y) ) )
     return;
