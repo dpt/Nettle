@@ -13,7 +13,7 @@ CC = $(GCCDIR)/cross/bin/gcc
 CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -Wshadow -Wundef \
    -Wpointer-arith -Wcast-align -Wwrite-strings -Wstrict-prototypes \
    -Wmissing-prototypes -Wmissing-declarations -Wnested-externs \
-   -Wcast-qual -DFORTIFY $(LIBFLAGS) -O2
+   -Wcast-qual -DFORTIFY $(LIBFLAGS) -O3
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = $(CC)
@@ -27,7 +27,7 @@ ASMFLAGS = -c
 
 TEMPLATES = !Nettle/Resources/UK/Template3D,fec
 
-OBJS = chardefn.o choices.o dns.o globals.o init.o keyboard.o lineedit.o \
+OBJS = chardefn.o choices.o dnslib.o globals.o init.o keyboard.o lineedit.o \
        main.o misc.o hotlist.o nettle.o process.o socket.o quit.o seln.o \
        wimp.o zapgen.o fortify.o sockwatch.o messages.o termlist.o \
        wimputil.o url.o
