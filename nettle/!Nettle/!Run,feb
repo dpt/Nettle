@@ -1,6 +1,6 @@
 |
 | !Nettle.!Run
-| © Nettle developers 2000-2003
+| © Nettle developers 2000-2004
 
 Set Nettle$Dir <Obey$Dir>
 Set NettleFonts$Path <Nettle$Dir>.Fonts.
@@ -20,7 +20,12 @@ Unset Nettle$ZapRedrawPath
 
 | Get SocketWatch -- if the OS can't cope
 Set Nettle$NeedSockWatch No
-RmEnsure Internet 5.42 Set Nettle$NeedSockWatch Yes
+
+| This sets Nettle$SelectPollword to 1 if the OS has FIOPOLLWORD
+Run <Nettle$Dir>.Resources.PollTest
+If "<Nettle$SelectPollword>"="0" Then Set Nettle$NeedSockWatch Yes
+Unset Nettle$SelectPollword
+
 If "<Nettle$NeedSockWatch>"="Yes" Then RMEnsure SocketWatch 0.04 RMLoad System:Modules.Network.SockWatch
 If "<Nettle$NeedSockWatch>"="Yes" Then RMEnsure SocketWatch 0.04 Error Nettle requires SocketWatch 0.04 or later
 Unset Nettle$NeedSockWatch
