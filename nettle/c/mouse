@@ -17,18 +17,21 @@
 void mouse_handle_event(struct session_struct *session, int x, int y, int buttons)
 {
   int unix_button;
-  struct wimp_getwindowstate_block block;
   int x_pos;
   int y_pos;
   int unix_x;
   int unix_y;
 
-  block.window_handle=session->window_handle;
+  {
+    struct wimp_getwindowstate_block block;
 
-  _swi(Wimp_GetWindowState, _IN(1), &block);
+    block.window_handle=session->window_handle;
 
-  x_pos=block.min.x-block.scroll.x;
-  y_pos=block.max.y-block.scroll.y;
+    _swi(Wimp_GetWindowState, _IN(1), &block);
+
+    x_pos=block.min.x-block.scroll.x;
+    y_pos=block.max.y-block.scroll.y;
+  }
 
   unix_x=( ( (x - x_pos) >> eig.x ) / redraw.r_charw )+1;
   unix_y=-( ( (y - y_pos) >> eig.y ) / redraw.r_charh )+1-session->scrollback;
@@ -82,9 +85,10 @@ void mouse_handle_event(struct session_struct *session, int x, int y, int button
       break;
   }
 
-  /* Calculate unix_button based on SHIFT, ALT, CTRL keys here */
+  if (unix_button==-1)
+    return;
 
-  printf("Mouse event: X = %d, Y = %d, button = %d\n",unix_x,unix_y,unix_button);
+  /* Calculate unix_button based on SHIFT, ALT, CTRL keys here */
 
   switch (session->mouse_mode)
   {
@@ -100,8 +104,6 @@ void mouse_handle_event(struct session_struct *session, int x, int y, int button
         block[3]=unix_button+' ';
         block[4]=unix_x+' ';
         block[5]=unix_y+' ';
-
-        printf("\tTransmitting %s\n",block);
 
         nettle_senddata(session, block, 6);
       }

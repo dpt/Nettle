@@ -16,13 +16,12 @@
 #define RESOLVER_INPROGRESS	1
 #define RESOLVER_SUCCESS	2
 
-extern int socket_connecttoip(int, int);
+extern int socket_connecttoip(unsigned long, int);
 extern void socket_close(int);
 extern int socket_readdata(int,char *,int);
 extern int socket_senddata(int /*socket*/, const char */*buffer*/,
                            int /*length*/);
-extern char *socket_ip_string(int);
-
+extern char *socket_ip_string(unsigned long);
 
 
 /**

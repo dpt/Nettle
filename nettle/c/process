@@ -17,6 +17,7 @@
 #include "nettle.h"
 #include "process.h"
 #include "seln.h"
+#include "socket.h"
 #include "spool.h"
 #include "wimp.h"
 #include "wimputil.h"
@@ -1312,6 +1313,7 @@ static bool process_escape_length_3(struct session_struct *session)
               case TELOPT_TERMINAL_TYPE:
               case TELOPT_NAWS:
               case TELOPT_TERMINAL_SPEED:
+              case TELOPT_XDISPLOC:
                 if (session->session_flags[(unsigned char) session->escape_string[2]]==false)
                 {
                   char block[3];
@@ -1325,7 +1327,7 @@ static bool process_escape_length_3(struct session_struct *session)
 
                 session->session_flags[(unsigned char) session->escape_string[2]]=true;
 
-                if (session->escape_string[2]==31)
+                if (session->escape_string[2]==TELOPT_NAWS)
                 {
                   char block[9];
 
@@ -2571,7 +2573,7 @@ static bool process_escape_length_x(struct session_struct *session)
             switch (session->escape_string[2])
             {
               case TELOPT_TERMINAL_TYPE:
-                if (session->escape_string[3]==1)
+                if (session->escape_string[3]==TELOPT_SUB_SEND)
                 {
                   char block[256];
                   block[0]=TELNET_IAC;
@@ -2586,7 +2588,7 @@ static bool process_escape_length_x(struct session_struct *session)
                 }
                 break;
               case TELOPT_TERMINAL_SPEED:
-                if (session->escape_string[3]==1)
+                if (session->escape_string[3]==TELOPT_SUB_SEND)
                 {
                   char block[256];
                   block[0]=TELNET_IAC;
@@ -2599,6 +2601,48 @@ static bool process_escape_length_x(struct session_struct *session)
                   nettle_senddata(session,block,6+strlen("9600"));
                   done=true;
                 }
+                break;
+              case TELOPT_XDISPLOC:
+                if (session->escape_string[3]==TELOPT_SUB_SEND)
+                {
+                  char block[256];
+                  char name[256];
+
+                  strcpy(name,getenv("Inet$HostName"));
+                  if (strncmp(name,".",1)!=0)
+                  {
+                    if (getenv("Inet$LocalDomain")!=NULL)
+                    {
+                      strcat(name,".");
+                      strcat(name,getenv("Inet$LocalDomain"));
+                    }
+                  }
+
+                  block[0]=TELNET_IAC;
+                  block[1]=TELNET_SB;
+                  block[2]=TELOPT_XDISPLOC;
+                  block[3]=TELOPT_SUB_IS;
+
+                  strcpy(block+4,name);
+                  strcpy(block+4+strlen(name),":0.0");
+                  block[8+strlen(name)]=TELNET_IAC;
+                  block[9+strlen(name)]=TELNET_SE;
+
+                  block[10+strlen(name)]='\0';
+                  printf("TELOPT_XDISPLOC: ");
+                  {
+                    int loop;
+                    for (loop=0; loop<11+strlen(name); loop++)
+                    {
+                      printf("%c",block[loop]);
+                    }
+                    printf("\n");
+                  }
+
+                  nettle_senddata(session,block,10+strlen(name));
+                  done=true;
+                }
+                break;
             }
           }
           break;

@@ -40,7 +40,7 @@ extern int close(int /*s*/);
 
 
 
-int socket_connecttoip(int ip_address,int port_number)
+int socket_connecttoip(unsigned long ip_address,int port_number)
 {
   int socket_handle;
   int data=1;
@@ -147,15 +147,13 @@ int socket_senddata(int socket_handle, const char * buffer, int length)
 }
 
 
-char *socket_ip_string(int address) {
+char *socket_ip_string(unsigned long address) {
   struct in_addr saddr;
 
   saddr.s_addr = address;
 
   return inet_ntoa(saddr);
 }
-
-
 
 const char *socket_strerror(int errnum)
 {

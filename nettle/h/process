@@ -29,8 +29,10 @@
 #define TELOPT_TERMINAL_TYPE   24
 #define TELOPT_NAWS            31
 #define TELOPT_TERMINAL_SPEED  32
+#define TELOPT_XDISPLOC        35
 
 #define TELOPT_SUB_IS   0
+#define TELOPT_SUB_SEND 1
 
 extern void changedbox_init (struct session_struct *);
 extern void changedbox_update (int, int, int, int); /* tl, br */
