@@ -56,18 +56,31 @@ void start_connection(void)
   int connection_type;
   enum nettle_terminal terminal_type;
   int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  struct session_struct *session;
 
-  /* give up if too many sessions */
-  if (current_session == Nettle_MaxSessions)
+  session = malloc(sizeof(struct session_struct));
+  session->next = NULL;
+  session->prev = NULL;
+
+  /* ought to give a different message, really */
+  if (!session)
   {
     generror("TooMany", true);
     return;
   }
 
+  /* Insert into list */
+  session->next = sessions;
+  if (sessions)
+  {
+    sessions->prev = session;
+  }
+  sessions = session;
+
   /* clear all the session flags */
   for (loop=0; loop<256; loop++)
   {
-    session[current_session].session_flags[loop]=false;
+    session->session_flags[loop]=false;
   }
 
   read_icon_data(open, 4, string, 1024);
@@ -103,6 +116,12 @@ void start_connection(void)
       if (strlen(string)==0)
       {
         generror("InvalidAddr", true);
+        sessions = session->next;
+        if (sessions)
+        {
+          sessions->prev = NULL;
+        }
+        free(session);
         return;
       }
 
@@ -142,34 +161,40 @@ void start_connection(void)
       /* look at the string to find a port if any (separated by colon or comma) */
       if (instr(string,",")>=0)
       {
-        strncpy(session[current_session].socket_host,string,instr(string,","));
-        session[current_session].socket_host[instr(string,",")]='\0';
-        session[current_session].socket_port=atoi(string+instr(string,",")+1);
+        strncpy(session->socket_host,string,instr(string,","));
+        session->socket_host[instr(string,",")]='\0';
+        session->socket_port=atoi(string+instr(string,",")+1);
       }
       else
       {
         if (instr(string,":")>=0)
         {
-          strncpy(session[current_session].socket_host,string,instr(string,":"));
-          session[current_session].socket_host[instr(string,":")]='\0';
-          session[current_session].socket_port=atoi(string+instr(string,":")+1);
+          strncpy(session->socket_host,string,instr(string,":"));
+          session->socket_host[instr(string,":")]='\0';
+          session->socket_port=atoi(string+instr(string,":")+1);
         }
         else
         {
-          strcpy(session[current_session].socket_host,string);
-          session[current_session].socket_port=23;
+          strcpy(session->socket_host,string);
+          session->socket_port=23;
         }
       }
 
       /* if the port is <1, then it's either invalid or was too big and got wrapped */
-      if (session[current_session].socket_port<1)
+      if (session->socket_port<1)
       {
         generror("InvalidPort", true);
+        sessions = session->next;
+        if (sessions)
+        {
+          sessions->prev = NULL;
+        }
+        free(session);
         return;
       }
 
-      session[current_session].socket_handle=0;
-      session[current_session].socket_state=NETTLE_SESSION_RESOLVE;
+      session->socket_handle=0;
+      session->socket_state=NETTLE_SESSION_RESOLVE;
 
       close_window(open);
 
@@ -179,6 +204,12 @@ void start_connection(void)
       if (strlen(string)==0)
       {
         generror("InvalidComm", true);
+        sessions = session->next;
+        if (sessions)
+        {
+          sessions->prev = NULL;
+        }
+        free(session);
         return;
       }
 
@@ -186,13 +217,13 @@ void start_connection(void)
       {
         char temp_string[1024];
         sprintf(temp_string,"%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X \
-        		     -txt &%X",string,task_handle,current_session);
+        		     -txt &%X",string,task_handle,(int)session);
 
         _swi(Wimp_StartTask, _IN(0), temp_string);
       }
 
       /* set ECHO bit to true */
-      session[current_session].session_flags[1]=true;
+      session->session_flags[1]=true;
 
       close_window(open);
 
@@ -200,51 +231,51 @@ void start_connection(void)
   }
 
   /* set all the attributes to their defaults */
-  session[current_session].terminal_size_x=80;
-  session[current_session].terminal_size_y=24;
-  session[current_session].scrollback=96;
-  session[current_session].title=malloc(256);
-  strcpy(session[current_session].title,"");
-  session[current_session].assigned_area=malloc(session[current_session].terminal_size_x*
-                                                (session[current_session].terminal_size_y+
-                                                 session[current_session].scrollback)*4);
-  session[current_session].xpos=0;
-  session[current_session].ypos=session[current_session].scrollback;
-  session[current_session].connection_type=connection_type;
-  session[current_session].terminal_type=terminal_type;
-  reset_terminal(current_session);
+  session->terminal_size_x=80;
+  session->terminal_size_y=24;
+  session->scrollback=96;
+  session->title=malloc(256);
+  strcpy(session->title,"");
+  session->assigned_area=malloc(session->terminal_size_x*
+                                                (session->terminal_size_y+
+                                                 session->scrollback)*4);
+  session->xpos=0;
+  session->ypos=session->scrollback;
+  session->connection_type=connection_type;
+  session->terminal_type=terminal_type;
+  reset_terminal(session);
 
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
   {
-    int loop_limit=((session[current_session].terminal_size_x)*
-                   (session[current_session].terminal_size_y+
-                    session[current_session].scrollback)*4);
+    int loop_limit=((session->terminal_size_x)*
+                   (session->terminal_size_y+
+                    session->scrollback)*4);
 
     for (loop=0; loop<loop_limit; loop+=4)
     {
-      write_assigned(current_session,loop,7,0,0,32);
+      write_assigned(session,loop,7,0,0,32);
     }
   }
 
   /* create tabs */
-  session[current_session].number_of_tabs=0;
-  for (loop=0; loop<session[current_session].terminal_size_x; loop+=8)
+  session->number_of_tabs=0;
+  for (loop=0; loop<session->terminal_size_x; loop+=8)
   {
-    session[current_session].tabs[session[current_session].number_of_tabs]=loop;
-    session[current_session].number_of_tabs++;
+    session->tabs[session->number_of_tabs]=loop;
+    session->number_of_tabs++;
   }
 
   /* if line editor is turned on, allocate all the lineeditor space */
   if (line_editor)
   {
     int loop;
-    session[current_session].line_editor_history=malloc(line_editor_size*512*sizeof(char));
-    session[current_session].line_editor_position=0;
-    session[current_session].line_editor_total=1;
+    session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
+    session->line_editor_position=0;
+    session->line_editor_total=1;
 
     for (loop=0; loop<line_editor_size; loop++)
     {
-      strcpy(session[current_session].line_editor_history+(loop*512),"");
+      strcpy(session->line_editor_history+(loop*512),"");
     }
   }
 
@@ -253,12 +284,12 @@ void start_connection(void)
     struct wimp_createwindow_block block;
 
     block.minx         =102;
-    block.miny         =1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
-    block.maxx         =102+(session[current_session].terminal_size_x*redraw.r_charw*2);
+    block.miny         =1088-(session->terminal_size_y*redraw.r_charh*2*zap_yeig);
+    block.maxx         =102+(session->terminal_size_x*redraw.r_charw*2);
     block.maxy         =1088;
     block.scroll_x     =0;
-    block.scroll_y     =-((session[current_session].terminal_size_y+
-                           session[current_session].scrollback)
+    block.scroll_y     =-((session->terminal_size_y+
+                           session->scrollback)
                           *(redraw.r_charh*2*zap_yeig));
     block.handle_behind=-1;
     block.window_flags =0xff080142;
@@ -273,10 +304,10 @@ void start_connection(void)
     block.flags              =0;
 
     block.work_minx=0;
-    block.work_miny=-((session[current_session].terminal_size_y+
-                       session[current_session].scrollback)
+    block.work_miny=-((session->terminal_size_y+
+                       session->scrollback)
                       *(redraw.r_charh*2*zap_yeig));
-    block.work_maxx=session[current_session].terminal_size_x*redraw.r_charw*2;
+    block.work_maxx=session->terminal_size_x*redraw.r_charw*2;
     block.work_maxy=0;
 
     block.icon_flags    =0x00000119;
@@ -285,14 +316,14 @@ void start_connection(void)
     block.min_width     =4;
     block.min_height    =4;
 
-    block.title_text      =session[current_session].title;
+    block.title_text      =session->title;
     block.title_validation=0;
     block.title_buffer_len=256;
     block.number_of_icons =0;
 
-    session[current_session].window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
+    session->window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
 
-    set_title_bar(session[current_session].window_handle,"nettle");
+    set_title_bar(session->window_handle,"nettle");
   }
 
   if (line_editor)
@@ -301,9 +332,9 @@ void start_connection(void)
     struct wimp_createwindow_block block;
 
     block.minx=102;
-    block.miny=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig)-40;
-    block.maxx=102+(session[current_session].terminal_size_x*redraw.r_charw*2);
-    block.maxy=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
+    block.miny=1088-(session->terminal_size_y*redraw.r_charh*2*zap_yeig)-40;
+    block.maxx=102+(session->terminal_size_x*redraw.r_charw*2);
+    block.maxy=1088-(session->terminal_size_y*redraw.r_charh*2*zap_yeig);
 
     block.scroll_x=0;
     block.scroll_y=0;
@@ -323,7 +354,7 @@ void start_connection(void)
 
     block.work_minx=0;
     block.work_miny=-48;
-    block.work_maxx=session[current_session].terminal_size_x*redraw.r_charw*2;
+    block.work_maxx=session->terminal_size_x*redraw.r_charw*2;
     block.work_maxy=0;
 
     block.icon_flags    =0x00000000;
@@ -338,28 +369,28 @@ void start_connection(void)
     block.title_buffer_len=0;
     block.number_of_icons =0;
 
-    session[current_session].pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
+    session->pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
   }
 
-  open_window(session[current_session].window_handle,false);
+  open_window(session->window_handle,false);
 
   if (line_editor)
   {
-    set_caret_position(session[current_session].pane_handle,1,-1,
-				strlen(read_icon_data(session[current_session].pane_handle, 1, string, 1024)));
+    set_caret_position(session->pane_handle,1,-1,
+				strlen(read_icon_data(session->pane_handle, 1, string, 1024)));
   }
   else
   {
-    set_caret_position(session[current_session].window_handle,-1,-1,-1);
+    set_caret_position(session->window_handle,-1,-1,-1);
   }
 
   switch (connection_type)
   {
     case NETTLE_TELNET:
-      set_title_bar(session[current_session].window_handle,"nettle (Connecting)");
-      write_out_string(current_session,"nettle: Looking up host ");
-      write_out_string(current_session,session[current_session].socket_host);
-      write_out_string(current_session,"...\r\n");
+      set_title_bar(session->window_handle,"nettle (Connecting)");
+      write_out_string(session,"nettle: Looking up host ");
+      write_out_string(session,session->socket_host);
+      write_out_string(session,"...\r\n");
       break;
   }
 
@@ -370,40 +401,42 @@ void start_connection(void)
   /* writing when it falls outside the area, and the number returned at the end - it could */
   /* make a larger buffer, but not done yet. */
 
-  if (size_of_zapredraw_area<(session[current_session].terminal_size_x*
-                              (session[current_session].terminal_size_y+
-                               session[current_session].scrollback)*6)) /* 6 is 'some value' */
+  if (size_of_zapredraw_area<(session->terminal_size_x*
+                              (session->terminal_size_y+
+                               session->scrollback)*6)) /* 6 is 'some value' */
   {
-    size_of_zapredraw_area=(session[current_session].terminal_size_x*
-                              (session[current_session].terminal_size_y+
-                               session[current_session].scrollback)*6); /* same here */
+    size_of_zapredraw_area=(session->terminal_size_x*
+                              (session->terminal_size_y+
+                               session->scrollback)*6); /* same here */
 
     zapredraw_area=realloc(zapredraw_area,size_of_zapredraw_area);
 
   }
-
-  current_session++;
 }
 
-void write_out_string(int session_handle, char *string)
+void write_out_string(struct session_struct *session, char *string)
 {
-  write_out_data(session_handle,string,strlen(string));
+  write_out_data(session, string, strlen(string));
 }
 
-void write_out_data(int session_handle, char *data, int length_data)
+void write_out_data(struct session_struct *session, char *data, int length_data)
 {
   int loop, calc;
   char cursor_flags;
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  int zap_yeig;
 
-  if (length_data==0)
+  if (length_data == 0) {
     return;
+  }
 
-  calc=get_cursor_position(session_handle);
+  zap_yeig = _swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+
+
+  calc=get_cursor_position(session);
 
   /* get the cursor flags */
-  cursor_flags=read_assigned_flags(session_handle, calc) &
-  						     (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
+  cursor_flags=read_assigned_flags(session, calc) &
+        (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
   if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
@@ -412,8 +445,8 @@ void write_out_data(int session_handle, char *data, int length_data)
   }
 
   /* remove the cursor from the position */
-  write_assigned_flags(session_handle, calc, read_assigned_flags(session_handle,calc) &
-  					~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
+  write_assigned_flags(session, calc, read_assigned_flags(session, calc) &
+      ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
 
   loop=0;
   while (loop<length_data)
@@ -425,17 +458,17 @@ void write_out_data(int session_handle, char *data, int length_data)
     /*log_file=0; */
 
     /* process the current byte at this position */
-    process_data(data[loop],session_handle);
+    process_data(session, data[loop]);
 
     loop++;
   }
 
-  calc=get_cursor_position(session_handle);
+  calc=get_cursor_position(session);
 
   /* OR back in the cursor flags */
-  if (session[session_handle].other_session_flags & NETTLE_OTHER_CURSOR_VIS)
+  if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
-    write_assigned_flags(session_handle, calc, read_assigned_flags(session_handle, calc)
+    write_assigned_flags(session, calc, read_assigned_flags(session, calc)
     										 | cursor_flags);
   }
 
@@ -444,21 +477,21 @@ void write_out_data(int session_handle, char *data, int length_data)
   refresh_selection_set();
 
   /* and redraw the window */
-  force_redraw(session[session_handle].window_handle,0,
-               (-session[session_handle].terminal_size_y-session[session_handle].scrollback)*
+  force_redraw(session->window_handle,0,
+               (-session->terminal_size_y-session->scrollback)*
                redraw.r_charh*2*zap_yeig,
-                      session[session_handle].terminal_size_x*redraw.r_charw*2,0);
+                      session->terminal_size_x*redraw.r_charw*2,0);
 }
 
 
-void remove_session(int session_handle)
+void remove_session(struct session_struct *session)
 {
-  if (session[session_handle].socket_handle!=0)
+  if (session->socket_handle != 0)
   {
-    switch (session[session_handle].connection_type)
+    switch (session->connection_type)
     {
       case NETTLE_TELNET:
-        socket_close(session[session_handle].socket_handle);
+        socket_close(session->socket_handle);
         break;
       case NETTLE_TASKWINDOW:
         {
@@ -470,7 +503,7 @@ void remove_session(int session_handle)
           block.user_message.message_code=0x808C4;
 
           _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, &block,
-                                                       session[session_handle].socket_handle);
+                                                       session->socket_handle);
         }
         break;
     }
@@ -480,13 +513,13 @@ void remove_session(int session_handle)
     /* delete the windows */
     struct wimp_deletewindow_block block;
 
-    block.window_handle=session[session_handle].window_handle;
+    block.window_handle=session->window_handle;
 
     _swi(Wimp_DeleteWindow, _IN(1), &block);
 
     if (line_editor)
     {
-      block.window_handle=session[session_handle].pane_handle;
+      block.window_handle=session->pane_handle;
 
       _swi(Wimp_DeleteWindow, _IN(1), &block);
     }
@@ -495,87 +528,48 @@ void remove_session(int session_handle)
   /* free lineeditor space */
   if (line_editor)
   {
-    free(session[session_handle].line_editor_history);
+    free(session->line_editor_history);
   }
 
   /* free the assigned area and title */
-  free(session[session_handle].assigned_area);
-  free(session[session_handle].title);
+  free(session->assigned_area);
+  free(session->title);
 
+  if (session->prev)
   {
-    /* shuffle down all the other data */
-    int loop;
-    for (loop=session_handle; loop<current_session-1; loop++)
-    {
-      session[loop].window_handle=session[loop+1].window_handle;
-      session[loop].pane_handle=session[loop+1].pane_handle;
-      session[loop].assigned_area=session[loop+1].assigned_area;
-      session[loop].terminal_type=session[loop+1].terminal_type;
-      session[loop].xpos=session[loop+1].xpos;
-      session[loop].ypos=session[loop+1].ypos;
-      session[loop].terminal_size_x=session[loop+1].terminal_size_x;
-      session[loop].terminal_size_y=session[loop+1].terminal_size_y;
-      session[loop].scrollback=session[loop+1].scrollback;
-      session[loop].socket_handle=session[loop+1].socket_handle;
-      strcpy(session[loop].socket_host,session[loop+1].socket_host);
-      session[loop].socket_port=session[loop+1].socket_port;
-      session[loop].socket_ip=session[loop+1].socket_ip;
-      session[loop].socket_state=session[loop+1].socket_state;
-      session[loop].current_fg=session[loop+1].current_fg;
-      session[loop].current_bg=session[loop+1].current_bg;
-      session[loop].current_flags=session[loop+1].current_flags;
-      session[loop].title=session[loop+1].title;
-      {
-        int loop_escape;
-        for (loop_escape=0; loop_escape<session[loop+1].escape_string_length; loop_escape++)
-        {
-          session[loop].escape_string[loop_escape]=session[loop+1].escape_string[loop_escape];
-        }
-      }
-      session[loop].escape_string_length=session[loop+1].escape_string_length;
-      session[loop].escape_state=session[loop+1].escape_state;
-      {
-        int loop_flags;
-        for (loop_flags=0; loop_flags<256; loop_flags++)
-        {
-          session[loop].session_flags[loop_flags]=session[loop+1].session_flags[loop_flags];
-        }
-      }
-      session[loop].scroll_start=session[loop+1].scroll_start;
-      session[loop].scroll_end=session[loop+1].scroll_end;
-      session[loop].other_session_flags=session[loop+1].other_session_flags;
-      session[loop].connection_type=session[loop+1].connection_type;
-      session[loop].old_xpos=session[loop+1].old_xpos;
-      session[loop].old_ypos=session[loop+1].old_ypos;
-      session[loop].line_editor_history=session[loop+1].line_editor_history;
-      session[loop].line_editor_position=session[loop+1].line_editor_position;
-      session[loop].line_editor_total=session[loop+1].line_editor_total;
-      strcpy(session[loop].line_editor_buffer,session[loop+1].line_editor_buffer);
-    }
+    session->prev->next = session->next;
+  }
+  else
+  {
+    sessions = session->next;
+  }
+
+  if (session->next)
+  {
+    session->next->prev = session->prev;
   }
 
   /* cancel the selection if there was one in this session */
-  if (selection_session==session_handle)
+  if (selection_session == session)
   {
-    selection_session=-1;
+    selection_session = NULL;
   }
 
-  /* or if it was above this session, shuffle it down */
-  if (selection_session>session_handle)
+  if (current_session == session)
   {
-    selection_session--;
+    current_session = session->next;
   }
 
-  current_session--;
+  free(session);
 }
 
-void nettle_senddata(int session_handle, char *data, int length)
+void nettle_senddata(struct session_struct *session, char *data, int length)
 {
-  switch (session[session_handle].connection_type)
+  switch (session->connection_type)
   {
     case NETTLE_TELNET:
       /* just use socket_senddata */
-      socket_senddata(session[session_handle].socket_handle,data,length);
+      socket_senddata(session->socket_handle,data,length);
       break;
     case NETTLE_TASKWINDOW:
       {
@@ -595,128 +589,128 @@ void nettle_senddata(int session_handle, char *data, int length)
         block.user_message.contents.task_window_input.size=length;
 
         _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, &block,
-                                                     session[session_handle].socket_handle);
+                                                     session->socket_handle);
       }
       break;
   }
 }
 
-void reset_terminal(int session_handle)
+void reset_terminal(struct session_struct *session)
 {
-  session[session_handle].other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE
+  session->other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE
   						/*| NETTLE_OTHER_LINEFEED_MODE*/;
-  session[session_handle].current_fg=7;
-  session[session_handle].current_bg=0;
-  session[session_handle].current_flags=0;
-  session[session_handle].escape_string_length=0;
-  session[session_handle].escape_state=NETTLE_ESCAPE_NONE;
-  session[session_handle].scroll_start=1;
-  session[session_handle].scroll_end=session[session_handle].terminal_size_y;
-  session[session_handle].character_set=NETTLE_CHSET_G0;
+  session->current_fg=7;
+  session->current_bg=0;
+  session->current_flags=0;
+  session->escape_string_length=0;
+  session->escape_state=NETTLE_ESCAPE_NONE;
+  session->scroll_start=1;
+  session->scroll_end=session->terminal_size_y;
+  session->character_set=NETTLE_CHSET_G0;
 
-  session[session_handle].character_set_g0=NETTLE_CHSET_US;
-  session[session_handle].character_set_g1=NETTLE_CHSET_US;
-  session[session_handle].character_set_g2=NETTLE_CHSET_US;
-  session[session_handle].character_set_g3=NETTLE_CHSET_US;
+  session->character_set_g0=NETTLE_CHSET_US;
+  session->character_set_g1=NETTLE_CHSET_US;
+  session->character_set_g2=NETTLE_CHSET_US;
+  session->character_set_g3=NETTLE_CHSET_US;
 }
 
-void write_assigned(int session_handle,int pointer, char fg, char bg, char flags, char character)
+void write_assigned(struct session_struct *session ,int pointer, char fg, char bg, char flags, char character)
 {
-  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
-    			    session[session_handle].scrollback)*
-    			    session[session_handle].terminal_size_x*4)
+  if (pointer<0 || pointer>(session->terminal_size_y+
+    			    session->scrollback)*
+    			    session->terminal_size_x*4)
   {
-    printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
     return;
   }
 
-  *(session[session_handle].assigned_area+(pointer+0))=fg;
-  *(session[session_handle].assigned_area+(pointer+1))=bg;
-  *(session[session_handle].assigned_area+(pointer+2))=flags;
-  *(session[session_handle].assigned_area+(pointer+3))=character;
+  *(session->assigned_area+(pointer+0))=fg;
+  *(session->assigned_area+(pointer+1))=bg;
+  *(session->assigned_area+(pointer+2))=flags;
+  *(session->assigned_area+(pointer+3))=character;
 }
 
-char read_assigned_fg(int session_handle, int pointer)
+char read_assigned_fg(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
-    			    session[session_handle].scrollback)*
-    			    session[session_handle].terminal_size_x*4)
+  if (pointer<0 || pointer>(session->terminal_size_y+
+    			    session->scrollback)*
+    			    session->terminal_size_x*4)
   {
-    printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
     return 0;
   }
 
-  return *(session[session_handle].assigned_area+(pointer+0));
+  return *(session->assigned_area+(pointer+0));
 }
 
-char read_assigned_bg(int session_handle, int pointer)
+char read_assigned_bg(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
-    			    session[session_handle].scrollback)*
-    			    session[session_handle].terminal_size_x*4)
+  if (pointer<0 || pointer>(session->terminal_size_y+
+    			    session->scrollback)*
+    			    session->terminal_size_x*4)
   {
-    printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
     return 0;
   }
 
-  return *(session[session_handle].assigned_area+(pointer+1));
+  return *(session->assigned_area+(pointer+1));
 }
 
-char read_assigned_flags(int session_handle, int pointer)
+char read_assigned_flags(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
-    			    session[session_handle].scrollback)*
-    			    session[session_handle].terminal_size_x*4)
+  if (pointer<0 || pointer>(session->terminal_size_y+
+    			    session->scrollback)*
+    			    session->terminal_size_x*4)
   {
-    printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
     return 0;
   }
 
-  return *(session[session_handle].assigned_area+(pointer+2));
+  return *(session->assigned_area+(pointer+2));
 }
 
-char read_assigned_character(int session_handle, int pointer)
+char read_assigned_character(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
-    			    session[session_handle].scrollback)*
-    			    session[session_handle].terminal_size_x*4)
+  if (pointer<0 || pointer>(session->terminal_size_y+
+    			    session->scrollback)*
+    			    session->terminal_size_x*4)
   {
-    printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
     return 0;
   }
 
-  return *(session[session_handle].assigned_area+(pointer+3));
+  return *(session->assigned_area+(pointer+3));
 }
 
-void write_assigned_flags(int session_handle, int pointer, char flags)
+void write_assigned_flags(struct session_struct *session, int pointer, char flags)
 {
-  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
-    			    session[session_handle].scrollback)*
-    			    session[session_handle].terminal_size_x*4)
+  if (pointer<0 || pointer>(session->terminal_size_y+
+    			    session->scrollback)*
+    			    session->terminal_size_x*4)
   {
-    printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
     return;
   }
 
-  *(session[session_handle].assigned_area+(pointer+2))=flags;
+  *(session->assigned_area+(pointer+2))=flags;
 }
 
-void write_assigned_character(int session_handle, int pointer, char character)
+void write_assigned_character(struct session_struct *session, int pointer, char character)
 {
-  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
-    			    session[session_handle].scrollback)*
-    			    session[session_handle].terminal_size_x*4)
+  if (pointer<0 || pointer>(session->terminal_size_y+
+    			    session->scrollback)*
+    			    session->terminal_size_x*4)
   {
-    printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
     return;
   }
 
-  *(session[session_handle].assigned_area+(pointer+3))=character;
+  *(session->assigned_area+(pointer+3))=character;
 }

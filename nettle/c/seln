@@ -13,7 +13,7 @@
 
 void refresh_selection_set(void)
 {
-  if (selection_session!=-1)
+  if (selection_session)
   {
     int loop;
     if (selection_start>selection_end)
@@ -39,7 +39,7 @@ void refresh_selection_set(void)
 
 void refresh_selection_clear(void)
 {
-  if (selection_session!=-1)
+  if (selection_session)
   {
     int loop;
     if (selection_start>selection_end)
@@ -67,22 +67,22 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
 {
   int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
-  if (selection_session!=-1)
+  if (selection_session)
   {
     int click_point=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-		session[selection_session].terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
+		selection_session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
 
     if (click_point<0)
     {
       click_point=0;
     }
-    if (click_point>(session[selection_session].terminal_size_x*
-				(session[selection_session].terminal_size_y+
-					session[selection_session].scrollback)))
+    if (click_point>(selection_session->terminal_size_x*
+				(selection_session->terminal_size_y+
+					selection_session->scrollback)))
     {
-      click_point=(session[selection_session].terminal_size_x*
-				(session[selection_session].terminal_size_y+
-					session[selection_session].scrollback));
+      click_point=(selection_session->terminal_size_x*
+				(selection_session->terminal_size_y+
+					selection_session->scrollback));
     }
 
     refresh_selection_clear();
@@ -115,11 +115,11 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
     }
     refresh_selection_set();
 
-    force_redraw(session[selection_session].window_handle,0,
-       (-session[selection_session].terminal_size_y-
-	session[selection_session].scrollback)*
+    force_redraw(selection_session->window_handle,0,
+       (-selection_session->terminal_size_y-
+	selection_session->scrollback)*
 	redraw.r_charh*2*zap_yeig,
-	      session[selection_session].terminal_size_x*redraw.r_charw*2,0);
+	      selection_session->terminal_size_x*redraw.r_charw*2,0);
   }
 }
 
@@ -127,22 +127,22 @@ void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 {
   int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
-  if (selection_session!=-1)
+  if (selection_session)
   {
     int click_point=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-		session[selection_session].terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
+		selection_session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
 
     if (click_point<0)
     {
       click_point=0;
     }
-    if (click_point>(session[selection_session].terminal_size_x*
-				(session[selection_session].terminal_size_y+
-					session[selection_session].scrollback)))
+    if (click_point>(selection_session->terminal_size_x*
+				(selection_session->terminal_size_y+
+					selection_session->scrollback)))
     {
-      click_point=(session[selection_session].terminal_size_x*
-				(session[selection_session].terminal_size_y+
-					session[selection_session].scrollback));
+      click_point=(selection_session->terminal_size_x*
+				(selection_session->terminal_size_y+
+					selection_session->scrollback));
     }
 
     refresh_selection_clear();
@@ -159,11 +159,11 @@ void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 
     refresh_selection_set();
 
-    force_redraw(session[selection_session].window_handle,0,
-       (-session[selection_session].terminal_size_y-
-	session[selection_session].scrollback)*
+    force_redraw(selection_session->window_handle,0,
+       (-selection_session->terminal_size_y-
+	selection_session->scrollback)*
 	redraw.r_charh*2*zap_yeig,
-	      session[selection_session].terminal_size_x*redraw.r_charw*2,0);
+	      selection_session->terminal_size_x*redraw.r_charw*2,0);
   }
 }
 
@@ -202,7 +202,7 @@ void save_selection(char *filename, bool ansi_colour)
   {
     if (loop!=loop_start*4)
     {
-      if ((loop % (session[selection_session].terminal_size_x*4))==0)
+      if ((loop % (selection_session->terminal_size_x*4))==0)
       {
 	fputc('\n',file_handle);
       }
@@ -281,13 +281,13 @@ void handle_selection_drag(void)
   {
     if (selection_start==selection_end)
     {
-      selection_session=-1;
+      selection_session = NULL;
     }
     selection_in_progress=false;
     return;
   }
 
-  block[0]=session[selection_session].window_handle;
+  block[0]=selection_session->window_handle;
 
   _swi(Wimp_GetWindowInfo, _IN(1), ((char *) block)+1);
 
@@ -333,16 +333,16 @@ void handle_selection_drag(void)
       refresh_selection_clear();
 
       selection_end=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-				session[selection_session].terminal_size_x)+
+				selection_session->terminal_size_x)+
 								((x-x_pos)/redraw.r_charw/2);
 
-      if (selection_end>(session[selection_session].terminal_size_x*
-				(session[selection_session].terminal_size_y+
-					session[selection_session].scrollback)))
+      if (selection_end>(selection_session->terminal_size_x*
+				(selection_session->terminal_size_y+
+					selection_session->scrollback)))
       {
-	selection_end=(session[selection_session].terminal_size_x*
-				(session[selection_session].terminal_size_y+
-					session[selection_session].scrollback));
+	selection_end=(selection_session->terminal_size_x*
+				(selection_session->terminal_size_y+
+					selection_session->scrollback));
       }
       if (selection_end<0)
       {
@@ -351,11 +351,11 @@ void handle_selection_drag(void)
 
       refresh_selection_set();
 
-      force_redraw(session[selection_session].window_handle,0,
-	       (-session[selection_session].terminal_size_y-
-		session[selection_session].scrollback)*
+      force_redraw(selection_session->window_handle,0,
+	       (-selection_session->terminal_size_y-
+		selection_session->scrollback)*
 		redraw.r_charh*2*zap_yeig,
-		      session[selection_session].terminal_size_x*redraw.r_charw*2,0);
+		      selection_session->terminal_size_x*redraw.r_charw*2,0);
 
       break;
     case 1:

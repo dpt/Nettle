@@ -9,7 +9,7 @@
 #include "misc.h"
 #include "wimp.h"
 
-void open_pane_window(int session_handle, struct wimp_openwindow_block *main_block)
+void open_pane_window(struct session_struct *session, struct wimp_openwindow_block *main_block)
 {
   struct wimp_getwindowoutline_block w_gwo_block;
   struct wimp_openwindow_block block;
@@ -17,10 +17,10 @@ void open_pane_window(int session_handle, struct wimp_openwindow_block *main_blo
 
   width=main_block->maxx;
 
-  w_gwo_block.window_handle=session[session_handle].window_handle;
+  w_gwo_block.window_handle=session->window_handle;
   _swi(Wimp_GetWindowOutline, _IN(1), &w_gwo_block);
 
-  block.window_handle=session[session_handle].pane_handle;
+  block.window_handle=session->pane_handle;
   block.minx=main_block->minx;
   block.miny=(w_gwo_block.miny)-48;
   block.maxx=width;
@@ -31,12 +31,12 @@ void open_pane_window(int session_handle, struct wimp_openwindow_block *main_blo
   block.scroll_y=0;
   block.handle_behind=main_block->handle_behind;
 
-  create_line_editor_icons(session_handle, block.maxx-block.minx);
+  create_line_editor_icons(session, block.maxx-block.minx);
 
   _swi(Wimp_OpenWindow, _IN(1), &block);
 }
 
-void create_line_editor_icons(int session_handle, int width)
+void create_line_editor_icons(struct session_struct *session, int width)
 {
   int loop;
   int old_width;
@@ -59,7 +59,7 @@ void create_line_editor_icons(int session_handle, int width)
   {
     struct wimp_geticonstate_block block;
 
-    block.window_handle=session[session_handle].pane_handle;
+    block.window_handle=session->pane_handle;
     block.icon_handle  =0;
 
     _swi(Wimp_GetIconState, _IN(1), &block);
@@ -85,7 +85,7 @@ void create_line_editor_icons(int session_handle, int width)
       {
         struct wimp_deleteicon_block block;
 
-        block.window_handle=session[session_handle].pane_handle;
+        block.window_handle=session->pane_handle;
         block.icon_handle  =loop;
 
         _swi(Wimp_DeleteIcon, _IN(1), &block);
@@ -96,7 +96,7 @@ void create_line_editor_icons(int session_handle, int width)
   {
     struct wimp_createicon_block block;
 
-    block.window_handle=session[session_handle].pane_handle;
+    block.window_handle=session->pane_handle;
     block.minx         =width-48;
     block.miny         =-48;
     block.maxx         =width;
@@ -116,7 +116,7 @@ void create_line_editor_icons(int session_handle, int width)
 
     _swi(Wimp_CreateIcon, _IN(1), &block);
 
-    block.window_handle=session[session_handle].pane_handle;
+    block.window_handle=session->pane_handle;
     block.minx         =-4;
     block.miny         =-52;
     block.maxx         =width-54;
@@ -129,7 +129,7 @@ void create_line_editor_icons(int session_handle, int width)
     {
       block.icon_flags =0x0780f135;
     }
-    block.buffer       =session[session_handle].line_editor_buffer;
+    block.buffer       =session->line_editor_buffer;
     block.validation   =line_editor_buffer_indirected;
     block.buffer_length=512;
 
@@ -138,27 +138,27 @@ void create_line_editor_icons(int session_handle, int width)
 
   if (width<old_width)
   {
-    force_redraw(session[session_handle].pane_handle,width-56,-48,old_width,0);
+    force_redraw(session->pane_handle,width-56,-48,old_width,0);
   }
 
   if (width>old_width)
   {
-    force_redraw(session[session_handle].pane_handle,old_width-56,-48,width,0);
+    force_redraw(session->pane_handle,old_width-56,-48,width,0);
   }
 
-  if (caret_window_handle==session[session_handle].pane_handle)
+  if (caret_window_handle==session->pane_handle)
   {
     set_caret_position(caret_window_handle, caret_icon_handle, -1, caret_index);
   }
 }
 
-bool line_editor_active(int session_handle)
+bool line_editor_active(struct session_struct *session)
 {
   if (line_editor)
   {
     struct wimp_geticonstate_block block;
 
-    block.window_handle=session[session_handle].pane_handle;
+    block.window_handle=session->pane_handle;
     block.icon_handle  =0;
 
     _swi(Wimp_GetIconState, _IN(1), &block);

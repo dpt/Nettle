@@ -60,6 +60,8 @@ extern int line_editor_size;
 
 struct session_struct
 {
+  struct session_struct *next;	/* next session in linked list */
+  struct session_struct *prev;	/* previous session in linked list */
   int window_handle;		/* window handle */
   int pane_handle;		/* pane window handle */
   char *assigned_area;		/* data area for terminal */
@@ -114,17 +116,17 @@ struct session_struct
   int number_of_tabs;		/* number of tabs */
 };
 
-extern struct session_struct session[64];
-extern int current_session;
-extern int current_socket;
+extern struct session_struct *sessions;
+extern struct session_struct *current_session;
 
 extern bool selection_in_progress;
-extern int selection_session;
+extern struct session_struct *selection_session;
 extern int selection_start;
 extern int selection_end;
 extern int selection_adjust_dragging;
 
-extern int terminal_menu_session;
+extern struct session_struct *terminal_menu_session;
+
 extern int drag_window_handle;
 extern int drag_icon_handle;
 

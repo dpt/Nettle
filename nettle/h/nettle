@@ -71,22 +71,25 @@ typedef enum
 }
 NettleConsts;
 
+struct session_struct;
+
 
 extern void start_connection(void);
-extern void write_out_string(int, char *);
-extern void write_out_data(int, char *, int);
-extern void remove_session(int);
-extern void nettle_senddata(int, char *, int);
-extern void reset_terminal(int);
+extern void write_out_string(struct session_struct *, char *);
+extern void write_out_data(struct session_struct *, char *, int);
 
-extern void write_assigned(int, int, char, char, char, char);
+extern void remove_session(struct session_struct *);
+extern void nettle_senddata(struct session_struct *, char *, int);
+extern void reset_terminal(struct session_struct *);
 
-extern char read_assigned_fg(int, int);
-extern char read_assigned_bg(int, int);
-extern char read_assigned_flags(int, int);
-extern char read_assigned_character(int, int);
+extern void write_assigned(struct session_struct *, int, char, char, char, char);
 
-extern void write_assigned_flags(int, int, char);
-extern void write_assigned_character(int, int, char);
+extern char read_assigned_fg(struct session_struct *, int);
+extern char read_assigned_bg(struct session_struct *, int);
+extern char read_assigned_flags(struct session_struct *, int);
+extern char read_assigned_character(struct session_struct *, int);
+
+extern void write_assigned_flags(struct session_struct *, int, char);
+extern void write_assigned_character(struct session_struct *, int, char);
 
 #endif

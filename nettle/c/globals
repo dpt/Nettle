@@ -59,17 +59,16 @@ bool line_editor=false;
 bool pass_f12=false;
 int line_editor_size=32;
 
-struct session_struct session[Nettle_MaxSessions];
-int current_session=0;
-int current_socket=0;
+struct session_struct *sessions = NULL;
+struct session_struct *current_session = NULL;
 
 bool selection_in_progress=false;
-int selection_session=-1;
+struct session_struct *selection_session = NULL;
 int selection_start=0;
 int selection_end=0;
 int selection_adjust_dragging=0;
 
-int terminal_menu_session;
+struct session_struct *terminal_menu_session = NULL;
 int drag_window_handle;
 int drag_icon_handle;
 

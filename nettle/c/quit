@@ -12,14 +12,9 @@
 void closedown_application(void)
 {
   /* Quit! */
-  int loop;
 
-  if (current_session>0)
-  {
-    for (loop=0; loop<current_session; loop++)
-    {
-      remove_session(loop);
-    }
+  while (sessions) {
+    remove_session(sessions);
   }
 
   _swi(MessageTrans_CloseFile, _IN(0), messagetrans_area);
