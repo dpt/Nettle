@@ -1,0 +1,5 @@
+05/09/2001 Peter Naulls <peter@chocky.org>
+
+       * ChangeLog created.  New entries are added to the front of
+       the file. e.g
+       * file.c (foo): Added bar variable.           
