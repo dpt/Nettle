@@ -269,7 +269,8 @@ static void reprocess_position_scroll(struct session_struct *session)
 {
   /* scroll if y>scroll_end */
 
-  while (session->pos.y>(session->scroll_end+session->scrollback-1))
+  /*while (session->pos.y>(session->scroll_end+session->scrollback-1))*/
+  if (session->pos.y==session->scroll_end+session->scrollback)
   {
     session->pos.y--;
     scroll_up (session, false);
@@ -277,7 +278,8 @@ static void reprocess_position_scroll(struct session_struct *session)
 
   /* scroll if Y<scroll_start */
 
-  while (session->pos.y<(session->scroll_start+session->scrollback-1))
+  /*while (session->pos.y<(session->scroll_start+session->scrollback-1))*/
+  if (session->pos.y==session->scroll_start+session->scrollback-2)
   {
     session->pos.y++;
     scroll_down (session, false);
@@ -1358,7 +1360,9 @@ static bool process_escape_length_3(struct session_struct *session)
 
                   printf("For information: Telnet option %d, %d not supported\n",iac_type, session->escape_string[2]);
                 }
+
                 session->session_flags[(unsigned char) session->escape_string[2]]=false;
+
                 break;
             }
             done=true;
@@ -1375,7 +1379,9 @@ static bool process_escape_length_3(struct session_struct *session)
               nettle_senddata(session,block,3);
 
             }
+
             session->session_flags[(unsigned char) session->escape_string[2]]=false;
+
             done=true;
             break;
         }
