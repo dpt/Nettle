@@ -1288,7 +1288,7 @@ static void resize_terminal_dimensions(struct session_struct *session,
       {
         int loop2;
         int old_loop;
-  
+
         if (area == 0)
         {
           old_loop = loop - (total_new_y - total_old_y);
@@ -1313,7 +1313,7 @@ static void resize_terminal_dimensions(struct session_struct *session,
         {
           new_area[loop] = malloc(terminal_size.x * sizeof(struct term_char));
           assert(new_area[loop]);
-    
+
           if (area == 0)
           {
             clear_screen(session, loop * terminal_size.x,
@@ -1341,7 +1341,7 @@ static void resize_terminal_dimensions(struct session_struct *session,
       {
         int loop2;
         int old_loop;
-  
+
         if (area == 0)
         {
           old_loop = loop - (total_new_y - total_old_y);
@@ -1350,7 +1350,7 @@ static void resize_terminal_dimensions(struct session_struct *session,
         {
           old_loop = loop - (terminal_size.y - old_terminal_size.y);
         }
-  
+
         if (loop < total_new_y)
         {
           new_area[loop] = realloc(old_area[old_loop],
@@ -1537,11 +1537,13 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
 
 static void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrollback)
 {
-  if (size_of_zapredraw_area < terminal_size_x * (terminal_size_y + scrollback) * 8)
+  int calculate_new_size=terminal_size_x*(terminal_size_y+1)*8+((terminal_size_y+scrollback)*4);
+
+  if (size_of_zapredraw_area < calculate_new_size)
   {
     int *new_zapredraw_area;
 
-    size_of_zapredraw_area = terminal_size_x * (terminal_size_y + scrollback) * 8; /* 8 is some value */
+    size_of_zapredraw_area = calculate_new_size;
 
     if (dynamic_areas_available())
     {
