@@ -47,5 +47,6 @@ templ.h: templheadr $(TEMPLATES)
 	$(CC) $(CFLAGS) -o $@ $<
 
 o.wimp: templ.h
+o.spool: templ.h
 
 # Dynamic dependencies:
