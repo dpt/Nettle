@@ -942,7 +942,7 @@ static bool process_escape_length_3(struct session_struct *session)
               case 1:
               case 24:
               case 31:
-                if (session->session_flags[session->escape_string[2]]==false)
+                if (session->session_flags[(unsigned char) session->escape_string[2]]==false)
                 {
                   char block[3];
 
@@ -959,7 +959,7 @@ static bool process_escape_length_3(struct session_struct *session)
                   }
                 }
 
-                session->session_flags[session->escape_string[2]]=true;
+                session->session_flags[(unsigned char) session->escape_string[2]]=true;
 
                 if (session->escape_string[2]==31)
                 {
@@ -979,7 +979,7 @@ static bool process_escape_length_3(struct session_struct *session)
 
                 break;
               default:
-                /* if (session->session_flags[session->escape_string[2]]==true) */
+                /* if (session->session_flags[(unsigned char) session->escape_string[2]]==true) */
                 {
                   char block[3];
 
@@ -995,7 +995,7 @@ static bool process_escape_length_3(struct session_struct *session)
                     log_string(string);
                   }
                 }
-                session->session_flags[session->escape_string[2]]=false;
+                session->session_flags[(unsigned char) session->escape_string[2]]=false;
                 break;
             }
             break;
@@ -1003,7 +1003,7 @@ static bool process_escape_length_3(struct session_struct *session)
           case 254: /* DON'T */
             done=true;
 
-            if (session->session_flags[session->escape_string[2]]==true)
+            if (session->session_flags[(unsigned char) session->escape_string[2]]==true)
             {
               char block[3];
 
@@ -1019,7 +1019,7 @@ static bool process_escape_length_3(struct session_struct *session)
                 log_string(string);
               }
             }
-            session->session_flags[session->escape_string[2]]=false;
+            session->session_flags[(unsigned char) session->escape_string[2]]=false;
             break;
         }
       }
