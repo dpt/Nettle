@@ -1,6 +1,6 @@
 /**
  * Nettle specific code
- * (C) Nettle developers 2000-2002
+ * (C) Nettle developers 2000-2003
  *
  * $Id$
  */
@@ -734,9 +734,12 @@ static void start_connection_int (struct connection_params *params )
 
   /* if line editor is turned on, allocate all the lineeditor space */
   if (session->line_editor_type==LINEEDIT_NONE)
+  {
     session->pane_handle=0;
+    session->line_editor_history=NULL;
+  }
   else
-    lineedit_allocate_space(session);
+    lineedit_allocate_space(session, false);
 
   make_new_terminal_window(session);
 
@@ -945,7 +948,7 @@ void remove_session(struct session_struct *session)
   /* free lineeditor space */
   if (session->line_editor_type!=LINEEDIT_NONE)
   {
-    lineedit_free_space(session);
+    lineedit_free_space(session, false);
   }
 
   /* free auto-login details */
