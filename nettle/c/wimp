@@ -58,7 +58,7 @@ static void create_lineeditor_type_menu(void);
 static void open_open_window(bool open_window_flag);
 static void open_choices_window(void);
 static void set_colour_icon(int, colour_t, bool);
-static colour_t get_colour_icon(int);
+static colour_t get_colour_icon(int, bool);
 static int get_icon_data_length(int window_handle, int icon_handle);
 static void create_terminal_menu(void);
 static void create_connection_menu(void);
@@ -900,7 +900,7 @@ static void win_panecols_click(int x, int y, int buttons, int icon_handle)
     block.tr.x = 0x7FFFFFFF;
     block.tr.y = window.max.y + icon.max.y;
     block.zero1 = block.zero0 = 0;
-    block.colour = palette[icon_handle-8]; /* icon_handle-8 may change... */
+    block.colour = get_colour_icon(icon_handle-8, true);
     block.extsize = block.exttype = 0;
     colourpicker_handle = _swi (ColourPicker_OpenDialogue,
                           _INR(0,1) | _OUT(1), 1, &block, &menu_window);
@@ -3061,7 +3061,7 @@ static bool win_choices_read(int save)
     int loop;
     for (loop=15; loop>=0; loop--)
     {
-      palette[loop] = get_colour_icon(loop);
+      palette[loop] = get_colour_icon(loop, false);
     }
 
     _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette, zap_palette, 16);
@@ -3114,17 +3114,24 @@ static void set_colour_icon(int colour_handle, colour_t colour, bool is_an_icon)
   set_icon_state (win_panecols, icon_handle, 0, 0);
 }
 
-static colour_t get_colour_icon(int colour_handle)
+static colour_t get_colour_icon(int colour_handle, bool is_an_icon)
 {
   int icon_handle=-1;
   const char *validation;
   colour_t colour;
 
-  if (colour_handle>=0 && colour_handle<=7)
+  if (is_an_icon)
+  {
     icon_handle=colour_handle;
+  }
+  else
+  {
+    if (colour_handle>=0 && colour_handle<=7)
+      icon_handle=colour_handle;
 
-  if (colour_handle>=8 && colour_handle<=15)
-    icon_handle=colour_handle-8+icon_panecols_bold0;
+    if (colour_handle>=8 && colour_handle<=15)
+      icon_handle=colour_handle-8+icon_panecols_bold0;
+  }
 
   if (icon_handle==-1)
   {
