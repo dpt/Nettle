@@ -1859,7 +1859,7 @@ static bool process_escape_length_x(struct session_struct *session)
                               ((session->pos.y+1)*session->terminal_size.x),
 
                               session->current_fg,
-                              0,
+                              NETTLE_COLOUR_NORMAL_BLACK,
                               0,
                               32);
               }
@@ -2385,7 +2385,7 @@ static bool process_escape_length_x(struct session_struct *session)
                       status=false;
                       session->current_fg=7;
                       session->current_bg=0;
-                      session->current_flags=0;
+                      session->current_flags=NETTLE_FLAG_VALID;
                       break;
                     case 1:
                       /* Bold */
@@ -2979,7 +2979,7 @@ void process_line_editor(struct session_struct *session)
 {
   char *icon_text;
   char data[512];
-  int line_editor_icon=(session->line_editor_type==LINEEDIT_CHECKBOX ? 1 : 0);
+  int line_editor_icon=((session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON) ? 1 : 0);
 
   read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
 
