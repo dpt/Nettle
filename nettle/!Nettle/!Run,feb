@@ -18,10 +18,12 @@ RMEnsure ZapRedraw 0.39 RMLoad <Nettle$ZapRedrawPath>
 RMEnsure ZapRedraw 0.39 RMLoad <Nettle$Dir>.Resources.ZapRedraw
 Unset Nettle$ZapRedrawPath
 
-RMEnsure SocketWatch 0.00 RMLoad System:Modules.Network.SockWatch
-RMEnsure SocketWatch 0.00 Error Nettle requires SocketWatch 0.00 or later
-
-If "<Boot$OSVersion>">="500" Then RMEnsure SocketWatch 0.04 Error Nettle requires SocketWatch 0.04 or later when used with RISC OS 5.00 or later
+| Get SocketWatch -- if the OS can't cope
+Set Nettle$NeedSockWatch No
+RmEnsure Internet 5.42 Set Nettle$NeedSockWatch Yes
+If "<Nettle$NeedSockWatch>"="Yes" Then RMEnsure SocketWatch 0.04 RMLoad System:Modules.Network.SockWatch
+If "<Nettle$NeedSockWatch>"="Yes" Then RMEnsure SocketWatch 0.04 Error Nettle requires SocketWatch 0.04 or later
+Unset Nettle$NeedSockWatch
 
 RMEnsure ColourPicker 0.31 RMLoad System:Modules.Picker
 RMEnsure ColourPicker 0.31 Error Nettle requires ColourPicker 0.31 or later

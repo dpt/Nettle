@@ -1,7 +1,7 @@
 Nettle - Telnet and terminal emulation for RISC OS
 ==================================================
 
-Version : 0.2032r : December 7th, 2002.
+Version : 0.2040pre : October 20th, 2003.
 
 Nettle is *the* terminal emulator and telnet client for the RISC OS
 operating system. It utilises the ZapRedraw module for speedy display and
@@ -29,21 +29,22 @@ will fall back to using two contained inside its own structure.
 Nettle currently requires Wimp 3.50 or better.  All versions of RISC OS
 can have at least Wimp 3.98 ("Nested Wimp") loaded, however, users of
 RISC OS 3.1 may not have this installed and see some reduction in
-functionality.  This will be addressed in a future release where we
-intend to directly support older WIMP versions.   Nettle makes use of
-menus with sprites - there is a known bug in WIMP versions prior to
-RISC OS Select 2i3 (RISC OS 4.33) which means that these menus may
-occasionally display incorrectly.
+functionality.  Nettle makes use of menus with sprites - there is a known
+bug in WIMP versions prior to RISC OS Select 2i3 (RISC OS 4.33) which
+means that these menus may occasionally display incorrectly.
 
 In common with other RISC OS internet access software, to connect to
-other machines, either !Internet or !FreeNet must be operational on your
-computer.  The Acorn/ANT 'Resolver' module is also required. Nettle also
+other machines, then !Internet must be operational on your computer.
+The Acorn/ANT 'Resolver' module is also required.  Nettle also
 makes use of the "SocketWatch" module for improved performance - an
-installer is provided.   Note that if you only wish to use the ANSI
-task window facilities of Nettle, then Internet/FreeNet is not required.
+installer is provided.  This module is not required if running
+Internet 5.42 or better (Select 2 or later) then you don't need to use
+the Socketwatch module as the functionality is provided by the OS
+(Socket pollwords).   Also note that if you only wish to use the ANSI
+task window facilities of Nettle, then !Internet is not required.
 
 Finally, Nettle makes use of the ColourPicker module.  This must be
-present in your !System folder.
+present in your system ROM or !System folder.
 
 
 "Dummies guide" to using Nettle
@@ -168,7 +169,7 @@ to allow for this ANSI emulation.  Don't expect to run "normal" interactive
 RISC OS programs in here (e.g. BASIC, gos) because they will not function
 in the way you expect - ANSI terminal control is quite different to
 RISC OS.   Programs which are intended to be run via Nettle's ANSI Task
-include nano (pico), tinyfuge, lynx, BitchX, ncftp2 and so on.  Nettle
+include nano (pico), tinyfugue, lynx, BitchX, ncftp2 and so on.  Nettle
 is the only RISC OS program that we know of that provides this kind of
 functionality and allows these unix ports to be run at their best.
 
@@ -186,13 +187,6 @@ Nettle currently supports vt100, vt102, vt220, linux and xterm terminal
 emulation. This is now fairly fully fledged and working well - support
 for other common terminal standards (vt320, vt52) is planned for later. 
 
-For various reasons, Nettle can be built on RISC OS (with gcc / Norcroft)
-and on Linux, with gcc. Either UnixLib or the standard shared C library
-can be used! None of this makes much odds to the workings of Nettle, but
-provides a nice variety of choice for build environment.  Current releases
-are built in traditional fashion with "Norcroft" CC and Shared C Library
-stubs.
-
 Opensource development is managed via SourceForge - feel free to submit
 patches and bug reports via that system: http://nettle.sourceforge.net/
 Report bugs and enhancements to mailto:archifishal@users.sourceforge.net
@@ -205,23 +199,20 @@ Alex Macfarlane Smith ("archifishal") - project lead / telnet guru
 Peter Naulls ("pnaulls")              - unixlib/gcc specialist
 Ian Jeffray ("ijeffray")              - gui/ui/wimp/stubs
 Joseph Heenan ("jogu")                - url/general os expert
+Justin Fletcher ("gerph")             - risc os god
 
 Contributions, assistance and patches have also been received from
-David Thomas, Darren Salt, Justin Fletcher, Ainsley Pereira and
-Jerome Mathevet.
+David Thomas, Darren Salt, Ainsley Pereira and Jerome Mathevet.
 
 
 "To do" list - forthcoming features and ideas
 =============================================
 
-This release of Nettle is by no means complete, but we decided it was
-time to release a binary version, as it's quite stable and very useful
-as it stands.  Here's a roughly ordered list of things that will be
-added in future versions.  Please feel free to submit new ideas:
-mailto:archifishal@users.sourceforge.net
+We're still working on Nettle.  Honest.  Here's a roughly ordered list
+of things that will be added in future versions.  Please feel free to
+submit new ideas:  mailto:archifishal@users.sourceforge.net
 
 * ANSI commandline task shell for ANSI task window (ROSH)
-* Scroll to bottom on keypress
 * VT 320/420/510
 * rlogin
 * SSH
@@ -356,4 +347,12 @@ Release History
       Fix pasting of large files
       Don't report errors twice
 
-(C) Nettle developers, December 7th, 2002.
+0.2040pre : October 20th, 2003
+    New Features:
+    
+    Changes/Improvements:
+    
+    Bugs fixed:
+
+
+(C) Nettle developers, October 20th, 2003.
