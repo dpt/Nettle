@@ -1,6 +1,6 @@
-// Zap font character definitions
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Zap font character definitions */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -8,16 +8,16 @@
 #include "chardefn.h"
 #include "misc.h"
 
-// Define Zap graphics characters
+/* Define Zap graphics characters */
 
 void define_zap_chars(int *int_area, int char_size, int width, int height)
 {
   int loop;
   int step=char_size/height;
   char *area=(char *) int_area;
-  // define characters
+  /* define characters */
 
-  //	Cursor		0x100
+  /*	Cursor		0x100 */
 
   for (loop=0; loop<char_size; loop+=step)
   {
@@ -34,7 +34,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   }
   area+=char_size;
 
-  //	Blank cursor	0x101
+  /*	Blank cursor	0x101 */
   switch (step)
   {
     case 1:
@@ -72,7 +72,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   }
   area+=char_size;
 
-  //	Diamond		0x102
+  /*	Diamond		0x102 */
   {
     char string[8];
 
@@ -88,7 +88,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
           area[loop+step+0]=binary(string);
           break;
         case 2:
-          // Not implemented
+          /* Not implemented */
           printf("Attempt to use a font of width > 8\n");
          break;
       }
@@ -129,7 +129,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
           area[loop+step+0]=binary(string);
           break;
         case 2:
-          // Not implemented
+          /* Not implemented */
           printf("Attempt to use a font of width > 8\n");
          break;
       }
@@ -160,28 +160,28 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   }
   area+=char_size;
 
-  //	Checkerboard	0x103
+  /*	Checkerboard	0x103 */
   area+=char_size;
 
-  //	H topleft/T bottomright	0x104
+  /*	H topleft/T bottomright	0x104 */
   area+=char_size;
 
-  //	F topleft/F bottomright	0x105
+  /*	F topleft/F bottomright	0x105 */
   area+=char_size;
 
-  //	C topleft/R bottomright	0x106
+  /*	C topleft/R bottomright	0x106 */
   area+=char_size;
 
-  //	L topleft/F bottomright	0x107
+  /*	L topleft/F bottomright	0x107 */
   area+=char_size;
 
-  //	N topleft/L bottomright	0x108
+  /*	N topleft/L bottomright	0x108 */
   area+=char_size;
 
-  //	V topleft/T bottomright	0x109
+  /*	V topleft/T bottomright	0x109 */
   area+=char_size;
 
-  //	_| (bottomright of box)	0x10A
+  /*	_| (bottomright of box)	0x10A */
   for (loop=0; loop<(char_size/2); loop+=step)
   {
     switch (step)
@@ -190,7 +190,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -203,7 +203,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -214,13 +214,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	-, (topright of box)	0x10B
+  /*	-, (topright of box)	0x10B */
   for (loop=(char_size/2)+step; loop<char_size; loop+=step)
   {
     switch (step)
@@ -229,7 +229,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -242,7 +242,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -253,13 +253,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	,- (topleft of box)	0x10C
+  /*	,- (topleft of box)	0x10C */
   for (loop=(char_size/2)+step; loop<char_size; loop+=step)
   {
     switch (step)
@@ -268,7 +268,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -281,7 +281,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -293,13 +293,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	|_ (bottomleft of box)	0x10D
+  /*	|_ (bottomleft of box)	0x10D */
   for (loop=0; loop<(char_size/2); loop+=step)
   {
     switch (step)
@@ -308,7 +308,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -322,7 +322,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -334,13 +334,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	-|- (crossing lines)	0x10E
+  /*	-|- (crossing lines)	0x10E */
   for (loop=0; loop<char_size; loop+=step)
   {
     switch (step)
@@ -349,7 +349,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -360,13 +360,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("11111111");
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Horiz line - scan 1	0x10F
+  /*	Horiz line - scan 1	0x10F */
   for (loop=0; loop<char_size; loop+=step)
   {
     switch (step)
@@ -375,7 +375,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -386,13 +386,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[0]=binary("11111111");
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Scan 3			0x110
+  /*	Scan 3			0x110 */
   for (loop=0; loop<char_size; loop+=step)
   {
     switch (step)
@@ -401,7 +401,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -412,13 +412,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[(step+(step*height/2))/2]=binary("11111111");
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Scan 5			0x111
+  /*	Scan 5			0x111 */
   for (loop=0; loop<char_size; loop+=step)
   {
     switch (step)
@@ -427,7 +427,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -438,13 +438,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("11111111");
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Scan 7			0x112
+  /*	Scan 7			0x112 */
   for (loop=0; loop<char_size; loop+=step)
   {
     switch (step)
@@ -453,7 +453,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -464,13 +464,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[((step*height/2)+(char_size-step))/2]=binary("11111111");
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Scan 9			0x113
+  /*	Scan 9			0x113 */
   for (loop=0; loop<char_size; loop+=step)
   {
     switch (step)
@@ -479,7 +479,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -490,13 +490,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[char_size-step]=binary("11111111");
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Left T |-		0x114
+  /*	Left T |-		0x114 */
   for (loop=0; loop<char_size; loop+=step)
   {
     switch (step)
@@ -505,7 +505,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -516,13 +516,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("00000000") | ~(((1<<width /2)/2)-1);
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Right T -|	0x115
+  /*	Right T -|	0x115 */
   for (loop=0; loop<char_size; loop+=step)
   {
     switch (step)
@@ -531,7 +531,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -542,13 +542,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("00000000") | (((1<<width /2)*2)-1);
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Bottom T	0x116
+  /*	Bottom T	0x116 */
   for (loop=0; loop<(char_size/2); loop+=step)
   {
     switch (step)
@@ -557,7 +557,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -571,7 +571,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -582,13 +582,13 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("11111111");
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
   area+=char_size;
 
-  //	Top T	T	0x117
+  /*	Top T	T	0x117 */
   for (loop=0; loop<(char_size/2); loop+=step)
   {
     switch (step)
@@ -597,7 +597,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000");
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -610,7 +610,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
@@ -622,7 +622,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
       area[step*height/2]=binary("11111111");
       break;
     case 2:
-      // Not implemented
+      /* Not implemented */
       printf("Attempt to use a font of width > 8\n");
       break;
   }
@@ -636,23 +636,23 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
         area[loop+0]=binary("00000000") | (((1<<(width/2))/2)+(1<<(width/2)));
         break;
       case 2:
-        // Not implemented
+        /* Not implemented */
         printf("Attempt to use a font of width > 8\n");
         break;
     }
   }
   area+=char_size;
 
-  //	<=	0x119
+  /*	<=	0x119 */
   area+=char_size;
 
-  //	>=	0x11A
+  /*	>=	0x11A */
   area+=char_size;
 
-  //	PI	0x11B
+  /*	PI	0x11B */
   area+=char_size;
 
-  //	Not equal	0x11C
+  /*	Not equal	0x11C */
   area+=char_size;
 }
 

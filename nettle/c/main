@@ -21,14 +21,14 @@ int main(void)
   Fortify_EnterScope();
 #endif
 
-  // Set log file time
+  /* Set log file time */
   _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);
   log_file_time=regs.r[0];
 
-  // Turn on hourglass
+  /* Turn on hourglass */
   _kernel_swi(Hourglass_On, &regs, &regs);
 
-  // Initialise application
+  /* Initialise application */
   regs.r[0]=310;
   regs.r[1]=0x4B534154;
   regs.r[2]=(int) application_name;
@@ -36,7 +36,7 @@ int main(void)
   _kernel_swi(Wimp_Initialise, &regs, &regs);
   task_handle=regs.r[1];
 
-  // load things in
+  /* load things in */
   load_choices();
   load_messages();
   load_sprites();
@@ -45,7 +45,7 @@ int main(void)
 
   if (logging)
   {
-    // create log file for use later
+    /* create log file for use later */
     log_file=fopen("<Nettle$Dir>.Log","w");
     if (log_file!=0)
     {
@@ -54,10 +54,10 @@ int main(void)
     }
   }
 
-  // create the iconbar icon
+  /* create the iconbar icon */
   create_icon_bar_icon();
 
-  // Turn off hourglass
+  /* Turn off hourglass */
   _kernel_swi(Hourglass_Smash, &regs, &regs);
 
   while (!quit_flag)
@@ -78,55 +78,55 @@ int main(void)
     switch (event)
     {
       case 0:
-        // null reason code
+        /* null reason code */
         null_reason_code();
         break;
       case 1:
-        // redraw request
+        /* redraw request */
         redraw_window();
         break;
       case 2:
-        // open window request - call with window handle and whether this is a wimp poll
-        // or not
+        /* open window request - call with window handle and whether this */
+        /* is a wimp poll or not */
         open_window(wimp_block[0], true);
         break;
       case 3:
-        // close window request - call with window handle
+        /* close window request - call with window handle  */
         close_window(wimp_block[0]);
         break;
       case 6:
-        // mouse click request, call with x, y, buttons, window handle and icon_handle
+        /* mouse click request, call with x, y, buttons, window handle and icon_handle */
         mouse_click(wimp_block[0], wimp_block[1], wimp_block[2], wimp_block[3], wimp_block[4]);
         break;
       case 7:
-        // drag finished
+        /* drag finished */
         drag_finished();
         break;
       case 8:
-        // key press, call with window handle, icon handle and key
+        /* key press, call with window handle, icon handle and key */
         key_pressed(wimp_block[0], wimp_block[1], wimp_block[6]);
         break;
       case 9:
-        // menu selection
+        /* menu selection */
         menu_selection();
         break;
       case 11:
-        // lose caret
+        /* lose caret */
         lose_caret();
         break;
       case 12:
-        // gain caret
+        /* gain caret */
         gain_caret();
         break;
       case 17:
       case 18:
-        // wimp message
+        /* wimp message */
         wimp_message(wimp_block[4],wimp_block[1],wimp_block[2]);
         break;
     }
   }
 
-  // close down application
+  /* close down application */
   closedown_application();
 
   return 0;
