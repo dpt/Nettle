@@ -30,7 +30,8 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
   case 0x01E:			/* Home */
     SETBLOCK (4, "\x1B[1~");
   case 0x07F:			/* Delete */
-    SETBLOCK (4, "\x1B[3~");
+    SETBLOCK (1, "\x7F");
+    /*SETBLOCK (4, "\x1B[3~");*/
 
   case 0x181:			/* F1 */
     SETBLOCK (3, "\x1BOP");
