@@ -3347,28 +3347,26 @@ static void open_options_window(bool open_window_flag)
   if (open_window_flag)
   {
     struct wimp_getwindowstate_block window;
+    struct wimp_getpointerinfo_block pointer;
+    int width;
+    int height;
 
     window.window_handle = win_termterm;
     _swi(Wimp_GetWindowState, _IN(1), &window);
 
     window.handle_behind = -1;  /* Open on top of stack */
 
-    /*if ((window.window_flags & (1 << 16)) == 0)*/
-    {
-      /* window is not open, open it centred on the pointer taking care to
-       * not obscure the icon bar */
-      struct wimp_getpointerinfo_block pointer;
-      int width = window.max.x - window.min.x;
-      int height = window.max.y - window.min.y;
+    _swi(Wimp_GetPointerInfo, _IN(1), &pointer);
 
-      _swi(Wimp_GetPointerInfo, _IN(1), &pointer);
+    width = window.max.x - window.min.x;
+    height = window.max.y - window.min.y;
 
-      window.min.x = pointer.pos.x - width / 2;
-      window.min.y = pointer.pos.y - height / 2;
+    window.min.x = pointer.pos.x - width / 2;
+    window.min.y = pointer.pos.y - height / 2;
 
-      window.max.x = window.min.x + width;
-      window.max.y = window.min.y + height;
-    }
+    window.max.x = window.min.x + width;
+    window.max.y = window.min.y + height;
+
     _swi(Wimp_OpenWindow, _IN(1), &window);
   }
 }
