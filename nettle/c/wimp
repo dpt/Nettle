@@ -3136,13 +3136,51 @@ static char *load_file (const char *name, int *size)
 }
 
 
+
+/**
+ * Find session that matches given window handle
+ *
+ * @return appropriate session, or NULL if session was found that relates
+ * to the window */
+static struct session_struct *get_session_from_winhan(int window)
+{
+  struct session_struct *session = sessions;
+  
+  while (session != NULL &&
+         session->window_handle != window &&
+         session->pane_handle != window)
+  {
+    session = session->next;
+  }
+  
+  return session;
+}
+
+
+
+/**
+ * 'type' in an ant url file
+ *
+ * @return true if url could not be sent
+ */
 static bool parse_ant_url (union wimp_poll_block *block)
 {
-  char *url = load_file (block->user_message.contents.data_load.file_name, NULL);
+  struct session_struct *session;
+  const int window_handle;
+  char *url;
+  int size;
 
+  window_handle = block->user_message.contents.data_load.window_handle;
+  
+  session = get_session_from_winhan(window_handle);
+  if (session == NULL)
+    return false;
+
+  url = load_file (block->user_message.contents.data_load.file_name, &size);
+  
   if (url)
   {
-    url_launch (url);
+    process_data_transmission (session, url, size);
     free (url);
     return true;
   }
@@ -3150,10 +3188,25 @@ static bool parse_ant_url (union wimp_poll_block *block)
 }
 
 
+
+/**
+ * 'type' in an acorn url file
+ *
+ * @return true if url could not be sent
+ */
 static bool parse_acorn_uri (union wimp_poll_block *block)
 {
   int size;
-  char *uri = load_file (block->user_message.contents.data_load.file_name, &size);
+  struct session_struct *session;
+  const int window_handle;
+  char *uri;
+
+  window_handle = block->user_message.contents.data_load.window_handle;
+  session = get_session_from_winhan(window_handle);
+  if (session == NULL)
+    return false;
+  
+  uri = load_file (block->user_message.contents.data_load.file_name, &size);
 
   if (uri)
   {
@@ -3171,12 +3224,11 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
         ;
       if (offset < size)
       {
-        /* now ensure that the URL is NUL-terminated */
+        /* now find end of url */
         char *eol = strchr (uri + offset, '\n');
-        if (eol)
-          *eol = '\0';
-        /* finally (!) launch it */
-        url_launch (uri + offset);
+
+        /* finally (!) send it */
+        process_data_transmission (session, uri + offset, eol - uri - offset);
         return true;
       }
     }
@@ -3186,17 +3238,21 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
 }
 
 
+
+/**
+ * 'type' in a text file
+ *
+ * @return true if text could not be sent
+ */
 static bool paste_text_file (union wimp_poll_block *block)
 {
   int size;
   char *text;
-  struct session_struct *session = sessions;
-  const int window_handle = block->user_message.contents.data_load.window_handle;
+  struct session_struct *session;
+  const int window_handle;
 
-  while (session &&
-         session->window_handle != window_handle &&
-         session->pane_handle != window_handle)
-    session = session->next;
+  window_handle = block->user_message.contents.data_load.window_handle;
+  session = get_session_from_winhan(window_handle);
 
   if (!session)
     return false;
