@@ -14,5 +14,8 @@ Unset Nettle$ZapRedrawPath
 RMEnsure Resolver 0.49 RMLoad System:Modules.Network.Resolver
 RMEnsure Resolver 0.49 Error Nettle requires Resolver 0.49 or later
 
+RMEnsure SocketWatch 0.00 RMLoad System:Modules.Network.SockWatch
+RMEnsure SocketWatch 0.00 Error Nettle requires SocketWatch 0.00 or later
+
 WimpSlot -min 256K -max 256K
 Run <Nettle$Dir>.!RunImage ><Nettle$Dir>.stdout 2><Nettle$Dir>.stderr
