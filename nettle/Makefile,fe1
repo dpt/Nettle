@@ -65,7 +65,4 @@ templ.h: templheadr $(TEMPLATES)
 o.wimp: templ.h
 o.spool: templ.h
 
-.INIT:
-	$(MKDIR) o
-
 # Dynamic dependencies:
