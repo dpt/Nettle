@@ -153,12 +153,12 @@ void redraw_window(void)
 
     regs.r[1]=(int) wimp_block;
     _kernel_swi(Wimp_RedrawWindow, &regs, &regs);
-    redraw_flag=regs.r[0];
+    redraw_flag = (bool)(regs.r[0] != 0);
     while (redraw_flag)
     {
       regs.r[1]=(int) wimp_block;
       _kernel_swi(Wimp_GetRectangle, &regs, &regs);
-      redraw_flag=regs.r[0];
+      redraw_flag = (bool)(regs.r[0] != 0);
     }
   }
 }
