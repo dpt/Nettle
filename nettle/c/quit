@@ -13,6 +13,7 @@
 #include "quit.h"
 #include "wimp.h"
 #include "hotlist.h"
+#include "init.h"
 
 void closedown_application(void)
 {
@@ -33,6 +34,7 @@ void closedown_application(void)
   free(zap_font_area);
   free(zap_lowres_font_area);
   lose_hotlist();
+  lose_templates();
 
   close_log(true);
 
