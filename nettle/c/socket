@@ -143,7 +143,12 @@ int socket_readdata(int socket_handle, char * buffer, int length)
 
 int socket_senddata(int socket_handle, const char * buffer, int length)
 {
-  return send(socket_handle, (const void *) buffer, length, 0);
+  int result=send(socket_handle, (const void *) buffer, length, 0);
+
+  if (result==-1)
+    printf("errno for socket_senddata was: %d\n",errno);
+
+  return result;
 }
 
 

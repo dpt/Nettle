@@ -300,7 +300,13 @@ static void wimp_pollsessions(void)
         {
           int sent = nettle_senddata (session, session->paste->data,
                                       session->paste->length);
-          if (sent == session->paste->length)
+
+          if (sent == -1)
+          {
+            generror("nettle_senddata returned -1, this is probably bad... report it to the \
+                      authors.",false);
+          }
+          else if (sent == session->paste->length)
           {
             struct paste_buffer *paste = session->paste;
             session->paste = paste->next;
