@@ -13,19 +13,18 @@
 #include "wimputil.h"
 
 static struct script_struct *scripts;
+static int items=0;
+static int *menublock=NULL;
 
 static void script_examine_dir(const char *);
 static void remove_script(struct script_struct *);
 
 bool script_exist_items(void)
 {
-  return false;
-
-  /* Comment out until finished - AMS 08/01/2002 */
-  /*if (scripts!=NULL)
+  if (scripts!=NULL)
     return true;
 
-  return false;*/
+  return false;
 }
 
 static void script_examine_dir(const char *directory)
@@ -49,6 +48,8 @@ static void script_examine_dir(const char *directory)
           generror("OutOfMem", true);
           return;
         }
+
+        items++;
 
         /* Create a script struct and insert into the list of scripts */
         script->prev = NULL;
@@ -102,16 +103,12 @@ static void script_examine_dir(const char *directory)
 
               misc_string_lower(str);
 
-              if (str[0]=='#')
+              if (str[0]!='#')
               {
                 char *ptr;
                 if (strstr(str, "name:"))
                 {
-                  ptr=strstr(str, "name:");
-
-                  /* Skip to spaces after name: */
-                  while (*ptr!=' ')
-                    ptr++;
+                  ptr=strstr(str, "name:")+strlen("name:");
 
                   /* Skip spaces after name: */
                   while (*ptr==' ')
@@ -129,6 +126,7 @@ static void script_examine_dir(const char *directory)
                     }
 
                     /* Copy original string into script->name (ie. with original case) */
+                    printf("%s %s\n", ptr, ptr-str+orig_str);
                     strcpy(script->name, ptr-str+orig_str);
                   }
                 }
@@ -193,12 +191,63 @@ static void remove_script(struct script_struct *script)
   free(script);
 }
 
-void script_process(void)
+void script_initialise(int id)
 {
-  /* This is likely to change - depending if we decide to handle multiple scripts at once say */
+  struct script_struct *node=scripts;
+  int search_id=0;
+
+  while (search_id!=id)
+  {
+    node=node->next;
+  }
 }
 
 const int *create_scriptlist_menu(void)
 {
-  return NULL;
+  struct script_struct *node=scripts;
+  int position=7;
+  int wide=200;
+
+  if (!scripts)
+  {
+    return NULL;
+  }
+
+  if (!menublock)
+  {
+    menublock = (int *) malloc(24*items+28);
+    if (!menublock)
+    {
+      return NULL;
+    }
+
+    lookup("Scripts", (char *) menublock, 12);
+
+    menublock[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
+    menublock[4]=wide;
+    menublock[5]=44;
+    menublock[6]=0;
+
+    while (node)
+    {
+      menublock[position++]= node->next ? 0 : (1<<7);  /* Set "last" bit if this is the end of the list */
+      menublock[position++]=-1;  /* No submenu */
+
+      menublock[position++]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | \
+  			    WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT;
+
+      menublock[position++]=(int) node->name;
+      menublock[position++]=0;
+      menublock[position++]=strlen(node->name)+1;
+
+      if (menublock[position-1]+1 * 16 > wide)
+        wide =  menublock[position-1]+1 * 16;
+
+      node = node->next;
+    }
+
+    menublock[4] = wide;
+  }
+
+  return (int *) menublock;
 }

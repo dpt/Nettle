@@ -46,6 +46,13 @@ int socket_connecttoip(unsigned long ip_address,int port_number)
     return -1;
   }
 
+  data=1;
+  if (setsockopt(socket_handle, SOL_SOCKET, SO_KEEPALIVE, (char *) &data, sizeof(data)))
+  {
+    close(socket_handle);
+    return -1;
+  }
+
   socketwatch_register(socket_handle);
 
   address.sin_family=AF_INET;
@@ -182,7 +189,7 @@ const char *socket_strerror(int errnum)
 
     case ENOENT               : return "Not found"; /* 2 */
     case EBADF                : return "Invalid descriptor"; /* 9 */
-    case EAGAIN               : return "No more ports"; /* 11 */
+    /*case EAGAIN               : return "No more ports";*/ /* 11 */
     case EFAULT               : return "Bad address"; /* 14 */
     case EINVAL               : return "Invalid argument"; /* 22 */
     case ENOSPC               : return "No space on device/DNS buffer overflow"; /* 28 */

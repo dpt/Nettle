@@ -1,6 +1,6 @@
 /**
  * Nettle utility: Templates icon name extractor (generates .h file)
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2003
  *
  * $Id$
  */
@@ -230,7 +230,7 @@ static int template2header(char *templatefile, char *headerfile)
   fprintf(file_header, "/*\n");
   fprintf(file_header, " * AUTO GENERATED CODE - DO NOT EDIT BY HAND!\n");
   fprintf(file_header, " *\n");
-  fprintf(file_header, " * (C) Copyright, Nettle developers 2001\n");
+  fprintf(file_header, " * (C) Copyright, Nettle developers 2003\n");
   fprintf(file_header, " */\n\n\n");
 
   /* Now the index entries. */
@@ -270,7 +270,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  printf("Template to .h converter version 0.01. (C) Nettle developers, 2001\r\n");
+  printf("Template to .h converter version 0.01. (C) Nettle developers, 2003\r\n");
 
   return template2header(argv[1], argv[2]);
 }

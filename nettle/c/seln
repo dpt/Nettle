@@ -217,7 +217,6 @@ void save_selection(char *filename, bool ansi_colour)
   int xpos;
   int ypos=0;
   int old_ypos=-1;
-  bool already_written_newline=false;
 
   file_handle=fopen(filename,"wb");
 
@@ -236,15 +235,40 @@ void save_selection(char *filename, bool ansi_colour)
     old_ypos=ypos;
     ypos=loop / selection_session->terminal_size.x;
 
+    /* If we're at the beginning of a line */
+    if (xpos==0)
+    {
+      /* If this isn't the first character we've processed */
+      if (loop>loop_start)
+      {
+        /* If this isn't the first line */
+        if (ypos>0)
+        {
+          /* If we exist */
+          if (selection_session->assigned_area_line_wrap)
+          {
+            /* and we didn't wrap onto this line and it was a newline-caused linefeed */
+            if (selection_session->assigned_area_line_wrap[ypos-1]==false)
+            {
+              fputc('\n', file_handle);
+            }
+          }
+        }
+      }
+    }
+
     if (ypos!=old_ypos)
     {
-      already_written_newline=false;
       last_valid_char=selection_session->terminal_size.x-1;
 
-      while (last_valid_char>=0 &&
-        !(read_assigned_flags(selection_session, last_valid_char, ypos) & NETTLE_FLAG_VALID))
+      /* if this line wasn't linewrapped, then strip the spaces, otherwise keep them */
+      if (selection_session->assigned_area_line_wrap[ypos]==false)
       {
-        last_valid_char--;
+        while (last_valid_char>=0 &&
+          read_assigned_character(selection_session, last_valid_char, ypos)==' ')
+        {
+          last_valid_char--;
+        }
       }
     }
 
@@ -288,12 +312,8 @@ void save_selection(char *filename, bool ansi_colour)
     }
 
     if (xpos<=last_valid_char)
-      fputc(read_assigned_character(selection_session, xpos, ypos), file_handle);
-
-    if (xpos>last_valid_char && !already_written_newline)
     {
-      fputc('\n', file_handle);
-      already_written_newline=true;
+      fputc(read_assigned_character(selection_session, xpos, ypos), file_handle);
     }
 
     if (ferror(file_handle))
@@ -447,7 +467,6 @@ void selection_paste(struct session_struct *session)
   int     xpos;
   int     ypos=0;
   int     old_ypos=-1;
-  bool already_written_newline=false;
 
   if (selection_session == NULL)
     return;
@@ -466,15 +485,41 @@ void selection_paste(struct session_struct *session)
     old_ypos=ypos;
     ypos=loop / selection_session->terminal_size.x;
 
+    /* If we're at the beginning of a line */
+    if (xpos==0)
+    {
+      /* If this isn't the first character we've processed */
+      if (loop>loop_start)
+      {
+        /* If this isn't the first line */
+        if (ypos>0)
+        {
+          /* If we exist */
+          if (selection_session->assigned_area_line_wrap)
+          {
+            /* and we didn't wrap onto this line and it was a newline-caused linefeed */
+            if (selection_session->assigned_area_line_wrap[ypos-1]==false)
+            {
+              *(buffer+bufferptr) = '\r';
+              bufferptr++;
+            }
+          }
+        }
+      }
+    }
+
     if (ypos!=old_ypos)
     {
-      already_written_newline=false;
       last_valid_char=selection_session->terminal_size.x-1;
 
-      while (last_valid_char>=0 &&
-        !(read_assigned_flags(selection_session, last_valid_char, ypos) & NETTLE_FLAG_VALID))
+      /* if this line wasn't linewrapped, then strip the spaces, otherwise keep them */
+      if (selection_session->assigned_area_line_wrap[ypos]==false)
       {
-        last_valid_char--;
+        while (last_valid_char>=0 &&
+          read_assigned_character(selection_session, last_valid_char, ypos)==' ')
+        {
+          last_valid_char--;
+        }
       }
     }
 
@@ -482,13 +527,6 @@ void selection_paste(struct session_struct *session)
     {
       *(buffer+bufferptr) = read_assigned_character(selection_session, xpos, ypos);
       bufferptr++;
-    }
-
-    if (xpos>last_valid_char && !already_written_newline)
-    {
-      *(buffer+bufferptr) = '\r';
-      bufferptr++;
-      already_written_newline=true;
     }
   }
 

@@ -1212,20 +1212,34 @@ void create_terminal(struct session_struct *session, struct coords terminal_size
   session->assigned_area=malloc((terminal_size.y+scrollback)*sizeof (int *));
   assert(session->assigned_area);
 
+  session->assigned_area_line_wrap=malloc((terminal_size.y+scrollback)*sizeof(bool));
+
   for (loop=0; loop<terminal_size.y+scrollback; loop++)
   {
     session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
     assert(session->assigned_area[loop]);
+
+    if (session->assigned_area_line_wrap)
+    {
+      session->assigned_area_line_wrap[loop]=false;
+    }
   }
 
   session->alternate_area=malloc(terminal_size.y*sizeof (int *));
 
   if (session->alternate_area)
   {
+    session->alternate_area_line_wrap=malloc((terminal_size.y+scrollback)*sizeof(bool));
+
     for (loop=0; loop<terminal_size.y; loop++)
     {
       session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
       assert(session->alternate_area[loop]);
+
+      if (session->alternate_area_line_wrap)
+      {
+        session->alternate_area_line_wrap[loop]=false;
+      }
     }
   }
 
@@ -1243,6 +1257,7 @@ void delete_terminal(struct session_struct *session)
   }
 
   free(session->assigned_area);
+  free(session->assigned_area_line_wrap);
 
   if (session->alternate_area)
   {
@@ -1252,6 +1267,7 @@ void delete_terminal(struct session_struct *session)
     }
 
     free(session->alternate_area);
+    free(session->alternate_area_line_wrap);
   }
 }
 
