@@ -744,7 +744,7 @@ static void win_save_click(int x, int y, int buttons, int icon_handle)
 	  _swi(Wimp_GetIconState, _IN(1), &block);
 
 	  /* if selected bit is set, then we save with ANSI colour */
-	  if (block.icon_flags & (1<<21))
+	  if (block.icon_flags & WIMP_ICON_SELECTED_BIT)
 	  {
 	    save_selection(save_data, true);
 	  }
@@ -1281,6 +1281,10 @@ void drag_finished(void)
       loop--;
     }
     wimp_initiatesave(string+loop+1);
+  }
+  else if (drag_window_handle==win_hotpane)
+  {
+    hotlist_dragdone();
   }
   else if (drag_window_handle==win_spoolsave)
   {
