@@ -15,12 +15,120 @@
 #include "templ.h"
 #include "wimputil.h"
 #include "nettle.h"
+#include <time.h>
 #include <ctype.h>
 
+typedef enum
+{
+  ht_invalid,
+  ht_telnet,
+  ht_ssh,
+  ht_task
+} hotlisttype;
+
+typedef struct _hotlistnode
+{
+  struct _hotlistnode *next;
+  hotlisttype type;
+  char *label;
+  char *host;
+  char *command;
+  unsigned char internal_state;       /* Used for selection etc */
+  unsigned char vttype;               /* An index in to the vt type array -- the user gives a string, and we match that to the array at load time */
+  unsigned char uselineeditor;
+  unsigned short terminal_width;
+  unsigned short terminal_height;
+  unsigned short scrollback;
+} hotlistnode;
+
+static hotlistnode *editlisthead = NULL;
+static hotlistnode *editlisttail = NULL;
 static hotlistnode *hotlisthead = NULL;
 static hotlistnode *hotlisttail = NULL;
+static int edititems = 0;
 static int items = 0;
 static int *menublock = NULL;
+
+static void int_lose_hotlist(hotlistnode **head);
+static void addnodetolist(hotlistnode **head, hotlistnode **tail, hotlistnode *node);
+static hotlistnode *hotlist_createnew(void);
+static int hotlist_populate_selected(void);
+static void hotlist_clear_states(void);
+
+static void copy_hotlist(bool edit_to_live) /* true = copy the editlist to the live list */
+{
+  hotlistnode *node = edit_to_live ? editlisthead : hotlisthead;
+  hotlistnode *newnode;
+  
+  int_lose_hotlist(edit_to_live ? &hotlisthead : &editlisthead);
+  
+  if (edit_to_live)
+    items = 0;
+  else
+    edititems = 0;
+  
+  while (node)
+  {
+    newnode = (hotlistnode *) malloc(sizeof(hotlistnode));
+    if (!newnode)
+      return;
+      
+    newnode->label = NULL;
+    newnode->host = NULL;
+    newnode->command = NULL;
+    newnode->internal_state = node->internal_state;
+    newnode->type           = node->type;
+    newnode->vttype         = node->vttype;
+    newnode->uselineeditor  = node->uselineeditor;
+    newnode->terminal_width = node->terminal_width;
+    newnode->terminal_height= node->terminal_height;
+    newnode->scrollback     = node->scrollback;
+    if (node->label)
+    {
+      newnode->label = malloc(strlen(node->label)+1);
+      if (!newnode->label)
+        goto erro;
+      strcpy(newnode->label, node->label);
+    }
+    if (node->host)
+    {
+      newnode->host = malloc(strlen(node->host)+1);
+      if (!newnode->host)
+        goto erro;
+      strcpy(newnode->host, node->host);
+    }
+    if (node->command)
+    {
+      newnode->command = malloc(strlen(node->command)+1);
+      if (!newnode->command)
+        goto erro;
+      strcpy(newnode->command, node->command);
+    }
+    
+    if (edit_to_live)
+      addnodetolist(&hotlisthead, &hotlisttail, newnode);
+    else
+      addnodetolist(&editlisthead, &editlisttail, newnode);
+
+    if (edit_to_live)
+      items++;
+    else
+      edititems++;
+      
+    node = node->next;
+  }
+ 
+  return;
+ 
+erro:  
+  if (newnode->label)
+    free(newnode->label);
+  if (newnode->host)
+    free(newnode->host);
+  if (newnode->command)
+    free(newnode->command);
+  free(newnode);
+}
 
 static int hash_type(hotlisttype *type, const char *value)
 {
@@ -87,35 +195,41 @@ static int read_hot_present(char *flag, char *value, char *check, const char *co
   return 0;
 }
 
-static void addnodetolist(hotlistnode *node)
+static void addnodetolist(hotlistnode **head, hotlistnode **tail, hotlistnode *node)
 {
   node->next = NULL;
-  if (!hotlisthead)
-    hotlisthead = node;
+  if (!*head)
+    *head = node;
   else
-    hotlisttail->next = node;
-  hotlisttail = node;
-  items++;
+    (*tail)->next = node;
+  *tail = node;
 }
 
 void lose_hotlist(void)
 {
-  while (hotlisthead)
-  {
-    hotlistnode *next = hotlisthead->next;
+  int_lose_hotlist(&hotlisthead);
+  int_lose_hotlist(&editlisthead);
+}
 
-    if (hotlisthead->label)
-      free(hotlisthead->label);
-    if (hotlisthead->command)
-      free(hotlisthead->command);
-    if (hotlisthead->host)
-      free(hotlisthead->host);
-    free(hotlisthead);
-    hotlisthead = next;
+static void int_lose_hotlist(hotlistnode **head)
+{
+  while (*head)
+  {
+    hotlistnode *next = (*head)->next;
+
+    if ((*head)->label)
+      free((*head)->label);
+    if ((*head)->command)
+      free((*head)->command);
+    if ((*head)->host)
+      free((*head)->host);
+    free(*head);
+    *head = next;
   }
 
   if (menublock)
     free(menublock);
+  menublock = NULL;
 }
 
 static char *get_line(FILE *in)
@@ -186,7 +300,8 @@ static void create_entry(char *title, FILE *in)
     {
       if (str[0]=='}')
       {
-        addnodetolist(node);
+        addnodetolist(&editlisthead, &editlisttail, node);
+        edititems++;
         return;
       }
 
@@ -230,6 +345,96 @@ error:
 
 }
 
+static bool save_hotlist(void)
+{
+  char hotlist_path[256];
+  char string[256];
+  hotlistnode *node = hotlisthead;
+
+  get_system_variable(hotlist_path, "Choices$Write", sizeof(hotlist_path));
+
+  if (hotlist_path[0] == '\0' )
+  {
+    sprintf(string, "<%s$Dir>.Choices", application_name);
+  }
+  else
+  {
+    sprintf(string, "<Choices$Write>.%s", application_name);
+  }
+
+  _swi(OS_File, _INR(0,1)|_IN(4), 8, string, 0);
+  strcat(string, ".Hotlist");
+
+  _kernel_last_oserror();
+
+  {
+    bool error=false;
+    FILE *file_handle=fopen(string, "w");
+
+    if (file_handle==NULL)
+    {
+      /* Couldn't open the file for writing */
+      error=true;
+    }
+    else
+    {
+      time_t current_time;
+
+      time(&current_time);
+
+      fprintf(file_handle, "# Nettle hotlist file\n");
+      fprintf(file_handle, "# Created on %s", ctime(&current_time));
+      
+      while (node)
+      {
+        if(node->label && node->label[0])
+          fprintf(file_handle, "\n%s\n{\n", node->label);
+        else
+          fprintf(file_handle, "\n(Unnamed){\n");
+        
+        if(node->host && node->host[0])
+          fprintf(file_handle, "  host: %s\n", node->host);
+          
+        if(node->command && node->command[0])
+          fprintf(file_handle, "  cmnd: %s\n", node->command);
+        
+        fprintf(file_handle, "  type: %s\n", \
+          node->type != ht_task ? node->type != ht_ssh ? \
+          "telnet" : "ssh" : "task");
+        
+        fprintf(file_handle, "  term: %s\n", terminal_name[node->vttype]);
+        
+        fprintf(file_handle, "  wide: %d\n", node->terminal_width);
+        
+        fprintf(file_handle, "  high: %d\n", node->terminal_height);
+        
+        fprintf(file_handle, "  scrl: %d\n", node->scrollback);
+        
+        fprintf(file_handle, "}\n");
+        
+        node = node->next;
+      }
+
+
+      if (!ferror(file_handle))
+      {
+        if (fclose(file_handle))
+          error=true;
+
+        file_handle=NULL;
+      }
+    }
+
+    if (error)
+    {
+      gensaveerror(file_handle, "CantSaveHotlist");
+      return false;
+    }
+
+    return true;
+  }
+}
+
 void load_hotlist(void)
 {
   FILE *file_handle;
@@ -263,6 +468,8 @@ void load_hotlist(void)
       }
     }
   } while (str);
+
+  copy_hotlist(true);
 
   fclose(file_handle);
 }
@@ -314,11 +521,9 @@ int *create_hotlist_menu(void)
 }
 
 
-hotlistnode *decode_hotlist_menu(int entry)
+static hotlistnode *decode_hotlist_menu(hotlistnode *node, int entry)
 {
-  hotlistnode *node = hotlisthead;
-
-  if (entry<0 || entry>=items)
+  if (entry<0 || entry>=((node==hotlisthead)?items:edititems))
     return NULL;
 
   for(;entry>0;entry--)
@@ -331,7 +536,7 @@ void hotlist_draw(struct wimp_getrectangle_block *getrect_block)
 {
   struct wimp_ploticon_block pib;
   int y=-4;
-  hotlistnode *node = hotlisthead;
+  hotlistnode *node = editlisthead;
 
   pib.min.x = 12;
   pib.max.x = 1024;
@@ -364,9 +569,9 @@ int hotlist_num_items(void)
   return items;
 }
 
-void hotlist_clear_states(void)
+static void hotlist_clear_states(void)
 {
-  hotlistnode *node = hotlisthead;
+  hotlistnode *node = editlisthead;
 
   for(;node;node=node->next)
   {
@@ -374,9 +579,42 @@ void hotlist_clear_states(void)
   }
 }
 
-int hotlist_populate_selected(void)
+static void hotlist_delete_selected(void)
 {
-  hotlistnode *node = hotlisthead;
+  hotlistnode *node = editlisthead;
+  hotlistnode *prev = NULL;
+
+  for(;node;prev=node, node=node->next)
+  {
+    if(node->internal_state & 1)
+    {
+      if (prev)
+        prev->next = node->next;
+      else
+        editlisthead = node->next;
+        
+      if (editlisttail)
+      {
+        if (editlisttail == node)
+          editlisttail = prev;
+      }
+      
+      if (node->label)
+        free(node->label);
+      if (node->command)
+        free(node->command);
+      if (node->host)
+        free(node->host);
+      free(node);
+      edititems--;
+      return;
+    }
+  }
+}
+
+static int hotlist_populate_selected(void)
+{
+  hotlistnode *node = editlisthead;
   char tmp[20];
 
   for(;node;node=node->next)
@@ -401,7 +639,7 @@ int hotlist_populate_selected(void)
   return 0;
 }
 
-hotlistnode *hotlist_createnew(void)
+static hotlistnode *hotlist_createnew(void)
 {
   hotlistnode *node = create_blank();
   if (!node)
@@ -425,7 +663,8 @@ hotlistnode *hotlist_createnew(void)
   node->command[0]='\0';
   node->host[0]='\0';
 
-  addnodetolist(node);
+  addnodetolist(&editlisthead, &editlisttail, node);
+  edititems++;
   return node;
 
 err:
@@ -450,6 +689,8 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
       }
       hotlist_populate_selected();
       open_window_centred(win_hotedit);
+      _swi(Wimp_SetCaretPosition, _INR(0,5), win_hotedit, icon_hotedit_label, \
+        -1, -1, -1, get_icon_data_length(win_hotedit, icon_hotedit_label));
       resize_hotpane();
       force_redraw(win_hotpane,0,-(1<<28),1024,0);
       {
@@ -463,7 +704,11 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
 
     case icon_panehot_edit:
       if (hotlist_populate_selected())
+      {
         open_window_centred(win_hotedit);
+        _swi(Wimp_SetCaretPosition, _INR(0,5), win_hotedit, icon_hotedit_label, \
+          -1, -1, -1, get_icon_data_length(win_hotedit, icon_hotedit_label));
+      }
       break;
 
     case icon_panehot_delete:
@@ -472,10 +717,15 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
       {
         if (generror_question(lookup_static("DeleteHot")))
         {
-          /* delete it! */
-
+          hotlist_delete_selected();
           resize_hotpane();
           force_redraw(win_hotpane,0,-(1<<28),1024,0);
+          {
+            struct wimp_getwindowinfo_block window;
+            window.window_handle=win_hotpane;
+            _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
+            _swi(Wimp_OpenWindow, _IN(1), &window);
+          }
         }
       }
       break;
@@ -502,7 +752,7 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
 
   item = -((y-y_pos)+8)/44;
 
-  node = decode_hotlist_menu(item);
+  node = decode_hotlist_menu(editlisthead, item);
   if (!node)
     return;
 
@@ -554,7 +804,7 @@ void resize_hotpane(void)
   ext.min.x = 0;
   ext.max.y = 0;
   ext.max.x = window.max.x - window.min.x;
-  ext.min.y = -(hotlist_num_items()*44 + 16);
+  ext.min.y = -(edititems*44 + 16);
   if (ext.min.y> -(window.max.y - window.min.y))
     ext.min.y = -(window.max.y - window.min.y);
 
@@ -563,7 +813,7 @@ void resize_hotpane(void)
 
 void fire_hotlist(int item)
 {
-  hotlistnode *hot = decode_hotlist_menu(item);
+  hotlistnode *hot = decode_hotlist_menu(hotlisthead, item);
   struct connection_params params;
 
   if (!hot)
@@ -598,4 +848,16 @@ void fire_hotlist(int item)
   }
 
   start_connection_friedport(&params);
+}
+
+bool finish_hotlist_editing(int dowhat) /* 0=cancel, 1=set, 2=save */
+{
+  copy_hotlist(dowhat ? false : true);
+  
+  if (dowhat == 2)
+  {
+    return save_hotlist();
+  }
+  
+  return true;
 }

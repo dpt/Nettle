@@ -8,42 +8,16 @@
 #ifndef HOTLIST_H
 #define HOTLIST_H
 
-typedef enum
-{
-  ht_invalid,
-  ht_telnet,
-  ht_ssh,
-  ht_task
-} hotlisttype;
-
-typedef struct _hotlistnode
-{
-  struct _hotlistnode *next;
-  hotlisttype type;
-  char *label;
-  char *host;
-  char *command;
-  unsigned char internal_state;       /* Used for selection etc */
-  unsigned char vttype;               /* An index in to the vt type array -- the user gives a string, and we match that to the array at load time */
-  unsigned char uselineeditor;
-  unsigned short terminal_width;
-  unsigned short terminal_height;
-  unsigned short scrollback;
-} hotlistnode;
-
 extern void lose_hotlist(void);
 extern void load_hotlist(void);
 extern int *create_hotlist_menu(void);
-extern hotlistnode *decode_hotlist_menu(int entry);
 extern void hotlist_draw(struct wimp_getrectangle_block *getrect_block);
 extern int hotlist_num_items(void);
-extern void hotlist_clear_states(void);
-extern int hotlist_populate_selected(void);
-extern hotlistnode *hotlist_createnew(void);
 extern void resize_hotpane(void);
 extern void win_panehot_click(int x, int y, int buttons, int icon_handle);
 extern void win_hotpane_click(int x, int y, int buttons, int icon_handle);
 extern void win_hotedit_click(int x, int y, int buttons, int icon_handle);
 extern void fire_hotlist(int item);
+extern bool finish_hotlist_editing(int dowhat); /* 0=cancel, 1=set, 2=save */
 
 #endif /* HOTLIST_H */

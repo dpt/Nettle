@@ -435,8 +435,14 @@ bool win_choices_read(int save)
   if (changed)
     mode_change();
 
+  if (save == false)
+    return finish_hotlist_editing(1);
+
   /* if we're saving, save now */
-  return save ? save_choices () : true;
+  if (save_choices() == false)
+    return false;
+  
+  return finish_hotlist_editing(2);
 }
 
 void set_colour_icon(int colour_handle, colour_t colour, bool is_an_icon)
@@ -585,6 +591,8 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
         close_choices_window();
       else
         open_choices_window();
+        
+      finish_hotlist_editing(0);
       break;
 
     case icon_choices_set:
