@@ -276,9 +276,6 @@ static void wimp_pollsessions(void)
    * the list of ones to check with select() */
   for (session = sessions; session != NULL; session = session->next)
   {
-    if (session->connection_type != NETTLE_TELNET)
-      continue;
-
     switch (session->socket_state)
     {
       case NETTLE_SESSION_RESOLVE:
@@ -290,10 +287,13 @@ static void wimp_pollsessions(void)
         break;
 
       case NETTLE_SESSION_CONNECTED:
-        assert(session->socket_handle >= 0 && session->socket_handle < 256);
-        FD_SET(session->socket_handle, &readfds);
-        if (session->socket_handle >= fdupperbound)
-          fdupperbound = session->socket_handle + 1;
+        if (session->connection_type != NETTLE_TASKWINDOW)
+        {
+          assert(session->socket_handle >= 0 && session->socket_handle < 256);
+          FD_SET(session->socket_handle, &readfds);
+          if (session->socket_handle >= fdupperbound)
+            fdupperbound = session->socket_handle + 1;
+        }
 
         /* Anything to be pasted in...? */
         if (session->paste)
@@ -311,7 +311,7 @@ static void wimp_pollsessions(void)
             memmove (session->paste->data, session->paste->data+sent,
                      session->paste->length - sent);
             session->paste->length -= sent;
-             main_requirenull = true;
+            main_requirenull = true;
           }
         }
 

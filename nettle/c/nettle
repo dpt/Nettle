@@ -288,6 +288,7 @@ static void start_connection_int (struct connection_params *params )
   }
   session->local_echo = true;
   session->want_blink = false;
+  session->socket_state = NETTLE_SESSION_NONE;
 
   session->dns = NULL; /* Should be null for non telnet/ssh sessions */
 
