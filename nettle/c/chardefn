@@ -215,19 +215,19 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
     area[step * (height >> 1) + loop / 8] |= 1 << (loop & 7);
   area+=char_size;
 
-  /*	Bottom T	0x116 */
-  for (loop = char_size - step; loop > (char_size/2); loop-=step)
-    area[loop + (width / 16)] = 1 << (width / 2 & 7);
-  memset (area + step * (height >> 1), 0xFF, step);
-  area+=char_size;
-
-  /*	Top T	T	0x117 */
+  /*	Bottom T _|_	0x116 */
   for (loop = 0; loop < (char_size/2); loop+=step)
     area[loop + (width / 16)] = 1 << (width / 2 & 7);
   memset (area + step * (height >> 1), 0xFF, step);
   area+=char_size;
 
-  /*    Vertical bar    0x118 */
+  /*	Top T	T	0x117 */
+  for (loop = char_size - step; loop > (char_size/2); loop-=step)
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  memset (area + step * (height >> 1), 0xFF, step);
+  area+=char_size;
+
+  /*    Vertical bar |   0x118 */
   for (loop = 0; loop < char_size; loop+=step)
     area[loop + (width / 16)] = 1 << (width / 2 & 7);
   area+=char_size;
