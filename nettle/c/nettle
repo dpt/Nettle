@@ -1399,6 +1399,24 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   session->pos.y=session->pos.y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
   session->old_pos.y=session->old_pos.y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
 
+  if (session==selection_session)
+  {
+    /* selection area needs moved to accommodate new terminal size */
+    int selection_start_x=selection_start % old_terminal_size.x;
+    int selection_start_y=selection_start / old_terminal_size.x;
+    int selection_end_x=selection_end % old_terminal_size.x;
+    int selection_end_y=selection_end / old_terminal_size.x;
+
+    if (selection_start_x>terminal_size_x) selection_start_x=terminal_size_x;
+    if (selection_end_x>terminal_size_x) selection_end_x=terminal_size_x;
+
+    selection_start_y=selection_start_y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
+    selection_end_y=selection_end_y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
+
+    selection_start=(selection_start_y*terminal_size_x)+selection_start_x;
+    selection_end=(selection_end_y*terminal_size_x)+selection_end_x;
+  }
+
   reopen_and_size_window(session, old_terminal_size.x, old_terminal_size.y, old_scrollback,
                          redraw.r_charw, redraw.r_charh);
 
