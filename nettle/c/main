@@ -8,8 +8,6 @@
 #include "generic.h"
 #include "globals.h"
 
-#include "choices.h"
-#include "hotlist.h"
 #include "init.h"
 #include "main.h"
 #include "misc.h"
@@ -19,35 +17,7 @@
 
 int main(void)
 {
-#ifdef FORTIFY
-  Fortify_EnterScope();
-#endif
-
-  /* Turn on hourglass */
-  _swi(Hourglass_On, 0);
-
-  /* Initialise application */
-  initialise_wimp();
-
-  /* load things in */
-  load_choices();
-  load_hotlist();
-  load_messages();
-  load_sprites();
-  load_templates();
-  load_zap_fonts();
-
-  create_log();
-
-  /* create the iconbar icon */
-  create_icon_bar_icon();
-
-#ifdef SOCKETWATCH
-  socketwatch_initialise();
-#endif /* SOCKETWATCH */
-
-  /* Turn off hourglass */
-  _swi(Hourglass_Smash, 0);
+  initialise_application();
 
   while (!quit_flag)
   {

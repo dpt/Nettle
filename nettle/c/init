@@ -12,17 +12,23 @@
 #include "init.h"
 #include "misc.h"
 #include "nettle.h"
-#include "quit.h"
 #include "wimp.h"
 #include "zapredraw.h"
+#include "sockwatch.h"
+#include "quit.h"
+#include "messages.h"
+#include "choices.h"
+#include "hotlist.h"
 
 #define MAX_TEMPLATES 10
+#define LOAD_TEMPLATE_NO_FONTS          (int *)(-1)
+#define LOAD_TEMPLATE_WIMP_SPRITE_AREA  (struct os_spriteop_area *)(1)
 
 static int zapredraw_block[128];
 static int maxindirected=0;
 static int *indirected[MAX_TEMPLATES];
 
-void initialise_wimp(void)
+static void initialise_wimp(void)
 {
   static int messages[] =
   {
@@ -38,47 +44,7 @@ void initialise_wimp(void)
     application_name, messages, &task_handle);
 }
 
-
-void load_messages(void)
-{
-  char country[16];
-  char messages_file_name[1024];
-  FILE *file_handle;
-  int size_of_messagetrans_buffer;
-
-  /* Get the country - if it has null length, then default to UK */
-  if (strlen(get_country(country, sizeof(country))) == 0)
-    strcpy(country, "UK");
-
-  /* put together filename */
-  sprintf(messages_file_name, "<%s$Dir>.Resources.%s.Messages",
-    application_name, country);
-
-  /* open the file */
-  file_handle = fopen(messages_file_name, "r");
-
-  /* if we don't open it, then definitely set country to UK */
-  if (file_handle == 0)
-    strcpy(country,"UK");
-  else
-    fclose(file_handle);
-
-  sprintf(messages_file_name, "<%s$Dir>.Resources.%s.Messages",
-    application_name, country);
-
-  /* Now re-open it */
-  size_of_messagetrans_buffer = _swi(MessageTrans_FileInfo,
-    _IN(1)|_RETURN(2), messages_file_name);
-
-  messagetrans_buffer = malloc(size_of_messagetrans_buffer);
-  assert(messagetrans_buffer != NULL);
-
-  _swi(MessageTrans_OpenFile, _INR(0,2), messagetrans_area,
-    messages_file_name, messagetrans_buffer);
-}
-
-
-void load_sprites(void)
+static void load_sprites(void)
 {
   int yeig;
   char file_name[1024];
@@ -249,7 +215,7 @@ void lose_templates(void)
     free(indirected[i]);
 }
 
-void load_templates(void)
+static void load_templates(void)
 {
   char info_data[60];
 
@@ -392,7 +358,7 @@ static int *load_font(char *font)
 }
 
 
-void load_zap_fonts(void)
+static void load_zap_fonts(void)
 {
   redraw.r_workarea=zapredraw_block;
 
@@ -405,7 +371,7 @@ void load_zap_fonts(void)
 }
 
 
-void create_icon_bar_icon(void)
+static void create_icon_bar_icon(void)
 {
   struct wimp_createicon_block block;
 
@@ -420,4 +386,39 @@ void create_icon_bar_icon(void)
   strcpy(block.contents.t.text, application_icon_name);
 
   iconbar_handle=_swi(Wimp_CreateIcon, _IN(1)|_RETURN(0), &block);
+}
+
+
+void initialise_application(void)
+{
+#ifdef FORTIFY
+  Fortify_EnterScope();
+#endif
+
+  /* Turn on hourglass */
+  _swi(Hourglass_On, 0);
+
+  /* Initialise application */
+  initialise_wimp();
+
+  /* load things in */
+  load_choices();
+  load_hotlist();
+  load_messages();
+  load_sprites();
+  load_templates();
+  load_zap_fonts();
+
+  create_log();
+
+  /* create the iconbar icon */
+  create_icon_bar_icon();
+
+#ifdef SOCKETWATCH
+  socketwatch_initialise();
+#endif /* SOCKETWATCH */
+
+  /* Turn off hourglass */
+  _swi(Hourglass_Smash, 0);
+
 }

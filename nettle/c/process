@@ -17,7 +17,7 @@
 #include "seln.h"
 #include "wimp.h"
 #include "zapredraw.h"
-
+#include "messages.h"
 
 static struct session_struct *changedsession;
 static struct coordspair changedbox;

@@ -15,8 +15,6 @@ const char *application_icon_name=APPLICATION_ICON_NAME;
 bool quit_flag                   =false;
 
 struct os_spriteop_area *sprite_area;
-int messagetrans_area[4];
-int *messagetrans_buffer;
 
 char zap_font[256]       =ZAP_FONT;
 char zap_lowres_font[256]=ZAP_LOWRES_FONT;

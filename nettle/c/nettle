@@ -16,6 +16,7 @@
 #include "socket.h"
 #include "wimp.h"
 #include "zapredraw.h"
+#include "messages.h"
 
 #include "stdarg.h"
 

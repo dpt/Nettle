@@ -13,6 +13,7 @@
 #include "seln.h"
 #include "wimp.h"
 #include "zapredraw.h"
+#include "messages.h"
 
 void refresh_selection_set(void)
 {

@@ -15,6 +15,7 @@
 #include "quit.h"
 #include "sockwatch.h"
 #include "wimp.h"
+#include "messages.h"
 
 void closedown_application(void)
 {
@@ -25,12 +26,10 @@ void closedown_application(void)
     remove_session(sessions);
   }
 
-  _swi(MessageTrans_CloseFile, _IN(0), messagetrans_area);
-
+  lose_messages();
   lose_bitmaps();
   lose_zapredraw_area();
 
-  free(messagetrans_buffer);
   free(sprite_area);
   free(zap_font_area);
   free(zap_lowres_font_area);
