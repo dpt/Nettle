@@ -97,33 +97,31 @@ title_noconn:Nettle (Connection failed)
 title_closed:Nettle (Closed)
 
 # Session messages
-connecting:Nettle: Connecting to 
-connected:Nettle: Connected to 
+connecting:Nettle: Connecting to %0...
+connected:Nettle: Connected to %0...
 
-lookup:Nettle: Looking up host 
+lookup:Nettle: Looking up host %0...
 noresolv:Nettle: Failed to resolve remote host
 nosocket:Nettle: Failed to create socket
-noconn:Nettle: Connection failed - 
+noconn:Nettle: Connection failed - %0
 closed:Nettle: Remote has closed the connection
 disconn:Nettle: Disconnected
 twclosed:Nettle: ANSI task has been closed
 
-socketerror:Nettle: Socket error 
-occurred:occurred
+socketerror:Nettle: Socket error %0 occurred
 
 # Errors
 DeleteHot:Are you sure you wish to delete this hotlist entry?
 DeleteHotButtons:Delete,Cancel
 BadHotlist:Error in hotlist file. Has it been mis-edited by hand?
-nocreate:Nettle was unable to save the file: 
-CantSaveChoices:Nettle was unable to save its Choices file: 
-CantSaveHotlist:Nettle was unable to save its Hotlist file: 
+nocreate:Nettle was unable to save the file: %0
+CantSaveChoices:Nettle was unable to save its Choices file: %0
+CantSaveHotlist:Nettle was unable to save its Hotlist file: %0
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.
 NoStartTask:Nettle was unable to create an ANSI task
 CantAlloc:Nettle was unable to claim enough memory for the requested operation.
-CantLoad:Nettle was unable to load the file: 
-ChoicesNotKnown:This version of Nettle cannot load Choices file of version
-ChoicesRevert:- reverting to defaults
+CantLoad:Nettle was unable to load the file: %0
+ChoicesNotKnown:This version of Nettle cannot load Choices file of version %0 - reverting to defaults
 SureFileTypeLoad:Are you sure you wish to load file of type '%0' ?
 SureFileTypeLoadButtons:Load,Cancel
 
@@ -135,7 +133,7 @@ HotBadHeight:Bad terminal height
 HotBadScroll:Bad scrollback size
 
 SpoolAlreadyOpen:There is already an open spool for this session. (NB this should never happen)
-SpoolFailedToOpen:Failed to open a spool to the filename
+SpoolFailedToOpen:Failed to open a spool to the filename %0
 SpoolFailNonPermanent:Cannot open spools to non-permanent locations (ie. other applications)
 
 NoAppForURL:No application has been seen that can launch this URL.

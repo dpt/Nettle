@@ -1,0 +1,147 @@
+# German messages for Nettle (by Stefan Bellon)
+# $Id$
+#
+# WARNING! Ensure "Strip Spaces" is NOT enabled when editing this file
+
+AppName:Nettle
+AppPurpose:Telnet Client
+AppAuthor:© Nettle Entwickler, 2000-2003
+AppVersion:v0.2040pre (20 Oct 2003)
+
+Info:Info>
+Choices:Einstellungen...
+Connect:.Neue Sitzung...
+Hotlist]:Favoriten>
+Scripts]:Skripte>
+Session]:.Sitzungen>
+Quit:Beenden
+
+Terminal:Terminal
+Selection>:Auswahl>
+Resize:Fenstergröße ändern>
+PasteClip:Zwischenablage einfügen
+Options:Einstellungen...
+Spool>:Protokollieren>
+Reconnect:Erneut verbinden
+
+Selection:Auswahl
+Save:Speichern>
+LaunchURL:URL öffnen
+Send:Übermitteln
+CopyClip:.In Zwischenablage kopieren
+Clear:Selektion aufheben
+
+Spool:Protokollieren
+Open>:Protokolldatei öffnen>
+Close:Protokolldatei schließen
+
+Session:Sitzungen
+
+Connection:Verbindung
+
+LineEd:Editor Typ
+LineEd0:Aus
+LineEd1:Optional (Aus)
+LineEd2:Optional (Ein)
+LineEd3:Andauernd
+
+MenuFont:Zeichensatz
+Hotlist:Favoriten
+Scripts:Skripte
+
+NoTemplates:Templates Datei nicht gefunden.
+NoSprites:Sprites Datei nicht gefunden.
+ErrorTemplates:Beim Laden der Templates Datei ist ein Fehler aufgetreten.
+ErrorSprites:Beim Laden der Sprite Datei ist ein Fehler aufgetreten.
+
+ConnectionOpen:Die Sitzung ist noch geöffnet. Soll sie wirklich beendet werden?
+ConnectionOpenButtons:Schließen,Abbrechen
+ConnectionMultiOpen:Es gibt noch geöffnete Sitzungen. Soll Nettle wirklich beendet werden?
+ConnectionMultiOpenButtons:Beenden,Abbrechen
+InvalidAddr:Die eingegebene Adresse ist ungültig, bitte überprüfen.
+InvalidPort:Der eingegebene Port ist ungültig.
+InvalidComm:Um ein TaskWindow zu starten muss ein Kommande eingegeben werden.
+BadTermType:Der geforderte Terminal-Typ ist nicht bekannt.
+BadCursorType:Der geforderte Cursor-Typ ist nicht bekannt.
+BadLineEdType:Der geforderte Zeileneditor ist nicht bekannt.
+BadTermSize:Die geforderten Terminal-Abmessungen sind entweder 0 oder zu groß, bitte überprüfen.
+BadLineEdSize:Die geforderte Zeileneditor-Größe ist entweder 0 oder zu groß, bitte überprüfen.
+OutOfMem:Es ist nicht genügend Speicher für diese Operation vorhanden.
+ToSaveDrag:Zum Speichern, Piktogramm in ein Verzeichnis-Fenster ziehen.
+
+Telnet:Telnet
+SSH:SSH
+Taskwindow:ANSI Task
+
+Term0:vt100
+Term1:vt102
+Term2:vt220
+Term3:vt320
+Term4:vt420
+Term5:vt510
+Term6:rxvt
+Term7:xterm
+Term8:xterm-color
+Term9:linux
+
+CursorType:Cursor-Typ
+Cursor0:Blockcursor
+Cursor1:Unterstrich
+
+SelColour:Farbe auswählen
+
+# Title bar
+title_conn:Nettle (Verbinde...)
+title_disconnect:Nettle (Verbindung getrennt)
+title_noconn:Nettle (Verbindung fehlgeschlagen)
+title_closed:Nettle (Beendet)
+
+# Session messages
+connecting:Nettle: Verbinde mit %0...
+connected:Nettle: Verbunden mit %0...
+
+lookup:Nettle: Suche Rechner %0...
+noresolv:Nettle: Namensauflösung für Rechner ??? fehlgeschlagen
+nosocket:Nettle: Konnte Socket nicht anlegen
+noconn:Nettle: Verbindung fehlgeschlagen - 
+closed:Nettle: Gegenstelle hat die Verbindung beendet
+disconn:Nettle: Verbindung getrennt
+twclosed:Nettle: ANSI Task wurde geschlossen
+
+socketerror:Nettle: Socket-Fehler %0 aufgetreten
+
+# Errors
+DeleteHot:Diesen Favoriten-Eintrag wirklich löschen?
+DeleteHotButtons:Löschen,Abbrechen
+BadHotlist:Fehler in der Favoriten-Datei. Wurde sie von Hand verändert?
+nocreate:Nettle konnte die Datei %0 nicht speichern
+CantSaveChoices:Nettle konnte die Einstellungsdatei %0 nicht speichern
+CantSaveHotlist:Nettle konnte die Favoritendatei %0 nicht speichern
+esctoolong:Escape-Anweisung zu lang. Eventuell wird die Escape-Anweisung nicht unterstützt, bitte die Autoren kontaktieren.
+NoStartTask:Nettle konnte den ANSI Task nicht anlegen
+CantAlloc:Nettle konnte nicht genügend Speicher für die geforderte Operation erwerben
+CantLoad:Nettle konnte die Datei %0 nicht laden
+ChoicesNotKnown:Diese Nettle-Version kann keine Einstellungen von Version %0 laden - benutze daher Standardvorgaben
+SureFileTypeLoad:Datei vom Typ '%0' wirklich laden?
+SureFileTypeLoadButtons:Laden,Abbrechen
+
+HotBlankLabel:Bitte Favoritennamen angeben
+HotBlankHost:Bitte Rechnernamen angeben
+HotBlankCommand:Bitte Kommando angeben
+HotBadWidth:Ungültige Fensterbreite
+HotBadHeight:Ungültige Fensterhöhe
+HotBadScroll:Ungültiger Zeilenpuffer
+
+SpoolAlreadyOpen:Es gibt bereits eine geöffnete Protokolldatei für diese Sitzung (das sollte nicht passieren!)
+SpoolFailedToOpen:Öffnen der Protokolldatei %0 fehlgeschlagen
+SpoolFailNonPermanent:Kann Protokolldatei nicht in andere Anwendungen abspeichern
+
+NoAppForURL:Keine Anwendung ist für diesen URL-Typ registriert.
+
+# Match details for Login
+LoginMatch_User:ogin:
+LoginMatch_Pass:assword:
+
+# Characters for URL characters
+URL_Chars:'"< >
+
