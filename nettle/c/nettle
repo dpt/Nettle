@@ -903,6 +903,9 @@ void remove_session(struct session_struct *session)
   free(session->login_user);
   free(session->login_pass);
 
+  /* free the icon name */
+  free(session->icon_name);
+
   /* free the data area and title */
   delete_terminal(session);
   free(session->title);
