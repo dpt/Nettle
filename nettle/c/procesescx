@@ -40,6 +40,8 @@ bool process_escape_length_x(struct session_struct *session)
         case '[':
           switch (session->escape_string[session->escape_string_length-1])
           {
+            /* ! and " are used by p for CSI ... p */
+            case '!': case '\"':
             case '?': case ';':
             case '0': case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9':
