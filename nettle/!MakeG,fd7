@@ -1,0 +1,4 @@
+RMEnsure DDEUtils 0.00 RMLoad System:Modules.DDEUtils
+Prefix <Obey$Dir>
+Wimpslot 4000K
+amu -f MakefileG
