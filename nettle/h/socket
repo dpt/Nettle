@@ -21,7 +21,24 @@ extern int socket_connecttoip(int, int);
 extern void socket_close(int);
 extern int socket_connected(int);
 extern int socket_readdata(int,char *,int);
-extern int socket_senddata(int /*socket*/, const char */*buffer*/, int /*length*/);
+extern int socket_senddata(int /*socket*/, const char */*buffer*/,
+                           int /*length*/);
 extern char *socket_ip_string(int);
+
+
+
+/**
+ * Convert socket errno to string explanation
+ *
+ * Note: uses an internal static array to make a string for any unknown
+ * error numbers.
+ *
+ * @param errnum   Value of 'errno' to be converted
+ *
+ * @return textual representation of error
+ */
+const char *socket_strerror(int errnum);
+
+
 
 #endif

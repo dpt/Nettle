@@ -158,3 +158,52 @@ char *socket_ip_string(int address) {
 
 
 
+const char *socket_strerror(int errnum)
+{
+  static char ueb[64];
+
+  switch (errnum) {
+    case 0: return "No error";
+    default:
+            sprintf(ueb,"Unknown error %d", errnum);
+            return ueb;
+
+case ENOENT               : return "Not found"; /* 2 */
+case EBADF                : return "Invalid descriptor"; /* 9 */
+case EAGAIN               : return "No more ports"; /* 11 */
+case EFAULT               : return "Bad address"; /* 14 */
+case EINVAL               : return "Invalid argument"; /* 22 */
+case ENOSPC               : return "No space on device/DNS buffer overflow"; /* 28 */
+case EPIPE		  : return "Broken pipe"; /* 32 */
+case EWOULDBLOCK          : return "Operation would block"; /* 35 */
+case EINPROGRESS          : return "Operation now in progress"; /* 36 */
+case EALREADY             : return "Operation already in progress"; /* 37 */
+case ENOTSOCK             : return "Socket operation on non-socket"; /* 38 */
+case EDESTADDRREQ         : return "Destination address required"; /* 39 */
+case EMSGSIZE             : return "Message too long"; /* 40 */
+case EPROTOTYPE           : return "Protocol wrong type for socket";
+case ENOPROTOOPT          : return "Protocol not available"; /* 42 */
+case EPROTONOSUPPORT      : return "Protocol not supported"; /* 43 */
+case ESOCKTNOSUPPORT      : return "Socket type not supported"; /* 44 */
+case EOPNOTSUPP           : return "Operation not supported on socket"; /* 45 */
+case EPFNOSUPPORT         : return "Protocol family not supported";  /* 46 */
+case EAFNOSUPPORT         : return "Address family not supported by protocol family"; /* 47 */
+case EADDRINUSE           : return "Address already in use"; /* 48 */
+case EADDRNOTAVAIL        : return "Can't assign requested address"; /* 49 */
+case ENETDOWN             : return "Network is down"; /*/ 50 */
+case ENETUNREACH          : return "Network is unreachable"; /*/ 51 */
+case ENETRESET            : return "Network dropped connection on reset"; /*/ 52 */
+case ECONNABORTED         : return "Software caused connection abort"; /*/ 53 */
+case ECONNRESET           : return "Connection reset by peer"; /*/ 54 */
+case ENOBUFS              : return "No buffer space available"; /*/ 55 */
+case EISCONN              : return "Socket is already connected"; /*/ 56 */
+case ENOTCONN             : return "Socket is not connected"; /*/ 57 */
+case ESHUTDOWN            : return "Can't send after socket shutdown"; /*/ 58  */
+case ETOOMANYREFS         : return "Too many references: can't splice"; /*/ 59  */
+case ETIMEDOUT            : return "Connection timed out"; /*/ 60 */
+case ECONNREFUSED         : return "Connection refused"; /*/ 61  */
+case EHOSTDOWN            : return "Host is down"; /*/ 64 */
+case EHOSTUNREACH         : return "No route to host"; /*/ 65 */
+case 486		  : return "No internet stack available";
+  }
+}
