@@ -2,13 +2,19 @@
 # by A. Macfarlane Smith
 # (C) Archifishal Software 2001
 
+ifeq (${lib},scl)
+SCLIB=-mlibscl
+SCINC=-INetlib:
+SCLINK=NetLib:o.NetLib
+endif
+
 CC = gcc
-CFLAGS = -c -INetlib: -mlibscl -mthrowback -O2 -Wall -Wno-unknown-pragmas \
+CFLAGS = -c $(SCINC) $(SCLIB) -mthrowback -O2 -Wall -Wno-unknown-pragmas \
   -DFORTIFY
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = gcc
-LINKFLAGS = -mlibscl -debug
+LINKFLAGS = $(SCLIB) -debug
 
 WIPE = wipe
 WIPEFLAGS = ~CFR~V
@@ -24,7 +30,7 @@ RUNIMAGE = !Nettle.!RunImage
 all: $(RUNIMAGE)
 
 $(RUNIMAGE): $(OBJS)
-	$(LINK) $(LINKFLAGS) NetLib:o.NetLib $(OBJS) -o $(RUNIMAGE)
+	$(LINK) $(LINKFLAGS) $(SCLINK) $(OBJS) -o $(RUNIMAGE)
 
 clean:
 	$(WIPE) o.* $(WIPEFLAGS)
