@@ -65,7 +65,7 @@ Clicking on the Nettle iconbar icon will display the connection dialog.
 From here you may choose the connection type (Telnet/SSH/ANSI task)
 and terminal emulation desired (vt100/vt102/vt220/xterm).  The hostname
 and port ("host.name:port") can be entered below for telnet and ssh
-connections.  For ssh and TaskWindow connections, the command icon will
+connections.  For ssh and ANSI Task connections, the command icon will
 be available to supply a default command to run (eg "bash").
 
 
@@ -112,6 +112,34 @@ is saved to disc when you select "Save" from the Choices window and
 loaded when Nettle is loaded.  You can access the hotlist by clicking
 ADJUST on the Nettle iconbar icon or from the "Hotlist" iconbar submenu.
 
+Main window
+
+All input to nettle is via the main connection windows of course.  If
+a line editor has been enabled, then it will appear as a pane hanging
+below the window.  Enter text in here as usual and hit ENTER to send it.
+The line editor has a "history" - use up and down cursor keys to access
+recently entered commands.   This line editor is useful for slow
+connections - eg telnet over a modem or to a distant site.  If the line
+editor type has been set to "Optional" then there will be a checkbox to
+the right of the window to allow it to be temporarily disbled (eg when
+you need raw mode input, or want to enter a password).  If the line
+editor is set to "Permanent" then the line editor window will always be
+active, but clicking in the window will allow raw input - this is akin
+to the behaviour of apps such as ANTTerm.   Try each option and see which
+suits you best.
+
+You can mark a selection of text in the main window in the usual RISC OS
+manner.  This selection can then be saved by simply dragging it to a filer
+window or another app.  Clicking menu will open the terminal menu where
+you can follow the "Selection ->" item and save via a standard save dialog.
+This also allows you to save out the full ANSI control code info too.
+The application menu also allows you to send the marked area back to the
+terminal.
+
+Nettle can launch URLs for you.  Doubleclicking on any word in a terminal
+window will attempt to launch a RISC OS web browser for that text.  Nettle
+supports all common URL launching mechanisms (Fresco/Oregano/Browse).
+
 
 ANSI task
 =========
@@ -122,7 +150,7 @@ slightly differently from other task window implementations (eg Zap/Edit)
 to allow for this ANSI emulation.  Don't expect to run "normal" interactive
 RISC OS programs in here (e.g. BASIC, gos) because they will not function
 in the way you expect - ANSI terminal control is quite different to
-RISC OS.   Programs which are intended to be run in Nettle's taskwindow
+RISC OS.   Programs which are intended to be run via Nettle's ANSI Task
 include nano (pico), tinyfuge, lynx, BitchX, ncftp2 and so on.  Nettle
 is the only RISC OS program that we know of that provides this kind of
 functionality and allows these unix ports to be run at their best.
@@ -166,6 +194,27 @@ Contributions, assistance and patches have also been received from
 Darren Salt and Justin Fletcher.
 
 
+"To do" list - forthcoming features and ideas
+=============================================
+
+This release of Nettle is by no means complete, but we decided it was
+time to release a binary version, as it's quite stable and very useful
+as it stands.  Here's a roughly ordered list of things that will be
+added in future versions.  Please feel free to submit new ideas!
+
+* Use global clipboard
+* Load data from dragged files
+* Reordering of hotlist items within hotlist editor
+* Respond to "telnet://" URL launch messages
+* ANSI commandline task shell for ANSI task window (ROSH)
+* Dynamic resize of terminal
+* Much faster terminal scrollback handling
+* More choices: F12 handling, blinking cursor...
+* Scroll to bottom on keypress
+* VT 320/420/510
+* SSH
+
+
 Release History
 ===============
 
@@ -177,6 +226,3 @@ Release History
 
 
 (C) Nettle developers, September 1st, 2001. 
-
-
-
