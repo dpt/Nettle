@@ -3132,6 +3132,27 @@ static bool paste_text_file (union wimp_poll_block *block)
   text = load_file (block->user_message.contents.data_load.file_name, &size);
   if (text)
   {
+    /* Only translate if file is 0xFFF (text) */
+    if (block->user_message.contents.data_load.filetype==0xFFF)
+    {
+      int loop;
+      for (loop=0; loop<size; loop++)
+      {
+        switch (text[loop])
+        {
+          case 9:
+            break;
+          case 10:
+            text[loop]=13;
+            break;
+          default:
+            if (text[loop]<32)
+              text[loop]=0;
+
+            break;
+        }
+      }
+    }
     process_data_transmission (session, text, size);
     free (text);
   }
