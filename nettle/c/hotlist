@@ -976,7 +976,7 @@ void fire_hotlist(int item)
 
 bool finish_hotlist_editing(int dowhat) /* 0=cancel, 1=set, 2=save */
 {
-  copy_hotlist(dowhat ? false : true);
+  copy_hotlist(dowhat ? true : false);
   
   if (dowhat == 2)
   {
