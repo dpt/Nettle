@@ -8,7 +8,17 @@
 #ifndef HOTLIST_H
 #define HOTLIST_H
 
+typedef enum
+{
+  ht_invalid,
+  ht_telnet,
+  ht_ssh,
+  ht_task
+} hotlisttype;
+
 extern void lose_hotlist(void);
 extern void load_hotlist(void);
+extern void create_hotlist_menu(void);
+extern hotlisttype get_hotlist_entry(int entry, char **host, unsigned short *port, char **command);
 
 #endif /* HOTLIST_H */
