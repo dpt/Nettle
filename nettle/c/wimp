@@ -39,7 +39,6 @@ static void create_terminal_menu(void);
 static void create_connection_menu(void);
 static void create_terminal_type_menu(void);
 static void drag_start(int, int);
-static void create_menu_by_icon(int *menu, int window, int icon);
 
 
 
@@ -344,7 +343,7 @@ static void iconbar_click(int x, int y, int buttons, int icon_handle)
   	 create_iconbar_menu();
   	 break;
        case 1:
-         create_hotlist_menu();
+         create_hotlist_menu (false);
          break;
      }
   }
@@ -362,6 +361,9 @@ static void win_open_click(int x, int y, int buttons, int icon_handle)
       break;
     case 5:
       create_connection_menu();
+      break;
+    case 8:
+      create_hotlist_menu (true);
       break;
     case 10:
       create_terminal_type_menu();
@@ -1051,11 +1053,36 @@ void menu_choice(int *selection)
 	  case ht_invalid:
 	    break;   /* Just to keep the compiler quiet - handle all enums! */
 	}
+      }
+      break;
+
+    case MENU_HOTLIST_IBAR:
+      {
+        unsigned short port;
+	char *command;
+	char *host;
+	int connection_type = 0;
+	enum nettle_terminal terminal_type = NETTLE_TERMINAL_VT220;
+	hotlisttype type = get_hotlist_entry(selection[0], &host, &port, &command);
+
+	switch (type)
+	{
+	  case ht_telnet:
+	    connection_type = NETTLE_TELNET;
+	    break;
+	  case ht_ssh:
+	    connection_type = NETTLE_TELNET;
+	    break;
+	  case ht_task:
+	    connection_type = NETTLE_TELNET;
+	    break;
+	  case ht_invalid:
+	    break; /* keep the compiler quiet */
+	}
 
 	if (type != ht_invalid)
-	{
-	  start_connection();
-	}
+	  start_connection_int (connection_type, terminal_type,
+				host, port, command);
       }
       break;
   }
@@ -1087,7 +1114,11 @@ void menu_choice(int *selection)
           break;
 
         case MENU_HOTLIST:
-          create_hotlist_menu();
+          create_hotlist_menu (true);
+          break;
+
+        case MENU_HOTLIST_IBAR:
+          create_hotlist_menu (false);
           break;
       }
     }
@@ -2173,7 +2204,7 @@ static void open_open_window(bool open_window_flag)
 }
 
 
-static void create_menu_by_icon (int *menu, int window, int icon)
+void create_menu_by_icon (int *menu, int window, int icon)
 {
   /* open the menu in the proper place next to a menu icon */
   struct wimp_geticonstate_block gisblock;
@@ -2187,6 +2218,6 @@ static void create_menu_by_icon (int *menu, int window, int icon)
   _swi (Wimp_GetWindowState, _IN(1), (int) &gwsblock);
 
   _swi(Wimp_CreateMenu, _INR(1,3), menu,
-       gwsblock.min.x + gwsblock.scroll.x + gisblock.min.x,
+       gwsblock.min.x + gwsblock.scroll.x + gisblock.max.x,
        gwsblock.max.y + gwsblock.scroll.y + gisblock.max.y);
 }
