@@ -7,6 +7,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include "nettle.h"
+
 #define MAX_TAB_NUMBER		32
 
 extern char *application_name;
@@ -63,7 +65,7 @@ struct session_struct
   int window_handle;		// window handle
   int pane_handle;		// pane window handle
   char *assigned_area;		// data area for terminal
-  char terminal_type;		// terminal type
+  enum nettle_terminal terminal_type; // terminal type
   int xpos;			// current x position
   int ypos;			// current y position
   int terminal_size_x;		// size of terminal in X
