@@ -1447,7 +1447,10 @@ void wimp_menu_selection(int *selection)
               selection_paste();
               break;
 
-            case 3:
+            case 3: /* copy to clipbaord */
+              break;
+
+            case 4:
               {
                 /* Clear selection */
                 refresh_selection_clear();

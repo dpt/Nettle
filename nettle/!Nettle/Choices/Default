@@ -1,9 +1,15 @@
+# Nettle choices file
+# Created on Mon Aug 27 17:30:35 2001
+
 ZapFontHi:08x16
 ZapFontLo:08x08
 Logging:0
-LineEditor:0
 PassF12:0
+CursorBlink:0
+TerminalType:2
 TerminalWidth:80
 TerminalHeight:24
 TerminalScroll:96
+LineEditor:0
 LineEditorSize:32
+Palette:000000 0000D0 00D000 00D0D0 F00000 D000D0 D0D000 D0D0D0 606060 4040FF 00FF00 00FFFF FF4040 FF40FF FFFF00 FFFFFF 

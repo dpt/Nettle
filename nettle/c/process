@@ -517,7 +517,7 @@ static void byte_linefeed(struct session_struct *session)
     session->pos.x=0;
   }
 
-  reprocess_position(session);
+  /*reprocess_position(session);*/
   reprocess_position_scroll(session);
 }
 
