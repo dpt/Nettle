@@ -30,10 +30,10 @@ extern void mode_change(void);
 
 extern void generror(const char *, bool);
 extern void set_caret_position(int, int, int, int);
-extern void set_icon_data(int, int, char *);
+extern void set_icon_data(int, int, const char *);
 extern char *read_icon_data(int, int, char *, int);
 
-extern void set_title_bar(int, char *);
+extern void set_title_bar(int, const char *);
 extern void force_redraw(int,int,int,int,int);
 
 #endif

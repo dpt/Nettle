@@ -22,6 +22,13 @@
 
 #include "socket.h"
 
+
+
+/* this is only needed for NetLib */
+extern int close(int /*s*/);
+
+
+
 char socket_resolvehost(char *host_name, unsigned int *address)
 {
   int status;
@@ -35,7 +42,7 @@ char socket_resolvehost(char *host_name, unsigned int *address)
         return RESOLVER_FAILED;
         break;
       case 0:
-        *address=(unsigned int) *((int *)(*hostent).h_addr);
+        *address=(unsigned int) *((int *)(void *)(*hostent).h_addr);
         return RESOLVER_SUCCESS;
         break;
     }
@@ -73,9 +80,6 @@ int socket_connecttoip(int ip_address,int port_number)
 
 void socket_close(int socket_handle)
 {
-  /* this is only needed for NetLib */
-  extern int close(int /*s*/);
-
   close(socket_handle);
 }
 

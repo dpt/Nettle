@@ -72,8 +72,8 @@ struct session_struct;
 
 
 void start_connection(void);
-void write_out_string(struct session_struct *, char *);
-void write_out_data(struct session_struct *, char *, int);
+void write_out_string(struct session_struct *, const char *);
+void write_out_data(struct session_struct *, const char *, int);
 
 void remove_session(struct session_struct *);
 void nettle_senddata(struct session_struct *, char *, int);

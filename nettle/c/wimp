@@ -1391,7 +1391,7 @@ void set_caret_position(int window_handle, int icon_handle, int flags, int index
 
 
 
-void set_icon_data(int window_handle, int icon_handle, char *contents)
+void set_icon_data(int window_handle, int icon_handle, const char *contents)
 {
   struct wimp_geticonstate_block block;
 
@@ -1402,7 +1402,7 @@ void set_icon_data(int window_handle, int icon_handle, char *contents)
 
   if (block.icon_flags & (1<<8))
   {
-    if (strcmp(block.contents.it.text, contents))
+    if (strcmp(block.contents.it.text, contents) != 0)
     {
       strcpy(block.contents.it.text, contents);
 
@@ -1439,15 +1439,16 @@ char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_l
 
   if (block.icon_flags & (1 << 8))
   {
-    return read_mem(buffer, block.contents.it.text, buf_len);
+    read_mem(buffer, block.contents.it.text, buf_len);
   }
   else
   {
     char string[1024];
     sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
     generror(string, false);
+    buffer[0] = '\0';
   }
-  return "";
+  return buffer;
 }
 
 
@@ -1625,7 +1626,7 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
 
 
 
-static char *get_menu_item(char *name)
+static char *get_menu_item(const char *name)
 {
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
@@ -1638,7 +1639,7 @@ static char *get_menu_item(char *name)
 
 
 
-static char *get_last_menu_item(char *name)
+static char *get_last_menu_item(const char *name)
 {
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
@@ -1652,7 +1653,7 @@ static char *get_last_menu_item(char *name)
 
 
 
-static char *get_grey_menu_item(char *name)
+static char *get_grey_menu_item(const char *name)
 {
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
@@ -1667,7 +1668,7 @@ static char *get_grey_menu_item(char *name)
 
 
 
-static char *get_grey_last_menu_item(char *name)
+static char *get_grey_last_menu_item(const char *name)
 {
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, 20);
@@ -1835,7 +1836,7 @@ static void create_terminal_type_menu(void)
 
 
 /* Set title bar code */
-void set_title_bar(int window_handle, char *title)
+void set_title_bar(int window_handle, const char *title)
 {
   struct wimp_getwindowinfo_block block;
 
@@ -1845,7 +1846,7 @@ void set_title_bar(int window_handle, char *title)
 
   if (block.icon_flags & (1<<8))
   {
-    if (strcmp(block.title.it.text, title))
+    if (strcmp(block.title.it.text, title) != 0)
     {
       strcpy(block.title.it.text, title);
 

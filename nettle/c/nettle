@@ -424,12 +424,12 @@ void start_connection(void)
   }
 }
 
-void write_out_string(struct session_struct *session, char *string)
+void write_out_string(struct session_struct *session, const char *string)
 {
   write_out_data(session, string, strlen(string));
 }
 
-void write_out_data(struct session_struct *session, char *data, int length_data)
+void write_out_data(struct session_struct *session, const char *data, int length_data)
 {
   int loop, calc;
   char cursor_flags;
