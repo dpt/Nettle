@@ -8,6 +8,8 @@
 #ifndef MISC_H
 #define MISC_H
 
+#include <sys/types.h>
+
 char *get_system_variable(char *, const char *, int);
 int binary(const char *);
 int instr(const char *, const char *);
@@ -20,8 +22,10 @@ void create_log(void);
 char *get_country(char *, int);
 bool dynamic_areas_available(void);
 void misc_setfiletype(const char *filename, int type);
-char *strdup(const char *s);
 
+#ifndef __UNIXLIB_TYPES_H
+char *strdup(const char *s);
+#endif
 
 
 /**
