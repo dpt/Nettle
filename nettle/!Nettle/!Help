@@ -112,6 +112,7 @@ is saved to disc when you select "Save" from the Choices window and
 loaded when Nettle is loaded.  You can access the hotlist by clicking
 ADJUST on the Nettle iconbar icon or from the "Hotlist" iconbar submenu.
 
+
 Main window
 
 All input to nettle is via the main connection windows of course.  If
@@ -179,6 +180,7 @@ stubs, due to stability problems with gcc's output.
 
 Opensource development is managed via SourceForge - feel free to submit
 patches and bug reports via that system: http://nettle.sourceforge.net/
+Report bugs and enhancements to mailto:archifishal@users.sourceforge.net
 
 
 Main developers (sourceforge id)
@@ -200,29 +202,47 @@ Darren Salt and Justin Fletcher.
 This release of Nettle is by no means complete, but we decided it was
 time to release a binary version, as it's quite stable and very useful
 as it stands.  Here's a roughly ordered list of things that will be
-added in future versions.  Please feel free to submit new ideas!
+added in future versions.  Please feel free to submit new ideas:
+mailto:archifishal@users.sourceforge.net
 
+* Respond to "telnet://" URL launch messages
+* Much faster terminal scrollback handling
+* Reordering of hotlist items within hotlist editor
+* More choices: F12 handling, blinking cursor...
 * Use global clipboard
 * Load data from dragged files
-* Reordering of hotlist items within hotlist editor
-* Respond to "telnet://" URL launch messages
 * ANSI commandline task shell for ANSI task window (ROSH)
 * Dynamic resize of terminal
-* Much faster terminal scrollback handling
-* More choices: F12 handling, blinking cursor...
 * Scroll to bottom on keypress
 * VT 320/420/510
 * SSH
 
 
+Known issues / bugs
+===================
+
+If you find a bug that isn't related to the list of unfinished items
+above, and isn't a known bug shown below, please let us know:
+mailto:archifishal@users.sourceforge.net
+
+* Terminal emulation incomplete - esoteric vt commands unimplemented
+* ANSI task cannot be used as a "regular" taskwindow.
+  - It never will, because it interprets codes as ANSI - that's its
+    whole point in life.  This will be improved by "ROSH"
+* Doesn't abort desktop shutdown when connections are active
+
+
 Release History
 ===============
 
+0.1306b : 1999 - 2001
+          Initial BASIC versions
+
 0.2000r : September 1st, 2001
-          First public release
            - Recoded in C
            - supports vt100, vt102, vt220, xterm emulations
            - Telnet and ANSI task connections
+           - URL launching
 
 
 (C) Nettle developers, September 1st, 2001. 
