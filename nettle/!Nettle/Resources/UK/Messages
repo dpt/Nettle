@@ -4,7 +4,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.1600b (02-Aug-2001)
+AppVersion:v0.1601b (11-Aug-2001)
 
 Info:Info>
 Choices:.Choices...
@@ -45,3 +45,26 @@ Term4:vt420
 Term5:vt510
 Term6:rxvt
 Term7:xterm
+
+# Title bar
+title_conn:nettle (Connecting)
+title_disconnect:nettle (Disconnected)
+title_noconn:nettle (Connection refused)
+title_open:nettle (Open)
+title_closed:nettle (Closed)
+
+# Session messages
+connecting:nettle: connecting to 
+connected:nettle: connected to 
+
+lookup:nettle: looking up host 
+noresolv:nettle: failed to resolve remote host
+nosocket:nettle: failed to create socket
+noconn:nettle: connection refused
+closed:nettle: remote has closed connection
+disconn:nettle: disconnected
+twclosed:nettle: taskwindow has been closed
+
+# Erk
+cantwrite:Failed to open file '%s' for writing
+esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.
