@@ -1,12 +1,10 @@
 # German messages for Nettle (by Stefan Bellon)
 # $Id$
-#
-# WARNING! Ensure "Strip Spaces" is NOT enabled when editing this file
 
 AppName:Nettle
 AppPurpose:Telnet Client
-AppAuthor:© Nettle Entwickler, 2000-2003
-AppVersion:v0.2040pre (20 Oct 2003)
+AppAuthor:© Nettle Entwickler, 2000-2004
+AppVersion:v0.2040pre (04 April 2004)
 
 Info:Info>
 Choices:Einstellungen...
@@ -103,7 +101,7 @@ connected:Nettle: Verbunden mit %0...
 lookup:Nettle: Suche Rechner %0...
 noresolv:Nettle: Namensauflösung für Rechner ??? fehlgeschlagen
 nosocket:Nettle: Konnte Socket nicht anlegen
-noconn:Nettle: Verbindung fehlgeschlagen - 
+noconn:Nettle: Verbindung fehlgeschlagen - %0
 closed:Nettle: Gegenstelle hat die Verbindung beendet
 disconn:Nettle: Verbindung getrennt
 twclosed:Nettle: ANSI Task wurde geschlossen
@@ -144,4 +142,3 @@ LoginMatch_Pass:assword:
 
 # Characters for URL characters
 URL_Chars:'"< >
-

@@ -1,7 +1,7 @@
 Nettle - Telnet and terminal emulation for RISC OS
 ==================================================
 
-Version : 0.2041a : Xxxxx Xxxxth, 2004.
+Version : 0.2042r : April 4th, 2004.
 
 Nettle is *the* terminal emulator and telnet client for the RISC OS
 operating system. It utilises the ZapRedraw module for speedy display and
@@ -384,6 +384,18 @@ Release History
       Correctly reset hotlist editor window on Adjust-Cancel
       Cope with long URLs
       Correctly implemented reverse tabulation command
+
+0.2042r : April 4th, 2004
+    New Features:
+      German messages (credit Stefan Bellon)
+    
+    Changes/Improvements:
+      True probing detection of Internet pollword capability
+      Better internal internationalisation handling
+    
+    Bugs fixed:
+      Tabs are included in non-raw spool files
+      Cope cleanly when no Internet module is present
 
 
 (C) Nettle developers.

@@ -1,12 +1,10 @@
 # Messages for Nettle
 # $Id$
-#
-# WARNING! Ensure "Strip Spaces" is NOT enabled when editing this file
 
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2004
-AppVersion:v0.2041a (XX xxx 2004)
+AppVersion:v0.2042r (04 April 2004)
 
 Info:Info>
 Choices:Choices...

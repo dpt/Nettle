@@ -1,12 +1,10 @@
 # Messages pour Nettle
 # $Id$
-#
-# ATTENTION! Assurez-vous que "Strip Spaces" (élagage d'espaces) n'est pas actif pendant l'édition de ce fichier
 
 AppName:Nettle
 AppPurpose:Client telnet arachnéen
-AppAuthor:© Développeurs de Nettle, 2000-2003
-AppVersion:v0.2040r (07 Dec 2003)
+AppAuthor:© Développeurs de Nettle, 2000-2004
+AppVersion:v0.2042r (04 Avril 2004)
 
 Info:Info>
 Choices:Préférences...
@@ -144,4 +142,3 @@ LoginMatch_Pass:assword:
 
 # Characters for URL characters
 URL_Chars:'"< >
-
