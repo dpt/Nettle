@@ -1,6 +1,6 @@
 /**
  * Global variables
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2002
  *
  * $Id$
  */
@@ -66,8 +66,10 @@ int win_open;
 int win_resize;
 int win_save;
 int win_spoolsave;
+int win_sizebar;
 
 int menu_open=0;
+int resize_handle=0;
 
 int choices_file_version_number      =0;
 bool logging                         =LOGGING;
