@@ -1540,13 +1540,30 @@ static bool process_escape_length_x(struct session_struct *session)
               else
               {
                 session->pos.x=0;
-                if (session->other_session_flags & NETTLE_OTHER_ORIGIN_MODE)
+
+                if (session->escape_string_length>3)
                 {
-                  session->pos.y=session->scrollback+session->scroll_start-1;
+                  if (session->other_session_flags & NETTLE_OTHER_ORIGIN_MODE)
+                  {
+                    session->pos.y=session->scrollback+
+                     			       session->scroll_start-1+
+                                               atoi(session->escape_string+2)-1;
+                  }
+                  else
+                  {
+                    session->pos.y=session->scrollback+atoi(session->escape_string+2)-1;
+                  }
                 }
                 else
                 {
-                  session->pos.y=session->scrollback;
+                  if (session->other_session_flags & NETTLE_OTHER_ORIGIN_MODE)
+                  {
+                    session->pos.y=session->scrollback+session->scroll_start-1;
+                  }
+                  else
+                  {
+                    session->pos.y=session->scrollback;
+                  }
                 }
               }
               snap_cursor_to_terminal(session);
@@ -2494,12 +2511,30 @@ static bool process_escape_length_x(struct session_struct *session)
               }
               else
               {
-                /* set left, right margins */
+                if (esc_instr(session->escape_string,";",session->escape_string_length)>=0)
+                {
+                  /* set left, right margins */
+                }
+                else
+                {
+                  /* Save cursor location */
+                  session->old_pos.x=session->pos.x;
+                  session->old_pos.y=session->pos.y-session->scrollback;
+                }
               }
               done = true;
               break;
             case 'u':
-              /* DEC set htabs */
+              if (session->escape_string_length>3)
+              {
+                /* DEC set htabs */
+              }
+              else
+              {
+                /* Restore cursor location */
+                session->pos.x=session->old_pos.x;
+                session->pos.y=session->old_pos.y+session->scrollback;
+              }
               done = true;
               break;
             case 'x':
