@@ -361,18 +361,11 @@ static void make_new_terminal_window(struct session_struct *session)
   {
     /* First window, or a reset window */
 
-    int yeig;
-    int height;
-
     /* We want to position the window toward the top of the screen, so the
      * algorithm we use is simple - 7/8 of the way up the screen, which is
      * reasonable for nearly all screen sizes
      */
-    yeig = _swi(OS_ReadModeVariable,_INR(0,1)|_RETURN(2),-1,5);
-    height = _swi(OS_ReadModeVariable,_INR(0,1)|_RETURN(2),-1,12);
-
-    height = (height+1)<<yeig;
-    max_y = (height*7)/8;
+    max_y = (screensize.y*7)/8;
   }
 
   block.min.x         =102;
@@ -1361,8 +1354,8 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   struct coords old_terminal_size;
   int old_scrollback;
 
-  if (terminal_size_x<8) terminal_size_x=8;
-  if (terminal_size_y<8) terminal_size_y=8;
+  if (terminal_size_x<12) terminal_size_x=12;
+  if (terminal_size_y<3) terminal_size_y=3;
   if (scrollback<0) scrollback=0;
 
   old_terminal_size.x = session->terminal_size.x;
@@ -1382,7 +1375,6 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     {
       sprintf(temp_string, "%d", terminal_size_y);
       _swi(OS_SetVarVal, _INR(0,4), "LINES", temp_string, strlen(temp_string), 0, 4);
-      _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string), 0, 4); /* for old unixlib progs */
       sprintf(temp_string, "%d", terminal_size_x);
       _swi(OS_SetVarVal, _INR(0,4), "COLUMNS", temp_string, strlen(temp_string), 0, 4);
     }
@@ -1514,23 +1506,16 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
       block.scroll.y-=(session->scrollback-old_scrollback)*old_charh << eig.y;
     }
 
+    if (block.max.x > screensize.x)
     {
-      int screen_x=(_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 11)+1) <<
-                         _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 4);
-      int screen_y=(_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 12)+1) <<
-                         _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
+      block.min.x -= (block.max.x-screensize.x);
+      block.max.x -= (block.max.x-screensize.x);
+    }
 
-      if (block.max.x>screen_x)
-      {
-        block.min.x-=(block.max.x-screen_x);
-        block.max.x-=(block.max.x-screen_x);
-      }
-
-      if (block.max.y>screen_y)
-      {
-        block.min.y-=(block.max.y-screen_y);
-        block.max.y-=(block.max.y-screen_y);
-      }
+    if (block.max.y > screensize.y)
+    {
+      block.min.y -= (block.max.y-screensize.y);
+      block.max.y -= (block.max.y-screensize.y);
     }
 
     /* Scale the scroll offset according to the old font size/new font size */
