@@ -2,22 +2,22 @@
 ;
 
 
-R0	rn	0
-R1	rn	1
-R2	rn	2
-R3	rn	3
-R4	rn	4
-R5	rn	5
-R6	rn	6
-R7	rn	7
-R8	rn	8
-R9	rn	9
-R10	rn	10
-R11	rn	11
-R12	rn	12
-R13	rn	13
-R14	rn	14
-PC	rn	15
+r0	rn	0
+r1	rn	1
+r2	rn	2
+r3	rn	3
+r4	rn	4
+r5	rn	5
+r6	rn	6
+r7	rn	7
+r8	rn	8
+r9	rn	9
+r10	rn	10
+r11	rn	11
+r12	rn	12
+r13	rn	13
+r14	rn	14
+pc	rn	15
 
 
 	AREA	|C$$code|, CODE, READONLY
