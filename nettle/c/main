@@ -15,10 +15,6 @@
 #include "quit.h"
 #include "wimp.h"
 
-#if defined(__GNUC__) && defined(__TARGET_SCL__)
-/* GCC build work-around */
-FILE *__stderr = stderr;
-#endif
 
 int main(void)
 {
