@@ -829,3 +829,14 @@ static void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, in
     }
   }
 }
+
+void
+scroll_term (struct session_struct *session, int direction)
+{
+  struct wimp_getwindowstate_block block;
+
+  block.window_handle = session->window_handle;
+  _swi (Wimp_GetWindowState, _IN(1), (int) &block);
+  block.scroll.y += direction * (block.max.y - block.min.y);
+  _swi (Wimp_OpenWindow, _IN(1), (int) &block);
+}

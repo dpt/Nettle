@@ -927,6 +927,7 @@ void drag_finished(void)
 
 void key_pressed(int window_handle, int icon_handle, int key, int extra)
 {
+  int ekey = extra >> 16;
   bool key_status=false;
   char message[MESSAGE_MAX_CONNECTION];
 
@@ -1059,8 +1060,15 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
             key_status=true;
           }
           break;
-        case 0x18E: /* Down arrow */
+        case 0x18E: /* Down, sPageDown */
           key_status=true;
+
+          if (ekey == 54)
+          {
+            scroll_term(session, -1);
+            break;
+          }
+
           if (session->line_editor_position==0)
           {
             _swi(OS_WriteI + 7, 0);
@@ -1084,8 +1092,15 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
                              get_icon_data_length(session->pane_handle, line_editor_icon));
 
           break;
-        case 0x18F: /* Up arrow */
+        case 0x18F: /* Up, sPageUp */
           key_status=true;
+
+          if (ekey == 33)
+          {
+            scroll_term(session, 1);
+            break;
+          }
+
           if (session->line_editor_position==session->line_editor_total-1)
           {
             _swi(OS_WriteI + 7, 0);

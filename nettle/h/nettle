@@ -97,4 +97,6 @@ void write_assigned_character(struct session_struct *, int, char);
 void resize_terminal(struct session_struct *, int, int, int, bool);
 void reopen_and_size_window(struct session_struct *, int, int, int, int);
 
+void scroll_term(struct session_struct *, int);
+
 #endif
