@@ -59,12 +59,10 @@ void generror(const char *string, bool is_message)
  *                           its parameters match those of the caller
  *               buttonstok-> the TOKEN in messages file that gives
  *                            a comma separated list of buttons -
+ *               params = number of variable parameters to substitute
  * Returns:      true if 'yes' pressed; false otherwise
- * Note:         This function has CHANGED from the last version in
- *               that it now takes tokens instead of the caller having
- *               to look them up.
  */
-bool generror_question(const char *buttonstok,const char *formattok,...)
+bool generror_question(const char *buttonstok,const char *formattok,int params,...)
 {
   va_list va;
   int button;
@@ -72,8 +70,8 @@ bool generror_question(const char *buttonstok,const char *formattok,...)
 
   block.errnum=255;
 
-  va_start(va,formattok);
-  vsprintf(block.errmess, lookup_static(formattok), va);
+  va_start(va,params);
+  strcpy(block.errmess, lookup_static_sub(formattok, params, va) );
   va_end(va);
 
   if (wimp_version < 350)
