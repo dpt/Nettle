@@ -1,7 +1,6 @@
 |
-| !Nettle.!Run
-|   by A. Macfarlane Smith
-|   © Archifishal Software 2000-2001
+| (C) Nettle developers 2000-2002
+|
 
 Set Nettle$Dir <Obey$Dir>
 Set NettleFonts$Path <Nettle$Dir>.Fonts.
@@ -21,6 +20,8 @@ RMEnsure SocketWatch 0.00 Error Nettle requires SocketWatch 0.00 or later
 
 RMEnsure ColourPicker 0.31 RMLoad System:Modules.Picker
 RMEnsure ColourPicker 0.31 Error Nettle requires ColourPicker 0.31 or later
+
+RmEnsure WindowManager 3.98 Error Nettle requires the Nested WIMP window manager
 
 WimpSlot -min 256K -max 256K
 Run <Nettle$Dir>.!RunImage %*0 ><Nettle$Dir>.stdout 2><Nettle$Dir>.stderr
