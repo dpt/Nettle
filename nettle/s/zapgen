@@ -59,36 +59,18 @@ code_x_loop
 	MOV     R8,#1
 	STRB    R8,[R9],#1   ; 1
 
-	TST	R10,#16 ; selected bit
-	BNE	code_selected ; branch if this char is selected
-	
+	AND	R8,R12,#128		; reverse video
 	TST	R10,#4			; invert bit
-	MOV	R8,R12
 	EORNE	R8,R8,#128
-	TST     R8,#128 		; test reverse video
+	TST	R10,#16 		; selected bit
+	EORNE	R8,R8,#128
+	TST     R8,#128 		; are we inverted?
 	LDRB    R8,[R7],#1
 	STRNEB  R8,[R9,#1]   		; foreground
 	STREQB  R8,[R9],#1   		; foreground inverted
 	LDRB    R8,[R7],#1
 	STRNEB  R8,[R9],#2   		; background
 	STREQB  R8,[R9],#1   		; background inverted
-
-	B	code_skip_selected
-
-code_selected
-	
-	TST	R10,#4			; invert bit
-	MOV	R8,R12
-	EORNE	R8,R8,#128
-	TST     R8,#128 		; test reverse video
-	LDRB    R8,[R7],#1
-	STREQB  R8,[R9,#1]   		; foreground
-	STRNEB  R8,[R9],#1   		; foreground inverted
-	LDRB    R8,[R7],#1
-	STREQB  R8,[R9],#2   		; background
-	STRNEB  R8,[R9],#1   		; background inverted
-
-code_skip_selected
 
 	LDRB    R8,[R7],#1   ; flags (dealt with elsewhere)
 
