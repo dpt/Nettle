@@ -6,12 +6,13 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.2013 (27 Sep 2001)
+AppVersion:v0.2019 (04 Jan 2002)
 
 Info:Info>
 Choices:Choices...
 Connect:.New session...
 Hotlist]:Hotlist>
+Scripts]:Scripts>
 Session]:.Sessions>
 Quit:Quit
 
@@ -39,14 +40,18 @@ Connection:Connection
 
 LineEd:Editor type
 LineEd0:Off
-LineEd1:Optional
-LineEd2:Permanent
+LineEd1:Optional (Off)
+LineEd2:Optional (On)
+LineEd3:Permanent
 
 MenuFont:Font
 Hotlist:Hotlist
+Scripts:Scripts
 
 NoTemplates:No Templates file was found.
 NoSprites:No Sprites file was found.
+ErrorTemplates:An error occurred while loading the template file.
+ErrorSprites:An error occurred while loading the sprites file.
 
 ConnectionOpen:This session is currently open. Are you sure you wish to close it?
 ConnectionMultiOpen:There are sessions currently open. Are you sure you wish to quit?
@@ -57,7 +62,7 @@ BadTermType:The requested terminal type is not recognised as being valid.
 BadLineEdType:The requested line editor type is not recognised as being valid.
 BadTermSize:The requested terminal dimensions are either zero or too large. Please check and try again.
 BadLineEdSize:The requested line editor length is either zero or too large. Please check and try again.
-TooMany:There are too many telnet sessions already open.
+OutOfMem:There is not enough free memory available to perform this operation.
 ToSaveDrag:To save, drag the icon to a directory display.
 
 Telnet:Telnet
@@ -107,6 +112,8 @@ esctoolong:Escape sequence too long. This is probably due to an unsupported esca
 NoStartTask:Nettle was unable to create an ANSI task
 CantAlloc:Nettle was unable to claim enough memory for the requested operation.
 CantLoad:Nettle was unable to load the file: 
+ChoicesNotKnown:This version of Nettle cannot load Choices file of version
+ChoicesRevert:- reverting to defaults
 
 HotBlankLabel:Please enter a hotlist label
 HotBlankHost:Please enter a hostname
