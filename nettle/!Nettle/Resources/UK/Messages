@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2002
-AppVersion:v0.2023 (09 Jun 2002)
+AppVersion:v0.2032 (01 Dec 2002)
 
 Info:Info>
 Choices:Choices...
@@ -22,6 +22,7 @@ Resize:Resize>
 PasteClip:Paste clipboard
 Options:Options...
 Spool>:Spool>
+Reconnect:Reconnect
 
 Selection:Selection
 Save:Save>
