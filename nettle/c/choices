@@ -259,29 +259,10 @@ bool save_choices(void)
       }
     }
 
-    while (error)
+    if (error)
     {
-      /* An error - report it */
-      _kernel_oserror *err = _kernel_last_oserror();
-
-      lookup("CantSaveChoices", string, 256);
-      strcat(string, err ? err->errmess : strerror(errno));
-      string[251]='\0'; /* Terminate to fit error block (just in case it went further) */
-
-      generror(string, false);
-
-      error=false;
-
-      if (file_handle)
-      {
-        if (fclose(file_handle))
-          error=true; /* Possible second I/O error */
-
-        file_handle=NULL;
-      }
-
-      if (!error)
-        return false;
+      gensaveerror(file_handle, "CantSaveChoices");
+      return false;
     }
 
     return true;

@@ -5,9 +5,14 @@
  * $Id$
  */
 
-#include "wimputil.h"
-#include "wimp.h"
+#include "sys/errno.h"
+
+#include "generic.h"
+#include "globals.h"
+
 #include "misc.h"
+#include "wimp.h"
+#include "wimputil.h"
 
 bool win_is_open(int window_handle)
 {
@@ -55,6 +60,40 @@ bool generror_question(const char *string)
   return (bool) (_swi(Wimp_ReportError, _INR(0,2)|_RETURN(1), &block,
                                         (1<<1)+(1<<0), application_name) == 1);
 }
+
+void gensaveerror (FILE *file_handle, const char *msg)
+{
+  bool error = true;
+  char string[512];
+
+  while (error)
+  {
+    /* An error - report it */
+    _kernel_oserror *err = _kernel_last_oserror ();
+
+    if (msg)
+    {
+      lookup (msg, string, 256);
+      strcat (string, err ? err->errmess : strerror(errno));
+    }
+    else
+      strcpy (string, err ? err->errmess : strerror(errno));
+    string[251] = '\0'; /* Terminate to fit error block (just in case it went further) */
+
+    generror (string, false);
+
+    error = false;
+
+    if (file_handle)
+    {
+      if (fclose (file_handle))
+        error=true; /* Possible second I/O error */
+
+      file_handle=NULL;
+    }
+  }
+}
+
 
 
 void set_icon_state (int window_handle, int icon_handle, int eor, int clear)
@@ -207,7 +246,11 @@ int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, .
   {
     int length = strlen (title);
 
-    assert (indirected);
+    if (indirected==0)
+    {
+      generror("Some fool didn't set indirected to something sane on entry to create_menu. \
+                Bloody coders.",false);
+    }
 
     strcpy (indirected, title);
     menu_defn[0] = (int) indirected;
@@ -297,7 +340,11 @@ int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, .
 
       menu_defn[position++] = icon_flags | WIMP_ICON_INDIRECTED_BIT;
 
-      assert(indirected);
+      if (indirected==0)
+      {
+        generror("Some fool didn't set indirected to something sane on entry to create_menu. \
+                  Bloody coders.",false);
+      }
 
       strncpy(indirected, item, length);
       indirected[length]='\0';

@@ -241,7 +241,7 @@ void save_selection(char *filename, bool ansi_colour)
 
   if (file_handle==NULL)
   {
-    generror(lookup_static("nocreate"), false);
+    gensaveerror(NULL, "nocreate");
     return;
   }
 
@@ -290,11 +290,20 @@ void save_selection(char *filename, bool ansi_colour)
     }
 
     fputc(read_assigned_character(selection_session,loop),file_handle);
+
+    if (ferror(file_handle))
+      break;
   }
 
-  fclose(file_handle);
-
-  misc_setfiletype(filename, 0xFFF);
+  if (ferror (file_handle))
+    gensaveerror (NULL, "nocreate");
+  else
+  {
+    if (fclose (file_handle))
+      gensaveerror (NULL, "nocreate");
+    else
+      misc_setfiletype(filename, 0xFFF);
+  }
 }
 
 void handle_selection_drag(void)

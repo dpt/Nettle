@@ -8,8 +8,6 @@
 #ifndef WIMPUTIL_H
 #define WIMPUTIL_H
 
-#include "generic.h"
-#include "globals.h"
 #include "nettle.h"
 #include "messages.h"
 
@@ -30,6 +28,8 @@ extern void closedown_wimp(void);
 
 extern void generror(const char *, bool);
 extern bool generror_question(const char *string);
+extern void gensaveerror (FILE *, const char *);
+
 extern void set_icon_state(int, int, int, int);
 extern void set_icon_data(int, int, const char *);
 extern char *read_icon_data(int, int, char *, int);

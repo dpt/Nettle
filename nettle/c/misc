@@ -11,6 +11,7 @@
 #include "globals.h"
 
 #include "misc.h"
+#include "wimputil.h"
 
 static FILE *log_file = NULL;
 static int log_file_time=0;
@@ -167,7 +168,7 @@ void logf(const char *format, ...)
   if (log_checkopen())
   {
     va_list ap;
-    
+
     va_start(ap, format);
     vfprintf(log_file, format, ap);
     va_end(ap);
@@ -267,5 +268,7 @@ bool dynamic_areas_available(void)
 
 void misc_setfiletype(const char *filename, int type)
 {
-  _swi(OS_File, _INR(0,2), 18, filename, type);
+  _kernel_oserror *err = _swix(OS_File, _INR(0,2), 18, filename, type);
+  if (err)
+    generror (err->errmess, false);
 }

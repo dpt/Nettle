@@ -18,12 +18,14 @@ Quit:Quit
 Terminal:Terminal
 Selection>:Selection>
 Resize:Resize>
+PasteClip:Paste clipboard
 Options:Options...
 
 Selection:Selection
 Save:Save>
 LaunchURL:Launch URL
-Send:.Send
+Send:Send
+CopyClip:.Copy to clipboard
 Clear:Clear
 
 Session:Session
@@ -90,6 +92,6 @@ twclosed:Nettle: Task window has been closed
 # Errors
 DeleteHot:Are you sure you wish to delete this hotlist entry?
 BadHotlist:Error in hotlist file. Has it been mis-edited by hand?
-nocreate:Couldn't create file. Is the disc write-protected?
+nocreate:Nettle was unable to save the file: 
 CantSaveChoices:Nettle was unable to save its Choices file: 
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.
