@@ -260,16 +260,18 @@ int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, .
     if (indirected==0)
     {
       generror("Some fool didn't set indirected to something sane on entry to create_menu. "
-                "Bloody coders.",false);
+                "Bloody coders. Nettle will probably crash now.", false);
     }
+    else
+    {
+      strcpy (indirected, title);
+      menu_defn[0] = (int) indirected;
+      menu_defn[1] = (int) indirected + length;
+      menu_defn[2] = length + 1;
+      indirected += length + 1;
 
-    strcpy (indirected, title);
-    menu_defn[0] = (int) indirected;
-    menu_defn[1] = (int) indirected + length;
-    menu_defn[2] = length + 1;
-    indirected += length + 1;
-
-    menu_flags = 1 << 8;	/* indirected menu title */
+      menu_flags = 1 << 8;	/* indirected menu title */
+    }
   }
 
   menu_defn[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
@@ -354,15 +356,17 @@ int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, .
       if (indirected==0)
       {
         generror("Some fool didn't set indirected to something sane on entry to create_menu. "
-                  "Bloody coders.",false);
+                  "Bloody coders. Nettle will probably crash now.",false);
       }
-
-      strncpy(indirected, item, length);
-      indirected[length]='\0';
-      menu_defn[position++]=(int) indirected;
-      menu_defn[position++]=(int) indirected+length;
-      menu_defn[position++]=length+1;
-      indirected+=length+1;
+      else
+      {
+        strncpy(indirected, item, length);
+        indirected[length]='\0';
+        menu_defn[position++]=(int) indirected;
+        menu_defn[position++]=(int) indirected+length;
+        menu_defn[position++]=length+1;
+        indirected+=length+1;
+      }
     }
 
     item=va_arg(args,char *);
