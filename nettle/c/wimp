@@ -139,6 +139,7 @@ static void wimp_pollsocket(struct session_struct *session)
     if (packet_length==-1)
     {
       set_title_bar(session->window_handle, lookup_static("title_disconnect"));
+      reset_terminal (session);
       write_out_strings(session, "\r\n", lookup_static("closed"), 0);
       write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
       socket_close(session->socket_handle);
@@ -248,18 +249,44 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
   if (session)
   {
     /* This is a main "session" window, so handle the pane, if any */
+    struct wimp_getwindowinfo_block window;
+    window.window_handle = block->window_handle;
+    _swi (Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
     if (_swi (OS_Byte, _INR(0,2) | _RETURN(1), 129, 254, 255))
     {
-      /* Ctrl pressed - allow dynamic resizing (potentially) */
+      /* Ctrl pressed - allow dynamic resizing */
+      /* if the v scrollbar was at the bottom and its vpos is unchanged,
+       * force it to the bottom */
+      if (window.scroll.y == block->scroll.y &&
+	  window.scroll.y - window.max.y + window.min.y == window.work_min.y)
+      {
+	block->scroll.y = window.work_min.y;
+      }
     }
     else
     {
       /* limit to the number of rows */
       int height = block->max.y - block->min.y;
       int maxheight = (session->terminal_size.y * redraw.r_charh) << eig.y;
-      if (height > maxheight)
+
+      /* if the window size is unchanged, DON'T apply this limit
+       * (allow for moving the window)
+       */
+      if (height > maxheight &&
+	  (window.max.x - window.min.x != block->max.x - block->min.x ||
+	   window.max.y - window.min.y != block->max.y - block->min.y))
+      {
         block->min.y = block->max.y - maxheight;
+	/* if the v scrollbar was at the bottom and its vpos is unchanged
+	 * force it to the bottom */
+	if (window.scroll.y == block->scroll.y &&
+	    window.scroll.y - window.max.y + window.min.y == window.work_min.y)
+	{
+	  block->scroll.y = window.work_min.y;
+	}
+      }
+
     }
 
     if (session->line_editor_type!=LINEEDIT_NONE)
@@ -1394,6 +1421,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
           session->socket_handle=0;
         }
 
+        reset_terminal (session);
         write_out_strings (session, "\r\n", lookup_static ("twclosed"), "\r\n", 0);
       }
       break;
