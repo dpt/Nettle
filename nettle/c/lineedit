@@ -2,7 +2,7 @@
  * Line editor code
  * (C) Nettle developers 2000-2001
  *
- * $Id:
+ * $Id$
  */
 
 #include "generic.h"
