@@ -35,6 +35,7 @@
 #define NETTLE_OTHER_WRAP_MODE	   (1<<6)
 #define NETTLE_OTHER_REVERSE_VIDEO (1<<7)
 #define NETTLE_OTHER_APPLI_MODE	   (1<<8)
+#define NETTLE_OTHER_BACKSPACE_MODE (1<<9)
 
 enum nettle_terminal {
   NETTLE_TERMINAL_VT100,
