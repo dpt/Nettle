@@ -30,4 +30,7 @@ if [ ! -e $cross_path/lib/netlib ] ; then
   exit 1
 fi
 
-make -f MakeCross GCCDIR=$cross_path
+# For NetLib's "Internet:file.h"includes
+export INTERNET_PATH=$cross_path/lib/netlib
+
+make -f MakeCross GCCDIR=$cross_path NETLIB=$INTERNET_PATH

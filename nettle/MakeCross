@@ -5,13 +5,14 @@
 
 
 
+
 CC = $(GCCDIR)/cross/bin/gcc
 CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -DFORTIFY -mlibscl \
-	-I$(GCCDIR)/lib/netlib
+	-I$(NETLIB)
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = $(CC)
-LINKFLAGS = -debug
+LINKFLAGS = -debug -mlibscl $(NETLIB)/o/NetLib,ffd
 
 WIPE = rm
 WIPEFLAGS = -rf
