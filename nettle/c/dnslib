@@ -165,6 +165,8 @@ dns_status_t dns_check(dns_t *dns)
       break;
 
     default:
+      /* attempt to catch random crashes which look like they happen here */
+      printf("Error: Unknown dns status - %d\n", dns->status);
       abort();
   }
 
