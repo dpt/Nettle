@@ -22,101 +22,94 @@ void null_reason_code(void)
 
   if (session[current_socket].connection_type==NETTLE_TELNET)
   {
-    if (!socket_from_file)
+    switch (session[current_socket].socket_state)
     {
-      switch (session[current_socket].socket_state)
-      {
-        case NETTLE_SESSION_RESOLVE:
-          switch(socket_resolvehost(session[current_socket].socket_host,
-                                    &session[current_socket].socket_ip))
-          {
-            case RESOLVER_INPROGRESS:
-              // not finished yet
-              break;
-            case RESOLVER_FAILED:
-              set_title_bar(session[current_socket].window_handle,"nettle (Disconnected)");
-              write_out_string(current_socket,"nettle: Failed to resolve remote host\r\n");
-              session[current_socket].socket_state=NETTLE_SESSION_NONE;
-              break;
-            case RESOLVER_SUCCESS:
-              session[current_socket].socket_handle=
-                              socket_connecttoip(session[current_socket].socket_ip,
-                                                 session[current_socket].socket_port);
+      case NETTLE_SESSION_RESOLVE:
+        switch(socket_resolvehost(session[current_socket].socket_host,
+                                  &session[current_socket].socket_ip))
+        {
+          case RESOLVER_INPROGRESS:
+            // not finished yet
+            break;
+          case RESOLVER_FAILED:
+            set_title_bar(session[current_socket].window_handle,"nettle (Disconnected)");
+            write_out_string(current_socket,"nettle: Failed to resolve remote host\r\n");
+            session[current_socket].socket_state=NETTLE_SESSION_NONE;
+            break;
+          case RESOLVER_SUCCESS:
+            session[current_socket].socket_handle=
+                            socket_connecttoip(session[current_socket].socket_ip,
+                                               session[current_socket].socket_port);
 
-              if (session[current_socket].socket_handle!=-1)
-              {
-                session[current_socket].socket_state=NETTLE_SESSION_CONNECT;
-                write_out_string(current_socket,"nettle: Connecting to ");
-                write_out_string(current_socket,ip_to_string(session[current_socket].socket_ip));
-                write_out_string(current_socket,"...\r\n");
-              }
-              else
-              {
-                write_out_string(current_socket,"nettle: Failed to create socket\r\n");
-                session[current_socket].socket_state=NETTLE_SESSION_NONE;
-              }
-          }
-          break;
-        case NETTLE_SESSION_CONNECT:
-          switch (socket_connected(session[current_socket].socket_handle))
-          {
-            case -6:
-              set_title_bar(session[current_socket].window_handle,"nettle (Connection refused)");
-              write_out_string(current_socket,"nettle: Connection refused\r\n");
-              socket_close(session[current_socket].socket_handle);
-
-              session[current_socket].socket_handle=0;
-              session[current_socket].socket_state=NETTLE_SESSION_NONE;
-              break;
-            case 4:
-              {
-                char string[1024];
-                sprintf(string,"nettle/%s (%s,%d)",
-                        terminal_name[session[current_socket].terminal_type],
-                	session[current_socket].socket_host,
-                        session[current_socket].socket_port);
-
-                set_title_bar(session[current_socket].window_handle,string);
-              }
-              write_out_string(current_socket,"nettle: Connected to ");
-              write_out_string(current_socket,ip_to_string(session[current_socket].socket_ip));
-              write_out_string(current_socket,"\r\n");
-              session[current_socket].socket_state=NETTLE_SESSION_CONNECTED;
-              break;
-          }
-          break;
-        case NETTLE_SESSION_CONNECTED:
-          {
-            int packet_length;
-            char receive_block[RECEIVE_BLOCK_LENGTH];
-
-            packet_length=socket_readdata(session[current_socket].socket_handle,receive_block,
-                                          RECEIVE_BLOCK_LENGTH);
-
-            if (packet_length>0)
+            if (session[current_socket].socket_handle!=-1)
             {
-              // deal with data from socket
-              write_out_data(current_socket,receive_block,packet_length);
+              session[current_socket].socket_state=NETTLE_SESSION_CONNECT;
+              write_out_string(current_socket,"nettle: Connecting to ");
+              write_out_string(current_socket,ip_to_string(session[current_socket].socket_ip));
+              write_out_string(current_socket,"...\r\n");
             }
             else
             {
-              if (packet_length==-1)
-              {
-                set_title_bar(session[current_socket].window_handle,"nettle (Disconnected)");
-                write_out_string(current_socket,"\r\nnettle: Remote has closed connection\r\n");
-                write_out_string(current_socket,"nettle: Disconnected\r\n");
-                socket_close(session[current_socket].socket_handle);
-                session[current_socket].socket_handle=0;
-                session[current_socket].socket_state=NETTLE_SESSION_NONE;
-              }
+              write_out_string(current_socket,"nettle: Failed to create socket\r\n");
+              session[current_socket].socket_state=NETTLE_SESSION_NONE;
+            }
+        }
+        break;
+      case NETTLE_SESSION_CONNECT:
+        switch (socket_connected(session[current_socket].socket_handle))
+        {
+          case -6:
+            set_title_bar(session[current_socket].window_handle,"nettle (Connection refused)");
+            write_out_string(current_socket,"nettle: Connection refused\r\n");
+            socket_close(session[current_socket].socket_handle);
+
+            session[current_socket].socket_handle=0;
+            session[current_socket].socket_state=NETTLE_SESSION_NONE;
+            break;
+          case 4:
+            {
+              char string[1024];
+              sprintf(string,"nettle/%s (%s,%d)",
+                      terminal_name[session[current_socket].terminal_type],
+                      session[current_socket].socket_host,
+                      session[current_socket].socket_port);
+
+              set_title_bar(session[current_socket].window_handle,string);
+            }
+            write_out_string(current_socket,"nettle: Connected to ");
+            write_out_string(current_socket,ip_to_string(session[current_socket].socket_ip));
+            write_out_string(current_socket,"\r\n");
+            session[current_socket].socket_state=NETTLE_SESSION_CONNECTED;
+            break;
+        }
+        break;
+      case NETTLE_SESSION_CONNECTED:
+        {
+          int packet_length;
+          char receive_block[RECEIVE_BLOCK_LENGTH];
+
+          packet_length=socket_readdata(session[current_socket].socket_handle,receive_block,
+                                        RECEIVE_BLOCK_LENGTH);
+
+          if (packet_length>0)
+          {
+            // deal with data from socket
+            write_out_data(current_socket,receive_block,packet_length);
+          }
+          else
+          {
+            if (packet_length==-1)
+            {
+              set_title_bar(session[current_socket].window_handle,"nettle (Disconnected)");
+              write_out_string(current_socket,"\r\nnettle: Remote has closed connection\r\n");
+              write_out_string(current_socket,"nettle: Disconnected\r\n");
+              socket_close(session[current_socket].socket_handle);
+              session[current_socket].socket_handle=0;
+              session[current_socket].socket_state=NETTLE_SESSION_NONE;
             }
           }
-          break;
-      }
-    }
-    else
-    {
-      // socket from file
+        }
+        break;
     }
   }
 

@@ -1,6 +1,11 @@
+20/07/2001
+
+Problems with NETTLE_OTHER_LINEFEED_MODE - if it is off, then RETURN just sends a CR, not CR LF... is this right? And if it is on, then LF moves to left margin of next line, which would be wrong by default I think... Thoughts? Either that, or the spec is wrong...
+
 19/07/2001
 
 Fixed hanging bug - this was due to the escape sequence growing too long - now errors if it is going to break. VT52 mode should be implemented. Fixed socket_resolvehost so that it works properly (ie. that 255.255.255.255 is a valid address, rather than -1 meaning failed to resolve)
+Made the C1 codes (ie. >127) map to ESC <something>. Altered the code slightly to cope with device control strings and the like. Implemented setting of titlebar, although this seems to be a bit broken...
 
 18/07/2001
 

@@ -58,8 +58,6 @@ extern bool line_editor;
 extern bool pass_f12;
 extern int line_editor_size;
 
-extern bool socket_from_file;
-
 struct session_struct
 {
   int window_handle;		// window handle

@@ -484,11 +484,6 @@ void remove_session(int session_handle)
 
 void nettle_senddata(int session_handle, char *data, int length)
 {
-  if (socket_from_file==true)
-  {
-    return;
-  }
-
   switch (session[session_handle].connection_type)
   {
     case NETTLE_TELNET:
@@ -525,7 +520,8 @@ void nettle_senddata(int session_handle, char *data, int length)
 
 void reset_terminal(int session_handle)
 {
-  session[session_handle].other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE;
+  session[session_handle].other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE
+  						/*| NETTLE_OTHER_LINEFEED_MODE*/;
   session[session_handle].current_fg=7;
   session[session_handle].current_bg=0;
   session[session_handle].current_flags=0;

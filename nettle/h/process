@@ -35,6 +35,17 @@ extern void byte_cancel(int);
 extern void byte_substitute(int);
 extern void byte_escape(int);
 extern void byte_delete(int);
+
+extern void byte_index(int);
+extern void byte_next_line(int);
+extern void byte_horizontal_tab_set(int);
+extern void byte_reverse_index(int);
+extern void byte_single_shift_g2(int);
+extern void byte_single_shift_g3(int);
+extern void byte_device_control_string(int);
+extern void byte_control_sequence_intro(int);
+extern void byte_string_terminator(int);
+
 extern void byte_telnet(int);
 extern void byte_default(char, int);
 

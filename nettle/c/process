@@ -48,32 +48,43 @@ void process_data(char byte, int session_handle)
     switch (byte)
     {
       // VT codes
-      case 0:   byte_null                 (session_handle); break;
-      case 5:   byte_enquiry              (session_handle); break;
-      case 7:   byte_bell                 (session_handle); break;
-      case 8:   byte_backspace            (session_handle); break;
-      case 9:   byte_horizontal_tabulation(session_handle); break;
+      case 0:   byte_null                  (session_handle); break;
+      case 5:   byte_enquiry               (session_handle); break;
+      case 7:   byte_bell                  (session_handle); break;
+      case 8:   byte_backspace             (session_handle); break;
+      case 9:   byte_horizontal_tabulation (session_handle); break;
       case 10:
       case 11:
-      case 12:  byte_linefeed             (session_handle); break;
-      case 13:  byte_carriage_return      (session_handle); break;
-      case 14:  byte_shift_out            (session_handle); break;
-      case 15:  byte_shift_in             (session_handle); break;
-      case 17:  byte_device_control_1     (session_handle); break;
-      case 19:  byte_device_control_3     (session_handle); break;
-      case 24:  byte_cancel               (session_handle); break;
-      case 26:  byte_substitute           (session_handle); break;
-      case 27:  byte_escape               (session_handle); break;
-      case 127: byte_delete               (session_handle); break;
+      case 12:  byte_linefeed              (session_handle); break;
+      case 13:  byte_carriage_return       (session_handle); break;
+      case 14:  byte_shift_out             (session_handle); break;
+      case 15:  byte_shift_in              (session_handle); break;
+      case 17:  byte_device_control_1      (session_handle); break;
+      case 19:  byte_device_control_3      (session_handle); break;
+      case 24:  byte_cancel                (session_handle); break;
+      case 26:  byte_substitute            (session_handle); break;
+      case 27:  byte_escape                (session_handle); break;
+      case 127: byte_delete                (session_handle); break;
+
+      // VT C1 codes
+      case 132: byte_index		   (session_handle); break;
+      case 133: byte_next_line		   (session_handle); break;
+      case 136: byte_horizontal_tab_set    (session_handle); break;
+      case 141: byte_reverse_index         (session_handle); break;
+      case 142: byte_single_shift_g2       (session_handle); break;
+      case 143: byte_single_shift_g3       (session_handle); break;
+      case 144: byte_device_control_string (session_handle); break;
+      case 155: byte_control_sequence_intro(session_handle); break;
+      case 156: byte_string_terminator     (session_handle); break;
 
       // Telnet codes
-      case 255: byte_telnet               (session_handle); break;
+      case 255: byte_telnet                (session_handle); break;
 
       // Other codes
       default:
         if (session[session_handle].escape_state==NETTLE_ESCAPE_NONE)
         {
-                byte_default         (byte,session_handle);
+                byte_default          (byte,session_handle);
         }
         break;
     }
@@ -145,6 +156,11 @@ bool process_escape_length_2(int session_handle)
           		session[session_handle].other_session_flags & ~NETTLE_OTHER_VT52_MODE;
             done=true;
           }
+          break;
+        case '\\':
+          // End Device Control String (no effect here - this is to allow for variants of
+          // title bar content changing)
+          done=true;
           break;
         case '7':
           // Save cursor position
@@ -829,7 +845,7 @@ bool process_escape_length_x(int session_handle)
                   {
                     char block[18];
 
-                    strcpy(block,"\x1B[?6x;1;2;6;7;8;9c");
+                    strcpy(block,"\x1B[?6x;1;6c");
 
                     if (session[session_handle].terminal_type<2)
                     {
@@ -1254,6 +1270,62 @@ bool process_escape_length_x(int session_handle)
               break;
           }
           break;
+        case ']':
+          if (session[session_handle].escape_string[
+            				session[session_handle].escape_string_length-1]==7)
+          {
+            switch (atoi(session[session_handle].escape_string+2))
+            {
+              case 0:
+                // Change Icon Name and Window Title to Pt
+                {
+                  char string[256];
+                  int loop=esc_instr(session[session_handle].escape_string,
+                                     ";", session[session_handle].escape_string_length)+1;
+                  int counter=0;
+
+                  while (session[session_handle].escape_string[loop]!=7)
+                  {
+                    string[counter]=session[session_handle].escape_string[loop];
+                    counter++;
+                    loop++;
+                  }
+                  string[counter]='\0';
+                  set_title_bar(session[session_handle].window_handle,string);
+                }
+                break;
+              case 1:
+                // Change Icon Name to Pt
+                break;
+              case 2:
+                // Change Window Title to Pt
+                {
+                  char string[256];
+                  int loop=esc_instr(session[session_handle].escape_string,
+                                     ";", session[session_handle].escape_string_length)+1;
+                  int counter=0;
+
+                  while (session[session_handle].escape_string[loop]!=7)
+                  {
+                    string[counter]=session[session_handle].escape_string[loop];
+                    counter++;
+                    loop++;
+                  }
+                  string[counter]='\0';
+                  set_title_bar(session[session_handle].window_handle,string);
+                }
+                break;
+              case 46:
+                // Change Log File to Pt
+                break;
+              case 50:
+                // Set Font to Pt
+                break;
+            }
+
+            done=true;
+          }
+          break;
       }
       break;
     case 255:
@@ -1543,7 +1615,6 @@ void byte_horizontal_tabulation(int session_handle)
 
   for (loop=0; loop<session[session_handle].number_of_tabs; loop++)
   {
-    printf("Trying %d\n",session[session_handle].tabs[loop]);
     if (session[session_handle].tabs[loop]>session[session_handle].xpos &&
         session[session_handle].tabs[loop]<current_tab)
     {
@@ -1618,6 +1689,22 @@ void byte_substitute(int session_handle)
 void byte_escape(int session_handle)
 {
   // ESCAPE
+  if (session[session_handle].escape_state==NETTLE_ESCAPE_ESCAPE)
+  {
+    if (session[session_handle].escape_string_length>=2)
+    {
+      if (session[session_handle].escape_string[0]=='\x1B')
+      {
+        switch (session[session_handle].escape_string[1])
+        {
+          case 'P': case '^': case '_': case ']':
+            return;
+            break;
+        }
+      }
+    }
+  }
+
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string_length=1;
@@ -1627,6 +1714,100 @@ void byte_delete(int session_handle)
 {
 }
 
+void byte_index(int session_handle)
+{
+  // Index
+  session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
+  session[session_handle].escape_string[0]='\x1B';
+  session[session_handle].escape_string[1]='D';
+  session[session_handle].escape_string_length=2;
+}
+
+void byte_next_line(int session_handle)
+{
+  // Next line
+  session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
+  session[session_handle].escape_string[0]='\x1B';
+  session[session_handle].escape_string[1]='E';
+  session[session_handle].escape_string_length=2;
+}
+
+void byte_horizontal_tab_set(int session_handle)
+{
+  // Horizontal tab set
+  session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
+  session[session_handle].escape_string[0]='\x1B';
+  session[session_handle].escape_string[1]='H';
+  session[session_handle].escape_string_length=2;
+}
+
+void byte_reverse_index(int session_handle)
+{
+  // Reverse index
+  session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
+  session[session_handle].escape_string[0]='\x1B';
+  session[session_handle].escape_string[1]='M';
+  session[session_handle].escape_string_length=2;
+}
+
+void byte_single_shift_g2(int session_handle)
+{
+  // Single shift G2
+  session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
+  session[session_handle].escape_string[0]='\x1B';
+  session[session_handle].escape_string[1]='N';
+  session[session_handle].escape_string_length=2;
+}
+
+void byte_single_shift_g3(int session_handle)
+{
+  // Single shift G3
+  session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
+  session[session_handle].escape_string[0]='\x1B';
+  session[session_handle].escape_string[1]='O';
+  session[session_handle].escape_string_length=2;
+}
+
+void byte_device_control_string(int session_handle)
+{
+  // Device control string
+  session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
+  session[session_handle].escape_string[0]='\x1B';
+  session[session_handle].escape_string[1]='P';
+  session[session_handle].escape_string_length=2;
+}
+
+void byte_control_sequence_intro(int session_handle)
+{
+  // Control sequence introducer
+  session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
+  session[session_handle].escape_string[0]='\x1B';
+  session[session_handle].escape_string[1]='[';
+  session[session_handle].escape_string_length=2;
+}
+
+void byte_string_terminator(int session_handle)
+{
+  // String terminator
+  if (session[session_handle].escape_state==NETTLE_ESCAPE_ESCAPE)
+  {
+    if (session[session_handle].escape_string_length>=2)
+    {
+      if (session[session_handle].escape_string[0]=='\x1B')
+      {
+        if (session[session_handle].escape_string[1]=='[')
+        {
+          session[session_handle].escape_string[session[session_handle].escape_string_length]=
+          										  '\x1B';
+          session[session_handle].escape_string_length++;
+          session[session_handle].escape_string[session[session_handle].escape_string_length]=
+          										    '\\';
+          session[session_handle].escape_string_length++;
+        }
+      }
+    }
+  }
+}
 void byte_telnet(int session_handle)
 {
   // Telnet negotiation

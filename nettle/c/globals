@@ -61,9 +61,6 @@ bool line_editor=false;
 bool pass_f12=false;
 int line_editor_size=32;
 
-// Change this line to force socket reading from "<Nettle$Dir>.Spool"
-bool socket_from_file=false;
-
 struct session_struct session[64];
 int current_session=0;
 int current_socket=0;
