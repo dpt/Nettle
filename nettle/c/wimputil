@@ -582,3 +582,47 @@ void create_menu_by_icon (int *menu, int window, int icon)
        (gwsblock.min.x - gwsblock.scroll.x) + gisblock.max.x,
        (gwsblock.max.y - gwsblock.scroll.y) + gisblock.max.y);
 }
+
+
+/*************************************************** Gerph *********
+ Function:     tick_menu_for_icon_text
+ Description:  Ticks the menu item that matches the text in the
+               icon specified
+ Parameters:   menu-> the menu structure
+               window = the window handle
+               icon = the icon handle
+ Returns:      none
+ ******************************************************************/
+void tick_menu_for_icon_text(int *menu, int window_handle, int icon)
+{
+  char string[64];
+
+  read_icon_data(window_handle, icon, string, sizeof(string));
+
+  /* Menu header is 7 entries;
+   * All menu entries are 6 entries;
+   * We do the menu increment first to make the tail check easier
+   */
+  menu+=7-6; /* Skip the menu header */
+
+  do
+  {
+    char *text;
+    menu+=6;
+
+    if (menu[2] & (1<<0)) /* Text present */
+    {
+      if (menu[2] & (1<<8)) /* Text is indirected */
+        text = (char *)menu[3];
+      else
+        text = (char *)&menu[3];
+
+      if (strcmp(text,string)==0)
+        menu[0] |=  (1<<0); /* Tick item, 'cos it matches */
+      else
+        menu[0] &= ~(1<<0); /* Untick item */
+
+    }
+
+  } while ((menu[0] & (1<<7)) == 0);
+}

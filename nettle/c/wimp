@@ -2983,6 +2983,8 @@ void create_connection_type_menu(int window_handle, int text_icon, int by_icon)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
+    tick_menu_for_icon_text(menu_data, window_handle, text_icon);
+
     create_menu_by_icon (menu_data, window_handle, by_icon);
   }
 
@@ -3018,6 +3020,8 @@ void create_terminal_type_menu(int window_handle, int text_icon, int by_icon)
     		  menu_term4,menu_term5,menu_term6,menu_term7,menu_term8,menu_term9))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
+
+    tick_menu_for_icon_text(menu_data, window_handle, text_icon);
 
     create_menu_by_icon (menu_data, window_handle, by_icon);
   }
@@ -3059,6 +3063,7 @@ void create_cursor_type_menu(int window_handle, int text_icon, int by_icon)
 
   if (create_menu(menu_data,0,menu_title,menu_cursor0,menu_cursor1))
   {
+    tick_menu_for_icon_text(menu_data, window_handle, text_icon);
     create_menu_by_icon (menu_data, window_handle, by_icon);
   }
 
@@ -3075,8 +3080,6 @@ void create_cursor_type_menu(int window_handle, int text_icon, int by_icon)
 
 void create_lineeditor_type_menu(int window_handle, int text_icon, int by_icon)
 {
-  struct wimp_getpointerinfo_block block;
-
   char *menu_title = get_menu_item("LineEd");
   char *menu_line0 = get_menu_item("LineEd0");
   char *menu_line1 = get_menu_item("LineEd1");
@@ -3085,7 +3088,7 @@ void create_lineeditor_type_menu(int window_handle, int text_icon, int by_icon)
 
   if (create_menu (menu_data, indirected, menu_title, menu_line0, menu_line1, menu_line2, menu_line3))
   {
-    _swi(Wimp_GetPointerInfo, _IN(1), &block);
+    tick_menu_for_icon_text(menu_data, window_handle, text_icon);
 
     create_menu_by_icon (menu_data, window_handle, by_icon);
   }

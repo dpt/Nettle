@@ -51,5 +51,16 @@ extern char *get_grey_last_menu_item(const char *name);
 
 extern void drag_start(int window_handle, int icon_handle);
 
+/*************************************************** Gerph *********
+ Function:     tick_menu_for_icon_text
+ Description:  Ticks the menu item that matches the text in the
+               icon specified
+ Parameters:   menu-> the menu structure
+               window = the window handle
+               icon = the icon handle
+ Returns:      none
+ ******************************************************************/
+void tick_menu_for_icon_text(int *menu, int window_handle, int icon);
+
 
 #endif
