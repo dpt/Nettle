@@ -374,6 +374,12 @@ void handle_selection_drag(void)
     {
       _swi(Wimp_OpenWindow, _IN(1), &block);
     }
+    
+    if ( x<block.min.x )
+      x = block.min.x;
+    
+    if ( x>block.max.x )
+      x = block.max.x;
   }
 
   switch (buttons)
