@@ -15,13 +15,53 @@ typedef enum {
 /* Standard includes */
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
 #include <math.h>
 
 /* RISC OS includes */
 #include "kernel.h"
 #include "swis.h"
+
+#ifdef __GNUC__
+
+/* something's a bit broken with var args and gcc just now. */
+/* This is a temporary fix.  (ijeffray)  */
+
+typedef char *va_list;
+
+#define va_align(x)	(((x) + (sizeof(int) - 1)) & (~(sizeof(int) - 1)))
+
+#define va_start(a,p)	((void)((a) = ((char *)(&(p)) + va_align(sizeof(p)))))
+#define va_arg(a,t)	((sizeof(t) > sizeof(int)) ? \
+	*(t *)(((a) += va_align(sizeof(t))) - va_align(sizeof(t))) : \
+	(t)(*(int *)(((a) += sizeof(int)) - sizeof(int))))
+#define va_end(a)	((void)((a) = (char *)-1))
+
+
+/* we also want _swi ... and until that's added to libscl, we'll do this... */
+/* actually, this is used when we're using !CLib, too, as that swi.h is broken */
+
+#undef _IN
+#undef _INR
+#undef _OUT
+#undef _OUTR
+
+extern int _swi (int swi_no, unsigned int, ...);
+extern _kernel_oserror *_swix (int swi_no, unsigned int, ...);
+#define _FLAGS     0x10 /*use with _RETURN() or _OUT()*/
+#define _IN(i)     (1U << (i))
+#define _INR(i,j)  (~0 << (i) ^ ~0 << ((j) + 1))
+#define _OUT(i)    ((i) != _FLAGS? (1U << (31 - (i))): (1U << 21))
+#define _OUTR(i,j) (~0U >> (i) ^ ~0U >> ((j) + 1))
+#define _BLOCK(i)  (1U << 11 | (unsigned) (i) << 12)
+#define _RETURN(i) ((i) != _FLAGS? (unsigned) (i) << 16: 0xFU << 16)
+#define _C         (1U << 29)
+#define _Z         (1U << 30)
+#define _N         (1U << 31)
+
+#else
+#include <stdarg.h>
+#endif
 
 /* Structs */
 
