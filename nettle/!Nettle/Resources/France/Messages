@@ -1,0 +1,145 @@
+# Messages pour Nettle
+# $Id$
+#
+# ATTENTION! Assurez-vous que "Strip Spaces" (élagage d'espaces) n'est pas actif pendant l'édition de ce fichier
+
+AppName:Nettle
+AppPurpose:Client telnet arachnéen
+AppAuthor:© Développeurs de Nettle, 2000-2002
+AppVersion:v0.2023 (09 Jun 2002)
+
+Info:Info>
+Choices:Préférences...
+Connect:.Nouvelle session...
+Hotlist]:Favoris>
+Scripts]:Scripts>
+Session]:.Sessions>
+Quit:Quitter
+
+Terminal:Terminal
+Selection>:Sélection>
+Resize:Redimensionner>
+PasteClip:Coller
+Options:Options...
+Spool>:Journal>
+
+Selection:Sélection
+Save:Sauver>
+LaunchURL:Lancer URL
+Send:Envoyer
+CopyClip:.Copier vers presse-papiers
+Clear:Effacer
+
+Spool:Journal
+Open>:Ouvrir>
+Close:Fermer
+
+Session:Session
+
+Connection:Connexion
+
+LineEd:Type d'éditeur
+LineEd0:Inactif
+LineEd1:Optionnel (Inactif)
+LineEd2:Optionnel (Actif)
+LineEd3:Permanent
+
+MenuFont:Fonte
+Hotlist:Favoris
+Scripts:Scripts
+
+NoTemplates:Aucun fichier Templates n'a été trouvé.
+NoSprites:Aucun fichier Sprites n'a été trouvé.
+ErrorTemplates:Une erreur s'est produite lors du chargement du fichier template.
+ErrorSprites:Une erreur s'est produite lors du chargement du fichier sprites.
+
+ConnectionOpen:Cette session est ouverte en ce moment. Êtes-vous sûr de vouloir la fermer?
+ConnectionOpenButtons:Fermer,Annuler
+ConnectionMultiOpen:Il y a des sessions ouvertes en ce moment. Êtes-vous sûr de vouloir quitter?
+ConnectionMultiOpenButtons:Quitter,Annuler
+InvalidAddr:Vous avez saisi une addresse distante invalide. Vérifiez et réessayez SVP.
+InvalidPort:Le port entré est erronné ou trop grand.
+InvalidComm:Vous devez entrer une commande pour démarrer une taskwindow Nettle.
+BadTermType:Le type de terminal demandé n'est pas jugé valide.
+BadCursorType:Le type de curseur demandé n'est pas jugé valide.
+BadLineEdType:Le type d'éditeur de ligne n'est pas jugé valide.
+BadTermSize:Les dimensions du terminal demandé sont soit zéro soit trop grandes. Vérifiez et réssayez SVP.
+BadLineEdSize:La taille demandée pour l'éditeur de ligne est soit zéro soit trop grande. Vérifiez et réssayez SVP.
+OutOfMem:Il n'y a pas assez de mémoire libre pour effectuer cette opération.
+ToSaveDrag:Pour sauver, déposez l'icône dans une fenêtre du Filer.
+
+Telnet:Telnet
+SSH:SSH
+Taskwindow:Tâche ANSI
+
+Term0:vt100
+Term1:vt102
+Term2:vt220
+Term3:vt320
+Term4:vt420
+Term5:vt510
+Term6:rxvt
+Term7:xterm
+Term8:xterm-color
+Term9:linux
+
+CursorType:Type de curseur
+Cursor0:Solide
+Cursor1:Souligné
+
+SelColour:Choisissez une couleur
+
+# Barre de Titre
+title_conn:Nettle (Connexion en cours)
+title_disconnect:Nettle (Déconnecté)
+title_noconn:Nettle (Échec de connexion)
+title_closed:Nettle (Fermé)
+
+# Messages de Session
+connecting:Nettle: En cours de connexion à
+connected:Nettle: Connecté à
+
+lookup:Nettle: Résolution du nom d'hôte
+noresolv:Nettle: Échec de résolution du nom d'hôte
+nosocket:Nettle: Échec de création de socket
+noconn:Nettle: Échec de connexion - 
+closed:Nettle: L'hôte distant a fermé la connexion
+disconn:Nettle: Déconnecté
+twclosed:Nettle: La tâche ANSI a été fermée
+
+socketerror:Nettle: Erreur Socket
+occurred:s'est produit
+
+# Erreurs
+DeleteHot:Êtes vous sûr de vouloir supprimer ce favori?
+DeleteHotButtons:Supprimer,Annuler
+BadHotlist:Erreur dans le fichier de favoris. Aurait-il été (mal) réédité à la main?
+nocreate:Nettle n'a pas pu sauver le fichier: 
+CantSaveChoices:Nettle n'a pas pu sauver son fichier Choices: 
+CantSaveHotlist:Nettle n'a pas pu sauver son fichier de Favoris: 
+esctoolong:Séquence d'échappement trop longue. C'est probablement une séquence d'échappement non supportée. Contactez les auteurs SVP.
+NoStartTask:Nettle n'a pas pu créer une tâche ANSI
+CantAlloc:Nettle n'a pas pu allouer suffisamment de mmoire pour l'opération demandée.
+CantLoad:Nettle n'a pas pu charger le fichier: 
+ChoicesNotKnown:Cette version de Nettle ne peut pas charger le fichier Choices de la version
+ChoicesRevert:- retour aux valeurs par défaut
+SureFileTypeLoad:Étes vous sûr de vouloir charger le fichier de type '%0' ?
+SureFileTypeLoadButtons:Charger,Annuler
+
+HotBlankLabel:Entrez une étiquette de favori SVP
+HotBlankHost:Entrez un nom d'hôte SVP
+HotBlankCommand:Entrez une commande SVP
+HotBadWidth:Mauvaise largeur de terminal
+HotBadHeight:Mauvaise hauteur de terminal
+HotBadScroll:Mauvaise nombre de lignes d'historique
+
+SpoolAlreadyOpen:Il y a déjà un journal ouvert pour cette session. (NB ceci ne devrait jamais se produire)
+SpoolFailedToOpen:Échec d'ouverture d'un journal à ce nom
+SpoolFailNonPermanent:Impossible d'ouvrir des journaux à des endroits non-permanents (p.ex. d'autres applications)
+
+# Match details for Login
+LoginMatch_User:ogin:
+LoginMatch_Pass:assword:
+
+# Characters for URL characters
+URL_Chars:'"< >
