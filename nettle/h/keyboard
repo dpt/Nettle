@@ -1,0 +1,8 @@
+/**
+ * Keyboard translation code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+int decode_key (struct session_struct *, int key, int extra, char *block);

@@ -1,0 +1,200 @@
+/**
+ * Keyboard translation code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+
+#include "generic.h"
+#include "globals.h"
+
+#include "keyboard.h"
+
+int
+decode_key (struct session_struct *session, int key, int extra, char *block)
+{
+#define SETBLOCK(LEN,STR) { strcpy (block, STR); return LEN; }
+
+  switch (key)
+  {
+  case 0x00D:			/* Return */
+    if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
+    {
+      SETBLOCK (3, "\r\n\n");
+    }
+    else
+    {
+      SETBLOCK (2, "\r\n");
+    }
+  case 0x01E:			/* Home */
+    SETBLOCK (4, "\x1B[1~");
+  case 0x07F:			/* Delete */
+    SETBLOCK (4, "\x1B[3~");
+
+  case 0x181:			/* F1 */
+    SETBLOCK (3, "\x1BOP");
+  case 0x182:			/* F2 */
+    SETBLOCK (3, "\x1BOQ");
+  case 0x183:			/* F3 */
+    SETBLOCK (3, "\x1BOR");
+  case 0x184:			/* F4 */
+    SETBLOCK (3, "\x1BOS");
+  case 0x185:			/* F5 */
+    SETBLOCK (5, "\x1B[15~");
+  case 0x186:			/* F6 */
+    SETBLOCK (5, "\x1B[17~");
+  case 0x187:			/* F7 */
+    SETBLOCK (5, "\x1B[18~");
+  case 0x188:			/* F8 */
+    SETBLOCK (5, "\x1B[19~");
+  case 0x189:			/* F9 */
+    SETBLOCK (5, "\x1B[20~");
+  case 0x18A:			/* Tab */
+    SETBLOCK (1, "\t");
+  case 0x18B:			/* Copy */
+    SETBLOCK (4, "\x1B[4~");
+  case 0x18C:			/* Left */
+    SETBLOCK (3,
+	      (session->
+	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOD" :
+	      "\x1B[D");
+  case 0x18D:			/* Right */
+    SETBLOCK (3,
+	      (session->
+	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOC" :
+	      "\x1B[C");
+  case 0x18E:			/* Down */
+    SETBLOCK (3,
+	      (session->
+	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOB" :
+	      "\x1B[B");
+  case 0x18F:			/* Up */
+    SETBLOCK (3,
+	      (session->
+	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOA" :
+	      "\x1B[A");
+
+  case 0x191:			/* sF1 */
+    SETBLOCK (5, "\x1B[23~");
+  case 0x192:			/* sF2 */
+    SETBLOCK (5, "\x1B[24~");
+  case 0x193:			/* sF3 */
+    SETBLOCK (5, "\x1B[25~");
+  case 0x194:			/* sF4 */
+    SETBLOCK (5, "\x1B[26~");
+  case 0x195:			/* sF5 */
+    SETBLOCK (5, "\x1B[28~");
+  case 0x196:			/* sF6 */
+    SETBLOCK (5, "\x1B[29~");
+  case 0x197:			/* sF7 */
+    SETBLOCK (5, "\x1B[31~");
+  case 0x198:			/* sF8 */
+    SETBLOCK (5, "\x1B[32~");
+  case 0x199:			/* sF9 */
+    SETBLOCK (5, "\x1B[33~");
+  case 0x19A:			/* sTab */
+    SETBLOCK (3, "\x1B[Z");
+  case 0x19B:			/* sCopy */
+    SETBLOCK (4, "\x1B[4$");
+  case 0x19E:			/* PgDown */
+    SETBLOCK (4, "\x1B[6~");
+  case 0x19F:			/* PgUp */
+    SETBLOCK (4, "\x1B[5~");
+
+  case 0x1A1:			/* cF1 */
+    SETBLOCK (3, "\x1B[11^");
+  case 0x1A2:			/* cF2 */
+    SETBLOCK (3, "\x1B[12^");
+  case 0x1A3:			/* cF3 */
+    SETBLOCK (3, "\x1B[13^");
+  case 0x1A4:			/* cF4 */
+    SETBLOCK (3, "\x1B[14^");
+  case 0x1A5:			/* cF5 */
+    SETBLOCK (5, "\x1B[15^");
+  case 0x1A6:			/* cF6 */
+    SETBLOCK (5, "\x1B[17^");
+  case 0x1A7:			/* cF7 */
+    SETBLOCK (5, "\x1B[18^");
+  case 0x1A8:			/* cF8 */
+    SETBLOCK (5, "\x1B[19^");
+  case 0x1A9:			/* cF9 */
+    SETBLOCK (5, "\x1B[20^");
+  case 0x1AA:			/* cTab */
+    SETBLOCK (1, "\t");
+  case 0x1AB:			/* cCopy */
+    SETBLOCK (4, "\x1B[4^");
+
+  case 0x1B1:			/* csF1 */
+    SETBLOCK (5, "\x1B[23^");
+  case 0x1B2:			/* csF2 */
+    SETBLOCK (5, "\x1B[24^");
+  case 0x1B3:			/* csF3 */
+    SETBLOCK (5, "\x1B[25^");
+  case 0x1B4:			/* csF4 */
+    SETBLOCK (5, "\x1B[26^");
+  case 0x1B5:			/* csF5 */
+    SETBLOCK (5, "\x1B[28^");
+  case 0x1B6:			/* csF6 */
+    SETBLOCK (5, "\x1B[29^");
+  case 0x1B7:			/* csF7 */
+    SETBLOCK (5, "\x1B[31^");
+  case 0x1B8:			/* csF8 */
+    SETBLOCK (5, "\x1B[32^");
+  case 0x1B9:			/* csF9 */
+    SETBLOCK (5, "\x1B[33~");
+  case 0x1BA:			/* csTab */
+    SETBLOCK (3, "\x1B[Z");
+  case 0x1BB:			/* csCopy */
+    SETBLOCK (4, "\x1B[4@");
+
+  case 0x1BE:			/* cPgDown */
+    SETBLOCK (4, "\x1B[6^");
+  case 0x1BF:			/* cPgUp */
+    SETBLOCK (4, "\x1B[5^");
+
+  case 0x1CA:			/* F10 */
+    SETBLOCK (5, "\x1B[21~");
+  case 0x1CB:			/* F11 */
+    SETBLOCK (5, "\x1B[23~");
+  case 0x1CC:			/* F12 */
+    SETBLOCK (5, "\x1B[24~");
+  case 0x1CD:			/* Insert */
+    SETBLOCK (4, "\x1B[2~");
+
+  case 0x1DA:			/* sF10 */
+    SETBLOCK (5, "\x1B[34~");
+  case 0x1DB:			/* sF11 */
+    SETBLOCK (5, "\x1B[23~");
+  case 0x1DC:			/* sF12 */
+    SETBLOCK (5, "\x1B[24~");
+  case 0x1DD:			/* Insert */
+    SETBLOCK (4, "\x1B[2$");
+
+  case 0x1EA:			/* cF10 */
+    SETBLOCK (5, "\x1B[21^");
+  case 0x1EB:			/* cF11 */
+    SETBLOCK (5, "\x1B[23^");
+  case 0x1EC:			/* cF12 */
+    SETBLOCK (5, "\x1B[24^");
+  case 0x1ED:			/* cInsert */
+    SETBLOCK (4, "\x1B[2^");
+
+  case 0x1FA:			/* csF10 */
+    SETBLOCK (5, "\x1B[34^");
+  case 0x1FB:			/* csF11 */
+    SETBLOCK (5, "\x1B[23^");
+  case 0x1FC:			/* csF12 */
+    SETBLOCK (5, "\x1B[24^");
+  case 0x1FD:			/* csInsert */
+    SETBLOCK (4, "\x1B[2@");
+
+  default:
+    if (key < 0x100)
+    {
+      sprintf (block, "%c", key);
+      return 1;
+    }
+    return 0;
+  }
+}
