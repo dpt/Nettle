@@ -67,34 +67,6 @@ int socket_connecttoip(int ip_address,int port_number)
   return socket_handle;
 }
 
-int socket_listen(int port_number)
-{
-  int socket_handle;
-  int data=1;
-  struct sockaddr_in address;
-
-  socket_handle=socket(AF_INET, SOCK_STREAM, PF_UNSPEC);
-  if (socket_handle==-1) { return -1; }
-
-  if (ioctl(socket_handle,FIONBIO,&data)==-1)
-  {
-    return -1;
-  }
-
-  address.sin_family=AF_INET;
-  address.sin_port=htons(port_number);
-  address.sin_addr.s_addr=INADDR_ANY;
-
-  if (bind(socket_handle,(struct sockaddr *) &address, sizeof(address)))
-  {
-    socket_close(socket_handle);
-    return -1;
-  }
-
-  listen(socket_handle,16);
-
-  return socket_handle;
-}
 
 void socket_close(int socket_handle)
 {
@@ -123,19 +95,6 @@ int socket_connected(int socket_handle)
   return 4;
 }
 
-bool socket_closed(int socket_handle)
-{
-  char block[1];
-  int result;
-
-  result=recv(socket_handle,block,1,MSG_PEEK);
-
-  if (result==0)
-    return true;
-
-  return false;
-}
-
 int socket_readdata(int socket_handle, char * buffer, int length)
 {
   int result;
@@ -151,23 +110,6 @@ int socket_readdata(int socket_handle, char * buffer, int length)
   return result;
 }
 
-int socket_readdata_flags(int socket_handle, char * buffer, int length, int flags)
-{
-  int result;
-
-  result=recv(socket_handle,buffer,length,flags);
-
-  if (result==-1)
-    return 0;
-
-  return result;
-}
-
-char *socket_readline(int socket_handle)
-{
-  /* Needs finished + other socket functions */
-  return NULL;
-}
 
 int socket_senddata(int socket_handle, char * buffer, int length)
 {

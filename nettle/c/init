@@ -28,6 +28,7 @@ int *initialise_messages(void)
   return message_list;
 }
 
+
 void load_messages(void)
 {
   char country[16];
@@ -62,6 +63,7 @@ void load_messages(void)
                                                     messages_file_name,
                                                     messagetrans_buffer);
 }
+
 
 void load_sprites(void)
 {
@@ -107,35 +109,8 @@ void load_sprites(void)
   }
 }
 
-void load_templates(void)
-{
-  char info_data[60];
 
-  /* open the templates file */
-  open_template();
-
-  /* read template definitions */
-  info=load_template(LOAD_TEMPLATE_NO_FONTS,"info",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-  set_icon_data(info,0,lookup("AppName", info_data, 60));
-  set_icon_data(info,1,lookup("AppAuthor", info_data, 60));
-  set_icon_data(info,5,lookup("AppVersion", info_data, 60));
-  set_icon_data(info,6,lookup("AppPurpose", info_data, 60));
-
-  choices=load_template(LOAD_TEMPLATE_NO_FONTS,"choices",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-
-  open=load_template(LOAD_TEMPLATE_NO_FONTS,"open",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-  set_icon_data(open,4,lookup("Telnet", info_data, 60));
-  set_icon_data(open,9,terminal_name[NETTLE_TERMINAL_VT220]);
-
-  resize=load_template(LOAD_TEMPLATE_NO_FONTS,"resize",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-
-  save=load_template(LOAD_TEMPLATE_NO_FONTS,"save",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-
-  /* close the templates file */
-  close_template();
-}
-
-void open_template(void)
+static void open_template(void)
 {
   int use_3d_templates=false;
   char country[16];
@@ -204,7 +179,8 @@ void open_template(void)
   _swi(Wimp_OpenTemplate, _IN(1), template_filename);
 }
 
-int load_template(int *font_array,char *window_name,int *sprite_area)
+
+static int load_template(int *font_array,char *window_name,int *sprite_area)
 {
   char window_name_copy[12];
   struct wimp_createwindow_block *template_data;
@@ -241,24 +217,43 @@ int load_template(int *font_array,char *window_name,int *sprite_area)
   return window_handle;
 }
 
-void close_template(void)
+
+static void close_template(void)
 {
   _swi(Wimp_CloseTemplate, 0);
 }
 
-void load_zap_fonts(void)
+
+void load_templates(void)
 {
-  redraw.r_workarea=zapredraw_block;
+  char info_data[60];
 
-  /* load in hires and lores zap fonts */
-  zap_font_area=load_font(zap_font);
-  zap_lowres_font_area=load_font(zap_lowres_font);
+  /* open the templates file */
+  open_template();
 
-  /* do mode_change to set things up */
-  mode_change();
+  /* read template definitions */
+  info=load_template(LOAD_TEMPLATE_NO_FONTS,"info",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+  set_icon_data(info,0,lookup("AppName", info_data, 60));
+  set_icon_data(info,1,lookup("AppAuthor", info_data, 60));
+  set_icon_data(info,5,lookup("AppVersion", info_data, 60));
+  set_icon_data(info,6,lookup("AppPurpose", info_data, 60));
+
+  choices=load_template(LOAD_TEMPLATE_NO_FONTS,"choices",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+
+  open=load_template(LOAD_TEMPLATE_NO_FONTS,"open",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+  set_icon_data(open,4,lookup("Telnet", info_data, 60));
+  set_icon_data(open,9,terminal_name[NETTLE_TERMINAL_VT220]);
+
+  resize=load_template(LOAD_TEMPLATE_NO_FONTS,"resize",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+
+  save=load_template(LOAD_TEMPLATE_NO_FONTS,"save",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+
+  /* close the templates file */
+  close_template();
 }
 
-int *load_font(char *zap_font)
+
+static int *load_font(char *zap_font)
 {
   char string[5]="ZFLK";
   char character;
@@ -369,6 +364,20 @@ int *load_font(char *zap_font)
 
   return zap_load_area;
 }
+
+
+void load_zap_fonts(void)
+{
+  redraw.r_workarea=zapredraw_block;
+
+  /* load in hires and lores zap fonts */
+  zap_font_area=load_font(zap_font);
+  zap_lowres_font_area=load_font(zap_lowres_font);
+
+  /* do mode_change to set things up */
+  mode_change();
+}
+
 
 void create_icon_bar_icon(void)
 {

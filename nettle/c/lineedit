@@ -9,34 +9,8 @@
 #include "misc.h"
 #include "wimp.h"
 
-void open_pane_window(struct session_struct *session, struct wimp_openwindow_block *main_block)
-{
-  struct wimp_getwindowoutline_block w_gwo_block;
-  struct wimp_openwindow_block block;
-  int width;
 
-  width=main_block->maxx;
-
-  w_gwo_block.window_handle=session->window_handle;
-  _swi(Wimp_GetWindowOutline, _IN(1), &w_gwo_block);
-
-  block.window_handle=session->pane_handle;
-  block.minx=main_block->minx;
-  block.miny=(w_gwo_block.miny)-48;
-  block.maxx=width;
-
-  /* This is wrong as it assumes a toolsprite height */
-  block.maxy=(main_block->miny)-40;
-  block.scroll_x=0;
-  block.scroll_y=0;
-  block.handle_behind=main_block->handle_behind;
-
-  create_line_editor_icons(session, block.maxx-block.minx);
-
-  _swi(Wimp_OpenWindow, _IN(1), &block);
-}
-
-void create_line_editor_icons(struct session_struct *session, int width)
+static void create_line_editor_icons(struct session_struct *session, int width)
 {
   int loop;
   int old_width;
@@ -151,6 +125,35 @@ void create_line_editor_icons(struct session_struct *session, int width)
     set_caret_position(caret_window_handle, caret_icon_handle, -1, caret_index);
   }
 }
+
+
+void open_pane_window(struct session_struct *session, struct wimp_openwindow_block *main_block)
+{
+  struct wimp_getwindowoutline_block w_gwo_block;
+  struct wimp_openwindow_block block;
+  int width;
+
+  width=main_block->maxx;
+
+  w_gwo_block.window_handle=session->window_handle;
+  _swi(Wimp_GetWindowOutline, _IN(1), &w_gwo_block);
+
+  block.window_handle=session->pane_handle;
+  block.minx=main_block->minx;
+  block.miny=(w_gwo_block.miny)-48;
+  block.maxx=width;
+
+  /* This is wrong as it assumes a toolsprite height */
+  block.maxy=(main_block->miny)-40;
+  block.scroll_x=0;
+  block.scroll_y=0;
+  block.handle_behind=main_block->handle_behind;
+
+  create_line_editor_icons(session, block.maxx-block.minx);
+
+  _swi(Wimp_OpenWindow, _IN(1), &block);
+}
+
 
 bool line_editor_active(struct session_struct *session)
 {

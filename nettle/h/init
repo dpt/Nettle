@@ -13,12 +13,8 @@ extern void load_messages(void);
 extern void load_sprites(void);
 
 extern void load_templates(void);
-extern void open_template(void);
-extern int load_template(int *,char *,int *);
-extern void close_template(void);
 
 extern void load_zap_fonts(void);
-extern int *load_font(char *);
 
 extern void create_icon_bar_icon(void);
 
