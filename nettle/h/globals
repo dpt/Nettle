@@ -42,6 +42,7 @@ extern int win_choices;
 extern int win_open;
 extern int win_resize;
 extern int win_save;
+extern int menu_open;
 
 extern bool logging;
 extern bool line_editor;
