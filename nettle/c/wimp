@@ -447,14 +447,11 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     if (window_id_to_open!=0)
     {
       struct wimp_getwindowinfo_block window;
-      int width;
       window.window_handle=window_id_to_open;
 
       _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
-      width = window.max.x - window.min.x;
-
-      window.max.x += block->min.x - window.min.x;
+      window.max.x += block->min.x - (window.min.x-4);
       window.min.x = block->min.x+4;
       window.min.y = block->min.y+4;
       window.max.y = block->max.y-4;
