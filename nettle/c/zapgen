@@ -262,36 +262,24 @@ void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrol
 
     if (dynamic_areas_available())
     {
-      if (zapredraw_area_number==0)
+      char string[]="Nettle ZapRedraw area";
+
+      if (zapredraw_area_number!=0)
       {
-        char string[]="Nettle ZapRedraw area";
-
-        /* Note maximum size is -1 since potentially could be any size */
-        _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, size_of_zapredraw_area,
-                             -1, 0x80, -1, 0, -1, string, &zapredraw_area_number,
-                             &new_zapredraw_area);
-
-        assert(new_zapredraw_area != NULL);
-        zapredraw_area = new_zapredraw_area;
+        _swi(OS_DynamicArea, _INR(0,1), 1, zapredraw_area_number);
       }
-      else
-      {
-        int current_size;
 
-        _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, zapredraw_area_number, &current_size);
-
-        if (size_of_zapredraw_area-current_size!=0)
-        {
-          _swi(OS_ChangeDynamicArea, _INR(0,1), zapredraw_area_number, size_of_zapredraw_area-current_size);
-        }
-      }
+      _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, size_of_zapredraw_area,
+                           -1, 0x80, size_of_zapredraw_area, 0, -1, string, &zapredraw_area_number,
+                           &new_zapredraw_area);
     }
     else
     {
       new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
-      assert(new_zapredraw_area != NULL);
-      zapredraw_area = new_zapredraw_area;
     }
+
+    assert(new_zapredraw_area != NULL);
+    zapredraw_area = new_zapredraw_area;
   }
 }
 
