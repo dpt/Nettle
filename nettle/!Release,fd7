@@ -1,0 +1,39 @@
+
+Set RelVer 0-2000r
+
+Echo Releasing Nettle <RelVer> ...
+
+Set This$Dir <Obey$Dir>
+
+%CDir <This$Dir>.Release
+%CDir <This$Dir>.Release.<RelVer>
+
+Set DestApp <This$Dir>.Release.<RelVer>.!Nettle
+
+%Copy <This$Dir>.!Nettle  <DestApp>  A~C~DF~L~N~PQR~S~T~V
+
+X Delete <DestApp>.stderr
+X Delete <DestApp>.stdout
+X Delete <DestApp>.Log
+
+| I dont have a port of GNU find (yet) so this'll do for now...
+Set Alias$NukeCvs Wipe <DestApp>.%%0.CVS ~CFR~V
+
+NukeCvs ^.!Nettle
+NukeCvs Choices
+NukeCvs Fonts
+NukeCvs Fonts.08x08
+NukeCvs Fonts.08x08.System
+NukeCvs Fonts.08x16
+NukeCvs Fonts.08x16.Default
+NukeCvs Resources
+NukeCvs Resources.UK
+
+|Oh this is horrible...
+sed -e "s/><Nettle$Dir>.stdout/>null:/" -e "s/2><Nettle$Dir>.stderr/2>null:/" <This$Dir>.!Nettle.!Run > <DestApp>.!Run
+
+Unset Alias$NukeCvs
+Unset DestApp
+Unset RelVer
+
+Echo Done
