@@ -7,6 +7,10 @@
 
 #include "generic.h"
 #include "globals.h"
+#include "sys/errno.h"
+#include "sys/select.h"
+#include "sys/socket.h"
+#include <errno.h>
 
 #include "lineedit.h"
 #include "misc.h"
@@ -126,35 +130,53 @@ static void wimp_pollsocket(struct session_struct *session)
   int packet_length;
   char receive_block[RECEIVE_BLOCK_LENGTH];
 
-  packet_length = socket_readdata(session->socket_handle, receive_block,
-                                  RECEIVE_BLOCK_LENGTH);
+  packet_length = recv(session->socket_handle, receive_block,
+                       RECEIVE_BLOCK_LENGTH, 0);
 
-  if (packet_length>0)
+  if (packet_length == 0 || packet_length == -1)
   {
-    /* deal with data from socket */
-    write_out_data(session, receive_block, packet_length);
+    set_title_bar(session->window_handle, lookup_static("title_disconnect"));
+    reset_terminal(session);
+    if (packet_length == 0)
+    {
+      /* EOF received */
+      write_out_strings(session, "\r\n", lookup_static("closed"), 0);
+    }
+    else
+    {
+      char errorstr[16];
+      sprintf(errorstr, "%d", errno);
+      write_out_strings(session, "\r\n", "Nettle: Socket error ", errorstr,
+                        " occurred", 0);
+    }
+    
+    write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
+    socket_close(session->socket_handle);
+    session->socket_handle=0;
+    session->socket_state=NETTLE_SESSION_NONE;
   }
   else
   {
-    if (packet_length==-1)
-    {
-      set_title_bar(session->window_handle, lookup_static("title_disconnect"));
-      reset_terminal (session);
-      write_out_strings(session, "\r\n", lookup_static("closed"), 0);
-      write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
-      socket_close(session->socket_handle);
-      session->socket_handle=0;
-      session->socket_state=NETTLE_SESSION_NONE;
-    }
+    /* deal with data from socket */
+    write_out_data(session, receive_block, packet_length);
   }
 }
 
 
 
-void wimp_nullreasoncode(void)
+static void wimp_pollsessions(void)
 {
-  struct session_struct *session;
+  struct session_struct  *session;
+  int                     fdupperbound; /* (exclusive) */
+  fd_set                  readfds;
+  struct timeval          timeval;
+  int                     numberready;
+
+  FD_ZERO(&readfds);
+  fdupperbound = 0;
   
+  /* for each session, either poll it if necessary, or add its socket to
+   * the list of ones to check with select() */
   for (session = sessions; session != NULL; session = session->next)
   {
     if (session->connection_type != NETTLE_TELNET)
@@ -165,14 +187,60 @@ void wimp_nullreasoncode(void)
       case NETTLE_SESSION_RESOLVE:
         wimp_pollresolve(session);
         break;
+        
       case NETTLE_SESSION_CONNECT:
         wimp_pollconnect(session);
         break;
+        
       case NETTLE_SESSION_CONNECTED:
-        wimp_pollsocket(session);
+        assert(session->socket_handle >= 0 && session->socket_handle < 256);
+        FD_SET(session->socket_handle, &readfds);
+        if (session->socket_handle >= fdupperbound)
+          fdupperbound = session->socket_handle + 1;
         break;
+      
+      case NETTLE_SESSION_NONE:
+        /* do nothing */
+        break;
+        
+      default:
+        assert(0);
     }
   }
+  
+  if (fdupperbound == 0)
+    /* no sockets to be polled */
+    return;
+    
+  timeval.tv_sec  = 0;
+  timeval.tv_usec = 0;
+    
+  numberready = select(fdupperbound, &readfds, NULL, NULL, &timeval);
+  if (numberready == 0)
+    /* no sockets need attention */
+    return;
+  
+  if (numberready == -1 && errno != EBADF)
+    /* error other than an invalid descriptor, nothing we can do */
+    return;
+  
+  for (session = sessions; session != NULL; session = session->next)
+  {
+    if (session->connection_type != NETTLE_TELNET)
+      continue;
+    
+    if (session->socket_state != NETTLE_SESSION_CONNECTED)
+      continue;
+    
+    if (FD_ISSET(session->socket_handle, &readfds))
+      wimp_pollsocket(session);
+  }      
+}
+
+
+void wimp_nullreasoncode(void)
+{
+  wimp_pollsessions();
 
   close_log(false);
 
