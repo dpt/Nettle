@@ -600,8 +600,19 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
   }
   else if (session)
   {
-    /* This is a main "session" window, so handle the pane, if any */
     struct wimp_getwindowinfo_block window;
+
+    if (session->window_needs_resized)
+    {
+      /* If we need resized, do it here - opening also happens here, can probably be improved
+       * -NB this function is also used by the font change code */
+      reopen_and_size_window(session, session->terminal_size.x, session->terminal_size.y,
+                             session->scrollback, old_charw, old_charh);
+      session->window_needs_resized=false;
+      return;
+    }
+
+    /* This is a main "session" window, so handle the pane, if any */
     window.window_handle = block->window_handle;
     _swi (Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
@@ -2404,8 +2415,6 @@ void mode_change(void)
   int mem_required;
   int a;
   int b;
-  int old_charw;
-  int old_charh;
   struct session_struct *session = sessions;
 
   eig.x = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 4);
@@ -2484,12 +2493,10 @@ void mode_change(void)
   redraw.r_for=7;
   redraw.r_bac=0;
 
-  /* Resize all of the terminals to fit the new font size */
+  /* Set all of the terminals to be resized to fit the new font size */
   while (session)
   {
-    reopen_and_size_window(session, session->terminal_size.x, session->terminal_size.y,
-                           session->scrollback, old_charw, old_charh);
-
+    session->window_needs_resized=true;
     session = session->next;
   }
 }

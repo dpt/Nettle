@@ -374,6 +374,7 @@ static void start_connection_int (struct connection_params *params )
   session->terminal_type=params->terminal_type;
   session->paste=NULL;
   session->paste_head=NULL;
+  session->window_needs_resized=false;
   reset_terminal(session);
 
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
@@ -545,10 +546,6 @@ void write_out_data(struct session_struct *session, const char *data, int length
 
   changedbox_init (session);
 
-#ifdef FORTIFY
-  Fortify_CheckAllMemory();
-#endif
-
   for (loop = 0; loop < length_data; loop++)
   {
     /* log the byte */
@@ -561,10 +558,6 @@ void write_out_data(struct session_struct *session, const char *data, int length
     process_data(session, data[loop]);
 
   }
-
-#ifdef FORTIFY
-  Fortify_CheckAllMemory();
-#endif
 
   pos=get_cursor_position(session);
 
@@ -1011,6 +1004,9 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
 
     allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
   }
+
+  /* This should put the cursor back in the right place... */
+  session->pos.y=session->pos.y-old_scrollback+scrollback;
 
   reopen_and_size_window(session, old_terminal_size.x, old_terminal_size.y, old_scrollback,
                          redraw.r_charw, redraw.r_charh);

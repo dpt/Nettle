@@ -2973,10 +2973,6 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
   size_of_send_block = decode_key (session, key, extra, send_block->data);
 
   process_handle_buffer(session, send_block, size_of_send_block);
-
-#ifdef FORTIFY
-  Fortify_CheckAllMemory();
-#endif
 }
 
 void process_line_editor(struct session_struct *session)
@@ -2984,10 +2980,6 @@ void process_line_editor(struct session_struct *session)
   char *icon_text;
   char data[512];
   int line_editor_icon=(session->line_editor_type==LINEEDIT_CHECKBOX ? 1 : 0);
-
-#ifdef FORTIFY
-  Fortify_CheckAllMemory();
-#endif
 
   read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
 
@@ -2999,11 +2991,7 @@ void process_line_editor(struct session_struct *session)
 
   process_data_transmission(session, icon_text, strlen(icon_text));
 
-#ifdef FORTIFY
-  Fortify_CheckAllMemory();
-#endif
-
-{
+  {
     int loop;
 
     for (loop=line_editor_size-1; loop>1; loop--)
@@ -3028,10 +3016,6 @@ void process_line_editor(struct session_struct *session)
   }
 
   free(icon_text);
-
-#ifdef FORTIFY
-  Fortify_CheckAllMemory();
-#endif
 }
 
 void process_data_transmission(struct session_struct *session,

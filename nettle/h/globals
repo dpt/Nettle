@@ -154,6 +154,8 @@ struct session_struct
   char connection_type;		/* connection type: telnet, ssh, etc. */
   bool want_blink;              /* Do we want to be redrawn every 50cs? */
 
+  bool cursor_saved;            /* are cursor settings saved? */
+  bool position_saved;          /* is the cursor position saved? */
   struct coords old_pos;	/* old position */
   char old_current_fg;		/* old fg colour */
   char old_current_bg;		/* old bg colour */
@@ -194,6 +196,8 @@ struct session_struct
 
   struct paste_buffer *paste;   /* paste buffer(s): e.g. from file */
   struct paste_buffer *paste_head; /* the most recent paste buffer */
+
+  bool window_needs_resized;    /* Window needs resized after a mode change */
 };
 
 extern struct session_struct *sessions;
@@ -217,7 +221,8 @@ extern struct session_struct *mouse_handling_session;
 
 extern const char terminal_name[NO_OF_TERMINAL_TYPES][12];
 
-
+extern int old_charw;
+extern int old_charh;
 
 typedef struct user_message
 {
