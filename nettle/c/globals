@@ -10,8 +10,8 @@
 
 #include "zapredraw.h"
 
-char *application_name="Nettle";
-char *application_icon_name="!nettle";
+const char *application_name="Nettle";
+const char *application_icon_name="!nettle";
 bool quit_flag=false;
 
 struct os_spriteop_area *sprite_area;
@@ -74,9 +74,9 @@ int drag_icon_handle;
 
 int pane_attached_session;
 
-char *line_editor_buffer_indirected="Pptr_write";
-char *line_editor_icon_text="";
-char *line_editor_icon_sprite="Soptoff,opton";
+const char *line_editor_buffer_indirected="Pptr_write";
+const char *line_editor_icon_text="";
+const char *line_editor_icon_sprite="Soptoff,opton";
 
 char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};
 
