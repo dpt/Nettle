@@ -955,15 +955,6 @@ void remove_session(struct session_struct *session)
 
 int nettle_senddata(struct session_struct *session, const char *data, int length)
 {
-  int i;
-
-  /*printf("attempting to send to session %p: ",session);
-
-  for (i=0; i<length; i++)
-  {
-    printf("%c", data[i]);
-  }*/
-
   switch (session->connection_type)
   {
     case NETTLE_TELNET:
