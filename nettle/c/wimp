@@ -1103,16 +1103,19 @@ static void wimp_claimcaret(struct session_struct *session)
 }
 
 
-static void wimp_launchurl(struct session_struct *session, int x, int y)
+static void wimp_launchurl(struct session_struct *session, int xinit, int yinit)
 {
 #define ICHR(x,y) ((int) read_assigned_character(session,x,y))
 
-  char    url[1024];
+  char   *url;
   char   *urlptr;
   char   *urlend;
   const char *urlchars;
   int     ymax = session->terminal_size.y + session->scrollback;
   int     xmax = session->terminal_size.x;
+  int     url_size=0;
+  int     x;
+  int     y;
 
   struct  wimp_getwindowstate_block block;
 
@@ -1120,32 +1123,59 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
 
   _swi(Wimp_GetWindowState, _IN(1), &block);
 
-  y = -( (y - (block.max.y-block.scroll.y)) >> eig.y ) / redraw.r_charh;
-  x =  ( (x - (block.min.x-block.scroll.x)) >> eig.x ) / redraw.r_charw;
+  yinit = -( (yinit - (block.max.y-block.scroll.y)) >> eig.y ) / redraw.r_charh;
+  xinit =  ( (xinit - (block.min.x-block.scroll.x)) >> eig.x ) / redraw.r_charw;
 
-  logf("\nclicked on '%c'\n", (char) ICHR(x,y) );
+  misc_logf("\nclicked on '%c'\n", (char) ICHR(xinit,yinit) );
 
   urlchars = lookup_static("URL_Chars");
 
-  logf("\nURLChars = %s\n", urlchars);
+  misc_logf("\nURLChars = %s\n", urlchars);
 
-  if ( strchr( urlchars, ICHR(x,y) ) )
+  if ( strchr( urlchars, ICHR(xinit,yinit) ) )
     return;
 
   /* go back to the start of the clicked on 'word' */
   /* NOTE! We deliberately do not wrap-backwards over lines */
-  while ( x > 0 && strchr( urlchars, ICHR(x-1,y) )==NULL )
-    x--;
+  while ( xinit > 0 && strchr( urlchars, ICHR(xinit-1,yinit) )==NULL )
+    xinit--;
 
   /* skip any initial space or colon or anything */
-  if (!isalnum( ICHR(x,y) ))
-    x++;
+  if (!isalnum( ICHR(xinit,yinit) ))
+    xinit++;
+
+  x=xinit;
+  y=yinit;
 
   /* go forward to the end of the form [ie. until we find whitespace] */
   /* NOTE! We currently allow the URL to flow to the next line */
+  while ( strchr( urlchars, ICHR(x,y) )==NULL )
+  {
+    url_size++;
+    x++;
+    if ( x >= xmax )
+    {
+      x=0;
+      y++;
+      if ( y >= ymax )
+        break;
+    }
+  }
+
+  misc_logf("url_size=%d\n", url_size);
+
+  url=malloc(url_size+sizeof(char)+8); /* leave space for a '\0', and 'http://' */
+  if (!url)
+  {
+    generror(lookup_inbuffer("OutOfMemory"), false);
+    return;
+  }
+
+  x=xinit;
+  y=yinit;
   urlptr = url;
-  urlend = url + sizeof(url) - 8; /* leave space for a '\0', and 'http://' */
-  while ( (urlptr < urlend) && (strchr( urlchars, ICHR(x,y) )==NULL) )
+  urlend = url+url_size;
+  while ( urlptr<urlend )
   {
     *urlptr++ = (char) ICHR(x,y);
     x++;
@@ -1158,7 +1188,7 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
     }
   }
   *urlptr = '\0';
-  logf("url = '%s'\n", url);
+  misc_logf("url = '%s'\n", url);
 
   /* lower-case the protocol (if present) and site name */
   {
@@ -1193,6 +1223,9 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   }
 
   url_launch (url);
+
+  /* Clean up as we shouldn't need this copy any more */
+  free(url);
 }
 
 

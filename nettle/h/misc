@@ -35,7 +35,7 @@ char *strdup(const char *s);
  * @param format  printf() style format string
  * @param ...     parameters matching format string
  */
-void logf(const char */*format*/, ...);
+void misc_logf(const char */*format*/, ...);
 
 
 

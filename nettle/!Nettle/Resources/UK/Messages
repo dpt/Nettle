@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2003
-AppVersion:v0.2034 (22 Jan 2003)
+AppVersion:v0.2036 (15 Jun 2003)
 
 Info:Info>
 Choices:Choices...
@@ -137,6 +137,9 @@ HotBadScroll:Bad scrollback size
 SpoolAlreadyOpen:There is already an open spool for this session. (NB this should never happen)
 SpoolFailedToOpen:Failed to open a spool to the filename
 SpoolFailNonPermanent:Cannot open spools to non-permanent locations (ie. other applications)
+
+NoAppForURL:No application has been seen that can launch this URL.
+OutOfMemory:Nettle ran out of memory while trying to perform this operation.
 
 # Match details for Login
 LoginMatch_User:ogin:

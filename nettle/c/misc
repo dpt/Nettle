@@ -170,7 +170,7 @@ void log_string(const char *string)
 
 
 
-void logf(const char *format, ...)
+void misc_logf(const char *format, ...)
 {
   assert(format != NULL);
 
