@@ -239,7 +239,7 @@ void lineedit_free_space(struct session_struct *session, bool dont_discard)
     session->pane_handle = 0;
   }
 
-  if (dont_discard && session->line_editor_history)
+  if (!dont_discard && session->line_editor_history)
   {
     free(session->line_editor_history);
     session->line_editor_history = NULL;
