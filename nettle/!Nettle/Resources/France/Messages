@@ -64,8 +64,8 @@ InvalidComm:Vous devez entrer une commande pour démarrer une taskwindow Nettle.
 BadTermType:Le type de terminal demandé n'est pas jugé valide.
 BadCursorType:Le type de curseur demandé n'est pas jugé valide.
 BadLineEdType:Le type d'éditeur de ligne n'est pas jugé valide.
-BadTermSize:Les dimensions du terminal demandé sont soit zéro soit trop grandes. Vérifiez et réssayez SVP.
-BadLineEdSize:La taille demandée pour l'éditeur de ligne est soit zéro soit trop grande. Vérifiez et réssayez SVP.
+BadTermSize:Les dimensions du terminal demandé sont soit zéro soit trop grandes. Vérifiez et réessayez SVP.
+BadLineEdSize:La taille demandée pour l'éditeur de ligne est soit zéro soit trop grande. Vérifiez et réessayez SVP.
 OutOfMem:Il n'y a pas assez de mémoire libre pour effectuer cette opération.
 ToSaveDrag:Pour sauver, déposez l'icône dans une fenêtre du Filer.
 
@@ -112,12 +112,12 @@ socketerror:Nettle: Erreur Socket
 occurred:s'est produit
 
 # Erreurs
-DeleteHot:Êtes vous sûr de vouloir supprimer ce favori?
+DeleteHot:Êtes-vous sûr de vouloir supprimer ce favori?
 DeleteHotButtons:Supprimer,Annuler
 BadHotlist:Erreur dans le fichier de favoris. Aurait-il été (mal) réédité à la main?
 nocreate:Nettle n'a pas pu sauver le fichier: 
 CantSaveChoices:Nettle n'a pas pu sauver son fichier Choices: 
-CantSaveHotlist:Nettle n'a pas pu sauver son fichier de Favoris: 
+CantSaveHotlist:Nettle n'a pas pu sauver son fichier de favoris: 
 esctoolong:Séquence d'échappement trop longue. C'est probablement une séquence d'échappement non supportée. Contactez les auteurs SVP.
 NoStartTask:Nettle n'a pas pu créer une tâche ANSI
 CantAlloc:Nettle n'a pas pu allouer suffisamment de mémoire pour l'opération demandée.
@@ -132,7 +132,7 @@ HotBlankHost:Entrez un nom d'hôte SVP
 HotBlankCommand:Entrez une commande SVP
 HotBadWidth:Mauvaise largeur de terminal
 HotBadHeight:Mauvaise hauteur de terminal
-HotBadScroll:Mauvaise nombre de lignes d'historique
+HotBadScroll:Mauvais nombre de lignes d'historique
 
 SpoolAlreadyOpen:Il y a déjà un journal ouvert pour cette session. (NB ceci ne devrait jamais se produire)
 SpoolFailedToOpen:Échec d'ouverture d'un journal à ce nom
