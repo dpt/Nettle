@@ -1407,12 +1407,28 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     int selection_end_x=selection_end % old_terminal_size.x;
     int selection_end_y=selection_end / old_terminal_size.x;
 
-    if (selection_start_x>terminal_size_x) selection_start_x=terminal_size_x;
-    if (selection_end_x>terminal_size_x) selection_end_x=terminal_size_x;
-
     selection_start_y=selection_start_y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
     selection_end_y=selection_end_y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
 
+    /* range check that x is within the terminal area */
+    if (selection_start_x<0) selection_start_x=0;
+    if (selection_start_x>terminal_size_x) selection_start_x=terminal_size_x;
+
+    if (selection_end_x<0) selection_end_x=0;
+    if (selection_end_x>terminal_size_x) selection_end_x=terminal_size_x;
+
+    /* range check that y is within the terminal area */
+    if (selection_start_y<0)
+      selection_start_y=0;
+    if (selection_start_y>terminal_size_y+scrollback)
+      selection_start_y=terminal_size_y+scrollback;
+
+    if (selection_end_y<0)
+      selection_end_y=0;
+    if (selection_end_y>terminal_size_y+scrollback)
+      selection_end_y=terminal_size_y+scrollback;
+
+    /* write the selection positions back to the variables */
     selection_start=(selection_start_y*terminal_size_x)+selection_start_x;
     selection_end=(selection_end_y*terminal_size_x)+selection_end_x;
   }
