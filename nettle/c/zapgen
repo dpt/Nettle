@@ -343,15 +343,13 @@ int *load_font(char *font)
   }
 
   fclose(file_handle);
-
+/*
   {
     char *area=(char *) zap_load_area;
 
-    /* Actually, if the 1st arg is the destination for the move and the 2nd is the source, */
-    /* I have no idea why this works... */
     memmove(area+0x20+(first_char*char_size), area+0x20, (last_char-first_char)*char_size);
   }
-
+*/
   /* fill in graphics chars */
   define_zap_chars(zap_load_area+8, char_size, width, height);
 
