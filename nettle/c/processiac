@@ -1,0 +1,133 @@
+/**
+ * Processing code -- Telnet IAC sequences
+ * (C) Nettle developers 2000-2002
+ *
+ * $Id$
+ */
+ 
+#include <stddef.h>
+
+#include "generic.h"
+#include "globals.h"
+
+#include "process.h"
+
+#define SESSIONFLAG session->session_flags[(unsigned char) session->escape_string[2]]
+
+void handle_iac_will(struct session_struct* session)
+{
+  /* By default, if we don't recognise something that the remote is saying it can do */
+  /* Then we ask it not to do that */
+  char ret = TELNET_DONT;
+
+  char block[3];
+
+  switch (session->escape_string[2])
+  {
+  case TELOPT_ECHO:
+    session->local_echo = false;
+  case TELOPT_TERMINAL_TYPE:
+  case TELOPT_NAWS:
+  case TELOPT_TERMINAL_SPEED:
+  case TELOPT_XDISPLOC:
+  case TELOPT_SUPPRESS_GO_AHEAD:
+    ret = TELNET_DO;
+    break;
+  }
+
+  block[0]=TELNET_IAC;
+  block[1]=ret;
+  block[2]=session->escape_string[2];
+  nettle_senddata(session,block,3);
+}
+
+
+void handle_iac_wont(struct session_struct* session)
+{
+  /* This is the most potential upset for us */
+  /* We (probably) asked the remote end to do something, and it's refusing */
+  /* (Or it's just telling us it won't do something, because it feels like telling us!) */
+
+  /* Currently, we act dumb and just say "ok, don't do that, then" */
+  /* But we might want to be smarter in future.  Eg, if we have local echo turned off and we asked */
+  /* For the remote to echo, and it refuses, we could turn our local echo back on and/or send a WILL */
+
+  char block[3];
+
+  block[0]=TELNET_IAC;
+  block[1]=TELNET_DONT;
+  block[2]=session->escape_string[2];
+  nettle_senddata(session,block,3);
+
+  if (session->escape_string[2] == 1) /* Remote has just refused to echo */
+    session->local_echo = true;
+
+}
+
+
+void handle_iac_do(struct session_struct* session)
+{
+  /* By default, if we don't recognise something that the remote asking us to do */
+  /* Then we well it we cannot to do that */
+  bool ret = false;
+
+  char block[9];
+
+  switch (session->escape_string[2])
+  {
+  case TELOPT_ECHO:
+  case TELOPT_TERMINAL_TYPE:
+  case TELOPT_NAWS:
+  case TELOPT_TERMINAL_SPEED:
+  case TELOPT_XDISPLOC:
+  case TELOPT_SUPPRESS_GO_AHEAD:
+    ret = true;
+    break;
+  default:
+    printf("For information: Telnet IAC DO %d not supported\n", session->escape_string[2]);
+    break;
+  }
+
+  if (SESSIONFLAG != ret || ret==false)
+  {
+    block[0]=TELNET_IAC;
+    block[1]=ret == true ? TELNET_WILL : TELNET_WONT;
+    block[2]=session->escape_string[2];
+    nettle_senddata(session,block,3);
+
+    SESSIONFLAG = ret;
+  }
+
+  if (session->escape_string[2]==TELOPT_NAWS)
+  {
+    block[0]=TELNET_IAC;
+    block[1]=TELNET_SB;
+    block[2]=TELOPT_NAWS;
+    block[3]=session->terminal_size.x / 256;
+    block[4]=session->terminal_size.x % 256;
+    block[5]=session->terminal_size.y / 256;
+    block[6]=session->terminal_size.y % 256;
+    block[7]=TELNET_IAC;
+    block[8]=TELNET_SE;
+    nettle_senddata(session,block,9);
+  }
+}
+
+
+void handle_iac_dont(struct session_struct* session)
+{
+  /* Remote is DEMANDING that we do not do something */
+  /* We're obedient - we reply that we won't do it, as they ask */
+
+  if (SESSIONFLAG==true)
+  {
+    char block[3];
+
+    block[0]=TELNET_IAC;
+    block[1]=TELNET_WONT;
+    block[2]=session->escape_string[2];
+    nettle_senddata(session,block,3);
+
+    SESSIONFLAG=false;
+  }
+}
