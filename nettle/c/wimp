@@ -33,6 +33,7 @@
 #include "mouse.h"
 #include "nettle.h"
 #include "process.h"
+#include "scripts.h"
 #include "seln.h"
 #include "socket.h"
 #include "sockwatch.h"
@@ -51,12 +52,12 @@ static char indirected[1024];
 static int *bitmaps_area=0;
 static int bitmaps_area_number=0;
 
-static int msg_ref;
 static struct session_struct *paste_session;
 
 static int old_charw;
 static int old_charh;
 
+static int msg_ref;
 static int shutdown_flag=-1; /* 0 if closedown, not if single quit */
 
 /* Dunno what this is about - AMS 12/09/2001 */
@@ -67,7 +68,7 @@ enum ansi_colour_flag
   SAVE_FORCE_ANSI
 };
 
-static enum ansi_colour_flag allow_ansi_colour = SAVE_NO_ANSI;
+static enum ansi_colour_flag allow_ansi_colour = SAVE_FLAG_ANSI;
 
 static void create_iconbar_menu(void);
 static void open_open_window(bool open_window_flag);
@@ -568,6 +569,13 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
           else
             generror("More than one 'window' icon set in choices.", false);
           break;
+
+        case icon_choices_misc:
+          if (window_id_to_open==0)
+            window_id_to_open=win_panemisc;
+          else
+            generror("More than one 'window' icon set in choices.", false);
+          break;
       }
       counter++;
     }
@@ -633,10 +641,9 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     window.window_handle = block->window_handle;
     _swi (Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
-    if (inkey (-2))
-    {
-      /* Removed this for now - AMS 28/08/2001 */
-
+    /* Removed this for now - AMS 28/08/2001 */
+    /*if (inkey (KEYBOARD_CTRL))
+    {*/
       /* Ctrl pressed - allow dynamic resizing */
       /* if the v scrollbar was at the bottom and its vpos is unchanged,
        * force it to the bottom */
@@ -644,9 +651,9 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
 	  window.scroll.y - window.max.y + window.min.y == window.work_min.y)
       {
 	block->scroll.y = window.work_min.y;
-      }*/
+      }
     }
-    else
+    else*/
     {
       /* limit to the number of rows */
       int height = block->max.y - block->min.y;
@@ -836,15 +843,8 @@ static void win_save_click(int x, int y, int buttons, int icon_handle)
 
 	if ((instr(save_data, ":")>=0))
 	{
-	  struct wimp_geticonstate_block block;
-
-	  block.window_handle= win_save;
-	  block.icon_handle  =icon_save_ansi;
-
-	  _swi(Wimp_GetIconState, _IN(1), &block);
-
-	  /* if selected bit is set, then we save with ANSI colour */
-	  if (block.icon_flags & WIMP_ICON_SELECTED_BIT)
+	  /* if icon ticked, then we save with ANSI colour */
+	  if (read_icon_ticked(win_save, icon_save_ansi))
 	  {
 	    save_selection(save_data, true);
 	  }
@@ -936,7 +936,6 @@ static void win_resize_click(int x, int y, int buttons, int icon_handle)
   }
 }
 
-
 /**
  * Set the caret to be in the given session
  *
@@ -952,7 +951,7 @@ static void wimp_claimcaret(struct session_struct *session)
 
     _swi(Wimp_GetCaretPosition, _IN(1), &block);
 
-    if (session->line_editor_type==LINEEDIT_CHECKBOX)
+    if (session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON)
     {
       if (block.window_handle!=session->pane_handle)
       {
@@ -1004,7 +1003,7 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   /* NOTE! We deliberately do not wrap-backwards over lines */
   while ( x > 0 && !isspace( ICHR(x,y) ))
     x--;
-  
+
   /* skip any initial space or colon or anything */
   if (!isalnum( ICHR(x,y) ))
     x++;
@@ -1077,7 +1076,7 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 
   /* if we're not pressing MENU or Ctrl */
   /* (may want input focus to remain elswhere) */
-  if (buttons != ClickMenu && buttons != DragMenu && !inkey(-2))
+  if (buttons != ClickMenu && buttons != DragMenu && !inkey(KEYBOARD_CTRL))
     wimp_claimcaret(session);
 
 
@@ -1302,6 +1301,7 @@ void wimp_mouse_click(int x, int y, int buttons, int window_handle, int icon_han
     {&win_panehot,   win_panehot_click   },
     {&win_hotpane,   win_hotpane_click   },
     {&win_hotedit,   win_hotedit_click   },
+    {&win_panemisc,  win_panemisc_click  },
     {&win_spoolsave, win_spoolsave_click },
     {NULL,NULL}
   };
@@ -1326,7 +1326,8 @@ void wimp_mouse_click(int x, int y, int buttons, int window_handle, int icon_han
         session_window_click(x,y,buttons,icon_handle,session);
 	return;
       }
-      else if (session->line_editor_type==LINEEDIT_CHECKBOX &&
+      else if ((session->line_editor_type==LINEEDIT_CHECKBOX_OFF ||
+                session->line_editor_type==LINEEDIT_CHECKBOX_ON) &&
                (window_handle == session->pane_handle))
       {
         session_pane_click(x,y,buttons,icon_handle,session);
@@ -1392,6 +1393,7 @@ void drag_finished(void)
     {
       loop--;
     }
+    allow_ansi_colour = SAVE_FLAG_ANSI;
     wimp_initiatesave(string+loop+1);
   }
   else if (drag_window_handle==win_hotpane)
@@ -1415,6 +1417,7 @@ void drag_finished(void)
   else if (selection_session &&
            drag_window_handle == selection_session->window_handle)
   {
+    allow_ansi_colour = SAVE_NO_ANSI; /* This is debatable IMO */
     wimp_initiatesave("Selection");
   }
 }
@@ -1574,7 +1577,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
 
     if (session && session->line_editor_type!=LINEEDIT_NONE)
     {
-      line_editor_icon=(session->line_editor_type==LINEEDIT_CHECKBOX ? 1 : 0);
+      line_editor_icon=((session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON) ? 1 : 0);
 
       switch (key)
       {
@@ -1685,6 +1688,10 @@ void wimp_menu_selection(int *selection)
           break;
 
         case 4:
+          /* Script handling - not implemented yet */
+          break;
+
+        case 5:
           /* Bring a session window to the front */
           if (selection[1] >= 0)
           {
@@ -1694,7 +1701,7 @@ void wimp_menu_selection(int *selection)
           }
           break;
 
-        case 5:
+        case 6:
           /* Quit */
           shutdown_flag=-1; /* Just make sure we don't shut down the computer by mistake */
           close_program();
@@ -1812,7 +1819,7 @@ void wimp_menu_selection(int *selection)
 
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    /* If ADJUST, then re-open  menu where it was before */
+    /* If ADJUST, then re-open menu where it was before */
     if (block.buttons==1)
     {
       switch (menu_open)
@@ -1949,7 +1956,7 @@ void gain_caret(int window_handle)
 		 (pos.x+1)*redraw.r_charw << eig.x,
 	         (-pos.y)*redraw.r_charh << eig.y);
 
-    if (line_editor_active(session) && session->line_editor_type==LINEEDIT_CHECKBOX)
+    if (line_editor_active(session) && (session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON))
     {
       /* if line editor and doesn't already have caret, then set the caret in pane */
       struct wimp_getcaretposition_block block;
@@ -1957,7 +1964,8 @@ void gain_caret(int window_handle)
       _swi(Wimp_GetCaretPosition, _IN(1), &block);
 
       if (block.window_handle!=session->pane_handle &&
-          session->line_editor_type==LINEEDIT_CHECKBOX &&
+          (session->line_editor_type==LINEEDIT_CHECKBOX_OFF ||
+           session->line_editor_type==LINEEDIT_CHECKBOX_ON) &&
           block.index!=get_icon_data_length(session->pane_handle,1))
       {
         set_caret_position(session->pane_handle,1,-1,
@@ -1997,7 +2005,8 @@ void gain_caret(int window_handle)
 
       /* again, set caret if it's not already in the pane */
       if (block.window_handle!=session->pane_handle &&
-          session->line_editor_type==LINEEDIT_CHECKBOX &&
+          (session->line_editor_type==LINEEDIT_CHECKBOX_OFF ||
+           session->line_editor_type==LINEEDIT_CHECKBOX_ON) &&
           block.index!=get_icon_data_length(session->pane_handle,1))
       {
         set_caret_position(session->pane_handle, 1, -1,
@@ -2104,6 +2113,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
   int message_number = wimp_block->user_message.message_code;
   int sender_ref     = wimp_block->user_message.sender_ref;
   int my_ref         = wimp_block->user_message.my_ref;
+  int your_ref       = wimp_block->user_message.your_ref;
 
   switch (message_number)
   {
@@ -2111,7 +2121,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       quit_flag=true;
       break;
     case WIMP_MESSAGE_DATASAVE:
-      if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
+      if (msg_ref && your_ref != msg_ref && my_ref != msg_ref)
         break;
 
       msg_ref = 0;
@@ -2146,6 +2156,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
 
           _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
           msg_ref = wimp_block->user_message.my_ref;
+          break;
       }
       break;
 
@@ -2153,7 +2164,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       {
         char string[1024];
 
-        if (!msg_ref || wimp_block->user_message.your_ref != msg_ref)
+        if (!msg_ref || (your_ref != msg_ref && my_ref != msg_ref))
           break;
 
         msg_ref = 0;
@@ -2212,7 +2223,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       break;
 
     case WIMP_MESSAGE_DATALOAD:
-      if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
+      if (msg_ref && your_ref != msg_ref && my_ref != msg_ref)
         break;
 
       msg_ref = 0;
@@ -2231,6 +2242,34 @@ void wimp_message(union wimp_poll_block *wimp_block)
           if (paste_text_file (wimp_block))
             reply_to_dataload (wimp_block);
           break;
+        default:
+        {
+          char string[MESSAGE_MAX_CONNECTION];
+          char type[MESSAGE_MAX_CONNECTION];
+
+          read_icon_data(win_open, icon_open_contype, string, MESSAGE_MAX_CONNECTION);
+
+          if (strcmp(string, lookup("Taskwindow", type, MESSAGE_MAX_CONNECTION)) == 0)
+          {
+            if (wimp_block->user_message.contents.data_save.window_handle==win_open &&
+                wimp_block->user_message.contents.data_save.icon_handle==icon_open_command)
+            {
+              struct wimp_getcaretposition_block block;
+
+              _swi(Wimp_GetCaretPosition, _IN(1), &block);
+
+              set_icon_data(win_open, icon_open_command,
+                            wimp_block->user_message.contents.data_save.file_name);
+
+              if (block.window_handle==win_open && block.icon_handle==icon_open_command)
+              {
+                set_caret_position(win_open, icon_open_command, -1,
+                                   get_icon_data_length(win_open, icon_open_command));
+              }
+            }
+          }
+          break;
+        }
       }
       break;
 
@@ -2637,10 +2676,12 @@ static void create_iconbar_menu(void)
   char *menu_connect = get_menu_item("Connect");
   char *menu_session;
   char *menu_hotlist;
+  char *menu_scripts;
   char *menu_quit    = get_last_menu_item("Quit");
 
   const int *hotlist_menu=create_hotlist_menu();
   const int *termlist_menu=create_termlist_menu();
+  const int *scriptlist_menu=create_scriptlist_menu();
 
   /* Just so it points somewhere (so the arrow doesn't disppear) */
   if (hotlist_menu==NULL)
@@ -2648,6 +2689,9 @@ static void create_iconbar_menu(void)
 
   if (termlist_menu==NULL)
     termlist_menu=menu_data2;
+
+  if (scriptlist_menu==NULL)
+    scriptlist_menu=menu_data2;
 
   if (sessions)
     menu_session = get_menu_item("Session]");
@@ -2659,18 +2703,24 @@ static void create_iconbar_menu(void)
   else
     menu_hotlist = get_grey_menu_item("Hotlist]");
 
+  if (script_exist_items())
+    menu_scripts = get_menu_item("Scripts]");
+  else
+    menu_scripts = get_grey_menu_item("Scripts]");
+
   if (create_menu(menu_data, indirected+768, menu_title,
                   menu_info, win_info,
                   menu_choices,
                   menu_connect,
                   menu_hotlist, hotlist_menu,
+                  menu_scripts, scriptlist_menu,
                   menu_session, termlist_menu,
                   menu_quit))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
     _swi(Wimp_CreateMenu, _INR(1,3), menu_data,
-                                     block.pos.x-64, 96+(24*2) + (6*44) );
+                                     block.pos.x-64, 96+(24*2) + (7*44) );
   }
 
   free(menu_title);
@@ -2678,6 +2728,7 @@ static void create_iconbar_menu(void)
   free(menu_choices);
   free(menu_connect);
   free(menu_session);
+  free(menu_scripts);
   free(menu_hotlist);
   free(menu_quit);
 
@@ -2858,9 +2909,10 @@ void create_lineeditor_type_menu(int window_handle, int text_icon, int by_icon)
   char *menu_title = get_menu_item("LineEd");
   char *menu_line0 = get_menu_item("LineEd0");
   char *menu_line1 = get_menu_item("LineEd1");
-  char *menu_line2 = get_last_menu_item("LineEd2");
+  char *menu_line2 = get_menu_item("LineEd2");
+  char *menu_line3 = get_last_menu_item("LineEd3");
 
-  if (create_menu (menu_data, 0, menu_title, menu_line0, menu_line1, menu_line2))
+  if (create_menu (menu_data, indirected, menu_title, menu_line0, menu_line1, menu_line2, menu_line3))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
@@ -2871,6 +2923,7 @@ void create_lineeditor_type_menu(int window_handle, int text_icon, int by_icon)
   free (menu_line0);
   free (menu_line1);
   free (menu_line2);
+  free (menu_line3);
 
   menu_open=MENU_LINEED_TYPE;
   menu_window = window_handle;
@@ -3147,14 +3200,14 @@ static char *load_file (const char *name, int *size)
 static struct session_struct *get_session_from_winhan(int window)
 {
   struct session_struct *session = sessions;
-  
+
   while (session != NULL &&
          session->window_handle != window &&
          session->pane_handle != window)
   {
     session = session->next;
   }
-  
+
   return session;
 }
 
@@ -3173,13 +3226,13 @@ static bool parse_ant_url (union wimp_poll_block *block)
   int size;
 
   window_handle = block->user_message.contents.data_load.window_handle;
-  
+
   session = get_session_from_winhan(window_handle);
   if (session == NULL)
     return false;
 
   url = load_file (block->user_message.contents.data_load.file_name, &size);
-  
+
   if (url)
   {
     process_data_transmission (session, url, size);
@@ -3207,7 +3260,7 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
   session = get_session_from_winhan(window_handle);
   if (session == NULL)
     return false;
-  
+
   uri = load_file (block->user_message.contents.data_load.file_name, &size);
 
   if (uri)
@@ -3222,7 +3275,7 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
     if (!lf)
     {
       /* then past any whitespace */
-      while (++offset < size && isspace (uri[offset]))
+      while (++offset < size && isspace ((int) uri[offset]))
         ;
       if (offset < size)
       {
