@@ -127,7 +127,7 @@ static int status_negative(int iac_type)
 
 static void reprocess_position_scroll(struct session_struct *session)
 {
-  int count,calc;
+  int count;
   int scrolled = 0;
 
   /* TODO: use Wimp_BlockCopy to scroll the (rendered) window contemt */
@@ -168,17 +168,17 @@ static void reprocess_position_scroll(struct session_struct *session)
     else
     {
       char *calc = session->assigned_area +
-		   ((session->terminal_size.x *
-		     (session->scroll_start + session->scrollback)) * 4);
+                    ((session->terminal_size.x *
+                     (session->scroll_start + session->scrollback)) * 4);
       MEMMOVE (calc, calc - session->terminal_size.x * 4,
-	       session->terminal_size.x *
-		 (session->scroll_end - session->scroll_start) * 4);
+               session->terminal_size.x *
+              (session->scroll_end - session->scroll_start) * 4);
     }
 
     /* and clear the new line */
     for (count=0; count<session->terminal_size.x; count++)
     {
-       calc=(((session->scroll_end+session->scrollback-1)*
+       int calc=(((session->scroll_end+session->scrollback-1)*
               session->terminal_size.x)+count)*4;
 
        write_assigned(session,calc,7,0,0,32);
@@ -228,7 +228,7 @@ static void reprocess_position_scroll(struct session_struct *session)
     /* and clear the new line */
     for (count=0; count<session->terminal_size.x; count++)
     {
-       calc=(((session->scroll_start+session->scrollback-1)*
+       int calc=(((session->scroll_start+session->scrollback-1)*
               session->terminal_size.x)+count)*4;
 
        write_assigned(session,calc,7,0,0,32);
