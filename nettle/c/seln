@@ -248,7 +248,7 @@ void save_selection(char *filename, bool ansi_colour)
           if (selection_session->line_flags)
           {
             /* and we didn't wrap onto this line and it was a newline-caused linefeed */
-            if (selection_session->line_flags[ypos-1]&=~NETTLE_LINE_WRAP)
+            if ( !(selection_session->line_flags[ypos-1] & NETTLE_LINE_WRAP) )
             {
               fputc('\n', file_handle);
             }
@@ -262,7 +262,7 @@ void save_selection(char *filename, bool ansi_colour)
       last_valid_char=selection_session->terminal_size.x-1;
 
       /* if this line wasn't linewrapped, then strip the spaces, otherwise keep them */
-      if (selection_session->line_flags[ypos]&=~NETTLE_LINE_WRAP)
+      if ( !(selection_session->line_flags[ypos] & NETTLE_LINE_WRAP) )
       {
         while (last_valid_char>=0 &&
           read_assigned_character(selection_session, last_valid_char, ypos)==' ')
@@ -501,7 +501,7 @@ void selection_paste(struct session_struct *session)
           if (selection_session->line_flags)
           {
             /* and we didn't wrap onto this line and it was a newline-caused linefeed */
-            if (selection_session->line_flags[ypos-1]&=~NETTLE_LINE_WRAP)
+            if ( !(selection_session->line_flags[ypos-1] & NETTLE_LINE_WRAP) )
             {
               *(buffer+bufferptr) = '\r';
               bufferptr++;
@@ -516,7 +516,7 @@ void selection_paste(struct session_struct *session)
       last_valid_char=selection_session->terminal_size.x-1;
 
       /* if this line wasn't linewrapped, then strip the spaces, otherwise keep them */
-      if (selection_session->line_flags[ypos]&=~NETTLE_LINE_WRAP)
+      if ( !(selection_session->line_flags[ypos] & NETTLE_LINE_WRAP) )
       {
         while (last_valid_char>=0 &&
           read_assigned_character(selection_session, last_valid_char, ypos)==' ')
