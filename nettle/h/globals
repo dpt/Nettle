@@ -232,7 +232,7 @@ typedef struct user_message
 
   union
   {
-    char                      bytes[236];
+    char bytes[236];
 
     struct
     {
@@ -243,6 +243,11 @@ typedef struct user_message
       int filetype;
       char file_name[212];
     } data_save, data_save_ack, data_load;
+
+    struct
+    {
+      int shutdown_flag;
+    } prequit;
 
     struct
     {

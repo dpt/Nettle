@@ -31,7 +31,6 @@ void closedown_application(void)
   lose_bitmaps();
   lose_zapredraw_area();
 
-  free(sprite_area);
   free(zap_font_area);
   free(zap_lowres_font_area);
   lose_hotlist();

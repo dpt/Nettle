@@ -104,3 +104,5 @@ const char terminal_name[NO_OF_TERMINAL_TYPES][MESSAGE_MAX_TERMINAL]={
   "xterm",
   "xterm-color"};
 
+int old_charw;
+int old_charh;

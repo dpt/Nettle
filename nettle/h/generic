@@ -18,6 +18,9 @@ typedef enum
 
 #define NOT(x) ((x)?false:true)
 
+/* For Flexlib */
+#define BOOL bool
+
 typedef unsigned long colour_t;
 
 /* Standard includes */
@@ -31,6 +34,8 @@ typedef unsigned long colour_t;
 /* RISC OS includes */
 #include "kernel.h"
 #include "swis.h"
+
+#include "flex.h"
 
 #ifndef Wimp_AutoScroll
 #define Wimp_AutoScroll 0x000400fd
@@ -329,6 +334,7 @@ struct colourpicker_block
 #define WIMP_MESSAGE_DATASAVEACK             2
 #define WIMP_MESSAGE_DATALOAD                3
 #define WIMP_MESSAGE_DATALOADACK             4
+#define WIMP_MESSAGE_PREQUIT                 8
 #define WIMP_MESSAGE_CLIP_CLAIMENTITY       15
 #define WIMP_MESSAGE_CLIP_DATAREQUEST       16
 #define WIMP_MESSAGE_MENUWARNING       0x400c0

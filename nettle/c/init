@@ -38,6 +38,7 @@ static void initialise_wimp(void)
     WIMP_MESSAGE_DATASAVEACK,
     WIMP_MESSAGE_DATALOAD,
     WIMP_MESSAGE_DATALOADACK,
+    WIMP_MESSAGE_PREQUIT,
     WIMP_MESSAGE_CLIP_CLAIMENTITY,
     WIMP_MESSAGE_CLIP_DATAREQUEST,
     WIMP_MESSAGE_MENUWARNING,
@@ -58,51 +59,6 @@ static void initialise_wimp(void)
   _swi(Wimp_Initialise, _INR(0,3)|_OUT(1), 310, 0x4b534154,
     application_name, messages, &task_handle);
 }
-
-static void load_sprites(void)
-{
-  int yeig;
-  char file_name[1024];
-  int obj_type;
-  int obj_size;
-
-  /* find out what sprites we need to load */
-  yeig = 1 << _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
-
-  sprintf(file_name, "<%s$Dir>.Resources.Sprites", application_name);
-
-  /* if we're in a 2 high pixel mode, append 22 */
-  /* FIXME: strictly this should be using the appropriate Wimp_ReadSysInfo
-   * call */
-  if (yeig == 2)
-    strcat(file_name, "22");
-
-  _swi(OS_File, _INR(0,1)|_OUT(0)|_OUT(4), 17, file_name, &obj_type, &obj_size);
-  if (obj_type == 1)
-  {
-    obj_size += 16;
-
-    /* malloc a block big enough for it */
-    sprite_area = malloc(obj_size);
-    assert(sprite_area != NULL);
-
-    /* set up the block */
-    sprite_area->total_size = obj_size;
-    sprite_area->offset_to_1st_sprite = 16;
-
-    /* initialise area */
-    _swi(OS_SpriteOp, _INR(0,1), 0x109, sprite_area);
-
-    /* load sprites into it */
-    _swi(OS_SpriteOp, _INR(0,2), 0x10a, sprite_area, file_name);
-  }
-  else
-  {
-    generror("NoSprites", true);
-    closedown_application();
-  }
-}
-
 
 static void open_template(void)
 {
@@ -173,10 +129,11 @@ static int load_template(int *font_array, const char *window_name, struct os_spr
   _swi(Wimp_LoadTemplate, _IN(1)|_INR(5,6)|_OUTR(1,2), 0, window_name_copy,
     0, &size_of_template_data, &size_of_indirected_data);
 
-  /* malloc this amount, indirected first to be heap friendly */
-  indirected_data = malloc(size_of_indirected_data);
+  /* alloc this amount, indirected first to be heap friendly */
+  indirected_data=malloc(size_of_indirected_data);
   assert(indirected_data != NULL);
-  template_data = malloc(size_of_template_data);
+
+  template_data=malloc(size_of_template_data);
   assert(template_data != NULL);
 
   indirected[maxindirected++]=indirected_data;
@@ -293,7 +250,6 @@ void initialise_application(void)
   load_messages();
   load_choices();
   load_hotlist();
-  load_sprites();
   load_templates();
   load_zap_fonts();
 

@@ -57,6 +57,7 @@ static struct session_struct *paste_session;
 static int old_charw;
 static int old_charh;
 
+static int shutdown_flag=-1; /* 0 if closedown, not if single quit */
 
 /* Dunno what this is about - AMS 12/09/2001 */
 enum ansi_colour_flag
@@ -712,24 +713,32 @@ void close_window(int window_handle)
 
 
 /* Determine if there are any sessions open.  If so, query the user as to whether */
-/* to really quit the program. */
+/* to really quit the program. set_quit_flag is true if the user is quitting the task, */
+/* or false if the Wimp is quitting us */
 
 static void close_program(void)
 {
   struct session_struct *session = sessions;
+  bool connections_open=false;
+  char message[200];
 
   while (session)
   {
     if (session->socket_state == NETTLE_SESSION_CONNECTED)
-    {
-      char message[200];
+      connections_open=true;
 
-      quit_flag = generror_question(lookup("ConnectionMultiOpen", message, sizeof(message)));
-      return;
-    }
     session = session->next;
   }
-  quit_flag = true;
+
+  quit_flag=true;
+
+  if (connections_open)
+    quit_flag = generror_question(lookup("ConnectionMultiOpen", message, sizeof(message)));
+
+  if (quit_flag && shutdown_flag==0)
+  {
+    _swi(Wimp_ProcessKey, _IN(0), 0x1FC);
+  }
 }
 
 
@@ -1673,6 +1682,7 @@ void wimp_menu_selection(int *selection)
 
         case 5:
           /* Quit */
+          shutdown_flag=-1; /* Just make sure we don't shut down the computer by mistake */
           close_program();
       }
       break;
@@ -2087,7 +2097,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       quit_flag=true;
       break;
     case WIMP_MESSAGE_DATASAVE:
-      if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
+      if (msg_ref && wimp_block->user_message./*your*/my_ref != msg_ref)
         break;
 
       msg_ref = 0;
@@ -2129,7 +2139,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       {
         char string[1024];
 
-        if (!msg_ref || wimp_block->user_message.your_ref != msg_ref)
+        if (!msg_ref || wimp_block->user_message./*your*/my_ref != msg_ref)
           break;
 
         msg_ref = 0;
@@ -2188,7 +2198,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       break;
 
     case WIMP_MESSAGE_DATALOAD:
-      if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
+      if (msg_ref && wimp_block->user_message./*your*/my_ref != msg_ref)
         break;
 
       msg_ref = 0;
@@ -2212,6 +2222,37 @@ void wimp_message(union wimp_poll_block *wimp_block)
 
     case WIMP_MESSAGE_DATALOADACK:
       msg_ref = 0;
+      break;
+
+    case WIMP_MESSAGE_PREQUIT:
+      {
+        struct session_struct *session = sessions;
+        bool can_we_safely_quit=true;
+
+        while (session && can_we_safely_quit)
+        {
+          if (session->socket_state == NETTLE_SESSION_CONNECTED)
+          {
+            can_we_safely_quit=false;
+          }
+          session = session->next;
+        }
+
+        if (!can_we_safely_quit)
+        {
+          if (wimp_block->user_message.length<20)
+            shutdown_flag=0;
+          else
+            shutdown_flag=wimp_block->user_message.contents.prequit.shutdown_flag;
+
+          wimp_block->user_message.your_ref    =my_ref;
+          _swi(Wimp_SendMessage, _INR(0,2), 19, wimp_block, sender_ref);
+
+          close_program();
+
+          quit_flag=false; /* Don't want to quit at this point */
+        }
+      }
       break;
 
     case WIMP_MESSAGE_CLIP_CLAIMENTITY:
