@@ -2328,6 +2328,37 @@ void wimp_message(union wimp_poll_block *wimp_block)
     case URI_MProcess:
       url_recvbroadcast(&wimp_block->user_message, wimp_handleurl);
       break;
+
+    case WIMP_MESSAGE_WINDOWINFO:
+      {
+        struct session_struct *session = sessions;
+
+        while (session && session->window_handle!=wimp_block->user_message.contents.window_info.window_handle)
+        {
+          session=session->next;
+        }
+
+        if (session->window_handle==wimp_block->user_message.contents.window_info.window_handle)
+        {
+          int counter=0;
+
+          wimp_block->user_message.your_ref    =my_ref;
+          strcpy(wimp_block->user_message.contents.window_info.icon_string, "nettle");
+
+          /* Copy (at most) first 10 characters of session label */
+          while (counter<10 && session->label[counter]!='\0')
+          {
+            wimp_block->user_message.contents.window_info.title[counter]=session->label[counter];
+            counter++;
+          }
+
+          wimp_block->user_message.contents.window_info.title[counter]='\0';
+          wimp_block->user_message.length = (36+10+3) & ~3; /* more efficient way? */
+
+          _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
+        }
+      }
+      break;
   }
 }
 

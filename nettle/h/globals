@@ -264,6 +264,14 @@ typedef struct user_message
 
     struct
     {
+      int window_handle;
+      int reserved;
+      char icon_string[8];
+      char title[220];
+    } window_info;
+
+    struct
+    {
       int picker_handle;
       int flags;
       colour_t colour;
