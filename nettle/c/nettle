@@ -1,6 +1,6 @@
 /**
  * Nettle specific code
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2002
  *
  * $Id$
  */
@@ -24,10 +24,9 @@
 #include "zapredraw.h"
 
 
-static void allocate_zapredraw_area(int, int, int);
 static void start_connection_int (struct connection_params *params );
-static int get_user_pass (char *string, char *tempbuf, struct connection_params *params);
-static void login_sendkeys(struct session_struct *session, const char *ptr);
+static bool get_user_pass (char *string, char *tempbuf, struct connection_params *params);
+static int get_host_port (char *string, int *port);
 
 static void rehash_blink(void)
 {
@@ -44,28 +43,26 @@ static void rehash_blink(void)
   }
 }
 
-/*************************************************** Gerph *********
- Function:     get_user_pass
- Description:  Read the user and password out of a string, modifying
-               it to contain just the host/port pair
- Parameters:   string-> the string to parse, and modify
-               tempbuf-> the string to use for holding password
-                         and user name in (guarenteed as long as
-                         string+2)
-               params-> parameters block to update, we write into
-                        login_user and login_pass a pointer into the
-                        tempbuf for the user and password
- Returns:      true if we failed, false otherwise
- ******************************************************************/
-static int get_user_pass (char *string, char *tempbuf,
-                   struct connection_params *params)
+/*
+ * Description:  Read the user and password out of a string, modifying
+ *               it to contain just the host/port pair
+ * Parameters:   string-> the string to parse, and modify
+ *               tempbuf-> the string to use for holding password
+ *                         and user name in (guarenteed as long as
+ *                         string+2)
+ *               params-> parameters block to update, we write into
+ *                        login_user and login_pass a pointer into the
+ *                        tempbuf for the user and password
+ * Returns:      true if we succeeded
+ */
+static bool get_user_pass (char *string, char *tempbuf, struct connection_params *params)
 {
   char *sptr;
 
   if (! (string && *string) )
   {
     generror("InvalidAddr", true);
-    return true;
+    return false;
   }
 
   /* strip off telnet: if it's there */
@@ -128,16 +125,15 @@ static int get_user_pass (char *string, char *tempbuf,
   return false;
 }
 
-int get_host_port (char *string, int *port)
-/* modifies string, returns true on error */
+static int get_host_port (char *string, int *port)
+/* modifies string, returns true on success */
 {
-  int loop;
   char *sptr;
 
   if (! *string)
   {
     generror("InvalidAddr", true);
-    return true;
+    return false;
   }
 
   /* strip off telnet: if it's there */
@@ -145,12 +141,16 @@ int get_host_port (char *string, int *port)
     strcpy (string, string + 7);
 
   /* strip out any /s anywhere in the string */
-  loop=0;
-  while (string[loop])
   {
-    if (string[loop] == '/')
-      memmove (string + loop, string + loop + 1, strlen (string + loop));
-    loop++;
+    char *in = string;
+    char *out = string;
+    while (*in)
+    {
+      char c = *in++;
+      if (c != '/')
+        *out++=c;
+    }
+    *out='\0';
   }
 
   /* look at the string to find a port if any (separated by colon, space or comma) */
@@ -167,18 +167,18 @@ int get_host_port (char *string, int *port)
   if (*port < 1)
   {
     generror("InvalidPort", true);
-    return true;
+    return false;
   }
 
   /* success */
-  return false;
+  return true;
 }
 
 bool start_connection_friedport(struct connection_params *params )
 {
   int port;
-  char host[256];
-  char tempbuf[256];
+  char host[1024];
+  char tempbuf[1024];
 
   if (params->connection_type != NETTLE_TASKWINDOW)
   {
@@ -188,7 +188,7 @@ bool start_connection_friedport(struct connection_params *params )
     strcpy(host,params->host);
     get_user_pass(host, tempbuf, params);
 
-    if (get_host_port (host, &port))
+    if (get_host_port (host, &port) == false)
       return false;
 
     params->host = host;
@@ -217,6 +217,28 @@ bool nettle_start_telnet_connection(const char *host, int port)
   sprintf(params.label, "%.*s:%d", (int)sizeof(params.label) - 16, host, port);
 
   start_connection_int(&params);
+
+  return true;
+}
+
+
+
+bool nettle_start_telnet_connection_friedport(const char *host)
+{
+  struct connection_params params;
+
+  params.connection_type  = NETTLE_TELNET;
+  params.terminal_type    = default_terminal;
+  params.host             = host;
+  params.port             = -1;
+  params.command          = NULL;
+  params.width            = defaultsize.x;
+  params.height           = defaultsize.y;
+  params.scrollback       = defaultscroll;
+  params.line_editor_type = line_editor;
+  sprintf(params.label, "%.*s", (int)sizeof(params.label) - 16, host );
+
+  start_connection_friedport(&params);
 
   return true;
 }
@@ -252,7 +274,7 @@ bool start_connection(void)
 {
   struct connection_params params;
   char string[1024];
-  char tempbuf[1024]; /* JRF: Note 256 used in start_connection_fried_port */
+  char tempbuf[1024];
   int loop;
   int connection_type;
   enum nettle_terminal terminal_type;
@@ -294,7 +316,7 @@ bool start_connection(void)
 
       get_user_pass(string, tempbuf, &params);
 
-      if (get_host_port (string, &port))
+      if (get_host_port(string, &port) == false)
         return false;
 
       params.host = string;
@@ -306,7 +328,7 @@ bool start_connection(void)
       read_icon_data (win_open, icon_open_command, string, sizeof (string));
       loop = strlen (string);
       while (string[loop - 1] == ' ')
-	loop--;
+        loop--;
       string[loop] = '\0';		/* trim trailing spaces */
       loop = strspn (string, " ");	/* number of leading spaces */
 
@@ -321,15 +343,14 @@ bool start_connection(void)
   return true;
 }
 
-/*************************************************** Gerph *********
- Function:     make_new_terminal_window
- Description:  Create a new window for the terminal, based on the
-               information in the session block, and write into the
-               session block the details
- Parameters:   session-> the session to create the window for and
-               to update
- Returns:      none
- ******************************************************************/
+/*
+ * Description:  Create a new window for the terminal, based on the
+ *               information in the session block, and write into the
+ *               session block the details
+ * Parameters:   session-> the session to create the window for and
+ *               to update
+ * Returns:      none
+ */
 static void make_new_terminal_window(struct session_struct *session)
 {
   static int max_y = -1; /* the top of the next window to be opened, or -1
@@ -344,18 +365,14 @@ static void make_new_terminal_window(struct session_struct *session)
     int height;
 
     /* We want to position the window toward the top of the screen, so the
-       algorithm we use is simple - 7/8 of the way up the screen, which is
-       reasonable for nearly all screen sizes */
+     * algorithm we use is simple - 7/8 of the way up the screen, which is
+     * reasonable for nearly all screen sizes
+     */
     yeig = _swi(OS_ReadModeVariable,_INR(0,1)|_RETURN(2),-1,5);
     height = _swi(OS_ReadModeVariable,_INR(0,1)|_RETURN(2),-1,12);
 
     height = (height+1)<<yeig;
-    max_y = ((height*7)/8) & ~3;
-    /* Notice that we also align to 4 pixels - this isn't really necessary,
-       but I've got this habit of trying to make things work on those
-       crappy RISC OS 2 Wimps; feel free to blat that naffness. Probably
-       should round to the current OS unit/pixel alignment, although the Wimp
-       will explicitly do that for us anyhow */
+    max_y = (height*7)/8;
   }
 
   block.min.x         =102;
@@ -386,8 +403,7 @@ static void make_new_terminal_window(struct session_struct *session)
   block.work_max.y=0;
 
   block.icon_flags    =0x00000119;
-  block.workarea_flags=10<<12; /* clicks (*256), drags (*16),
-                                * double clicks (*1) */
+  block.workarea_flags=10<<12; /* clicks (*256), drags (*16), double clicks (*1) */
   block.sprite_area   =(struct os_spriteop_area *) 1;
   block.min_width     =4;
   block.min_height    =4;
@@ -400,7 +416,7 @@ static void make_new_terminal_window(struct session_struct *session)
 
   session->window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
 
-  set_title_bar(session->window_handle,"nettle");
+  set_title_bar(session->window_handle,"Nettle");
 
   open_window(NULL, session->window_handle);
 
@@ -423,45 +439,15 @@ static void make_new_terminal_window(struct session_struct *session)
    and we act upon it. If it does NOT match, we reset the index to 0.
  */
 
-/*************************************************** Gerph *********
- Function:     login_sendkeys
- Description:  Send key presses to a session.
- Parameters:   session-> the session we're sending to
-               ptr-> the string we want to send
- Returns:      none
- ******************************************************************/
-static void login_sendkeys(struct session_struct *session, const char *ptr)
-{
-  while (*ptr)
-  {
-    char c=*ptr;
-    if ((c<126 && c>31) || c=='\r')
-                       /* Ensure it's not going to do odd things
-                          if faking a wimp key - CHECK THIS */
-    {
-      union wimp_poll_block message;
-      message.key_pressed.window_handle = session->window_handle;
-      message.key_pressed.icon_handle = -1;
-      message.key_pressed.pos.x = 0;
-      message.key_pressed.pos.y = 0;
-      message.key_pressed.height_and_flags = 16; /* Dummy value - 0 may cause problems as a height, but 16 is almost reasonable */
-      message.key_pressed.index = 0;
-      message.key_pressed.code = c;
-      _swi(Wimp_SendMessage, _INR(0,3), 8, &message, task_handle, 0);
-    }
-    ptr++;
-  }
-}
 
-/*************************************************** Gerph *********
- Function:     login_data
- Description:  Data has been received from the remote end of the
-               connection; we need to either match the current
-               string, or reset our counter
- Parameters:   session-> the session we're part of
-               c = character received
- Returns:      none
- ******************************************************************/
+/*
+ * Description:  Data has been received from the remote end of the
+ *               connection; we need to either match the current
+ *               string, or reset our counter
+ * Parameters:   session-> the session we're part of
+ *               c = character received
+ * Returns:      none
+ */
 static void login_data(struct session_struct *session, char c)
 {
   if (c == session->login_match[ session->login_index ])
@@ -469,17 +455,15 @@ static void login_data(struct session_struct *session, char c)
     session->login_index++;
     if (session->login_match[ session->login_index ] == '\n')
     {
-      /* We've reached the end of a match string, so we need to act
-         upon it */
+      /* We've reached the end of a match string, so we need to act upon it */
 
       if (session->login_user != NULL)
       {
         /* We matched the username request, so send the string they
            provided us with */
-        printf("Auto-login: Sending user name: %s\n",session->login_user);
 
-        login_sendkeys(session,session->login_user);
-        login_sendkeys(session,"\r");
+        nettle_senddata(session,session->login_user, strlen(session->login_user) );
+        nettle_senddata(session,"\r", 1);
 
         free(session->login_user);
         session->login_user = NULL;
@@ -488,10 +472,9 @@ static void login_data(struct session_struct *session, char c)
       {
         /* We matched the password request, so send the string they
            provided us with */
-        printf("Auto-login: Sending password: %s\n",session->login_pass);
 
-        login_sendkeys(session,session->login_pass);
-        login_sendkeys(session,"\r");
+        nettle_senddata(session,session->login_pass, strlen(session->login_pass) );
+        nettle_senddata(session,"\r", 1);
 
         free(session->login_pass);
         session->login_pass = NULL;
@@ -546,7 +529,7 @@ static void start_connection_int (struct connection_params *params )
     case NETTLE_TELNET:
     case NETTLE_SSH:
       {
-        /* JRF: Provide a label in the form [<user>@]<host>[:<port>] */
+        /* Provide a label in the form [<user>@]<host>[:<port>] */
         char *tail=params->label;
 
         if (!params->host)
@@ -621,7 +604,7 @@ static void start_connection_int (struct connection_params *params )
              *FX 229,1 before the task proper is run.  Make an Obey file
              in Pipe: to achieve this */
 
-           /* JRF: Race condition here with such a static filename */
+           /* Race condition here with such a static filename */
            pipefile = fopen("Pipe:$.NettleTask", "w");
            if (!pipefile)
            {
@@ -851,9 +834,6 @@ void write_out_data(struct session_struct *session, const char *data, int length
     force_redraw_changedbox ();
   }
 
-  /* JRF: This might be disruptive if the client is merely writing out
-          a character at a time; which would force the cursor on all the
-          time - is that what's intended ? */
   nextcursortime = _swi (OS_ReadMonotonicTime, 0) + CURSOR_BLINK_DELAY;
   cursor_state = true;
 }
@@ -861,12 +841,13 @@ void write_out_data(struct session_struct *session, const char *data, int length
 
 void remove_session(struct session_struct *session)
 {
-  /* JRF: We should unlink *first* such that if there's an error with
-          anything else, the session is effectively dead and we never
-          deal with it ever again. This may result in leaking sockets,
-          and leaking memory if anything fails, but ensures that we
-          don't get repeated errors that take down the application
-          leaking /every/ socket that was in use*/
+  /* We unlink *first* such that if there's an error with
+   * anything else, the session is effectively dead and we never
+   * deal with it ever again. This may result in leaking sockets,
+   * and leaking memory if anything fails, but ensures that we
+   * don't get repeated errors that take down the application
+   * leaking /every/ socket that was in use
+   */
   if (session->prev)
   {
     session->prev->next = session->next;
@@ -1535,53 +1516,7 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
   }
 }
 
-static void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrollback)
-{
-  int calculate_new_size=terminal_size_x*(terminal_size_y+1)*8+((terminal_size_y+scrollback)*4);
-
-  if (size_of_zapredraw_area < calculate_new_size)
-  {
-    int *new_zapredraw_area;
-
-    size_of_zapredraw_area = calculate_new_size;
-
-    if (dynamic_areas_available())
-    {
-      if (zapredraw_area_number==0)
-      {
-        char string[]="Nettle ZapRedraw area";
-
-        /* Note maximum size is -1 since potentially could be any size */
-        _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, size_of_zapredraw_area,
-                             -1, 0x80, -1, 0, -1, string, &zapredraw_area_number,
-                             &new_zapredraw_area);
-
-        assert(new_zapredraw_area != NULL);
-        zapredraw_area = new_zapredraw_area;
-      }
-      else
-      {
-        int current_size;
-
-        _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, zapredraw_area_number, &current_size);
-
-        if (size_of_zapredraw_area-current_size!=0)
-        {
-          _swi(OS_ChangeDynamicArea, _INR(0,1), zapredraw_area_number, size_of_zapredraw_area-current_size);
-        }
-      }
-    }
-    else
-    {
-      new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
-      assert(new_zapredraw_area != NULL);
-      zapredraw_area = new_zapredraw_area;
-    }
-  }
-}
-
-void
-scroll_term (struct session_struct *session, int direction)
+void scroll_term (struct session_struct *session, int direction)
 {
   struct wimp_getwindowstate_block block;
 
