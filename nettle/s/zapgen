@@ -62,10 +62,11 @@ code_y_loop
 	MOV	r7, r7, LSL #2		; *4
 	ADD	r7, r7, r1
 
-	STMFD	r13!, {r0-r3}		; scratch space
+	STMFD	r13!, {r0-r4}		; scratch space
 
 	MOV	r2, #&100
 	MOV	r3, #&100		; initial colour information
+	MOV	r4, #0
 
 code_x_loop
 	LDRB	r0, [r7], #1		; foreground
@@ -111,7 +112,7 @@ code_draw_cursor
 
 code_next_stage
 
-	LDMFD	r13!, {r0-r3}
+	LDMFD	r13!, {r0-r4}
 
 	MOV	r8, #0
 	STRB	r8, [r9], #1
@@ -149,8 +150,12 @@ colour_change
 ;	R2, R3, R9 updated & colour control written if needed
 ;	Can corrupt R0, R1, R8
 
+flags_mask *	4			; for the character flags in R10
+
 	TEQ	r0, r2
 	TEQEQ	r1, r3
+	AND	r8, r10, #flags_mask
+	TEQEQ	r8, r4
 	MOVEQ	pc, r14			; quick abort
 
 	MOV	r8, #0			; control prefix
@@ -183,6 +188,7 @@ colour_change
 
 	MOV	r2, r0			; update foreground
 	MOV	r3, r1			; update background
+	AND	r4, r10, #4		; update inverse flag
 
 	MOV	pc, r14
 
