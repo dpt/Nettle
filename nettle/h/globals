@@ -104,6 +104,7 @@ extern int win_resize;
 extern int win_save;
 extern int win_spoolsave;
 extern int win_sizebar;
+extern int win_termterm;
 
 extern int menu_open;
 extern int resize_handle;

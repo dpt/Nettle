@@ -70,6 +70,7 @@ int win_resize;
 int win_save;
 int win_spoolsave;
 int win_sizebar;
+int win_termterm;
 
 int menu_open=0;
 int resize_handle=0;

@@ -204,6 +204,8 @@ static void load_templates(void)
   win_save=load_template(LOAD_TEMPLATE_NO_FONTS,"save",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
   win_spoolsave=load_template(LOAD_TEMPLATE_NO_FONTS,"spoolsave",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
 
+  win_termterm=load_template(LOAD_TEMPLATE_NO_FONTS,"termterm",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
+
   /* close the templates file */
   close_template();
 }
