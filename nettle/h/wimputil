@@ -1,0 +1,53 @@
+/**
+ * Nettle Wimp utilities - generic code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#ifndef WIMPUTIL_H
+#define WIMPUTIL_H
+
+#include "generic.h"
+#include "globals.h"
+#include "nettle.h"
+#include "messages.h"
+
+/** Button enumeration for a click/drag/double click icon */
+enum
+{
+  ClickAdjust  = 0x001 * 256,
+  ClickMenu    = 0x002 * 1,
+  ClickSelect  = 0x004 * 256,
+  DragAdjust   = 0x001 * 16,
+  DragMenu     = 0x002 * 16,
+  DragSelect   = 0x004 * 16,
+  DoubleAdjust = 0x001 * 1,
+  DoubleSelect = 0x004 * 1
+};
+
+extern void closedown_wimp(void);
+
+extern void generror(const char *, bool);
+extern bool generror_question(const char *string);
+extern void set_icon_state(int, int, int, int);
+extern void set_icon_data(int, int, const char *);
+extern char *read_icon_data(int, int, char *, int);
+
+extern void set_title_bar(int, const char *);
+extern void force_redraw(int,int,int,int,int);
+
+extern void create_menu_by_icon(int *menu, int window, int icon);
+extern bool win_is_open(int window_handle);
+extern int get_icon_data_length(int window_handle, int icon_handle);
+extern char *get_icon_validation (int window_handle, int icon_handle);
+extern int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, ... );
+extern char *get_menu_item(const char *name);
+extern char *get_last_menu_item(const char *name);
+extern char *get_grey_menu_item(const char *name);
+extern char *get_grey_last_menu_item(const char *name);
+
+extern void drag_start(int window_handle, int icon_handle);
+
+
+#endif

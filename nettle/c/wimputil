@@ -1,0 +1,490 @@
+/**
+ * Wimp Utility functions (reasonably app-generic stuff)
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#include "wimputil.h"
+#include "wimp.h"
+#include "misc.h"
+
+bool win_is_open(int window_handle)
+{
+  struct wimp_getwindowstate_block window;
+
+  window.window_handle=window_handle;
+  _swi(Wimp_GetWindowState, _IN(1), &window);
+
+  if (window.window_flags & (1<<16))
+    return true;
+
+  return false;
+}
+
+void closedown_wimp(void)
+{
+  _swi(Wimp_CloseDown, _INR(0,1), task_handle, 0x4b534154);
+}
+
+void generror(const char *string, bool is_message)
+{
+  char message[252];
+  struct wimp_reporterror_block block;
+
+  if (is_message)
+    string = lookup(string, message, sizeof(message));
+
+  block.errnum=255;
+
+  strcpy(block.errmess, string);
+
+  _swi(Wimp_ReportError, _INR(0,2), &block, 0, application_name);
+}
+
+
+
+bool generror_question(const char *string)
+{
+  struct wimp_reporterror_block block;
+
+  block.errnum=255;
+
+  strcpy(block.errmess, string);
+
+  return (bool) (_swi(Wimp_ReportError, _INR(0,2)|_RETURN(1), &block,
+                                        (1<<1)+(1<<0), application_name) == 1);
+}
+
+
+void set_icon_state (int window_handle, int icon_handle, int eor, int clear)
+{
+  struct wimp_seticonstate_block icon_set;
+
+  icon_set.window_handle = window_handle;
+  icon_set.icon_handle	 = icon_handle;
+  icon_set.eor		 = eor;
+  icon_set.clear	 = clear;
+
+  _swi (Wimp_SetIconState, _IN(1), &icon_set);
+}
+
+
+void set_icon_data(int window_handle, int icon_handle, const char *contents)
+{
+  struct wimp_geticonstate_block block;
+
+  block.window_handle=window_handle;
+  block.icon_handle  =icon_handle;
+
+  _swi(Wimp_GetIconState, _IN(1), &block);
+
+  if (block.icon_flags & WIMP_ICON_INDIRECTED_BIT)
+  {
+    if (strcmp(block.contents.it.text, contents) != 0)
+    {
+      strcpy(block.contents.it.text, contents);
+
+      set_icon_state(window_handle, icon_handle, 0, 0);
+      check_set_caret_position(window_handle, icon_handle);
+    }
+  }
+  else
+  {
+    char string[6];
+    sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
+    generror(string, false);
+  }
+}
+
+
+
+char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_len)
+{
+  struct wimp_geticonstate_block block;
+
+  block.window_handle = window_handle;
+  block.icon_handle   = icon_handle;
+
+  _swi(Wimp_GetIconState, _IN(1), &block);
+
+  if (block.icon_flags & WIMP_ICON_INDIRECTED_BIT)
+  {
+    read_mem(buffer, block.contents.it.text, buf_len);
+  }
+  else
+  {
+    int len = (buf_len > 12) ? 12 : (buf_len - 1);
+    assert (len >= 0);
+    memcpy (buffer, block.contents.t.text, len);
+    buffer[len] = '\0';
+    while (--len >= 0)
+      if (buffer[len] < 32)
+        buffer[len] = '\0';
+  }
+  return buffer;
+}
+
+
+
+int get_icon_data_length(int window_handle, int icon_handle)
+{
+  struct wimp_geticonstate_block block;
+  int length = 0;
+
+  block.window_handle = window_handle;
+  block.icon_handle   = icon_handle;
+
+  _swi(Wimp_GetIconState, _IN(1), &block);
+
+  if (block.icon_flags & WIMP_ICON_INDIRECTED_BIT)
+  {
+    char *data = block.contents.it.text;
+
+    while (*data != '\0' && *data != '\x0d' && *data != '\x0a') {
+      length++;
+      data++;
+    }
+  }
+  else
+  {
+    char string[64];
+    sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
+    generror(string, false);
+  }
+  return length;
+}
+
+
+char *get_icon_validation (int window_handle, int icon_handle)
+{
+  struct wimp_geticonstate_block block;
+
+  block.window_handle = window_handle;
+  block.icon_handle = icon_handle;
+  _swi (Wimp_GetIconState, _IN(1), &block);
+
+  if ((block.icon_flags & WIMP_ICON_INDIRECTED_BIT) == 0)
+  {
+    char string[64];
+    sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
+    generror(string, false);
+    return 0;
+  }
+
+  if ((block.icon_flags & WIMP_ICON_TEXT_BIT) == 0 ||
+      block.contents.it.validation == 0 ||
+      block.contents.it.validation == (char *)-1)
+  {
+    char string[64];
+    sprintf(string,"Icon %d in window %X has no validation string.",icon_handle,window_handle);
+    generror(string, false);
+    return 0;
+  }
+
+  return block.contents.it.validation;
+}
+
+
+
+/* Create menu code */
+
+int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, ... )
+{
+  va_list args;
+  int window_handle;
+  char *item;
+  bool last_item=false;
+  int position=7;
+  char *pos;
+  int menu_flags = 0;
+
+  if (strlen(title)<12)
+  {
+    strcpy((char *)menu_defn, title);
+  }
+  else
+  {
+    int length = strlen (title);
+
+    assert (indirected);
+
+    strcpy (indirected, title);
+    menu_defn[0] = (int) indirected;
+    menu_defn[1] = (int) indirected + length;
+    menu_defn[2] = length + 1;
+    indirected += length + 1;
+
+    menu_flags = 1 << 8;	/* indirected menu title */
+  }
+
+  menu_defn[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
+  menu_defn[4]=0;
+  menu_defn[5]=44;
+  menu_defn[6]=0;
+
+  va_start(args, entries);
+
+  item=entries;
+
+  while (!last_item)
+  {
+    int icon_flags = WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT |
+		     WIMP_ICON_FILLED_BIT | WIMP_ICON_TEXT_BIT;
+    /* menu_flags is reset at the *end* of the loop -
+     * first time round, there may be an 'indirected title' flag */
+
+    window_handle=-1;
+    {
+      menu_defn[position]=0;
+      item--;
+      for (;;)
+      {
+        switch (*++item)
+        {
+          case '#':
+            icon_flags |= WIMP_ICON_SHADED_BIT;
+            continue; /* the for loop */
+          case '.':
+            menu_flags |= 1 << 1; /* dotted line follows */
+            continue;
+          case '/':
+            menu_flags |= 1 << 0; /* ticked */
+            continue;
+          case '[':
+            menu_flags |= 1 << 3; /* submenu => menu warning message */
+            continue;
+        }
+        break; /* didn't match anything - exit the loop */
+      }
+    }
+
+    pos=item+strlen(item);
+    for (;;)
+    {
+      switch (*--pos)
+      {
+        case '>':
+          window_handle=va_arg(args,int);
+          continue;
+        case '\\':
+          last_item=true;
+          menu_flags |= 1 << 7;
+          continue;
+      }
+      break;
+    }
+
+    menu_defn[position++] = menu_flags;
+    menu_defn[position++] = window_handle;
+
+    if (strlen(item)<13)
+    {
+      menu_defn[position++] = icon_flags;
+
+      strncpy(((char *) menu_defn)+(position*4),item,pos-item+1);
+
+      {
+        char *menu_data_char=(char *) menu_defn;
+        menu_data_char[(position*4)+pos-item+1]='\0';
+      }
+
+      position+=3;
+    }
+    else
+    {
+      int length = pos - item + 1;
+
+      menu_defn[position++] = icon_flags | WIMP_ICON_INDIRECTED_BIT;
+
+      assert(indirected);
+
+      strncpy(indirected, item, length);
+      indirected[length]='\0';
+      menu_defn[position++]=(int) indirected;
+      menu_defn[position++]=(int) indirected+length;
+      menu_defn[position++]=length+1;
+      indirected+=length+1;
+    }
+
+    item=va_arg(args,char *);
+
+    menu_flags=0;
+  }
+
+  va_end(args);
+
+  return menu_defn;
+}
+
+
+
+char *get_menu_item(const char *name)
+{
+  char contents[MESSAGE_MAX_MENU];
+  char *value = lookup(name, contents, MESSAGE_MAX_MENU);
+  char *item = malloc(strlen(value) + 1);
+
+  assert(item != NULL);
+
+  return strcpy(item, value);
+}
+
+
+
+char *get_last_menu_item(const char *name)
+{
+  char contents[MESSAGE_MAX_MENU];
+  char *value = lookup(name, contents, MESSAGE_MAX_MENU);
+  char *item = malloc(strlen(value) + 2);
+
+  assert(item != NULL);
+
+  strcpy(item, value);
+  return strcat(item, "\\");
+}
+
+
+
+char *get_grey_menu_item(const char *name)
+{
+  char contents[MESSAGE_MAX_MENU];
+  char *value = lookup(name, contents, MESSAGE_MAX_MENU);
+  char *item = malloc(strlen(value) + 2);
+
+  assert(item != NULL);
+
+  item[0] = '#';
+  item[1] = '\0';
+  return strcat(item, value);
+}
+
+
+
+char *get_grey_last_menu_item(const char *name)
+{
+  char contents[MESSAGE_MAX_MENU];
+  char *value = lookup(name, contents, 20);
+  char *item = malloc(strlen(value) + 3);
+
+  assert(item != NULL);
+
+  item[0] = '#';
+  strcpy(item + 1, value);
+  strcat(item,"\\");
+  return item;
+}
+
+
+
+/* Set title bar code */
+void set_title_bar(int window_handle, const char *title)
+{
+  struct wimp_getwindowinfo_block block;
+
+  block.window_handle=window_handle;
+
+  _swi(Wimp_GetWindowInfo, _IN(1), ((int) &block)+1);
+
+  if (block.icon_flags & (1<<8))
+  {
+    if (strcmp(block.title.it.text, title) != 0)
+    {
+      strcpy(block.title.it.text, title);
+
+      _swi(Wimp_ForceRedraw, _INR(0,2), window_handle, 0x4B534154, 3);
+    }
+  }
+  else
+  {
+    generror("Title bar in window is not indirected.", false);
+  }
+}
+
+
+/* Force redraw code */
+void force_redraw(int window_handle, int minx, int miny, int maxx, int maxy)
+{
+  _swi(Wimp_ForceRedraw, _INR(0,4), window_handle, minx, miny, maxx, maxy);
+}
+
+
+
+void drag_start(int window_handle, int icon_handle)
+{
+  int xstart, ystart, xsize, ysize;
+  char string[256], *ptr;
+
+  drag_window_handle=window_handle;
+  drag_icon_handle=icon_handle;
+
+  {
+    struct wimp_getwindowstate_block block;
+
+    block.window_handle=window_handle;
+
+    _swi(Wimp_GetWindowState, _IN(1), &block);
+
+    xstart=block.min.x-block.scroll.x;
+    ystart=block.max.y-block.scroll.y;
+  }
+
+  xsize=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 11);
+  ysize=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 12);
+
+  xsize <<= eig.x;
+  ysize <<= eig.y;
+
+  {
+    struct wimp_geticonstate_block gis_block;
+    struct wimp_dragbox_block block;
+
+    gis_block.window_handle=window_handle;
+    gis_block.icon_handle  =icon_handle;
+
+    _swi(Wimp_GetIconState, _IN(1), &gis_block);
+
+    block.window_handle=window_handle;
+    block.drag_type    =5;
+    block.min.x        =gis_block.min.x+xstart;
+    block.min.y        =gis_block.min.y+ystart;
+    block.max.x        =gis_block.max.x+xstart;
+    block.max.y        =gis_block.max.y+ystart;
+    block.parent_min.x =0;
+    block.parent_min.y =0;
+    block.parent_max.x =xsize;
+    block.parent_max.y =ysize;
+
+    strcpy(string, get_icon_validation(window_handle, icon_handle));
+    ptr=strchr(string,';');
+    if (ptr) *ptr='\0';
+
+    if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & (1<<1))
+    {
+      _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, &string[1], &block.min.x, 0);
+    }
+    else
+    {
+      _swi(Wimp_DragBox, _IN(1), &block);
+    }
+  }
+}
+
+
+void create_menu_by_icon (int *menu, int window, int icon)
+{
+  /* open the menu in the proper place next to a menu icon */
+  struct wimp_geticonstate_block gisblock;
+  struct wimp_getwindowstate_block gwsblock;
+
+  gisblock.window_handle = window;
+  gisblock.icon_handle = icon;
+  _swi (Wimp_GetIconState, _IN(1), (int) &gisblock);
+
+  gwsblock.window_handle = window;
+  _swi (Wimp_GetWindowState, _IN(1), (int) &gwsblock);
+
+  _swi(Wimp_CreateMenu, _INR(1,3), menu,
+       gwsblock.min.x + gwsblock.scroll.x + gisblock.max.x,
+       gwsblock.max.y + gwsblock.scroll.y + gisblock.max.y);
+}
