@@ -1,6 +1,7 @@
 /* sockwatch.c
  *
- * Generic interface functions for Dickon's socket watcher module
+ * Generic interface functions for the socket watcher module
+ * Will use Internet Pollwords if available (Internet module > 5.41 )
  *
  * (C) Joseph Heenan, 1998.
  *
@@ -10,21 +11,19 @@
 
 #include <stdio.h>
 
-/* UnixLib doesn't give you the RISC OS socket handle,
-   it's an internal file handle, so we need to get at it. */
-
-#ifdef __UNIXLIB_TYPES_H
-#define __UNIXLIB_INTERNALS
-#include <unixlib/unix.h>
-#endif
-
-
 #include "kernel.h"
 #include "swis.h"
 
 #include "sockwatch.h"
+#include "sys/types.h"
+#include "sys/ioctl.h"
+#include "sys/socket.h"
+#include "socklib.h"
+#include "sys/filio.h"
+#include "generic.h"
 
 int *socketwatch_pollword = NULL;
+static bool newinternet = false;
 
 #define SocketWatch_Register      0x52280
 #define SocketWatch_Deregister    0x52281
@@ -32,34 +31,84 @@ int *socketwatch_pollword = NULL;
 #define SocketWatch_AllocPW       0x52283
 #define SocketWatch_DeallocPW     0x52284
 
+#define ioctl socketioctl
+#define close socketclose
+
+typedef struct
+{
+  unsigned long *pollword;
+  int bitpos;
+}
+pollwordinfo;
+
 void socketwatch_register(int socket)
 {
-  const unsigned int bitmask = 1;
-  
-#ifdef __UNIXLIB_TYPES_H
-  socket = (int)__u->fd[socket].handle;
-#endif
+  if ( !socketwatch_pollword )
+    return;
 
-  if (socketwatch_pollword)
-    _swi(SocketWatch_Register, _INR(0,2),
-           socketwatch_pollword, bitmask, socket);
+  if ( newinternet )
+  {
+    pollwordinfo pwi;
+
+    pwi.pollword = (unsigned long *) socketwatch_pollword;
+    pwi.bitpos = 0;
+    ioctl( socket, FIOPOLLWORD, &pwi );
+  }
+  else
+  {
+    const unsigned int bitmask = 1;
+
+    _swi(SocketWatch_Register, _INR(0,2), socketwatch_pollword, bitmask, socket);
+  }
 }
 
 void socketwatch_deregister(int socket)
 {
-#ifdef __UNIXLIB_TYPES_H
-  socket = (int)__u->fd[socket].handle;
-#endif
+  if ( !socketwatch_pollword )
+    return;
 
-  if (socketwatch_pollword)
+  if ( newinternet )
+  {
+    pollwordinfo pwi;
+
+    pwi.pollword = 0;
+    pwi.bitpos = 0;
+
+    ioctl( socket, FIOPOLLWORD, &pwi );
+  }
+  else
+  {
     _swi(SocketWatch_Deregister, _INR(0,1), socket, socketwatch_pollword);
+  }
 }
 
 void socketwatch_initialise(void)
 {
   _kernel_oserror *e;
-  
-  e = _swix(SocketWatch_AllocPW, _OUT(0), &socketwatch_pollword);
+
+  /*
+   * The only 100% surefire way to ensure FIOPOLLWORD is available
+   * in the active internet module, is to try it!
+   */
+  int testsock = socket( AF_INET, SOCK_STREAM, PF_UNSPEC );
+  if ( -1 != testsock )
+  {
+    pollwordinfo pwi;
+
+    pwi.pollword = 0;
+    pwi.bitpos = 0;
+
+    if ( !ioctl( testsock, FIOPOLLWORD, &pwi ) )
+      newinternet = true;
+
+    close( testsock );
+  }
+
+  if ( newinternet )
+    e = _swix(OS_Module, _IN(0)|_IN(3)|_OUT(2), 6, 4, &socketwatch_pollword);
+  else
+    e = _swix(SocketWatch_AllocPW, _OUT(0), &socketwatch_pollword);
+
   if (e)
   {
     socketwatch_pollword = NULL;
@@ -76,7 +125,11 @@ void socketwatch_finalise(void)
 {
   if (socketwatch_pollword)
   {
-    _swi(SocketWatch_DeallocPW, _IN(0), socketwatch_pollword);
+    if ( newinternet )
+      _swi(OS_Module, _IN(0)|_IN(2), 7, socketwatch_pollword);
+    else
+      _swi(SocketWatch_DeallocPW, _IN(0), socketwatch_pollword);
+
     socketwatch_pollword = NULL;
   }
 }
