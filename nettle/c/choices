@@ -828,8 +828,8 @@ void win_panecols_click(int x, int y, int buttons, int icon_handle)
     block.flags = 0;
     block.title = title;
     block.bl.x = window.min.x + icon.max.x;
-    block.bl.y = 0x80000000;
-    block.tr.x = 0x7FFFFFFF;
+    block.bl.y = (int) 0x80000000;
+    block.tr.x = (int) 0x7FFFFFFF;
     block.tr.y = window.max.y + icon.max.y;
     block.zero1 = block.zero0 = 0;
     block.colour = get_colour_icon(icon_handle-8, true);
