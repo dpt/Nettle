@@ -14,6 +14,7 @@
 #include "misc.h"
 #include "nettle.h"
 #include "quit.h"
+#include "scripts.h"
 #include "sockwatch.h"
 #include "termlist.h"
 #include "wimp.h"
@@ -37,6 +38,7 @@ void closedown_application(void)
   lose_termlist_menu();
   socketwatch_finalise();
   lose_templates();
+  script_closedown();
 
   close_log(true);
 
