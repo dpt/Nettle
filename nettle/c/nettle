@@ -268,7 +268,7 @@ static void start_connection_int (struct connection_params *params )
   session = malloc(sizeof(struct session_struct));
   if (session == NULL)
   {
-    generror("TooMany", true); /* ought to give a different message, really */
+    generror("OutOfMem", true);
     return;
   }
 
@@ -381,8 +381,8 @@ static void start_connection_int (struct connection_params *params )
   clear_screen(session,
                0,
                session->terminal_size.x*(session->terminal_size.y+session->scrollback),
-               7,
-               0,
+               NETTLE_COLOUR_NORMAL_WHITE,
+               NETTLE_COLOUR_NORMAL_BLACK,
                0,
                ' ');
 
@@ -468,10 +468,10 @@ static void start_connection_int (struct connection_params *params )
 
   switch (session->line_editor_type)
   {
-    case LINEEDIT_NONE:
+    case LINEEDIT_NONE: case LINEEDIT_CHECKBOX_OFF:
       set_caret_position(session->window_handle,-1,-1,-1);
       break;
-    case LINEEDIT_CHECKBOX:
+    case LINEEDIT_CHECKBOX_ON:
     {
       char string[1024];
       set_caret_position(session->pane_handle,1,-1,
@@ -722,7 +722,7 @@ void reset_terminal(struct session_struct *session)
   session->other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE;
   session->current_fg=7;
   session->current_bg=0;
-  session->current_flags=0;
+  session->current_flags=NETTLE_FLAG_VALID;
   session->escape_string_length=0;
   session->escape_state=NETTLE_ESCAPE_NONE;
   session->scroll_start=1;
@@ -759,7 +759,7 @@ bool valid_x(struct session_struct *session, int xpos)
 {
   if (xpos<0 || xpos>=session->terminal_size.x)
   {
-    printf("Attempt to write outside alternate line, X position %d\n", xpos);
+    printf("Attempt to read/write outside alternate line, X position %d\n", xpos);
     return false;
   }
   return true;
@@ -769,7 +769,7 @@ bool valid_y(struct session_struct *session, int ypos)
 {
   if (ypos<0 || ypos>=session->terminal_size.y+session->scrollback)
   {
-    printf("Attempt to write outside assigned area %p, Y position %d\n", session, ypos);
+    printf("Attempt to read/write outside assigned area %p, Y position %d\n", session, ypos);
     return false;
   }
   return true;
@@ -779,7 +779,7 @@ bool valid_alt_y(struct session_struct *session, int ypos)
 {
   if (ypos<0 || ypos>=session->terminal_size.y)
   {
-    printf("Attempt to write outside alternate area %p, Y position %d\n", session, ypos);
+    printf("Attempt to read/write outside alternate area %p, Y position %d\n", session, ypos);
     return false;
   }
   return true;
@@ -995,8 +995,8 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     clear_screen(session,
                  0,
                  session->terminal_size.x*(session->terminal_size.y+session->scrollback),
-                 7,
-                 0,
+                 NETTLE_COLOUR_NORMAL_WHITE,
+                 NETTLE_COLOUR_NORMAL_BLACK,
                  0,
                  ' ');
 
