@@ -1,0 +1,397 @@
+/**
+ * Processing code -- ESC sequences
+ * (C) Nettle developers 2000-2002
+ *
+ * $Id$
+ */
+
+#include <stddef.h>
+
+#include "generic.h"
+#include "globals.h"
+
+#include "process.h"
+
+extern bool process_escape_length_x(struct session_struct *session);
+bool process_escape_length_3(struct session_struct *session);
+bool process_escape_length_2(struct session_struct *session);
+
+bool process_escape(struct session_struct *session)
+{
+  bool done=false;
+
+  switch (session->escape_string_length)
+  {
+    case 0:
+    case 1:
+      done=false;
+      break;
+    case 2:
+      done=process_escape_length_2(session);
+      break;
+    case 3:
+      done=process_escape_length_3(session);
+    default:
+      if (!done)
+      {
+        done=process_escape_length_x(session);
+      }
+      break;
+  }
+
+  if (done)
+  {
+    /*printf("Processed escape sequence: ");
+    {
+      int loop;
+
+      for (loop=0; loop<session->escape_string_length; loop++)
+        printf("%c",session->escape_string[loop]);
+
+      printf("\n");
+    }*/
+
+    session->escape_string_length=0;
+    session->escape_state=NETTLE_ESCAPE_NONE;
+  }
+
+  return done;
+}
+
+
+bool process_escape_length_2(struct session_struct *session)
+{
+  bool done=false;
+
+  switch (session->escape_string[0])
+  {
+    case 27:
+      switch (session->escape_string[1])
+      {
+        case '=':
+          /* Selects application keypad mode */
+          session->other_session_flags |= NETTLE_OTHER_APPLI_MODE;
+          done=true;
+          break;
+        case '>':
+          /* Selects numeric keypad mode */
+          session->other_session_flags &= ~NETTLE_OTHER_APPLI_MODE;
+          done=true;
+          break;
+        case '<':
+          /* Enter ANSI mode */
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            session->other_session_flags &= ~NETTLE_OTHER_VT52_MODE;
+            done=true;
+          }
+          break;
+        case '\\':
+          /* End Device Control String (no effect here - this is to allow for variants of */
+          /* title bar content changing) */
+          done=true;
+          break;
+        case '7':
+          /* Save cursor position */
+          if (!(session->other_session_flags & NETTLE_OTHER_VT52_MODE))
+          {
+            save_cursor_position (session);
+            done=true;
+          }
+          break;
+        case '8':
+          /* Restore cursor position */
+          if (!(session->other_session_flags & NETTLE_OTHER_VT52_MODE))
+          {
+            restore_cursor_position (session);
+            done=true;
+          }
+          break;
+        case 'A':
+          /* Cursor up (in VT52 mode) */
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            if (session->pos.y>session->scrollback)
+              session->pos.y--;
+
+            done=true;
+          }
+          break;
+        case 'B':
+          /* Cursor down (in VT52 mode) */
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            if (session->pos.y<session->terminal_size.y+session->scrollback-1)
+              session->pos.y++;
+
+            done=true;
+          }
+          break;
+       case 'C':
+          /* Cursor right (in VT52 mode) */
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            if (session->pos.x<session->terminal_size.x-1)
+              session->pos.x++;
+
+            done=true;
+          }
+          break;
+        case 'D':
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            /* Move cursor left (in VT52 mode) */
+            if (session->pos.x>0)
+              session->pos.x--;
+          }
+          else
+          {
+            /* Moves cursor down one line (in non-VT52 mode) */
+            session->pos.y++;
+            reprocess_position_scroll(session);
+          }
+          done=true;
+          break;
+        case 'E':
+          if (!(session->other_session_flags & NETTLE_OTHER_VT52_MODE))
+          {
+            /* Carriage return and line feed */
+            session->pos.y++;
+            session->pos.x=0;
+            reprocess_position(session);
+            done=true;
+          }
+          break;
+        case 'F':
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            /* Enter "graphics" Mode */
+            done=true;
+          }
+          break;
+        case 'G':
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            /* Exit "graphics" Mode */
+            done=true;
+          }
+          break;
+        case 'H':
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            /* Cursor to home (VT52 mode) */
+            session->pos.x=0;
+            session->pos.y=session->scrollback;
+          }
+          else
+          {
+            /* Set tab (non-VT52 mode) */
+            if (session->number_of_tabs<MAX_TAB_NUMBER)
+            {
+              session->tabs[session->number_of_tabs]=session->pos.x;
+              session->number_of_tabs++;
+            }
+            else
+            {
+              printf("Error: too many tabs, ignored\n");
+            }
+          }
+          done=true;
+          break;
+        case 'I':
+          /* Reverse line feed */
+          session->pos.y--;
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            reprocess_position_scroll(session);
+          }
+          done=true;
+          break;
+        case 'J':
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            /* Erase to end of screen */
+            changedbox_update (0, session->pos.y,
+                               session->terminal_size.x - 1,
+                               session->scrollback + session->terminal_size.y - 1);
+            clear_screen(session,
+
+                       ((session->pos.y*session->terminal_size.x)+
+                       session->pos.x),
+
+                       (session->terminal_size.x*
+                       (session->terminal_size.y+session->scrollback)),
+
+                       session->current_fg,
+                       session->current_bg,
+                       session->current_flags,
+                       32);
+            done=true;
+          }
+          break;
+        case 'K':
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            /* Erase to end of line */
+            changedbox_update (session->pos.x, session->pos.y,
+                               session->terminal_size.x - 1, session->pos.y);
+            clear_screen(session,
+
+                       ((session->pos.y*session->terminal_size.x)+
+                         session->pos.x),
+
+                       (session->pos.y+1)*session->terminal_size.x,
+
+                       session->current_fg,
+                       session->current_bg,
+                       session->current_flags,
+                       32);
+            done=true;
+          }
+          break;
+        case 'M':
+          if (!(session->other_session_flags & NETTLE_OTHER_VT52_MODE))
+          {
+            session->pos.y--;
+            reprocess_position_scroll(session);
+            done=true;
+          }
+          break;
+        case 'c':
+          if (!(session->other_session_flags & NETTLE_OTHER_VT52_MODE))
+          {
+            reset_terminal(session);
+            session->pos.x=0;
+            session->pos.y=session->scrollback;
+            done=true;
+          }
+          break;
+        case 'Z':
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            char block[3];
+            block[0]='\x1B';
+            block[1]='/';
+            block[2]='Z';
+            nettle_senddata(session,block,3);
+            done=true;
+          }
+          else
+          {
+            primary_da_request(session);
+            done=true;
+          }
+          break;
+      }
+      break;
+    case 255:
+      switch (session->escape_string[1])
+      {
+        case TELNET_DATAMARK:
+          done=true;
+          break;
+        case TELNET_GA:
+          done=true;
+          break;
+        case TELNET_IAC:
+          byte_default(session, 255);
+          done=true;
+          break;
+      }
+      break;
+  }
+
+  return done;
+}
+
+bool process_escape_length_3(struct session_struct *session)
+{
+  bool done=false;
+
+  switch (session->escape_string[0])
+  {
+    case 27:
+      switch (session->escape_string[1])
+      {
+        case ' ':
+          /* Set C1 Control Transmission */
+          if (session->terminal_mode==2)
+          {
+            switch (session->escape_string[2])
+            {
+              case 'F':
+                /* 7-bit */
+                session->bit_controls=false;
+                done=true;
+                break;
+              case 'G':
+                /* 8-bit */
+                session->bit_controls=true;
+                done=true;
+                break;
+            }
+          }
+          break;
+        case '(': case ')': case '*': case '+':
+          determine_character_set(session);
+          done=true;
+          break;
+        case '#':
+          switch (session->escape_string[2])
+          {
+            case '3': case '4': case '5': case '6':
+              /* various font size alterations - not supported */
+              break;
+            case '8':
+              /* Clear screen with E's */
+              changedbox_update_whole ();
+              clear_screen(session,
+
+                           session->scrollback*session->terminal_size.x,
+
+                           (session->terminal_size.x*
+                           (session->terminal_size.y+session->scrollback)),
+
+                           session->current_fg,
+                           session->current_bg,
+                           0,
+                           'E');
+              break;
+          }
+          done=true;
+          break;
+      }
+      break;
+    case 255:
+      {
+        /* IAC */
+
+        int iac_type=session->escape_string[1];
+
+        switch (iac_type)
+        {
+        case TELNET_WILL: /* Informational/Confirmational - remote end says it will do something */
+          handle_iac_will(session);
+          done = true;
+          break;
+        case TELNET_WONT: /* Informational/Confirmational - remote end says it will NOT do something */
+          handle_iac_wont(session);
+          done = true;
+          break;
+
+        case TELNET_DO:   /* Request/Ack - remote end wants us to do something */
+          handle_iac_do(session);
+          done = true;
+          break;
+        case TELNET_DONT: /* Refusal/NAck - remote end refuses to do something (which maybe we asked it to do) */
+          handle_iac_dont(session);
+          done = true;
+          break;
+        }
+
+      }
+      break; /* case iac */
+  }
+
+  return done;
+}
