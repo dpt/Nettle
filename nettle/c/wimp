@@ -52,7 +52,7 @@ static colour_t zap_palette[16];
 static int menu_window, menu_icon; /* for use with the currently-open menu */
 static int colourpicker_handle;
 
-static bool generror_question(char *string);
+static bool generror_question(const char *string);
 static void create_iconbar_menu(void);
 static void create_lineeditor_type_menu(void);
 static void open_open_window(bool open_window_flag);
@@ -963,7 +963,7 @@ static void win_panehot_click(int x, int y, int buttons, int icon_handle)
     case icon_panehot_delete:
       if (0)/* if(something is selected) */
       {
-        if (generror_question((void *)lookup_static("DeleteHot")))
+        if (generror_question(lookup_static("DeleteHot")))
         {
           /* delete it! */
         }
@@ -2267,7 +2267,7 @@ void generror(const char *string, bool is_message)
 
 
 
-static bool generror_question(char *string)
+static bool generror_question(const char *string)
 {
   struct wimp_reporterror_block block;
 

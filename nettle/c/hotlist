@@ -19,7 +19,7 @@ static hotlistnode *hotlisttail = NULL;
 static int items = 0;
 static int *menublock = NULL;
 
-static int hash_type(hotlisttype *type, char *value)
+static int hash_type(hotlisttype *type, const char *value)
 {
   if (strncmp(value,"telnet",6)==0)
     *type = ht_telnet;
@@ -32,7 +32,7 @@ static int hash_type(hotlisttype *type, char *value)
   return 0;
 }
 
-static int hash_term(unsigned char *type, char *value)
+static int hash_term(unsigned char *type, const char *value)
 {
   int i;
   *type = 0;
@@ -48,7 +48,7 @@ static int hash_term(unsigned char *type, char *value)
   return 1;
 }
 
-static int read_hot_string(char **dest, char *value, char *check, char *compare)
+static int read_hot_string(char **dest, char *value, char *check, const char *compare)
 {
   if (strncmp(check,compare,strlen(compare))==0)
   {
@@ -62,7 +62,7 @@ static int read_hot_string(char **dest, char *value, char *check, char *compare)
   return 0;
 }
 
-static int read_hot_number(unsigned short *dest, char *value, char *check, char *compare)
+static int read_hot_number(unsigned short *dest, char *value, char *check, const char *compare)
 {
   if (strncmp(check,compare,strlen(compare))==0)
   {
@@ -74,7 +74,7 @@ static int read_hot_number(unsigned short *dest, char *value, char *check, char 
   return 0;
 }
 
-static int read_hot_present(char *flag, char *value, char *check, char *compare)
+static int read_hot_present(char *flag, char *value, char *check, const char *compare)
 {
   *flag = '\0';
   if (strncmp(check,compare,strlen(compare))==0)
@@ -206,7 +206,7 @@ static void create_entry(char *title, FILE *in)
   } while (str);
 
 errbarf:
-  generror((void*)lookup_static("BadHotlist"), false);
+  generror((const void*)lookup_static("BadHotlist"), false);
 error:
   if (node)
   {
