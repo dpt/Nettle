@@ -9,13 +9,13 @@
 #include "globals.h"
 
 #include "choices.h"
-#include "messages.h"
-#include "misc.h"
-#include "wimp.h"
-#include "wimputil.h"
-#include "templ.h"
 #include "hotlist.h"
 #include "lineedit.h"
+#include "messages.h"
+#include "misc.h"
+#include "templ.h"
+#include "wimp.h"
+#include "wimputil.h"
 #include "zapredraw.h"
 
 #include <errno.h>
@@ -441,7 +441,7 @@ bool win_choices_read(int save)
   /* if we're saving, save now */
   if (save_choices() == false)
     return false;
-  
+
   return finish_hotlist_editing(2);
 }
 
@@ -514,7 +514,7 @@ static colour_t get_colour_icon(int colour_handle, bool is_an_icon)
 void win_choices_click (int x, int y, int buttons, int icon_handle)
 {
   close_window(win_hotedit);
-  
+
   switch (icon_handle)
   {
     case icon_choices_size:
@@ -593,7 +593,7 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
         close_choices_window();
       else
         open_choices_window();
-        
+
       finish_hotlist_editing(0);
       break;
 

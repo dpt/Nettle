@@ -171,6 +171,8 @@ struct session_struct
 
   char *spool_file_name;        /* pointer to spool filename */
   FILE *spool_file_handle;      /* spool file handle */
+  bool spool_raw;               /* Whether we're writing raw data to spool or not */
+  int spool_time;               /* Time of last spool */
 };
 
 extern struct session_struct *sessions;

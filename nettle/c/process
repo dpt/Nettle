@@ -11,14 +11,15 @@
 #include "graphics.h"
 #include "keyboard.h"
 #include "lineedit.h"
+#include "messages.h"
 #include "misc.h"
 #include "nettle.h"
 #include "process.h"
 #include "seln.h"
+#include "spool.h"
 #include "wimp.h"
 #include "wimputil.h"
 #include "zapredraw.h"
-#include "messages.h"
 
 static struct session_struct *changedsession;
 static struct coordspair changedbox;
@@ -1911,7 +1912,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                     sprintf(block,"%s?6x;1;6c",csi_sequence);
 
-                    block[4]=session->terminal_mode+48;
+                    block[2+strlen(csi_sequence)]=session->terminal_mode+48;
 
                     nettle_senddata(session,block,strlen(block));
                   }
@@ -2632,14 +2633,18 @@ void process_data(struct session_struct *session, char byte)
     }
     else
     {
-      /*if (byte>=32 || (session->escape_string_length>0 && session->escape_string[0]==TELNET_IAC))
-      {*/
+      if ((session->escape_string[0]==TELNET_IAC) ||
+          (session->escape_string[0]==27 && (byte<8 || byte>13)))
+      {
         session->escape_string[session->escape_string_length]=byte;
         session->escape_string_length++;
-      /*}*/
-      done = process_escape(session);
+        done = process_escape(session);
+      }
     }
   }
+
+  if (session->spool_file_name!=NULL && session->spool_raw)
+    spool_byte(session, byte);
 
   if (session->escape_state==NETTLE_ESCAPE_ESCAPE)
   {
@@ -2651,6 +2656,14 @@ void process_data(struct session_struct *session, char byte)
 
   if (!done)
   {
+    if (session->spool_file_name!=NULL && !(session->spool_raw))
+    {
+      if (byte>=10 && byte<=12)
+      {
+        spool_byte(session, byte);
+      }
+    }
+
     switch (byte)
     {
       /* VT codes */
@@ -2730,6 +2743,11 @@ void process_data(struct session_struct *session, char byte)
         if (session->escape_state==NETTLE_ESCAPE_NONE)
         {
                 byte_default          (session, byte);
+
+          if (session->spool_file_name!=NULL && !(session->spool_raw))
+          {
+            spool_byte(session, byte);
+          }
         }
         break;
     }

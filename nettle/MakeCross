@@ -30,7 +30,7 @@ TEMPLATES = !Nettle/Resources/UK/Templates,fec
 OBJS = chardefn.o choices.o dnslib.o globals.o init.o keyboard.o lineedit.o \
        main.o misc.o hotlist.o nettle.o process.o socket.o quit.o seln.o \
        wimp.o zapgen.o fortify.o sockwatch.o messages.o termlist.o \
-       wimputil.o url.o
+       wimputil.o url.o spool.o
 
 RUNIMAGE = !Nettle/!RunImage,ff8
 

@@ -11,12 +11,12 @@
 
 #include "hotlist.h"
 #include "misc.h"
-#include "wimp.h"
 #include "messages.h"
-#include "templ.h"
-#include "wimputil.h"
 #include "nettle.h"
-#include <string.h>
+#include "templ.h"
+#include "wimp.h"
+#include "wimputil.h"
+
 #include <time.h>
 #include <ctype.h>
 

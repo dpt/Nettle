@@ -10,16 +10,17 @@
 
 #include "lineedit.h"
 #include "main.h"
+#include "messages.h"
 #include "misc.h"
 #include "nettle.h"
 #include "process.h"
 #include "seln.h"
 #include "socket.h"
+#include "spool.h"
 #include "templ.h"
 #include "wimp.h"
 #include "wimputil.h"
 #include "zapredraw.h"
-#include "messages.h"
 
 
 static void allocate_zapredraw_area(int, int, int);
@@ -610,6 +611,12 @@ void remove_session(struct session_struct *session)
   /* free the data area and title */
   delete_terminal(session);
   free(session->title);
+
+  /* close the spool if any */
+  if (session->spool_file_name!=NULL)
+  {
+    spool_close(session, true);
+  }
 
   if (session->prev)
   {

@@ -15,9 +15,6 @@
  */
 
 
-#include <string.h>
-#include <stdlib.h>
-
 #include "generic.h"
 #include "globals.h"
 
@@ -78,9 +75,9 @@ static int url_antload(const char *url)
 {
   char buf[512];
   char *off;
-  
+
   off = strchr(url, ':');
-  
+
   /* our url request wasn't answered :-( */
   /* try an Alias$URLOpen, instead */
   if (off == NULL)
@@ -96,8 +93,8 @@ static int url_antload(const char *url)
 
   if (_swix(Wimp_StartTask, _IN(0), buf + sizeof("Alias$") - 1) != NULL)
     return -1;
-    
-  
+
+
   return 0;
 }
 
@@ -116,7 +113,7 @@ static int url_acornlaunch(const char *url)
   int taskhan = 0;
   int success = 1;
   int flags;
-  
+
   if (_swix( Wimp_ReadSysInfo, _IN(0) | _OUT(0), 5, &taskhan) != NULL)
     success = 0;
 
@@ -159,7 +156,7 @@ void url_bounce(user_message *mess)
 
     if (url_antload(buf) == -1)
       url_failed();
-    
+
     /* we haven't acknowledged the returnresult message, so the URI
      * handler task will automatically free the URI */
 

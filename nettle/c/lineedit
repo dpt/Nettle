@@ -5,9 +5,6 @@
  * $Id$
  */
 
-#include <assert.h>
-#include <math.h>
-
 #include "generic.h"
 #include "globals.h"
 

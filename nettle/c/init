@@ -17,10 +17,10 @@
 #include "quit.h"
 #include "sockwatch.h"
 #include "templ.h"
-#include "wimp.h"
-#include "zapredraw.h"
-#include "wimputil.h"
 #include "url.h"
+#include "wimp.h"
+#include "wimputil.h"
+#include "zapredraw.h"
 
 #define MAX_TEMPLATES 11
 #define LOAD_TEMPLATE_NO_FONTS          (int *)(-1)

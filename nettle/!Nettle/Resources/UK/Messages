@@ -112,3 +112,7 @@ HotBlankCommand:Please enter a command
 HotBadWidth:Bad terminal width
 HotBadHeight:Bad terminal height
 HotBadScroll:Bad scrollback size
+
+SpoolAlreadyOpen:There is already an open spool for this session. (NB this should never happen)
+SpoolFailedToOpen:Failed to open a spool to the filename
+SpoolFailNonPermanent:Cannot open spools to non-permanent locations (ie. other applications)

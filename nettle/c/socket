@@ -30,8 +30,8 @@
 
 #include "netdb.h"
 
-#include "sockwatch.h"
 #include "socket.h"
+#include "sockwatch.h"
 
 
 
@@ -91,7 +91,7 @@ int socket_connected(int socket_handle)
   FD_ZERO(&fds);
   FD_SET(socket_handle, &fds);
   numready = select(socket_handle+1, NULL, &fds, NULL, &timeout);
-  
+
   if (numready == -1 || (numready > 0 && FD_ISSET(socket_handle, &fds)))
   {
     /* either select returned an error (so we look at the socket to

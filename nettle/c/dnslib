@@ -6,21 +6,15 @@
  * $Id$
  */
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include "kernel.h"
-
-#include "swis.h"
+#include "generic.h"
 
 #include "arpa/inet.h" /* inet_aton */
 #include "netdb.h" /* gethostname */
 #include "sys/errno.h"
 #include "sys/socket.h" /* AF_INET */
 
-#include "generic.h"
-#include "misc.h"
 #include "dnslib.h"
+#include "misc.h"
 
 #define Resolver_GetHost 0x46001
 

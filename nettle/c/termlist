@@ -8,10 +8,11 @@
 #include "generic.h"
 #include "globals.h"
 
-#include "termlist.h"
 #include "messages.h"
 #include "nettle.h"
+#include "termlist.h"
 #include "wimp.h"
+
 #include <ctype.h>
 
 
@@ -77,13 +78,13 @@ create_termlist_menu (void)
                                   node->connection_type == NETTLE_TELNET ? "snettle_telnt" :
                                   "snettle_task");
     menublock[position++]=strlen(node->label)+1;
-    
+
     if (menublock[position-1]+1 * 16 > wide)
       wide =  menublock[position-1]+1 * 16;
 
     node = node->next;
   }
-  
+
   menublock[4] = wide;
 
   return menublock;

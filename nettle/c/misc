@@ -5,8 +5,6 @@
  * $Id$
  */
 
-#include <assert.h>
-
 #include "generic.h"
 #include "globals.h"
 
@@ -305,7 +303,7 @@ char *strndup(const char *s, size_t len)
 
   if (s == NULL)
     return NULL;
-  
+
   t = malloc(len + 1);
   if (t == NULL)
     return NULL;
