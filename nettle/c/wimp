@@ -3107,13 +3107,9 @@ static void set_colour_icon(int colour_handle, colour_t colour, bool is_an_icon)
     return;
   }
 
-  validation = get_icon_validation (win_panecols, icon_handle);
+  validation = get_icon_validation(win_panecols, icon_handle);
 
-  /* Get around different lengths of initial validation strings */
-  if (colour_handle<8)
-    sprintf (validation + 11, "%6lX", colour >> 8);
-  else
-    sprintf (validation + 12, "%6lX", colour >> 8);
+  sprintf(validation, "R2;C/%06X", ((unsigned int) colour) >> 8);
 
   set_icon_state (win_panecols, icon_handle, 0, 0);
 }
@@ -3137,8 +3133,8 @@ static colour_t get_colour_icon(int colour_handle)
   }
 
   validation = get_icon_validation (win_panecols, icon_handle);
-  colour = 0;
-  sscanf (validation + 5, "%6X", &colour);
+
+  colour = strtoul(validation + 5, NULL, 16);
   return (colour << 8);
 }
 
