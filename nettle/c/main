@@ -22,6 +22,7 @@ bool main_requirenull = false; /* this is set to true if anything decides it
                                  * data waiting than they want to handle
                                  * and during dns / connect, etc.) */
 
+const char *__dynamic_da_name = "Nettle Heap";
 
 
 int main(void)
