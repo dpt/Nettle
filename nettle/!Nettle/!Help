@@ -349,10 +349,39 @@ Release History
 
 0.2040pre : October 20th, 2003
     New Features:
-    
+      Updated to 32bit build.  Runs on 26bit and 32bit RISC OS.
+      Added "Reconnect" menu item to reconnect dead sessions
+      Sprites11 highres icons added
+      Local terminal Options setting (on terminal menu)
+TBI   Scroll to bottom of terminal on keypress option
+TBI   Utilise RISC OS Select socket pollwords (unrequire Sockwatch)
+
     Changes/Improvements:
-    
+      Moved to StubsG for everything.  One sane build environment
+      Ensure correct use of SocketWatch module
+      Ensure correct use of ZapRedraw module. Ensure at least 0.39 used
+      Don't gobble DA address space for ZapRedraw area
+      Improved icons
+      Better selection handling
+      Keep to hires font in EY0 modes
+
     Bugs fixed:
+      Shift-PageUp/Down are properly handled locally to move scrollbar
+      Updates to French resources
+      Correct pasting of line endings and chomping of multiples
+      Handle inverted commas in ANSI task commands correctly
+      Cope with insane scroll regions being requested
+      Improved handling of linefeeds in scroll regions
+      Terminal resizing bug solved
+      Allow line editor size to be altered properly
+      Other miscellaneous line editor fixes
+      Correctly handle dragging of files to line editor
+      Keep cursor-type menu open when choosing with Adjust
+      Correctly reset resize window on Adjust-Cancel
+      Correctly reset hotlist editor window on Adjust-Cancel
+      Cope with latest Castle C compiler
+      Cope with long URLs
+      Correctly implemented reverse tabulation command
 
 
 (C) Nettle developers, October 20th, 2003.
