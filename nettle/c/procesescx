@@ -925,12 +925,12 @@ bool process_escape_length_x(struct session_struct *session)
               break;
             case 'm':
               {
-                bool status=false;
+                bool emboldening=false;
                 int loop=2;
 
                 if (session->current_fg & 8)
                 {
-                  status=true;
+                  emboldening=true;
                 }
 
                 while (loop<session->escape_string_length)
@@ -945,11 +945,11 @@ bool process_escape_length_x(struct session_struct *session)
                   }
                   loop++;
 
-	          switch (atoi(string))
-	          {
-	            case 0:
+                  switch (atoi(string))
+                  {
+                    case 0:
                       /* Clear all attributes */
-                      status=false;
+                      emboldening=false;
                       session->current_fg=7;
                       session->current_bg=0;
                       session->current_flags=NETTLE_FLAG_VALID;
@@ -957,12 +957,11 @@ bool process_escape_length_x(struct session_struct *session)
                     case 1:
                       /* Bold */
                       session->current_fg |= 8;
-                      status=true;
+                      emboldening=true;
                       break;
                     case 4:
                       /* Underline */
                       session->current_flags |= NETTLE_FLAG_UNDERLINE;
-                      status=true;
                       break;
                     case 5:
                       /* Blink */
@@ -970,7 +969,18 @@ bool process_escape_length_x(struct session_struct *session)
                       session->want_blink = true;
                       want_blink = true; /* Don't need to call rehash_blink() here */
                       break;
-                    case 24:
+                    case 21:
+                      /* Normal intensity (bold off) [Linux only] -- standard is "Double underlined" */
+                      session->current_fg &= ~8;
+                      emboldening=false;
+                      break;
+                    case 22:
+                      /* Normal colour, normal intensity (bold off) */
+                      session->current_fg &= ~8;
+                      session->current_fg=7;
+                      emboldening=false;
+                      break;
+                   case 24:
                       /* Cancel underline */
                       session->current_flags &= ~NETTLE_FLAG_UNDERLINE;
                       break;
@@ -985,7 +995,7 @@ bool process_escape_length_x(struct session_struct *session)
                     case 30: case 31: case 32: case 33: case 34: case 35: case 36: case 37:
                       /* Foreground */
                       session->current_fg=atoi(string)-30;
-                      if (status)
+                      if (emboldening)
                       {
                         session->current_fg |= 8;
                       }
