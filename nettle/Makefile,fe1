@@ -4,8 +4,20 @@
 #
 # $Id$
 
+
+# Uncomment /these/ to use NetLib
+#NETINCLUDE = NetLib:
+#NETLIBS    = NetLib:o.netlib
+#NETLIBFLAG = 
+
+# Uncomment /these/ to use TCPIPLibs
+NETINCLUDE = TCPIPLibs:
+NETLIBS    = TCPIPLibs:o.socklib TCPIPLIBS:o.inetlib
+NETLIBFLAG = -DUSE_TCPIPLIB
+
+
 CC = cc
-CFLAGS = -c -strict -IC: -INetlib: -fa -apcs 3/26 -throwback -depend !Depend #-g #-DFORTIFY
+CFLAGS = -c -strict -IC: -I$(NETINCLUDE) -fa -apcs 3/26 -throwback -depend !Depend $(NETLIBFLAG) #-g #-DFORTIFY
 
 LINK = link
 LINKFLAGS = #-d
@@ -29,14 +41,15 @@ templheadr: templheadr.o
         $(LINK) -o $@ $(LINKFLAGS) $? C:o.stubs
 
 !Nettle.!RunImage:	$(OBJS)
-	$(LINK) -o $@ $(LINKFLAGS) $(OBJS) C:o.stubs Netlib:o.NetLib
-	squeeze $@
+	$(LINK) -o $@ $(LINKFLAGS) $(OBJS) C:o.stubs $(NETLIBS)
+	|squeeze $@
 
 clean:
 	$(WIPE) o.* $(WIPEFLAGS)
 
 templ.h: templheadr $(TEMPLATES)
-	<Prefix$Dir>.templheadr $(TEMPLATES) $@
+	If "<Prefix$Dir>" <> "" Then /<Prefix$Dir>.templheadr $(TEMPLATES) $@
+	If "<Prefix$Dir>" = ""  Then /templheadr $(TEMPLATES) $@
 
 .SUFFIXES: .o .s .c
 
