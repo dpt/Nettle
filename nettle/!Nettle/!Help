@@ -1,7 +1,7 @@
 Nettle - Telnet and terminal emulation for RISC OS
 ==================================================
 
-Version : 0.2010r : September 16th, 2001.
+Version : 0.2020r : February 20th, 2002.
 
 Nettle is *the* terminal emulator and telnet client for the RISC OS
 operating system. It utilises the ZapRedraw module for speedy display and
@@ -217,9 +217,7 @@ as it stands.  Here's a roughly ordered list of things that will be
 added in future versions.  Please feel free to submit new ideas:
 mailto:archifishal@users.sourceforge.net
 
-* More choices: F12 handling, blinking, blinking cursor...
 * ANSI commandline task shell for ANSI task window (ROSH)
-* Dynamic resize of terminal
 * Scroll to bottom on keypress
 * VT 320/420/510
 * rlogin
@@ -237,8 +235,6 @@ mailto:archifishal@users.sourceforge.net
 * ANSI task cannot be used as a "regular" taskwindow.
   - It never will, because it interprets codes as ANSI - that's its
     whole point in life.  This will be improved by "ROSH"
-* Doesn't abort desktop shutdown when connections are active
-* Clipboard pasting and file sending do not do LF translations for telnet.
 
 
 Release History
@@ -291,6 +287,49 @@ Release History
       Could sometimes continually swap cursor between two windows
       DNS lookup corrected
 
+0.2020r : February 20th, 2002
+    New features:
+      Iconised window naming
+      Cope with and translate control characters when pasting
+      Warn about open sessions on quit/shutdown
+      Paste URL/URI files rather than launching them
+      New choices section for 'miscellaneous' options (eg blinking)
+      Versioned choices files
+      Mouse support for Shift/Ctrl/Alt combinations
+      Dynamic resizing of window -- optionally only when CTRL is held
+      Accept user:pass@host format as a host entry for auto logon
+      Handling of "telnet:user:pass@host:port" URL format
+      Two types of terminal cursor : block or underline.
+      Character underline support
+      Display terminal size in scrollbar when dynamically resizing
+    
+    Changes/Improvements:
+      Multitasking speed when pasting large amounts
+      Optional line editor can now default to 'off'
+      Don't unnecessarily add blank spaces to end of lines
+      Allow pasting of HTML, ask user when pasting other types
+      RISC OS 3.5+ style error categories
+      Positioning of new terminal windows is more standardised
+      Better cursor drawing and display of 'ghost' cursor
+      Large memory savings -- smarter use of ZapRedraw
+      Terminal reset
+      Handle 'stop bold' command and use it in ANSI saving output
+    
+    Bugs fixed:
+      7bit/8bit VT escape sequences corrected
+      Selection of rows when dragging selection a long way out of window
+      Resizing on a mode change correctly
+      Position cursor correctly when terminal resizes
+      Hold on to selected area correctly when terminal resizes
+      Fixed crashing on font change
+      Ensure ZapRedraw at least 0.39 as we don't like earlier versions
+      Double-clicking on IPs now does what you'd expect it to
+      Swap top T bottom T around
+      Corrected shutdown sequence so that desktop can be shutdown cleanly
+      Some reasonably large internal cleanup and restructuring
+      Read size of toolsprites from WIMP -- correctly position line editor
+      Save as ANSI inserts proper ANSI sequences!
 
-(C) Nettle developers, September 16th, 2001.
+
+(C) Nettle developers, February 20th, 2002.
 
