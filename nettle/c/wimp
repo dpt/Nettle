@@ -725,7 +725,7 @@ void close_window(int window_handle)
   {
     if (session->socket_state == NETTLE_SESSION_CONNECTED)
     {
-      bool status = generror_question("ConnectionOpenButtons","ConnectionOpen");
+      bool status = generror_question("ConnectionOpenButtons","ConnectionOpen",0);
 
       if (!status)
         return;
@@ -768,7 +768,7 @@ static void close_program(void)
   quit_flag=true;
 
   if (connections_open)
-    quit_flag = generror_question("ConnectionMultiOpenButtons","ConnectionMultiOpen");
+    quit_flag = generror_question("ConnectionMultiOpenButtons","ConnectionMultiOpen",0);
 
   if (quit_flag && shutdown_flag==0)
   {
@@ -2269,6 +2269,22 @@ void wimp_message(union wimp_poll_block *wimp_block)
     {
       struct session_struct *session;
       int window_handle;
+      char *filename=wimp_block->user_message.contents.data_load.file_name;
+      char *tmp_filename;
+      bool is_scrap = false;
+      
+      /* You'd hope this wasn't necessary, but there's lots of broken apps out there! */
+      misc_zero_terminate_ctrl_string( filename );
+      
+      /* Now we (crudely) work out if we've been given a scrap transfer */
+      tmp_filename = malloc( strlen( filename )+1 );
+      if (tmp_filename)
+      {
+        strcpy( tmp_filename, filename );
+        if ( strstr( misc_string_lower( filename ),"wimp$scrap" ) )
+          is_scrap = true;
+        free( tmp_filename );
+      }
 
       if (msg_ref && your_ref != msg_ref && my_ref != msg_ref)
         break;
@@ -2277,15 +2293,13 @@ void wimp_message(union wimp_poll_block *wimp_block)
       window_handle = wimp_block->user_message.contents.data_load.window_handle;
       session = get_session_from_winhan(window_handle);
 
-      if (inkey(KEYBOARD_SHIFT))
+      if (inkey(KEYBOARD_SHIFT) && is_scrap==false)
       {
         /* Don't acknowledge as we just want the filename */
 
         if (session)
         {
-          char *text=wimp_block->user_message.contents.data_load.file_name;
-
-          process_data_transmission (session,text, strlen(text));
+          process_data_transmission (session, filename, strlen(filename));
         }
       }
       else
@@ -2309,11 +2323,25 @@ void wimp_message(union wimp_poll_block *wimp_block)
             if (session)
             {
               /* Prompt the user if they try to paste something other than those above */
-              /* We should get the filetype textual form via OS_FSControl 18 here */
+              /* We get the filetype textual form via OS_FSControl 18 */
+
+              int buff[3];
+              char *buf=(char *) &buff[0];
+
+              _swi(OS_FSControl, _IN(0)|_IN(2)|_OUTR(2,3),
+                   18,
+                   wimp_block->user_message.contents.data_save.filetype,
+                   &buff[0],
+                   &buff[1] );
+
+              buf[8]=0;
+              while (buf[0] && buf[ strlen(buf)-1 ] == ' ' )
+                buf[ strlen(buf)-1 ] = 0;
 
               if (generror_question("SureFileTypeLoadButtons",
                                     "SureFileTypeLoad",
-                                    wimp_block->user_message.contents.data_save.filetype))
+                                    1,
+                                    buf))
               {
                 if (paste_text_file (wimp_block))
                   reply_to_dataload (wimp_block);
