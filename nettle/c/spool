@@ -35,6 +35,9 @@ bool spool_open(struct session_struct *session, char *file_name, bool raw_bit)
   }
 
   session->spool_file_name=malloc(strlen(file_name)+1);
+  if (!session->spool_file_name)
+    return false;
+
   strcpy(session->spool_file_name, file_name);
 
   fclose(session->spool_file_handle);
