@@ -45,7 +45,7 @@ char *get_system_variable(char *variable, char *variable_name)
 
 int binary(char *string)
 {
-  int value;
+  int value = 0;
 
   while (*string!=0)
   {

@@ -101,6 +101,9 @@ int socket_listen(int port_number)
 
 void socket_close(int socket_handle)
 {
+  /* this is only needed for NetLib */
+  extern int close(int /*s*/);
+
   close(socket_handle);
 }
 
@@ -166,6 +169,7 @@ int socket_readdata_flags(int socket_handle, char * buffer, int length, int flag
 char *socket_readline(int socket_handle)
 {
   // Needs finished + other socket functions
+  return NULL;
 }
 
 int socket_senddata(int socket_handle, char * buffer, int length)

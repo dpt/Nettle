@@ -2319,6 +2319,7 @@ int decode_key(int session_handle, int key, char *block)
       if (session[session_handle].other_session_flags & NETTLE_OTHER_APPLI_MODE)
       {
         strcpy(block,"\x1BOC");
+        size_of_block=3;
       }
       else
       {
@@ -2331,6 +2332,7 @@ int decode_key(int session_handle, int key, char *block)
       if (session[session_handle].other_session_flags & NETTLE_OTHER_APPLI_MODE)
       {
         strcpy(block,"\x1BOB");
+        size_of_block=3;
       }
       else
       {
@@ -2447,6 +2449,10 @@ int decode_key(int session_handle, int key, char *block)
         sprintf(block,"%c",key);
         size_of_block=1;
       }
+      else
+      {
+        size_of_block=0;
+      }
       break;
   }
 
@@ -2460,14 +2466,18 @@ void work_out_character(int session_handle, int data, char byte)
   switch (session[session_handle].character_set)
   {
     case NETTLE_CHSET_G0:
+    default:
       character_set=session[session_handle].character_set_g0;
       break;
+
     case NETTLE_CHSET_G1:
       character_set=session[session_handle].character_set_g1;
       break;
+
     case NETTLE_CHSET_G2:
       character_set=session[session_handle].character_set_g2;
       break;
+
     case NETTLE_CHSET_G3:
       character_set=session[session_handle].character_set_g3;
       break;

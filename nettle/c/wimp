@@ -633,9 +633,12 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
     strcpy(string,read_icon_data(open,4));
 
-    if (strcmp(string,lookup("Telnet"))==0)     { connection_type=NETTLE_TELNET;     }
-    if (strcmp(string,lookup("SSH"))==0)        { connection_type=NETTLE_SSH;        }
-    if (strcmp(string,lookup("Taskwindow"))==0) { connection_type=NETTLE_TASKWINDOW; }
+    if (strcmp(string,lookup("SSH"))==0)
+      connection_type=NETTLE_SSH;
+    else if (strcmp(string,lookup("Taskwindow"))==0)
+      connection_type=NETTLE_TASKWINDOW;
+    else
+      connection_type=NETTLE_TELNET;
 
     switch (icon_handle)
     {
@@ -1810,9 +1813,12 @@ void open_open_window(bool open_window_flag)
 
   strcpy(string,read_icon_data(open,4));
 
-  if (strcmp(string,lookup("Telnet"))==0)     { connection_type=NETTLE_TELNET;     }
-  if (strcmp(string,lookup("SSH"))==0)        { connection_type=NETTLE_SSH;        }
-  if (strcmp(string,lookup("Taskwindow"))==0) { connection_type=NETTLE_TASKWINDOW; }
+  if (strcmp(string,lookup("SSH"))==0)
+    connection_type=NETTLE_SSH;
+  else if (strcmp(string,lookup("Taskwindow"))==0)
+    connection_type=NETTLE_TASKWINDOW;
+  else
+    connection_type=NETTLE_TELNET;
 
   switch (connection_type)
   {
@@ -1878,9 +1884,11 @@ void open_open_window(bool open_window_flag)
 
   switch (connection_type)
   {
-    case NETTLE_TELNET: case NETTLE_SSH:
+    case NETTLE_TELNET:
+    case NETTLE_SSH:
       set_caret_position(open, 0, -1, strlen(read_icon_data(open, 0)));
       break;
+
     case NETTLE_TASKWINDOW:
       set_caret_position(open, 7, -1, strlen(read_icon_data(open, 7)));
       break;

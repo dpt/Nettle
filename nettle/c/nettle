@@ -42,17 +42,22 @@ void start_connection(void)
 
   strcpy(string,read_icon_data(open,4));
 
-  if (strcmp(string,lookup("Telnet"))==0)     { connection_type=NETTLE_TELNET;     }
-  if (strcmp(string,lookup("SSH"))==0)        { connection_type=NETTLE_SSH;        }
-  if (strcmp(string,lookup("Taskwindow"))==0) { connection_type=NETTLE_TASKWINDOW; }
+  if (strcmp(string,lookup("SSH"))==0)
+    connection_type=NETTLE_SSH;
+  else if (strcmp(string,lookup("Taskwindow"))==0)
+    connection_type=NETTLE_TASKWINDOW;
+  else
+    connection_type=NETTLE_TELNET;
 
   strcpy(string,read_icon_data(open,9));
 
+  terminal_type = 0;
   for (loop=0; loop<8; loop++)
   {
     char term[7];
     sprintf(term,"Term%d",loop);
-    if (strcmp(string,lookup(term))==0) { terminal_type=loop; }
+    if (strcmp(string,lookup(term))==0)
+      terminal_type=loop;
   }
 
   switch (connection_type)
