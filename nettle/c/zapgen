@@ -1,6 +1,6 @@
 /*
  * Nettle zapgen code
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2002
  * $Id$
  */
 
@@ -43,19 +43,25 @@
 {                                                   \
   if (input->flags & NETTLE_FLAG_PLUS100)           \
   {                                                 \
-    ZAP_WRITE_MULTIBYTE(write, input->chr | 0x100); \
+    /* ZAP_WRITE_MULTIBYTE, but we know that the */ \
+    /* top byte is 1, so we shortcut it */          \
+    *write++ = ZR_CTRL;                             \
+    *write++ = ZR_CTRL_EXTEND;                      \
+    *write++ = (char) (input->chr);                 \
+    *write++ = (char) (1);                          \
   }                                                 \
   else                                              \
   {                                                 \
-    *write++ = input->chr;                          \
-    if (input->chr == ZR_CTRL)                      \
+    int c=input->chr;                               \
+    *write++ = c;                                   \
+    if (c == ZR_CTRL)                               \
       *write++ = 0;                                 \
   }                                                 \
 }
 
 
-char *
-zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
+
+char * zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
          int width, int first_line, int last_line, int session_flags,
          int selection_start_line, int selection_start_x,
          int selection_end_line, int selection_end_x)
@@ -200,7 +206,21 @@ zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
         }
       }
       else
-        ZAP_WRITE_CHAR(write, input);
+      {
+        if (input->flags & NETTLE_FLAG_UNDERLINE)
+        {
+          *write++ = ZR_CTRL;
+          *write++ = ZR_CTRL_MERGE;   /* character merge */
+          *write++ = bg;              /* foreground colour */
+          *write++ = fg;              /* background colour */
+          ZAP_WRITE_CHAR(write, input);
+          *write++ = '_';             /* The underline itself! */
+        }
+        else
+        {
+          ZAP_WRITE_CHAR(write, input);
+        }
+      }
 
       input++;
     }
@@ -213,15 +233,85 @@ zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
   return write;                 /* return ptr to the first unused byte */
 }
 
-/*************************************************** Gerph *********
- Function:     update_cursors
- Description:  Update the cursors in a given font_area
- Parameters:   font_area-> the area, as returned from load_font
- Returns:      none
- Note:         Will also update all the other special characters;
-               this is not intentional and should be replaced with
-               /just/ the cursors being updated.
- ******************************************************************/
+
+void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrollback)
+{
+  int size_of_row_pointers = ( terminal_size_y+scrollback+1 ) * 4;
+  int size_of_one_char     = 4  /* A colour change */
+                           + 4  /* Multibyte char */
+                           + 5; /* Underline */
+  int size_of_body         = ( terminal_size_x*(terminal_size_y+1) ) * size_of_one_char;
+  int size_of_eols         = ( terminal_size_y+1 )*2;
+  int size_of_cursor       = 8; /* 4bytes mb cursor, 4 bytes control */
+  
+  int calculate_new_size   = size_of_row_pointers + size_of_body + size_of_eols + size_of_cursor;
+
+  if (size_of_zapredraw_area < calculate_new_size)
+  {
+    int *new_zapredraw_area;
+
+    size_of_zapredraw_area = calculate_new_size;
+
+    if (dynamic_areas_available())
+    {
+      if (zapredraw_area_number==0)
+      {
+        char string[]="Nettle ZapRedraw area";
+
+        /* Note maximum size is -1 since potentially could be any size */
+        _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, size_of_zapredraw_area,
+                             -1, 0x80, -1, 0, -1, string, &zapredraw_area_number,
+                             &new_zapredraw_area);
+
+        assert(new_zapredraw_area != NULL);
+        zapredraw_area = new_zapredraw_area;
+      }
+      else
+      {
+        int current_size;
+
+        _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, zapredraw_area_number, &current_size);
+
+        if (size_of_zapredraw_area-current_size!=0)
+        {
+          _swi(OS_ChangeDynamicArea, _INR(0,1), zapredraw_area_number, size_of_zapredraw_area-current_size);
+        }
+      }
+    }
+    else
+    {
+      new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
+      assert(new_zapredraw_area != NULL);
+      zapredraw_area = new_zapredraw_area;
+    }
+  }
+}
+
+
+void lose_zapredraw_area(void)
+{
+  if (dynamic_areas_available())
+  {
+    if (zapredraw_area_number!=0)
+    {
+      _swi(OS_DynamicArea, _INR(0,1), 1, zapredraw_area_number);
+    }
+  }
+  else
+  {
+    free(zapredraw_area);
+  }
+}
+
+
+/*
+ * Description:  Update the cursors in a given font_area
+ * Parameters:   font_area-> the area, as returned from load_font
+ * Returns:      none
+ * Note:         Will also update all the other special characters;
+ *               this is not intentional and should be replaced with
+ *               /just/ the cursors being updated.
+ */
 void update_cursors(int *font_area)
 {
   int width  = font_area[2];
@@ -231,6 +321,7 @@ void update_cursors(int *font_area)
   /* fill in graphics chars */
   define_zap_chars(font_area+8, char_size, width, height);
 }
+
 
 int *load_font(char *font)
 {
@@ -477,7 +568,8 @@ create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
   /* Build the menu... */
   do
   {
-    struct {
+    struct
+    {
       int load, exec, length, attr, object_type;
       char name[256];
     } dir_entry;
@@ -610,8 +702,7 @@ bool create_zap_font_menu(int window_handle, int icon_handle)
 }
 
 
-void
-create_zap_font_submenu (const int *selection, struct coords open_at)
+void create_zap_font_submenu (const int *selection, struct coords open_at)
 {
   int loop;
 
@@ -645,15 +736,13 @@ create_zap_font_submenu (const int *selection, struct coords open_at)
 }
 
 
-void
-reopen_zap_font_menu (void)
+void reopen_zap_font_menu (void)
 {
   _swi (Wimp_CreateMenu, _INR(1,3), zapfont_menu[0], 0, 0);
 }
 
 
-void
-delete_zap_font_menu (void)
+void delete_zap_font_menu (void)
 {
   int loop;
   /* make sure that we've freed any memory that we may have allocated */
