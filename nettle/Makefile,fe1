@@ -5,7 +5,7 @@
 # $Id$
 
 CC = cc
-CFLAGS = -c -strict -IC: -INetlib: -fa -throwback -depend !Depend -DFORTIFY #-g
+CFLAGS = -c -strict -IC: -INetlib: -fa -apcs 3/26 -throwback -depend !Depend -DFORTIFY #-g
 
 LINK = link
 LINKFLAGS = #-d
@@ -14,7 +14,7 @@ WIPE = wipe
 WIPEFLAGS = ~CFR~V
 
 ASM = objasm
-ASMFLAGS =
+ASMFLAGS = -apcs 3/26
 
 OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o hotlist.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
