@@ -42,7 +42,7 @@ static void resize_line_editor_icons(struct session_struct *session, int width)
     _swix( Wimp_ResizeIcon, _INR(0,5), session->pane_handle, 1, width-48, -48, width, 0 );
 
   force_redraw(session->pane_handle, 0, -48, 1<<24, 0);
- 
+
   if (caret.window_handle==session->pane_handle)
   {
     set_caret_position(caret.window_handle, 0, -1, caret.index);
@@ -114,7 +114,7 @@ bool line_editor_active(struct session_struct *session)
   return false;
 }
 
-void lineedit_allocate_space(struct session_struct *session)
+void lineedit_allocate_space(struct session_struct *session, bool dont_discard)
 {
   int loop,width;
   struct wimp_createwindow_block window;
@@ -122,17 +122,20 @@ void lineedit_allocate_space(struct session_struct *session)
   bool has_checkbox = BOOL(session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON);
 
   /* Note - this *must* be called if the lineeditor is turned on at any point */
-  session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
-  assert(session->line_editor_history != NULL);
-  session->line_editor_position=0;
-  session->line_editor_total=1;
-
-  for (loop=0; loop<line_editor_size; loop++)
+  if (!dont_discard)
   {
-    strcpy(session->line_editor_history+(loop*512),"");
-  }
+    session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
+    assert(session->line_editor_history != NULL);
+    session->line_editor_position=0;
+    session->line_editor_total=1;
 
-  strcpy(session->line_editor_buffer,"");
+    for (loop=0; loop<line_editor_size; loop++)
+    {
+      strcpy(session->line_editor_history+(loop*512),"");
+    }
+
+    strcpy(session->line_editor_buffer,"");
+  }
 
   /* Create new pane window */
   window.min.x=102;
@@ -223,19 +226,22 @@ void lineedit_allocate_space(struct session_struct *session)
 
 }
 
-void lineedit_free_space(struct session_struct *session)
+void lineedit_free_space(struct session_struct *session, bool dont_discard)
 {
   /* Note - this *must* be called if the lineeditor is turned off at any point */
   struct wimp_deletewindow_block block;
 
-  if (session->line_editor_type == LINEEDIT_NONE)
-    return;
+  if (session->pane_handle)
+  {
+    block.window_handle=session->pane_handle;
 
-  block.window_handle=session->pane_handle;
+    _swix(Wimp_DeleteWindow, _IN(1), &block);
+    session->pane_handle = 0;
+  }
 
-  _swix(Wimp_DeleteWindow, _IN(1), &block);
-  session->pane_handle = 0;
-
-  free(session->line_editor_history);
-  session->line_editor_history = NULL;
+  if (dont_discard && session->line_editor_history)
+  {
+    free(session->line_editor_history);
+    session->line_editor_history = NULL;
+  }
 }
