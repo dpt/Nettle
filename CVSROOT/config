@@ -8,4 +8,4 @@
 # Set `TopLevelAdmin' to `yes' to create a CVS directory at the top
 # level of the new working directory when using the `cvs checkout'
 # command.
-TopLevelAdmin=Yes
+TopLevelAdmin=yes
