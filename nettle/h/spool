@@ -1,0 +1,16 @@
+/**
+ * Nettle spooling code headers
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#ifndef SPOOL_H
+#define SPOOL_H
+
+extern bool spool_open(struct session_struct *, char *, bool);
+extern void spool_close(struct session_struct *, bool);
+extern bool spool_save_event(void);
+extern void spool_byte(struct session_struct *, char);
+
+#endif /* SPOOL_H */

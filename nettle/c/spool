@@ -1,0 +1,125 @@
+/**
+ * Spooling code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#include "generic.h"
+#include "globals.h"
+
+#include "misc.h"
+#include "templ.h"
+#include "wimputil.h"
+
+bool spool_open(struct session_struct *session, char *file_name, bool raw_bit)
+{
+  if (session->spool_file_name!=NULL)
+  {
+    generror("SpoolAlreadyOpen",true);
+    return false;
+  }
+
+  session->spool_raw=raw_bit;
+
+  session->spool_file_handle=fopen(file_name, "w");
+  if (session->spool_file_handle==NULL)
+  {
+    char string[1024];
+
+    sprintf(string,"%s '%s'", lookup_static("SpoolFailedToOpen"), file_name);
+    generror(string, false);
+
+    return false;
+  }
+
+  session->spool_file_name=malloc(strlen(file_name));
+  strcpy(session->spool_file_name, file_name);
+
+  fclose(session->spool_file_handle);
+  session->spool_file_handle=NULL;
+
+  _swi(OS_File, _INR(0,2), 18, session->spool_file_name, 0xFFF);
+
+  session->spool_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
+
+  return true;
+}
+
+void spool_close(struct session_struct *session, bool force)
+{
+  int current_time;
+
+  if (session->spool_file_name==NULL)
+    return;
+
+  if (force)
+  {
+    free(session->spool_file_name);
+    session->spool_file_name=NULL;
+  }
+
+  if (session->spool_file_handle==NULL)
+    return;
+
+  current_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
+
+  if ((force) || (current_time > session->spool_time+500))
+  {
+    fclose(session->spool_file_handle);
+    session->spool_file_handle=NULL;
+  }
+}
+
+bool spool_save_event(void)
+{
+  char save_data[1024];
+
+  read_icon_data(win_spoolsave, icon_spoolsave_filename, save_data, sizeof(save_data));
+
+  if ((instr(save_data, ":")>=0))
+  {
+    struct wimp_geticonstate_block block;
+
+    block.window_handle= win_spoolsave;
+    block.icon_handle  =icon_spoolsave_raw;
+
+    _swi(Wimp_GetIconState, _IN(1), &block);
+
+    /* if selected bit is set, then we save with raw data */
+    if (block.icon_flags & (1<<21))
+    {
+      return spool_open(terminal_menu_session, save_data, true);
+    }
+    else
+    {
+      return spool_open(terminal_menu_session, save_data, false);
+    }
+  }
+  else
+  {
+    generror("ToSaveDrag", true);
+    return false;
+  }
+}
+
+
+/* log a byte to the log file */
+void spool_byte(struct session_struct *session, char character)
+{
+  if (session->spool_file_name==NULL)
+    return;
+
+  if (session->spool_file_handle == NULL)
+    session->spool_file_handle=fopen(session->spool_file_name, "a");
+
+  if (session->spool_file_handle == NULL)
+    session->spool_file_handle=fopen(session->spool_file_name, "w");
+
+  if (session->spool_file_handle == NULL)
+    return;
+
+  fputc(character, session->spool_file_handle);
+
+  session->spool_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
+}
