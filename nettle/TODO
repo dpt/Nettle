@@ -1,7 +1,6 @@
 
  $Id$ 
 
-New design hotlist code - the menu's still crap - will work on that on Sunday
 An example hotlist file (Choices:Nettle.Hotlist) would be:
 ---
 # Nettle Hotlist, saved on some day
@@ -9,17 +8,24 @@ An example hotlist file (Choices:Nettle.Hotlist) would be:
 Nice Host
 {
   host: 192.168.1.1
-  port: 23
   type: telnet
   term: vt220
   wide: 80
   high: 24
-  scrl: 5000
+  scrl: 200
+}
+
+Absolute MUSH
+{
+  host: absolute.spod.org:6250
+  type: telnet
+  high: 40
+  scrl: 1000
 }
 
 BASIC
 {
-  type: taskwindow
+  type: task
   cmnd: BASIC
 }
 ----
