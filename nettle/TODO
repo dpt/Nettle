@@ -5,11 +5,7 @@ This file needs some structure... ;-)
 
 Drag binary to ANSI Task open dialog command line
 
-Grey-out buttons on hotlist list editor when unavailable for clicking
-Drag items on hotlist
-Stop hotlist redrawing all items when one is clicked on
-
-menu widths
+Dmenu widths
  
 RO 3.1 bits (C icons, titlebar redraw...)
 
@@ -18,8 +14,6 @@ Wimp slot size settable for new tasks?
 // * Much faster terminal scrollback handling
 * Reordering of hotlist items within hotlist editor
 * More choices: F12 handling, blinking cursor...
-* Use global clipboard
-* Load data from dragged files
 * ANSI commandline task shell for ANSI task window (ROSH)
 * Dynamic resize of terminal
 * Scroll to bottom on keypress
@@ -29,8 +23,6 @@ Wimp slot size settable for new tasks?
 Implement tests.
 Implement Selective Erase (it only erases characters marked as erasable)
 Implement selective erasable.
-
-Mouse events - need to prod pico -m  a bit, and find out how mouse events are done.
 
 Source files need more comments
 
@@ -42,32 +34,3 @@ Bugs:
     whole point in life.  This will be improved by "ROSH"
 * Doesn't abort desktop shutdown when connections are active
 
-
-
-An example hotlist file (Choices:Nettle.Hotlist) would be:
----
-# Nettle Hotlist, saved on some day
-
-Nice Host
-{
-  host: 192.168.1.1
-  type: telnet
-  term: vt220
-  wide: 80
-  high: 24
-  scrl: 200
-}
-
-Absolute MUSH
-{
-  host: absolute.spod.org:6250
-  type: telnet
-  high: 40
-  scrl: 1000
-}
-
-BASIC
-{
-  type: task
-  cmnd: BASIC
-}
