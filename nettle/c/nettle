@@ -576,6 +576,21 @@ void write_assigned(struct session_struct *session ,int pointer, char fg, char b
   *(session->assigned_area+(pointer+3))=character;
 }
 
+void write_alt_assigned(struct session_struct *session ,int pointer, char fg, char bg, char flags, char character)
+{
+  if (pointer<0 || pointer>=session->terminal_size.y*
+    			    session->terminal_size.x*4)
+  {
+    printf("Attempt to write to outside alternate area: session %p, pointer %d\n",session,pointer);
+    return;
+  }
+
+  *(session->alternate_area+(pointer+0))=fg;
+  *(session->alternate_area+(pointer+1))=bg;
+  *(session->alternate_area+(pointer+2))=flags;
+  *(session->alternate_area+(pointer+3))=character;
+}
+
 char read_assigned_fg(struct session_struct *session, int pointer)
 {
   if (pointer<0 || pointer>=(session->terminal_size.y+

@@ -86,6 +86,7 @@ void nettle_senddata(struct session_struct *, const char *, int);
 void reset_terminal(struct session_struct *);
 
 void write_assigned(struct session_struct *, int, char, char, char, char);
+void write_alt_assigned(struct session_struct *, int, char, char, char, char);
 
 char read_assigned_fg(struct session_struct *, int);
 char read_assigned_bg(struct session_struct *, int);

@@ -734,6 +734,18 @@ static void clear_screen(struct session_struct *session, int calc, int calc2, ch
   }
 }
 
+static void clear_alt_screen(struct session_struct *session, int calc, int calc2, char fg,
+                             char bg,char flags, char character)
+{
+  int loop;
+
+  /* clear the specified area with the specified fg,bg,flags and character */
+  for (loop=calc; loop<calc2; loop+=4)
+  {
+    write_alt_assigned(session,loop,fg,bg,flags,character);
+  }
+}
+
 static void snap_cursor_to_terminal(struct session_struct *session)
 {
   /* snaps the cursor inside the terminal */
@@ -803,58 +815,84 @@ static void restore_cursor_position (struct session_struct *session)
   snap_cursor_to_terminal(session);
 }
 
+/* Alex's beta code */
 
-static void swap_screens (struct session_struct *session)
+static void swap_alternate_main(struct session_struct *session)
 {
-  int *main_area, *alt_area;
   int loop;
+  int *main_pos=((int *)session->assigned_area)+(session->scrollback*session->terminal_size.x);
+  int *alt_pos=(int *)session->alternate_area;
+  int copy;
 
-  if (! session->alternate_area)
+  if (!session->alternate_area)
     return;
 
-#define SWAP { int swap = *main_area; *main_area++ = *alt_area; *alt_area++ = swap; }
-
-  main_area = (int *) session->assigned_area + session->terminal_size.x * session->scrollback;
-  alt_area = (int *) session->alternate_area;
-  loop = session->terminal_size.x * session->terminal_size.y;
-
-  if (loop & 1) { SWAP }
-  if (loop & 2) { SWAP SWAP }
-  if (loop & 4) { SWAP SWAP SWAP SWAP }
-  loop &= ~7;
-  while (loop)
+  for (loop=0; loop<session->terminal_size.y*session->terminal_size.x; loop++)
   {
-    SWAP SWAP SWAP SWAP
-    SWAP SWAP SWAP SWAP
-    loop -= 8;
+    copy=*main_pos;
+    *main_pos=*alt_pos;
+    *alt_pos=copy;
+
+    main_pos++;
+    alt_pos++;
   }
-  changedbox_update_whole ();
 }
 
-
-static void swap_clear_screen (struct session_struct *session)
+static void copy_alternate_main(struct session_struct *session)
 {
-  if (! session->alternate_area)
+  int loop;
+  int *main_pos=((int *)session->assigned_area)+(session->scrollback*session->terminal_size.x);
+  int *alt_pos=(int *)session->alternate_area;
+
+  if (!session->alternate_area)
     return;
 
-  memcpy (session->alternate_area,
-          session->assigned_area + session->terminal_size.x * session->scrollback * 4,
-          session->terminal_size.x * session->terminal_size.y * 4);
+  for (loop=0; loop<session->terminal_size.y*session->terminal_size.x; loop++)
+  {
+    *main_pos=*alt_pos;
 
-  clear_screen(session,
-               session->scrollback * session->terminal_size.x * 4,
-               session->terminal_size.x
-                 * (session->terminal_size.y + session->scrollback) * 4,
-               session->current_fg,
-               session->current_bg,
-               0,
-               ' ');
+    main_pos++;
+    alt_pos++;
+  }
+}
 
-  session->pos.x = 0;
-  session->pos.y = session->scrollback;
-  snap_cursor_to_terminal (session);
+static void copy_main_alternate(struct session_struct *session)
+{
+  int loop;
+  int *main_pos=((int *)session->assigned_area)+(session->scrollback*session->terminal_size.x);
+  int *alt_pos=(int *)session->alternate_area;
 
-  changedbox_update_whole ();
+  if (!session->alternate_area)
+    return;
+
+  for (loop=0; loop<session->terminal_size.y*session->terminal_size.x; loop++)
+  {
+    *alt_pos=*main_pos;
+
+    main_pos++;
+    alt_pos++;
+  }
+}
+
+static void clear_main_screen(struct session_struct *session)
+{
+  clear_screen(session, session->scrollback*session->terminal_size.x*4,
+                        session->terminal_size.x*
+                                 (session->terminal_size.y+session->scrollback)*4,
+                        session->current_fg,
+                        session->current_bg,
+                        session->current_flags,
+                        32);
+}
+
+static void clear_alternate_screen(struct session_struct *session)
+{
+  clear_alt_screen(session, 0,
+                            session->terminal_size.x*session->terminal_size.y*4,
+                            session->current_fg,
+                            session->current_bg,
+                            session->current_flags,
+                            32);
 }
 
 static bool process_escape_length_2(struct session_struct *session)
@@ -1959,7 +1997,11 @@ static bool process_escape_length_x(struct session_struct *session)
                           /* Alternate screen mode (xterm) */
                           if (!(session->other_session_flags & NETTLE_OTHER_SCREEN_MODE))
                           {
-                            swap_screens (session);
+                            swap_alternate_main (session);
+                            changedbox_update (0, session->scrollback,
+                                               session->terminal_size.x - 1,
+                                               session->scrollback +
+                                                        session->terminal_size.y - 1);
                             session->other_session_flags |= NETTLE_OTHER_SCREEN_MODE;
                           }
                           break;
@@ -1975,7 +2017,12 @@ static bool process_escape_length_x(struct session_struct *session)
                           if (!(session->other_session_flags & NETTLE_OTHER_SCREEN_MODE))
                           {
                             save_cursor_position (session);
-                            swap_clear_screen (session);
+                            copy_main_alternate (session);
+                            clear_main_screen (session);
+                            changedbox_update (0, session->scrollback,
+                                               session->terminal_size.x - 1,
+                                               session->scrollback +
+                                                        session->terminal_size.y - 1);
                             session->other_session_flags |= NETTLE_OTHER_SCREEN_MODE;
                           }
                           break;
@@ -2088,8 +2135,12 @@ static bool process_escape_length_x(struct session_struct *session)
                           /* Primary screen mode (xterm) */
                           if (session->other_session_flags & NETTLE_OTHER_SCREEN_MODE)
                           {
-                            swap_screens (session);
+                            swap_alternate_main (session);
                             restore_cursor_position (session);
+                            changedbox_update (0, session->scrollback,
+                                               session->terminal_size.x - 1,
+                                               session->scrollback +
+                                                        session->terminal_size.y - 1);
                             session->other_session_flags &= ~NETTLE_OTHER_SCREEN_MODE;
                           }
                           break;
@@ -2101,7 +2152,12 @@ static bool process_escape_length_x(struct session_struct *session)
                           /* Primary screen, clear, restore cursor (xterm) */
                           if (session->other_session_flags & NETTLE_OTHER_SCREEN_MODE)
                           {
-                            swap_clear_screen (session);
+                            copy_alternate_main (session);
+                            clear_alternate_screen (session);
+                            changedbox_update (0, session->scrollback,
+                                               session->terminal_size.x - 1,
+                                               session->scrollback +
+                                                        session->terminal_size.y - 1);
                             session->other_session_flags &= ~NETTLE_OTHER_SCREEN_MODE;
                           }
                           break;
