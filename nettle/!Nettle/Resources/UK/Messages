@@ -139,7 +139,6 @@ SpoolFailedToOpen:Failed to open a spool to the filename
 SpoolFailNonPermanent:Cannot open spools to non-permanent locations (ie. other applications)
 
 NoAppForURL:No application has been seen that can launch this URL.
-OutOfMemory:Nettle ran out of memory while trying to perform this operation.
 
 # Match details for Login
 LoginMatch_User:ogin:

@@ -1161,7 +1161,7 @@ static void wimp_launchurl(struct session_struct *session, int xinit, int yinit)
   url=malloc(url_size+sizeof(char)+8); /* leave space for a '\0', and 'http://' */
   if (!url)
   {
-    generror(lookup_inbuffer("OutOfMemory"), false);
+    generror(lookup_inbuffer("OutOfMem"), false);
     return;
   }
 
