@@ -1185,6 +1185,10 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   struct coords old_terminal_size;
   int old_scrollback;
 
+  if (terminal_size_x<8) terminal_size_x=8;
+  if (terminal_size_y<8) terminal_size_y=8;
+  if (scrollback<0) scrollback=0;
+
   old_terminal_size.x = session->terminal_size.x;
   old_terminal_size.y = session->terminal_size.y;
   old_scrollback      = session->scrollback;
@@ -1211,9 +1215,6 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
 
     session->scroll_start   = 1;
     session->scroll_end     = terminal_size_y;
-
-    /* Shouldn't be necessary now */
-    /*copy_main_alternate(session);*/
 
     allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
   }

@@ -626,6 +626,8 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
   else if (session)
   {
     struct wimp_getwindowinfo_block window;
+    int height = block->max.y - block->min.y;
+    int maxheight = (session->terminal_size.y * redraw.r_charh) << eig.y;
 
     if (session->window_needs_resized)
     {
@@ -641,23 +643,21 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     window.window_handle = block->window_handle;
     _swi (Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
-    /* Removed this for now - AMS 28/08/2001 */
-    /*if (inkey (KEYBOARD_CTRL))
-    {*/
+    if (inkey (KEYBOARD_CTRL))
+    {
       /* Ctrl pressed - allow dynamic resizing */
-      /* if the v scrollbar was at the bottom and its vpos is unchanged,
-       * force it to the bottom */
-      /*if (window.scroll.y == block->scroll.y &&
-	  window.scroll.y - window.max.y + window.min.y == window.work_min.y)
-      {
-	block->scroll.y = window.work_min.y;
-      }
+      int new_x=(block->max.x-block->min.x)/(redraw.r_charw << eig.x);
+      int new_y=(block->max.y-block->min.y)/(redraw.r_charh << eig.y);
+
+      resize_terminal(session, new_x, new_y, session->scrollback, true);
+
+      block->max.x = block->min.x+(session->terminal_size.x)*(redraw.r_charw << eig.x);
+      block->min.y = block->max.y-(session->terminal_size.y)*(redraw.r_charh << eig.y);
+      block->scroll.y =-(session->terminal_size.y+session->scrollback)*(redraw.r_charh << eig.y);
     }
-    else*/
+    else
     {
       /* limit to the number of rows */
-      int height = block->max.y - block->min.y;
-      int maxheight = (session->terminal_size.y * redraw.r_charh) << eig.y;
 
       /* if the window size is unchanged, DON'T apply this limit
        * (allow for moving the window)
@@ -675,7 +675,6 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
 	  block->scroll.y = window.work_min.y;
 	}
       }
-
     }
 
     if (session->line_editor_type!=LINEEDIT_NONE)
