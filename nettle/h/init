@@ -17,5 +17,6 @@ extern void load_sprites(void);
 extern void load_templates(void);
 extern void load_zap_fonts(void);
 extern void create_icon_bar_icon(void);
+extern void lose_templates(void);
 
 #endif /* INIT_H */
