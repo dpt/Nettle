@@ -58,8 +58,8 @@ ConnectionOpen:Cette session est ouverte en ce moment. Êtes-vous sûr de vouloir 
 ConnectionOpenButtons:Fermer,Annuler
 ConnectionMultiOpen:Il y a des sessions ouvertes en ce moment. Êtes-vous sûr de vouloir quitter?
 ConnectionMultiOpenButtons:Quitter,Annuler
-InvalidAddr:Vous avez saisi une addresse distante invalide. Vérifiez et réessayez SVP.
-InvalidPort:Le port entré est erronné ou trop grand.
+InvalidAddr:Vous avez saisi une adresse distante invalide. Vérifiez et réessayez SVP.
+InvalidPort:Le port entré est erroné ou trop grand.
 InvalidComm:Vous devez entrer une commande pour démarrer une taskwindow Nettle.
 BadTermType:Le type de terminal demandé n'est pas jugé valide.
 BadCursorType:Le type de curseur demandé n'est pas jugé valide.
@@ -97,10 +97,10 @@ title_noconn:Nettle (Échec de connexion)
 title_closed:Nettle (Fermé)
 
 # Messages de Session
-connecting:Nettle: En cours de connexion à
-connected:Nettle: Connecté à
+connecting:Nettle: En cours de connexion à 
+connected:Nettle: Connecté à 
 
-lookup:Nettle: Résolution du nom d'hôte
+lookup:Nettle: Résolution du nom d'hôte 
 noresolv:Nettle: Échec de résolution du nom d'hôte
 nosocket:Nettle: Échec de création de socket
 noconn:Nettle: Échec de connexion - 
@@ -120,11 +120,11 @@ CantSaveChoices:Nettle n'a pas pu sauver son fichier Choices:
 CantSaveHotlist:Nettle n'a pas pu sauver son fichier de Favoris: 
 esctoolong:Séquence d'échappement trop longue. C'est probablement une séquence d'échappement non supportée. Contactez les auteurs SVP.
 NoStartTask:Nettle n'a pas pu créer une tâche ANSI
-CantAlloc:Nettle n'a pas pu allouer suffisamment de mmoire pour l'opération demandée.
+CantAlloc:Nettle n'a pas pu allouer suffisamment de mémoire pour l'opération demandée.
 CantLoad:Nettle n'a pas pu charger le fichier: 
 ChoicesNotKnown:Cette version de Nettle ne peut pas charger le fichier Choices de la version
 ChoicesRevert:- retour aux valeurs par défaut
-SureFileTypeLoad:Étes vous sûr de vouloir charger le fichier de type '%0' ?
+SureFileTypeLoad:Êtes-vous sûr de vouloir charger le fichier de type '%0' ?
 SureFileTypeLoadButtons:Charger,Annuler
 
 HotBlankLabel:Entrez une étiquette de favori SVP
@@ -136,7 +136,7 @@ HotBadScroll:Mauvaise nombre de lignes d'historique
 
 SpoolAlreadyOpen:Il y a déjà un journal ouvert pour cette session. (NB ceci ne devrait jamais se produire)
 SpoolFailedToOpen:Échec d'ouverture d'un journal à ce nom
-SpoolFailNonPermanent:Impossible d'ouvrir des journaux à des endroits non-permanents (p.ex. d'autres applications)
+SpoolFailNonPermanent:Impossible d'ouvrir des journaux à des endroits non permanents (p.ex. d'autres applications)
 
 # Match details for Login
 LoginMatch_User:ogin:
