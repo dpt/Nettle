@@ -17,7 +17,6 @@ Always use 3D templates
 
 Wimp slot size settable for new tasks?
 
-* Respond to "telnet://" URL launch messages
 * Much faster terminal scrollback handling
 * Reordering of hotlist items within hotlist editor
 * More choices: F12 handling, blinking cursor...
