@@ -5,6 +5,8 @@
  * $Id$
  */
 
+#include <ctype.h>
+
 #include "generic.h"
 #include "globals.h"
 
@@ -34,6 +36,9 @@
 #include "termlist.h"
 #include "wimp.h"
 #include "zapredraw.h"
+
+#define URI_Dispatch 0x4E381
+#define URI_RequestURI 0x4E382
 
 static int menu_data[64];
 static int menu_data2[64];
@@ -692,6 +697,76 @@ static void wimp_claimcaret(struct session_struct *session)
 
 
 
+static void wimp_launchurl(struct session_struct *session, int x, int y)
+{
+  int     x_pos;
+  int     y_pos;
+  char    url[1024];
+  char   *urlptr;
+  int     char_offset;
+  int     end_offset;
+
+  {
+    struct wimp_getwindowstate_block block;
+
+    block.window_handle=session->window_handle;
+
+    _swi(Wimp_GetWindowState, _IN(1), &block);
+
+    x_pos=block.min.x-block.scroll.x;
+    y_pos=block.max.y-block.scroll.y;
+  }
+  
+  char_offset = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
+                        * session->terminal_size.x
+                        + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
+
+  end_offset = session->terminal_size.x*
+                     (session->terminal_size.y + session->scrollback);
+  
+  logf("clicked on '%c'\n",session->assigned_area[char_offset*4+3]);
+  /* go back to the start of the clicked on 'word' */
+  while (char_offset > 0 && isalpha(session->assigned_area[char_offset*4+3]))
+    char_offset--;
+  if (!isalpha(session->assigned_area[char_offset*4+3]))
+    char_offset++;
+  
+  /* go forward to the end of the form [ie. until we find whitespace] */
+  urlptr = url;
+  while (char_offset < end_offset && 
+         !isspace(session->assigned_area[char_offset*4+3]))
+  {
+    *urlptr++ = session->assigned_area[char_offset*4+3];
+    char_offset++;
+  }
+  *urlptr = '\0';
+  logf("url = '%s'\n", url);
+  
+  /* we've got a url, check for full formedness */
+  urlptr = url;
+  while (isalpha(*urlptr))
+    urlptr++;
+  if (*urlptr != ':')
+  {
+    const char *scheme;
+    /* there's no scheme section */
+    if (strncmp(url, "ftp.", 4) == 0)
+      scheme = "ftp://";
+    else if (strchr(url, '@') != NULL)
+      scheme = "mailto:";
+    else
+      scheme = "http://";
+    
+    /* prefix string we have with the scheme we've guessed */
+    memmove(url + strlen(scheme), url, strlen(url) + 1);
+    memcpy(url, scheme, strlen(scheme));
+  }
+  
+  _swix(URI_Dispatch, _INR(0,2), 0, url, 0);
+}
+
+
+
 static void session_window_click(int x, int y, int buttons, int icon_handle, struct session_struct *session)
 {
   int x_pos;
@@ -775,6 +850,10 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       {
 	selection_in_progress=true;
       }
+      break;
+
+    case DoubleSelect:
+      wimp_launchurl(session, x, y);
       break;
       
     case ClickSelect:
