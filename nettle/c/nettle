@@ -250,34 +250,47 @@ void start_connection(void)
 
   /* make new terminal window */
   {
-    int block[22];
+    struct wimp_createwindow_block block;
 
-    block[0]=102;
-    block[1]=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
-    block[2]=102+(session[current_session].terminal_size_x*redraw.r_charw*2);
-    block[3]=1088;
-    block[4]=0;
-    block[5]=-((session[current_session].terminal_size_y+session[current_session].scrollback)
-               *(redraw.r_charh*2*zap_yeig));
-    block[6]=-1;
-    block[7]=0xff080142;
-    block[8]=((unsigned int) 255<<24)+(7<<16)+(2<<8)+(7<<0);
-    block[9]=(0<<24)+(12<<16)+(1<<8)+(3<<0);
-    block[10]=0;
-    block[11]=-((session[current_session].terminal_size_y+session[current_session].scrollback)
-                 *(redraw.r_charh*2*zap_yeig));
-    block[12]=session[current_session].terminal_size_x*redraw.r_charw*2;
-    block[13]=0;
-    block[14]=0x00000119;
-    block[15]=6<<12;
-    block[16]=1;
-    block[17]=(4<<16)+(4<<0);
-    block[18]=(int) session[current_session].title;
-    block[19]=0;
-    block[20]=256;
-    block[21]=0;
+    block.minx         =102;
+    block.miny         =1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
+    block.maxx         =102+(session[current_session].terminal_size_x*redraw.r_charw*2);
+    block.maxy         =1088;
+    block.scroll_x     =0;
+    block.scroll_y     =-((session[current_session].terminal_size_y+
+                           session[current_session].scrollback)
+                          *(redraw.r_charh*2*zap_yeig));
+    block.handle_behind=-1;
+    block.window_flags =0xff080142;
+    block.title_fg     =7;
+    block.title_bg     =2;
+    block.work_fg      =7;
+    block.work_bg      =0xFF;
 
-    session[current_session].window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), block);
+    block.scroll_outer_colour=3;
+    block.scroll_inner_colour=1;
+    block.title_focus_colour =12;
+    block.flags              =0;
+
+    block.work_minx=0;
+    block.work_miny=-((session[current_session].terminal_size_y+
+                       session[current_session].scrollback)
+                      *(redraw.r_charh*2*zap_yeig));
+    block.work_maxx=session[current_session].terminal_size_x*redraw.r_charw*2;
+    block.work_maxy=0;
+
+    block.icon_flags    =0x00000119;
+    block.workarea_flags=6<<12;
+    block.sprite_area   =1;
+    block.min_width     =4;
+    block.min_height    =4;
+
+    block.title_text      =session[current_session].title;
+    block.title_validation=0;
+    block.title_buffer_len=256;
+    block.number_of_icons =0;
+
+    session[current_session].window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
 
     set_title_bar(session[current_session].window_handle,"nettle");
   }
@@ -285,32 +298,47 @@ void start_connection(void)
   if (line_editor)
   {
     /* Create new pane window */
-    int block[22];
+    struct wimp_createwindow_block block;
 
-    block[0]=102;
-    block[1]=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig)-40;
-    block[2]=102+(session[current_session].terminal_size_x*redraw.r_charw*2);
-    block[3]=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
-    block[4]=0;
-    block[5]=0;
-    block[6]=-1;
-    block[7]=0x80080162;
-    block[8]=(1<<24)+(7<<16)+(2<<8)+(7<<0);
-    block[9]=(0<<24)+(12<<16)+(1<<8)+(3<<0);
-    block[10]=0;
-    block[11]=-48;
-    block[12]=session[current_session].terminal_size_x*redraw.r_charw*2;
-    block[13]=0;
-    block[14]=0x00000000;
-    block[15]=0<<12;
-    block[16]=1;
-    block[17]=(4<<16)+(4<<0);
-    block[18]=0;
-    block[19]=0;
-    block[20]=0;
-    block[21]=0;
+    block.minx=102;
+    block.miny=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig)-40;
+    block.maxx=102+(session[current_session].terminal_size_x*redraw.r_charw*2);
+    block.maxy=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
 
-    session[current_session].pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), block);
+    block.scroll_x=0;
+    block.scroll_y=0;
+
+    block.handle_behind=-1;
+    block.window_flags =0x80080162;
+
+    block.title_fg     =7;
+    block.title_bg     =2;
+    block.work_fg      =7;
+    block.work_bg      =1;
+
+    block.scroll_outer_colour=3;
+    block.scroll_inner_colour=1;
+    block.title_focus_colour =12;
+    block.flags              =0;
+
+    block.work_minx=0;
+    block.work_miny=-48;
+    block.work_maxx=session[current_session].terminal_size_x*redraw.r_charw*2;
+    block.work_maxy=0;
+
+    block.icon_flags    =0x00000000;
+    block.workarea_flags=0<<12;
+
+    block.sprite_area=1;
+    block.min_width  =4;
+    block.min_height =4;
+
+    block.title_text      =0;
+    block.title_validation=0;
+    block.title_buffer_len=0;
+    block.number_of_icons =0;
+
+    session[current_session].pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
   }
 
   open_window(session[current_session].window_handle,false);
@@ -435,12 +463,13 @@ void remove_session(int session_handle)
       case NETTLE_TASKWINDOW:
         {
           /* terminate the taskwindow */
-          int block[5];
-          block[0]=20;
-          block[3]=0;
-          block[4]=0x808C4;
+          union wimp_poll_block block;
 
-          _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, block,
+          block.user_message.length      =20;
+          block.user_message.my_ref      =0;
+          block.user_message.message_code=0x808C4;
+
+          _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, &block,
                                                        session[session_handle].socket_handle);
         }
         break;
@@ -449,17 +478,17 @@ void remove_session(int session_handle)
 
   {
     /* delete the windows */
-    int block[1];
+    struct wimp_deletewindow_block block;
 
-    block[0]=session[session_handle].window_handle;
+    block.window_handle=session[session_handle].window_handle;
 
-    _swi(Wimp_DeleteWindow, _IN(1), block);
+    _swi(Wimp_DeleteWindow, _IN(1), &block);
 
     if (line_editor)
     {
-      block[0]=session[session_handle].pane_handle;
+      block.window_handle=session[session_handle].pane_handle;
 
-      _swi(Wimp_DeleteWindow, _IN(1), block);
+      _swi(Wimp_DeleteWindow, _IN(1), &block);
     }
   }
 
@@ -552,23 +581,21 @@ void nettle_senddata(int session_handle, char *data, int length)
       {
         /* send a WIMP message */
         int loop=0;
-        int *block=malloc((27+length) & ~3);
+        union wimp_poll_block block;
 
         while (loop<length)
         {
-          ((char *)block)[24+loop]=data[loop];
+          block.user_message.contents.task_window_input.data[loop]=data[loop];
           loop++;
         }
 
-        block[0]=(27+length) & ~3;
-        block[3]=0;
-        block[4]=0x808C0;
-        block[5]=length;
+        block.user_message.length                         =(27+length) & ~3;
+        block.user_message.my_ref                         =0;
+        block.user_message.message_code                   =0x808C0;
+        block.user_message.contents.task_window_input.size=length;
 
-        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, block,
+        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, &block,
                                                      session[session_handle].socket_handle);
-
-        free(block);
       }
       break;
   }

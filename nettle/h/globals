@@ -237,9 +237,9 @@ extern union wimp_poll_block
   struct
   {
     int length;
-    int sender_handle;
-    int my_ref;
     int sender_ref;
+    int my_ref;
+    int your_ref;
     int message_code;
 
     union
@@ -254,6 +254,12 @@ extern union wimp_poll_block
         int filetype;
         char file_name[212];
       } data_save_ack;
+
+      struct
+      {
+        int size;
+        char data[232];
+      } task_window_input;
 
       struct
       {

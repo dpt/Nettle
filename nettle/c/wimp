@@ -254,7 +254,7 @@ static void close_program(void)
 {
   int session_handle;
 
-  for (session_handle = 0; session_handle < Nettle_MaxSessions; session_handle++) {
+  for (session_handle = 0; session_handle < current_session; session_handle++) {
     if (session[session_handle].socket_state == NETTLE_SESSION_CONNECTED)
     {
       char message[200];
@@ -1074,19 +1074,19 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         if (current_session==0)
           return;
 
-        while (session[session_handle].socket_handle!=wimp_block.user_message.sender_ref &&
+        while (session[session_handle].socket_handle!=sender_ref &&
                session_handle<current_session)
         {
           session_handle++;
         }
 
-        if (session[session_handle].socket_handle==wimp_block.user_message.sender_ref)
+        if (session[session_handle].socket_handle==sender_ref)
         {
           write_out_data(session_handle,
                          wimp_block.user_message.contents.task_window_output.data,
                          wimp_block.user_message.contents.task_window_output.size);
         }
-        wimp_block.user_message.sender_ref=my_ref;
+        wimp_block.user_message.my_ref=wimp_block.user_message.your_ref;
 
         _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 19, &wimp_block, sender_ref);
       }
@@ -1096,7 +1096,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         int txt_handle=wimp_block.user_message.contents.task_window_ego.txt_handle;
 
         session[txt_handle].socket_state=NETTLE_SESSION_CONNECTED;
-        session[txt_handle].socket_handle=wimp_block.user_message.sender_ref;
+        session[txt_handle].socket_handle=sender_ref;
         set_title_bar(session[txt_handle].window_handle,"nettle (Open)");
       }
       break;
@@ -1107,13 +1107,13 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         if (current_session==0)
           return;
 
-        while (session[session_handle].socket_handle!=wimp_block.user_message.sender_ref &&
+        while (session[session_handle].socket_handle!=sender_ref &&
                session_handle<current_session)
         {
           session_handle++;
         }
 
-        if (session[session_handle].socket_handle==wimp_block.user_message.sender_ref)
+        if (session[session_handle].socket_handle==sender_ref)
         {
           set_title_bar(session[session_handle].window_handle,"nettle (Closed)");
           session[session_handle].socket_state=NETTLE_SESSION_NONE;
