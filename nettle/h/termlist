@@ -1,0 +1,15 @@
+/**
+ * Nettle terminal list menu code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#ifndef TERMLIST_H
+#define TERMLIST_H
+
+void lose_termlist_menu (void);
+const int * create_termlist_menu (void);
+struct session_struct * get_termlist_entry (int entry);
+
+#endif

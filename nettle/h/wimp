@@ -13,6 +13,7 @@
 #define MENU_CONNECTION    3
 #define MENU_TERMINAL_TYPE 4
 #define MENU_HOTLIST       5
+#define MENU_TERMLIST      6
 
 #define RECEIVE_BLOCK_LENGTH	0x400
 
@@ -21,6 +22,7 @@ extern void closedown_wimp(void);
 extern void wimp_nullreasoncode(void);
 extern void redraw_window(union wimp_poll_block *);
 extern void open_window(struct wimp_openwindow_block *, int);
+extern void open_window_centred(int);
 extern void close_window(int);
 extern void mouse_click(int, int, int, int, int);
 extern void drag_finished(void);
@@ -35,12 +37,16 @@ extern void lose_bitmaps(void);
 extern void lose_zapredraw_area(void);
 extern void generror(const char *, bool);
 extern void set_caret_position(int, int, int, int);
+extern void check_set_caret_position(int, int);
+extern void set_icon_state(int, int, int, int);
 extern void set_icon_data(int, int, const char *);
 extern char *read_icon_data(int, int, char *, int);
 
 extern void set_title_bar(int, const char *);
 extern void force_redraw(int,int,int,int,int);
 
-void create_menu_by_icon(int *menu, int window, int icon);
+extern void create_menu_by_icon(int *menu, int window, int icon);
+extern void set_termsize_icons(int, int, int, int, struct coords, int);
+extern bool read_termsize_icons(int, int, int, int, struct coords *, int *);
 
 #endif

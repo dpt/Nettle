@@ -27,7 +27,7 @@ ASMFLAGS = -c
 
 OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o \
-       messages.o
+       messages.o termlist.o
 
 RUNIMAGE = !Nettle/!RunImage,ff8
 
@@ -51,9 +51,9 @@ clean:
 	@$(CC) $(CFLAGS) -o $@ $<
 
 
-hotlist.o:      hotlist.c hotlist.h generic.h globals.h misc.h
+hotlist.o:      hotlist.c hotlist.h generic.h globals.h misc.h nettle.h wimp.h
 chardefn.o:	chardefn.c generic.h globals.h chardefn.h misc.h
-choices.o:	choices.c generic.h globals.h choices.h misc.h
+choices.o:	choices.c generic.h globals.h choices.h misc.h wimp.h
 fortify.o:	fortify.c fortify.h ufortify.h
 globals.o:	globals.c generic.h globals.h zapredraw.h
 init.o: 	init.c generic.h globals.h chardefn.h init.h misc.h \
@@ -68,8 +68,10 @@ process.o:	process.h generic.h globals.h graphics.h misc.h nettle.h \
 		keyboard.h seln.h wimp.h zapredraw.h
 quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h hotlist.h
 seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h
-socket.o:	socket.c generic.h globals.h socket.h
-wimp.o: 	wimp.c generic.h globals.h misc.h nettle.h process.h seln.h \
-              	socket.h wimp.h zapredraw.h
-zapgen.o:       zapgen.s
+socket.o:	socket.c generic.h globals.h sockwatch.h socket.h
+wimp.o: 	wimp.c generic.h globals.h lineedit.h misc.h nettle.h process.h \
+		seln.h socket.h wimp.h zapredraw.h hotlist.h termlist.h choices.h
+zapgen.o:    	zapgen.c generic.h globals.h nettle.h
 messages.o:     messages.c messages.h generic.h globals.h misc.h
+sockwatch.o:	sockwatch.c sockwatch.h
+termlist.o:	termlist.c generic.h globals.h termlist.h misc.h nettle.h wimp.h

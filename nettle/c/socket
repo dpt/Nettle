@@ -10,7 +10,10 @@
 
 #include "sys/types.h"
 
+#ifndef USE_TCPIPLIB
 #include "sys/byteorder.h"
+#endif
+
 #include "sys/errno.h"
 #include "sys/ioctl.h"
 #include "sys/socket.h"
@@ -72,7 +75,7 @@ int socket_connecttoip(int ip_address,int port_number)
   }
 
   socketwatch_register(socket_handle);
-  
+
   address.sin_family=AF_INET;
   address.sin_port=htons(port_number);
   address.sin_addr.s_addr=ip_address;

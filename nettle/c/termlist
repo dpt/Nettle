@@ -1,0 +1,108 @@
+/**
+ * Nettle terminal list menu code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#include "generic.h"
+#include "globals.h"
+
+#include "termlist.h"
+#include "messages.h"
+#include "nettle.h"
+#include "wimp.h"
+#include <ctype.h>
+
+
+static int items = -1;
+static int *menublock = NULL;
+
+
+void
+lose_termlist_menu (void)
+{
+  free (menublock);
+  menublock = NULL;
+}
+
+
+const int *
+create_termlist_menu (void)
+{
+  struct session_struct *node;
+  int position = 7;
+  int termitems = 0;
+
+  node = sessions;
+  while (node)
+  {
+    termitems++;
+    node = node->next;
+  }
+
+  if (termitems > items)
+  {
+    items = termitems ? termitems : 1;
+    menublock = (int *) realloc (menublock, 24 * items + 28);
+    if (!menublock)
+      return NULL;
+  }
+
+  strcpy ((char *) menublock, lookup_static ("Session"));
+
+  menublock[3] = 0x70207; /* standard menu colours */
+  menublock[4] = 0;
+  menublock[5] = 44;
+  menublock[6] = 0;
+
+  if (!sessions)
+  {
+    /* Empty menu - give it a dummy entry */
+    menublock[5] = 0;		/* height = 0 */
+    menublock[7] = 0x80;
+    menublock[8] = -1;		/* No submenu */
+    menublock[9] = WIMP_ICON_SHADED_BIT;
+    menublock[10] = menublock[11] = (int) "";
+    menublock[12] = 1;
+    return menublock;
+  }
+
+  node = sessions;
+  while (node)
+  {
+    char *entry;
+    int el;
+
+    menublock[position++] = node->next ? 0 : 0x80;
+      /* set "last" bit if this is the end of the list */
+    menublock[position++] = -1;	/* no submenu */
+    menublock[position++] =
+      WIMP_ICON_FGCOL (7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT |
+      WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT;
+
+    entry = node->socket_host;
+    el = strlen (entry);
+
+    menublock[position++] = (int) entry;
+    menublock[position++] = (int) (entry + el);
+    menublock[position++] = el + 1;
+
+    node = node->next;
+  }
+
+  return menublock;
+}
+
+
+struct session_struct *
+get_termlist_entry (int entry)
+{
+  struct session_struct *node = sessions;
+
+  for (; entry; entry--)
+    if ((node = node->next) == NULL)
+      return NULL;
+
+  return node;
+}

@@ -178,7 +178,7 @@ bool save_choices(void)
       /* it might break) - feel free to change it */
 
       fprintf(file_handle, "# Nettle choices file\n");
-      fprintf(file_handle, "# Created on %s\n\n", ctime(&current_time));
+      fprintf(file_handle, "# Created on %s\n", ctime(&current_time));
       fprintf(file_handle, "ZapFontHi:%s\n", zap_font);
       fprintf(file_handle, "ZapFontLo:%s\n", zap_lowres_font);
 

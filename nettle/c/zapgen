@@ -1,0 +1,155 @@
+/*
+ * Nettle zapgen code
+ * (C) Nettle developers 2000-2001
+ * $Id$
+ */
+
+
+#include "generic.h"
+#include "globals.h"
+
+#include "nettle.h"
+
+struct term_char
+{
+  char fg, bg, flags, chr;
+};
+
+
+static struct
+{
+  int fg;
+  int bg;
+  int flags;
+} current_colour;
+
+
+static char *zap_update_colour (char *, const struct term_char *);
+static char *zap_write_char (char *, const struct term_char *);
+static char *zap_write_multibyte (char *, int);
+
+
+#define REDRAW_FLAGS_MASK (NETTLE_FLAG_INVERTED | NETTLE_FLAG_SELECTED)
+
+
+char *
+zapgen_code (char *output_buffer, const char *input_buffer,
+	     int width, int height, int session_flags)
+{
+  int *line_offsets = (int *) output_buffer;
+  char *write = (char *)(line_offsets + height + 1);
+  const struct term_char *input = (struct term_char *) input_buffer;
+
+  /* offsets -> list of offsets of lines (in the data block) */
+  /* write -> next location at which to place data in the output buffer */
+
+  for (; height; --height)
+  {
+    int loop = width;
+
+    current_colour.bg = current_colour.fg = -1;
+    current_colour.flags = 0;
+
+    *line_offsets++ = write - output_buffer;
+
+    for (; loop; --loop)
+    {
+      write = zap_update_colour (write, input);
+
+      if (input->flags & NETTLE_FLAG_CURSOR)
+      {
+	/* drawing the cursor... */
+	*write++ = 0;
+	*write++ = 8;		/* cursor merge */
+	*write++ = input->bg;   /* foreground colour */
+	*write++ = ((input->bg & 2) ? 0 : 7) | (8 & ~input->bg);
+				/* contrasting background, inverted bright */
+	write = zap_write_char (write, input);
+
+	if (input->flags & NETTLE_FLAG_NO_INPUT)
+	  write = zap_write_multibyte (write, 0x101); /* square cursor */
+	else
+	  *write++ = 0x7F;	/* block cursor */
+      }
+      else
+	write = zap_write_char (write, input);
+
+      input++;
+    }
+
+    *write++ = 0;
+    *write++ = 2;		/* end of line marker */
+  }
+  *line_offsets = 0;
+
+  return write;			/* return ptr to the first unused byte */
+}
+
+
+static char *
+zap_update_colour (char *write, const struct term_char * input)
+{
+  char colour_type;
+  char fg = input->fg;
+  char bg = input->bg;
+  char flags = input->flags & REDRAW_FLAGS_MASK;
+
+  /* return early if no change */
+  if (fg == current_colour.fg && bg == current_colour.bg &&
+      flags == current_colour.flags)
+    return write;
+
+  if (((input->flags & NETTLE_FLAG_INVERTED) != 0) ^
+      ((input->flags & NETTLE_FLAG_SELECTED) != 0))
+  {
+    /* swap foreground and background if inverted or selected, not both */
+    fg ^= bg;
+    bg ^= fg;
+    fg ^= bg;
+  }
+
+  *write++ = 0;
+  colour_type = (fg == current_colour.fg) ? 7 /* bg only if fg unchanged */
+	      : (bg == current_colour.bg) ? 6 /* fg only if bg unchanged */
+	      : 1;			      /* both if neither unchanged */
+  *write++ = colour_type;
+
+  if (colour_type != 7)
+    *write++ = fg;
+
+  if (colour_type != 6)
+    *write++ = bg;
+
+  /* save the current settings */
+  current_colour.fg = fg;
+  current_colour.bg = bg;
+  current_colour.flags = flags;
+
+  return write;
+}
+
+
+static char *
+zap_write_char (char *write, const struct term_char *input)
+{
+  if (input->flags & NETTLE_FLAG_PLUS100)
+    return zap_write_multibyte (write, input->chr | 0x100);
+  else
+  {
+    *write++ = input->chr;
+    if (!input->chr)
+      *write++ = 0; /* NUL NUL, because NUL on its own is an escape char */
+    return write;
+  }
+}
+
+
+static char *
+zap_write_multibyte (char *write, int chr)
+{
+  *write++ = 0;
+  *write++ = 3;
+  *write++ = (char) chr;
+  *write++ = (char) (chr >> 8);
+  return write;
+}

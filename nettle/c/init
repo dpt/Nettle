@@ -33,6 +33,7 @@ static void initialise_wimp(void)
   static int messages[] =
   {
     WIMP_MESSAGE_DATASAVEACK,
+    WIMP_MESSAGE_MENUWARNING,
     WIMP_MESSAGE_MODECHANGE,
     WIMP_MESSAGE_TASKWINDOW_OUTPUT,
     WIMP_MESSAGE_TASKWINDOW_EGO,

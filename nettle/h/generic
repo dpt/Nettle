@@ -268,6 +268,7 @@ struct wimp_seticonstate_block
 
 #define WIMP_MESSAGE_QUIT                    0
 #define WIMP_MESSAGE_DATASAVEACK             2
+#define WIMP_MESSAGE_MENUWARNING       0x400c0
 #define WIMP_MESSAGE_MODECHANGE        0x400c1
 #define WIMP_MESSAGE_TASKWINDOW_OUTPUT 0x808c1
 #define WIMP_MESSAGE_TASKWINDOW_EGO    0x808c2

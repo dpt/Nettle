@@ -11,6 +11,18 @@
 
 #include "keyboard.h"
 
+
+static void
+scroll_term (struct session_struct *session, int direction)
+{
+  struct wimp_getwindowstate_block block;
+
+  block.window_handle = session->window_handle;
+  _swi (Wimp_GetWindowState, _IN(1), (int) &block);
+  block.scroll.y += direction * (block.max.y - block.min.y);
+  _swi (Wimp_OpenWindow, _IN(1), (int) &block);
+}
+
 int
 decode_key (struct session_struct *session, int key, int extra, char *block)
 {
@@ -74,12 +86,22 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
 	      (session->
 	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOC" :
 	      "\x1B[C");
-  case 0x18E:			/* Down */
+  case 0x18E:			/* Down, sPageDown */
+    if (ekey == 54)
+    {
+      scroll_term (session, -1);
+      break;
+    }
     SETBLOCK (3,
 	      (session->
 	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOB" :
 	      "\x1B[B");
-  case 0x18F:			/* Up */
+  case 0x18F:			/* Up, sPageUp */
+    if (ekey == 33)
+    {
+      scroll_term (session, 1);
+      break;
+    }
     SETBLOCK (3,
 	      (session->
 	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOA" :
@@ -107,9 +129,9 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
     SETBLOCK (3, "\x1B[Z");
   case 0x19B:			/* sCopy */
     SETBLOCK (4, "\x1B[4$");
-  case 0x19E:			/* PgDown */
+  case 0x19E:			/* PgDown, sDown */
     SETBLOCK (4, "\x1B[6~");
-  case 0x19F:			/* PgUp */
+  case 0x19F:			/* PgUp, sUp */
     SETBLOCK (4, "\x1B[5~");
 
   case 0x1A1:			/* cF1 */
@@ -158,9 +180,9 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
   case 0x1BB:			/* csCopy */
     SETBLOCK (4, "\x1B[4@");
 
-  case 0x1BE:			/* cPgDown */
+  case 0x1BE:			/* cPgDown, scDown */
     SETBLOCK (4, "\x1B[6^");
-  case 0x1BF:			/* cPgUp */
+  case 0x1BF:			/* cPgUp, scUp */
     SETBLOCK (4, "\x1B[5^");
 
   case 0x1CA:			/* F10 */
@@ -267,6 +289,6 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
       sprintf (block, "%c", key);
       return 1;
     }
-    return 0;
   }
+  return 0;
 }

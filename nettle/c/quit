@@ -10,12 +10,13 @@
 
 #include "hotlist.h"
 #include "init.h"
+#include "messages.h"
 #include "misc.h"
 #include "nettle.h"
 #include "quit.h"
 #include "sockwatch.h"
+#include "termlist.h"
 #include "wimp.h"
-#include "messages.h"
 
 void closedown_application(void)
 {
@@ -34,6 +35,7 @@ void closedown_application(void)
   free(zap_font_area);
   free(zap_lowres_font_area);
   lose_hotlist();
+  lose_termlist_menu();
   socketwatch_finalise();
   lose_templates();
 
