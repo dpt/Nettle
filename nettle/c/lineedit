@@ -52,7 +52,11 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     if (block.icon_flags & WIMP_ICON_DELETED_BIT)
     {
       old_width=0;
-      selected=true;
+
+      if (session->line_editor_type==LINEEDIT_CHECKBOX_OFF)
+        selected=false;
+      else
+        selected=true;
     }
     else
     {
@@ -61,7 +65,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
       if (width==old_width)
         return;
 
-      if (session->line_editor_type==LINEEDIT_CHECKBOX)
+      if (session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON)
       {
         if (block.icon_flags & WIMP_ICON_SELECTED_BIT)
           selected=true;
@@ -74,7 +78,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
       }
 
       {
-        int loop_limit=(session->line_editor_type==LINEEDIT_CHECKBOX ? 2 : 1);
+        int loop_limit=((session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON) ? 2 : 1);
 
         for (loop=0; loop<loop_limit; loop++)
         {
@@ -92,7 +96,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
   {
     struct wimp_createicon_block block;
 
-    if (session->line_editor_type==LINEEDIT_CHECKBOX)
+    if (session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON)
     {
       block.window_handle=session->pane_handle;
       block.min.x         =width-48;
@@ -117,7 +121,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     block.min.x         =-4;
     block.min.y         =-52;
 
-    if (session->line_editor_type==LINEEDIT_CHECKBOX)
+    if (session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON)
       block.max.x         =width-54;
     else
       block.max.x         =width+2;
@@ -127,7 +131,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
                         WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_FILLED_BIT | \
 		        WIMP_ICON_VCENT_BIT | WIMP_ICON_BORDER_BIT | WIMP_ICON_TEXT_BIT;
 
-    if (session->line_editor_type==LINEEDIT_CHECKBOX && selected==false)
+    if ((session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON) && selected==false)
     {
       block.icon_flags |= WIMP_ICON_DELETED_BIT;
     }
@@ -141,7 +145,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
 
   if (width != old_width)
   {
-    if (session->line_editor_type==LINEEDIT_CHECKBOX)
+    if (session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON)
       force_redraw(session->pane_handle, min(width,old_width)-56, -48, max(width,old_width), 0);
     else
       force_redraw(session->pane_handle, min(width,old_width), -48, max(width,old_width), 0);
@@ -159,8 +163,6 @@ void open_pane_window(struct session_struct *session, struct wimp_openwindow_blo
   struct wimp_getwindowoutline_block gwo_block;
   struct wimp_openwindow_block block;
   int width;
-
-  /*assert(line_editor);*/
 
   width=main_block->max.x;
 
@@ -188,7 +190,7 @@ bool line_editor_active(struct session_struct *session)
 {
   switch (session->line_editor_type)
   {
-    case LINEEDIT_CHECKBOX:
+    case LINEEDIT_CHECKBOX_OFF: case LINEEDIT_CHECKBOX_ON:
     {
       struct wimp_geticonstate_block block;
 
