@@ -35,6 +35,13 @@
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
 
+/* allow compile-time selection of memmove or ZapRedraw_MoveBytes */
+#ifdef USE_MEMMOVE
+# define MEMMOVE(src,dest,len) memmove ((dest), (src), (len))
+#else
+# define MEMMOVE(src,dest,len) _swi(ZapRedraw_MoveBytes, _INR(1,3), (int)(src), (int)(dest), (len))
+#endif
+
 extern const char *application_name;
 extern const char *application_icon_name;
 extern bool quit_flag;
