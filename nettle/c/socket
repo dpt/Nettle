@@ -13,6 +13,7 @@
 #include "sys/socket.h"
 
 #include "netinet/in.h"
+#include "arpa/inet.h"
 
 #include "netdb.h"
 
@@ -177,12 +178,14 @@ int socket_senddata(int socket_handle, char * buffer, int length)
   return send(socket_handle, buffer, length, 0);
 }
 
-char *socket_ip_string(int ip_address, char *buffer)
-{
-  unsigned char *ip_byte = (unsigned char *)&ip_address;
 
-  /* This is, of course, small-endian specific */
-  sprintf(buffer, "%d.%d.%d.%d", ip_byte[0], ip_byte[1], ip_byte[2], ip_byte[3]);
+char *socket_ip_string(int address) {
+  struct in_addr saddr;
 
-  return buffer;
+  saddr.s_addr = address;
+
+  return inet_ntoa(saddr);
 }
+
+
+
