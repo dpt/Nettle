@@ -55,6 +55,6 @@ extern void snap_cursor_to_terminal(int);
 extern int get_cursor_position(int);
 
 extern int decode_key(int, int, char *);
-extern void work_out_character(int, int, char);
+extern void work_out_character(int, int, unsigned char);
 
 #endif

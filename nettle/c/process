@@ -2459,7 +2459,7 @@ int decode_key(int session_handle, int key, char *block)
   return size_of_block;
 }
 
-void work_out_character(int session_handle, int data, char byte)
+void work_out_character(int session_handle, int data, unsigned char byte)
 {
   int character_set;
 
