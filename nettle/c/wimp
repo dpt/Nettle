@@ -3166,7 +3166,7 @@ static struct session_struct *get_session_from_winhan(int window)
 static bool parse_ant_url (union wimp_poll_block *block)
 {
   struct session_struct *session;
-  const int window_handle;
+  int window_handle;
   char *url;
   int size;
 
@@ -3198,7 +3198,7 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
 {
   int size;
   struct session_struct *session;
-  const int window_handle;
+  int window_handle;
   char *uri;
 
   window_handle = block->user_message.contents.data_load.window_handle;
@@ -3249,7 +3249,7 @@ static bool paste_text_file (union wimp_poll_block *block)
   int size;
   char *text;
   struct session_struct *session;
-  const int window_handle;
+  int window_handle;
 
   window_handle = block->user_message.contents.data_load.window_handle;
   session = get_session_from_winhan(window_handle);
