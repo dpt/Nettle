@@ -3353,7 +3353,7 @@ static void open_options_window(bool open_window_flag)
 
     window.handle_behind = -1;  /* Open on top of stack */
 
-    if ((window.window_flags & (1 << 16)) == 0)
+    /*if ((window.window_flags & (1 << 16)) == 0)*/
     {
       /* window is not open, open it centred on the pointer taking care to
        * not obscure the icon bar */
