@@ -87,55 +87,6 @@ static void selection_changedbox_draw (void)
 }
 
 
-
-void refresh_selection_set(void)
-{
-  int start;
-  int end;
-  int loop;
-
-  if (selection_session == NULL)
-    return;
-
-  start = MIN(selection_start, selection_end);
-  end   = MAX(selection_start, selection_end);
-
-  for (loop=start; loop<end; loop++)
-  {
-    int xpos=loop % selection_session->terminal_size.x;
-    int ypos=loop / selection_session->terminal_size.x;
-    write_assigned_flags(selection_session, xpos, ypos,
-                         read_assigned_flags(selection_session, xpos, ypos) |
-                         NETTLE_FLAG_SELECTED);
-  }
-}
-
-
-
-void refresh_selection_clear(void)
-{
-  int start;
-  int end;
-  int loop;
-
-  if (selection_session == NULL)
-    return;
-
-  start = MIN(selection_start, selection_end);
-  end   = MAX(selection_start, selection_end);
-
-  for (loop=start; loop<end; loop++)
-  {
-    int xpos=loop % selection_session->terminal_size.x;
-    int ypos=loop / selection_session->terminal_size.x;
-    write_assigned_flags(selection_session, xpos, ypos,
-                         read_assigned_flags(selection_session, xpos, ypos) &
-                         ~NETTLE_FLAG_SELECTED);
-  }
-}
-
-
-
 void selection_click(int x, int x_pos, int y, int y_pos)
 {
   int click_point;
@@ -152,7 +103,6 @@ void selection_click(int x, int x_pos, int y, int y_pos)
   if (click_point < start || click_point > end)
   {
     /* click is not within selection */
-    refresh_selection_clear();
     force_redraw_selection();
     selection_session = NULL;
   }
@@ -180,7 +130,6 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
                                  selection_session->scrollback));
 
   selection_changedbox_init();
-  refresh_selection_clear();
 
   selection_middle = (selection_start + selection_end) / 2;
   if (click_point < selection_middle)
@@ -208,7 +157,6 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
   else
     selection_end = click_point;
 
-  refresh_selection_set();
   selection_changedbox_draw();
 }
 
@@ -239,7 +187,6 @@ static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
     }
 
     selection_changedbox_init();
-    refresh_selection_clear();
 
     switch (selection_adjust_dragging)
     {
@@ -251,7 +198,6 @@ static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 	break;
     }
 
-    refresh_selection_set();
     selection_changedbox_draw();
   }
 }
@@ -435,7 +381,6 @@ void handle_selection_drag(void)
     case 4:
       /* Drag SELECT - clear the selection, re-work it out, and set it again, then redraw */
       selection_changedbox_init();
-      refresh_selection_clear();
 
       selection_end = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                       * selection_session->terminal_size.x
@@ -454,7 +399,6 @@ void handle_selection_drag(void)
 	selection_end=0;
       }
 
-      refresh_selection_set();
       selection_changedbox_draw();
 
       break;

@@ -46,7 +46,9 @@
 
 char *
 zapgen_code (int *output_buffer, int **input_line_offsets,
-	     int width, int first_line, int last_line, int session_flags)
+	     int width, int first_line, int last_line, int session_flags,
+	     int selection_start_line, int selection_start_x,
+	     int selection_end_line, int selection_end_x)
 {
   int *line_offsets = output_buffer;
   char *write = (char *)(line_offsets + last_line + 1);
@@ -86,12 +88,77 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
       char bg = input->bg;
       bool invert=false;
 
-      /* swap foreground and background if inverted or selected, not both */
+      /* swap foreground and background if inverted or selected or inverse video etc. */
       if (input->flags & NETTLE_FLAG_INVERTED)
         invert=invert ? false : true;
 
-      if (input->flags & NETTLE_FLAG_SELECTED)
-        invert=invert ? false : true;
+
+      /* This can probably be optimised quite a bit... */
+      if (selection_end_line>selection_start_line)
+      {
+        if (line_number==selection_start_line)
+        {
+          if ((width-loop)>=selection_start_x)
+          {
+            invert=invert ? false : true;
+          }
+        }
+        else if (line_number>selection_start_line && line_number<selection_end_line)
+        {
+          invert=invert ? false : true;
+        }
+        else if (line_number==selection_end_line)
+        {
+          if ((width-loop)<selection_end_x)
+          {
+            invert=invert ? false : true;
+          }
+        }
+      }
+      else if (selection_end_line==selection_start_line)
+      {
+        if (line_number==selection_start_line)
+        {
+          if (selection_end_x>selection_start_x)
+          {
+            if ((width-loop)>=selection_start_x && (width-loop)<selection_end_x)
+            {
+              invert=invert ? false : true;
+            }
+          }
+          else
+          {
+            if ((width-loop)<selection_start_x && (width-loop)>=selection_end_x)
+            {
+              invert=invert ? false : true;
+            }
+          }
+        }
+      }
+      else if (selection_end_line<selection_start_line)
+      {
+        if (line_number==selection_start_line)
+        {
+          if ((width-loop)<selection_start_x)
+          {
+            invert=invert ? false : true;
+          }
+        }
+        else if (line_number>selection_end_line && line_number<selection_start_line)
+        {
+          invert=invert ? false : true;
+        }
+        else if (line_number==selection_end_line)
+        {
+          if ((width-loop)>=selection_end_x)
+          {
+            invert=invert ? false : true;
+          }
+        }
+      }
+      /* */
+
+
 
       if (session_flags & NETTLE_OTHER_REVERSE_VIDEO)
         invert=invert ? false : true;

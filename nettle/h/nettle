@@ -24,7 +24,6 @@
 #define NETTLE_FLAG_NO_INPUT      (1<<1)
 #define NETTLE_FLAG_INVERTED      (1<<2)
 #define NETTLE_FLAG_PLUS100       (1<<3)
-#define NETTLE_FLAG_SELECTED	  (1<<4)
 
 #define NETTLE_OTHER_VT52_MODE	    (1<<0)
 #define NETTLE_OTHER_INSERT_MODE    (1<<1)

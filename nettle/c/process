@@ -2863,7 +2863,6 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
   force_redraw_changedbox ();
 
   /* force the selection back on (it may have got overwritten by new data) */
-  refresh_selection_set();
   force_redraw_selection();
 
   /* redraw the cursor, in case it isn't in the main redraw block */
@@ -3042,7 +3041,6 @@ void process_data_transmission(struct session_struct *session,
   force_redraw_changedbox ();
 
   /* force the selection back on (it may have got overwritten by new data) */
-  refresh_selection_set();
   force_redraw_selection();
 
   /* redraw the cursor, in case it isn't in the main redraw block */

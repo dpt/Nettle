@@ -376,7 +376,12 @@ void redraw_window(union wimp_poll_block *wimp_block)
 		-(block.scroll.y >> eig.y) / redraw.r_charh,
 		(((block.max.y - block.min.y- block.scroll.y) >> eig.y) + redraw.r_charh - 1)
 		  / redraw.r_charh,
-                session->other_session_flags);
+                session->other_session_flags,
+                session==selection_session ? selection_start / session->terminal_size.x : -1,
+                session==selection_session ? selection_start % session->terminal_size.x : -1,
+                session==selection_session ? selection_end   / session->terminal_size.x : -1,
+                session==selection_session ? selection_end   % session->terminal_size.x : -1
+                );
 
     redraw.r_data = zapredraw_area;
 
@@ -1000,7 +1005,6 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
         {
           /* if SELECT drag, then clear the selection and work out what where the selection */
           /* start is */
-          refresh_selection_clear();
           force_redraw_selection();
 
           selection_session = session;
@@ -1031,7 +1035,6 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       /* window, then start one */
       if (selection_session != session)
       {
-	refresh_selection_clear();
 	force_redraw_selection();
 
 	selection_session = session;
@@ -1577,7 +1580,6 @@ void wimp_menu_selection(int *selection)
             case 4:
               {
                 /* Clear selection */
-                refresh_selection_clear();
                 force_redraw_selection();
                 selection_session = NULL;
               }
