@@ -192,6 +192,7 @@ union wimp_poll_block
     int height_and_flags;
     int index;
     int code;
+    int extra;
   } key_pressed;
 
   struct
