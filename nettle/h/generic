@@ -1,6 +1,6 @@
 /**
  * Generic useful headers
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2002
  *
  * $Id$
  */
@@ -289,6 +289,35 @@ struct wimp_ploticon_block
   struct coords max;
   int icon_flags;
   union icon_data contents;
+};
+
+struct wimp_gadgetsizes
+{
+  int window_handle;
+  int left_border;
+  int bottom_border;
+  int right_border;
+  int top_border;
+  int gadget_back_width;
+  int gadget_close_width;
+  int zero1;
+  int gadget_title_width;
+  int zero2;
+  int gadget_iconise_width;
+  int gadget_toggle_width;
+  int gadget_toggle_height;
+  int gadget_vscrolltop_height;
+  int gadget_scrollup_height;
+  int gadget_vscrollwell_height;
+  int gadget_scrolldown_height;
+  int gadget_vscrollbottom_height;
+  int gadget_adjust_height;
+  int gadget_adjust_width;
+  int gadget_hscrollright_width;
+  int gadget_scrollright_width;
+  int gadget_hscrollwell_width;
+  int gadget_scrollleft_width;
+  int gadget_hscrollleft_left;
 };
 
 struct colourpicker_block
