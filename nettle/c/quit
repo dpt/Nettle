@@ -17,6 +17,7 @@
 #include "scripts.h"
 #include "sockwatch.h"
 #include "termlist.h"
+#include "zapredraw.h"
 #include "wimp.h"
 
 void closedown_application(void)
