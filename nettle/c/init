@@ -135,8 +135,6 @@ void load_templates(void)
 
   choices=load_template(LOAD_TEMPLATE_NO_FONTS,"choices",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
-  terminal=load_template(LOAD_TEMPLATE_NO_FONTS,"terminal",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-
   open=load_template(LOAD_TEMPLATE_NO_FONTS,"open",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
   set_icon_data(open,4,lookup("Telnet"));
   set_icon_data(open,9,terminal_name[NETTLE_TERMINAL_VT220]);
@@ -144,8 +142,6 @@ void load_templates(void)
   resize=load_template(LOAD_TEMPLATE_NO_FONTS,"resize",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   save=load_template(LOAD_TEMPLATE_NO_FONTS,"save",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-
-  pane=load_template(LOAD_TEMPLATE_NO_FONTS,"pane",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   // close the templates file
   close_template();

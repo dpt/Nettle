@@ -49,11 +49,9 @@ extern int menu_open;
 
 extern int info;
 extern int choices;
-extern int terminal;
 extern int open;
 extern int resize;
 extern int save;
-extern int pane;
 
 extern bool logging;
 extern bool line_editor;

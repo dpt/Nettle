@@ -50,11 +50,9 @@ int menu_open;
 // Template windows
 int info;
 int choices;
-int terminal;
 int open;
 int resize;
 int save;
-int pane;
 
 bool logging=false;
 bool line_editor=false;

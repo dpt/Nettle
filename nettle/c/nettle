@@ -214,46 +214,77 @@ void start_connection(void)
     }
   }
 
-  // and make new windows
+  // make new terminal window
   {
-    int block[40];
+    int block[22];
 
-    block[0]=terminal;
-
-    regs.r[1]=((int) block)+1;
-    _kernel_swi(Wimp_GetWindowInfo, &regs, &regs);
-
-    block[2]=block[4]-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
-    block[3]=block[1]+(session[current_session].terminal_size_x*redraw.r_charw*2);
-    block[6]=-((session[current_session].terminal_size_y+session[current_session].scrollback)
+    block[0]=102;
+    block[1]=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
+    block[2]=102+(session[current_session].terminal_size_x*redraw.r_charw*2);
+    block[3]=1088;
+    block[4]=0;
+    block[5]=-((session[current_session].terminal_size_y+session[current_session].scrollback)
                *(redraw.r_charh*2*zap_yeig));
-    block[12]=-((session[current_session].terminal_size_y+session[current_session].scrollback)
+    block[6]=-1;
+    block[7]=binary("11111111000010000000000101000010");
+    block[8]=((unsigned int) 255<<24)+(7<<16)+(2<<8)+(7<<0);
+    block[9]=(0<<24)+(12<<16)+(1<<8)+(3<<0);
+    block[10]=0;
+    block[11]=-((session[current_session].terminal_size_y+session[current_session].scrollback)
                  *(redraw.r_charh*2*zap_yeig));
-    block[13]=session[current_session].terminal_size_x*redraw.r_charw*2;
-    block[19]=(int) session[current_session].title;
+    block[12]=session[current_session].terminal_size_x*redraw.r_charw*2;
+    block[13]=0;
+    block[14]=binary("100011001");
+    block[15]=6<<12;
+    block[16]=1;
+    block[17]=(4<<16)+(4<<0);
+    block[18]=(int) session[current_session].title;
+    block[19]=0;
+    block[20]=256;
+    block[21]=0;
 
-
-    regs.r[1]=((int) block)+4;
+    regs.r[1]=(int) block;
     _kernel_swi(Wimp_CreateWindow, &regs, &regs);
     session[current_session].window_handle=regs.r[0];
 
     set_title_bar(session[current_session].window_handle,"nettle");
-
-    if (line_editor)
-    {
-      block[0]=pane;
-
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_GetWindowInfo, &regs, &regs);
-
-      regs.r[1]=((int) block)+4;
-      _kernel_raise_error(_kernel_swi(Wimp_CreateWindow, &regs, &regs));
-
-      session[current_session].pane_handle=regs.r[0];
-    }
-
-    open_window(session[current_session].window_handle,false);
   }
+
+  if (line_editor)
+  {
+    // Create new pane window
+    int block[22];
+
+    block[0]=102;
+    block[1]=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig)-40;
+    block[2]=102+(session[current_session].terminal_size_x*redraw.r_charw*2);
+    block[3]=1088-(session[current_session].terminal_size_y*redraw.r_charh*2*zap_yeig);
+    block[4]=0;
+    block[5]=0;
+    block[6]=-1;
+    block[7]=binary("10000000000010000000000101100010");
+    block[8]=(1<<24)+(7<<16)+(2<<8)+(7<<0);
+    block[9]=(0<<24)+(12<<16)+(1<<8)+(3<<0);
+    block[10]=0;
+    block[11]=-48;
+    block[12]=session[current_session].terminal_size_x*redraw.r_charw*2;
+    block[13]=0;
+    block[14]=binary("000000000");
+    block[15]=0<<12;
+    block[16]=1;
+    block[17]=(4<<16)+(4<<0);
+    block[18]=0;
+    block[19]=0;
+    block[20]=0;
+    block[21]=0;
+
+    regs.r[1]=(int) block;
+    _kernel_swi(Wimp_CreateWindow, &regs, &regs);
+
+    session[current_session].pane_handle=regs.r[0];
+  }
+
+  open_window(session[current_session].window_handle,false);
 
   if (line_editor)
   {
