@@ -254,7 +254,7 @@ void close_window(int window_handle)
     if (session->socket_state == NETTLE_SESSION_CONNECTED)
     {
       char message[200];
-      bool status = generror_question(lookup("ConnectionOpen", message, 200));
+      bool status = generror_question(lookup("ConnectionOpen", message, sizeof(message)));
 
       if (!status)
         return;
@@ -284,7 +284,7 @@ static void close_program(void)
     {
       char message[200];
 
-      quit_flag = generror_question(lookup("ConnectionMultiOpen", message, 200));
+      quit_flag = generror_question(lookup("ConnectionMultiOpen", message, sizeof(message)));
       return;
     }
     session = session->next;
@@ -346,7 +346,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         {
           char save_data[1024];
 
-          read_icon_data(save, 2, save_data, 1024);
+          read_icon_data(save, 2, save_data, sizeof(save_data));
 
           if ((instr(save_data, ":")>=0))
           {
@@ -402,9 +402,9 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         {
           char string[8];
 
-          resize_terminal(terminal_menu_session, atoi(read_icon_data(resize, 0, string, 8)),
-                                                 atoi(read_icon_data(resize, 2, string, 8)),
-                                                 atoi(read_icon_data(resize, 4, string, 8)));
+          resize_terminal(terminal_menu_session, atoi(read_icon_data(resize, 0, string, sizeof(string))),
+                                                 atoi(read_icon_data(resize, 2, string, sizeof(string))),
+                                                 atoi(read_icon_data(resize, 4, string, sizeof(string))));
           if (buttons!=1)
           {
             _swi(Wimp_CreateMenu, _IN(1), -1);
@@ -655,7 +655,7 @@ void drag_finished(void)
     char string[1024];
     int loop;
 
-    read_icon_data(save, 2, string, 1024);
+    read_icon_data(save, 2, string, sizeof(string));
     loop = strlen(string);
 
     while (loop>=0 && string[loop]!='.' && string[loop]!=':')
@@ -698,7 +698,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
     char string[11];
     int connection_type;
 
-    read_icon_data(open, 4, string, 11);
+    read_icon_data(open, 4, string, sizeof(string));
 
     if (strcmp(string, lookup("SSH", message, MESSAGE_MAX_CONNECTION))==0)
       connection_type=NETTLE_SSH;
@@ -754,9 +754,9 @@ void key_pressed(int window_handle, int icon_handle, int key)
             {
               char string[8];
 
-              resize_terminal(terminal_menu_session, atoi(read_icon_data(resize, 0, string, 8)),
-                                                     atoi(read_icon_data(resize, 2, string, 8)),
-                                                     atoi(read_icon_data(resize, 4, string, 8)));
+              resize_terminal(terminal_menu_session, atoi(read_icon_data(resize, 0, string, sizeof(string))),
+                                                     atoi(read_icon_data(resize, 2, string, sizeof(string))),
+                                                     atoi(read_icon_data(resize, 4, string, sizeof(string))));
             }
             key_status=true;
         }
@@ -839,7 +839,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
                 set_icon_data(session->pane_handle, 1,
                     read_mem((char *)icon_data, session->line_editor_history +
-                    (session->line_editor_position * 512), 1024));
+                    (session->line_editor_position * 512), sizeof(icon_data)));
               }
 
               set_caret_position(session->pane_handle, 1, -1,
@@ -867,7 +867,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
                  set_icon_data(session->pane_handle,1,
                     read_mem(icon_data, session->line_editor_history+
-                     (session->line_editor_position * 512), 1024));
+                     (session->line_editor_position * 512), sizeof(icon_data)));
               }
 
               set_caret_position(session->pane_handle, 1, -1,
@@ -1142,7 +1142,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
       {
         char string[1024];
 
-        read_mem(string, wimp_block.user_message.contents.data_save_ack.file_name, 1024);
+        read_mem(string, wimp_block.user_message.contents.data_save_ack.file_name, sizeof(string));
 
         {
           struct wimp_geticonstate_block block;
@@ -1357,7 +1357,7 @@ void generror(const char *string, bool is_message)
   struct wimp_reporterror_block block;
 
   if (is_message)
-    string = lookup(string, message, 256);
+    string = lookup(string, message, sizeof(message));
 
   block.errno=0x52380; /* fill in the error number - error numbers aren't allocated the same */
                        /* as SWIs, so this number is wrong... */
@@ -1890,7 +1890,7 @@ static void drag_start(int window_handle, int icon_handle)
     block.parent_maxx  =xsize;
     block.parent_maxy  =ysize;
 
-    read_icon_data(window_handle, icon_handle, string, 256);
+    read_icon_data(window_handle, icon_handle, string, sizeof(string));
 
     if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & 1)
     {

@@ -86,7 +86,7 @@ void start_connection(void)
     session->session_flags[loop]=false;
   }
 
-  read_icon_data(open, 4, string, 1024);
+  read_icon_data(open, 4, string, sizeof(string));
 
   {
     char connection[MESSAGE_MAX_CONNECTION];
@@ -99,7 +99,7 @@ void start_connection(void)
       connection_type=NETTLE_TELNET;
   }
 
-  read_icon_data(open, 9, string, 1024);
+  read_icon_data(open, 9, string, sizeof(string));
 
   terminal_type = NETTLE_TERMINAL_VT100;
   for (loop=0; loop<8; loop++)
@@ -114,7 +114,7 @@ void start_connection(void)
   switch (connection_type)
   {
     case NETTLE_TELNET:
-      read_icon_data(open, 0, string, 1024);
+      read_icon_data(open, 0, string, sizeof(string));
 
       if (strlen(string)==0)
       {
@@ -203,7 +203,7 @@ void start_connection(void)
 
       break;
     case NETTLE_TASKWINDOW:
-      read_icon_data(open, 7, string, 1024);
+      read_icon_data(open, 7, string, sizeof(string));
       if (strlen(string)==0)
       {
         generror("InvalidComm", true);

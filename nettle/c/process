@@ -797,7 +797,7 @@ static bool process_escape_length_2(struct session_struct *session)
           if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
             /* Erase to end of screen */
-                  clear_screen(session,
+            clear_screen(session,
 
                        ((session->ypos*session->terminal_size_x)+
                        session->xpos)*4,
@@ -1679,7 +1679,7 @@ static bool process_escape_length_x(struct session_struct *session)
                     block[1]='[';
                     block[2]='0'; /* terminal OK */
                     block[3]='n';
-                    nettle_senddata(session,block,4);
+                    nettle_senddata(session,block,sizeof(block));
                   }
                   break;
                 case '6':
@@ -1696,11 +1696,11 @@ static bool process_escape_length_x(struct session_struct *session)
                   {
                     if (session->escape_string[4]=='5')
                     {
-                      char block[6];
+                      char block[7];
 
                       /* There is no printer */
                       strcpy(block,"\x1B[?13n");
-                      nettle_senddata(session,block,6);
+                      nettle_senddata(session,block,strlen(block));
                     }
                   }
                   break;
@@ -2342,7 +2342,7 @@ void process_line_editor(struct session_struct *session)
   {
     char data[512];
 
-    read_icon_data(session->pane_handle, 1, data, 512);
+    read_icon_data(session->pane_handle, 1, data, sizeof(data));
 
     icon_text = malloc(strlen(data) + 3);
     strcpy(icon_text, data);
