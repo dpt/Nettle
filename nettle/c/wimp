@@ -49,8 +49,6 @@ static int menu_data[96];
 static int menu_data2[96];
 static int menu_data3[96];
 static char indirected[1024];
-static int *bitmaps_area=0;
-static int bitmaps_area_number=0;
 
 static struct session_struct *paste_session;
 
@@ -2586,10 +2584,6 @@ void wimp_message_ack (union wimp_poll_block *wimp_block)
 
 void mode_change(void)
 {
-  int *zap_font_used;
-  int mem_required;
-  int a;
-  int b;
   struct session_struct *session = sessions;
 
   eig.x = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 4);
@@ -2598,101 +2592,14 @@ void mode_change(void)
   old_charw=redraw.r_charw;
   old_charh=redraw.r_charh;
 
-  /* work out which font we should be using */
-  zap_font_used = (eig.y == 1) ? zap_font_area : zap_lowres_font_area;
-
-  _swi(ZapRedraw_ReadVduVars, _IN(1), &redraw);
-
-  mem_required=((zap_font_used[2]+7) & ~7)*zap_font_used[3]*(zap_font_used[5]-zap_font_used[4]);
-
-  switch (redraw.r_bpp)
-  {
-    case 0:mem_required/=8;break;
-    case 1:mem_required/=4;break;
-    case 2:mem_required/=2;break;
-    case 4:mem_required*=2;break;
-    case 5:mem_required*=4;break;
-  }
-
-  /* Reallocate the bitmaps area */
-  if (dynamic_areas_available())
-  {
-    if (bitmaps_area_number==0)
-    {
-      const char string[]="Nettle bitmaps area";
-
-      /* Currently, in a 32bpp mode, with the biggest available ZapFont (14x12.Luc)
-         we can use up to 444K of space, so we set a 1MB max area size here.  If we
-	 don't, then the OS_ChangeDynamicArea below will die and we will all be upset */
-
-      _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, mem_required, -1, 0x80,
-                           1024*1024 /* allow room for loading bigger fonts later */,
-                           0, -1, string, &bitmaps_area_number, &bitmaps_area);
-    }
-    else
-    {
-      int current_size;
-
-      _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, bitmaps_area_number, &current_size);
-
-      if (mem_required-current_size!=0)
-      {
-        _swi(OS_ChangeDynamicArea, _INR(0,1), bitmaps_area_number, mem_required-current_size);
-      }
-    }
-  }
-  else
-  {
-    int *tmp=(int *) realloc(bitmaps_area, mem_required);
-    if (tmp)
-        bitmaps_area=tmp;
-    else
-        assert(0);  /* Duh. Panic! */
-  }
-
-  redraw.r_flags=0;
-  redraw.r_charw=zap_font_used[2];
-  redraw.r_charh=zap_font_used[3];
-  redraw.r_caddr=bitmaps_area;
-
-  _swi(ZapRedraw_CachedCharSize, _INR(0,3)|_OUTR(2,3),
-                                 redraw.r_bpp, 0, redraw.r_charw, redraw.r_charh, &a, &b);
-
-  redraw.r_cbpl=a;
-  redraw.r_cbpc=b;
-  redraw.r_linesp=0;
-
-  _swi(ZapRedraw_ConvertBitmap, _INR(1,4), &redraw, 0, 0x11D,
-                                ((char *) zap_font_used)+32);
-
-  redraw.r_palette=zap_palette;
-
-  _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette, zap_palette, 16);
-
-  redraw.r_for=7;
-  redraw.r_bac=0;
+  /* Always recache zapredraw bitmaps */
+  recache_bitmaps();
 
   /* Set all of the terminals to be resized to fit the new font size */
   while (session)
   {
     session->window_needs_resized=true;
     session = session->next;
-  }
-}
-
-
-void lose_bitmaps(void)
-{
-  if (dynamic_areas_available())
-  {
-    if (bitmaps_area_number!=0)
-    {
-      _swi(OS_DynamicArea, _INR(0,1), 1, bitmaps_area_number);
-    }
-  }
-  else
-  {
-    free(bitmaps_area);
   }
 }
 
