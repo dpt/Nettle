@@ -158,6 +158,11 @@ static int get_host_port (char *string, int *port)
   {
     *sptr = '\0';
     *port = atoi (sptr + 1);
+
+    if (*port == 0)
+    {
+      *port = socket_port_number_from_name(sptr + 1);
+    }
   }
   else
     *port = 23;

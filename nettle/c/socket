@@ -1,6 +1,6 @@
 /**
  * Socket code
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2004
  *
  * $Id$
  */
@@ -172,6 +172,19 @@ char *socket_ip_string(unsigned long address)
   saddr.s_addr = address;
 
   return inet_ntoa(saddr);
+}
+
+int socket_port_number_from_name(const char *port_name)
+{
+  struct servent *port_lookup = NULL;
+
+  port_lookup = getservbyname(port_name, "tcp");
+  if (port_lookup != NULL)
+  {
+    return ntohs(port_lookup->s_port);
+  }
+
+  return 0;
 }
 
 const char *socket_strerror(int errnum)

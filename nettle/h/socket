@@ -35,7 +35,15 @@ extern char *socket_ip_string(unsigned long);
  */
 int socket_connected(int socket_handle);
 
+/**
+ * Tries to convert a port name (eg. pop3) into a numeric one
+ *
+ * @param port_name string containing port name
+ *
+ * @return port number, or 0 if unknown
+ */
 
+int socket_port_number_from_name(const char *port_name);
 
 /**
  * Convert socket errno to string explanation
