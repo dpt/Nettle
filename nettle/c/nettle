@@ -1065,7 +1065,6 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     struct wimp_getwindowstate_block block;
 
     block.window_handle=session->window_handle;
-
     _swi(Wimp_GetWindowState, _IN(1), &block);
 
     /* If terminal at fullsize, then reopen window at fullsize, otherwise leave it */
@@ -1092,6 +1091,28 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     if (old_scrollback!=session->scrollback)
     {
       block.scroll.y-=(session->scrollback-old_scrollback)*old_charh << eig.y;
+    }
+
+    /* This *should* make the window snap inside the screen, but it doesn't ;(
+     * Thoughts???                                                             */
+
+    {
+      int screen_x=(_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 11)+1) <<
+                         _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 4);
+      int screen_y=(_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 12)+1) <<
+                         _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
+
+      if (block.max.x>screen_x)
+      {
+        block.min.x-=(block.max.x-screen_x);
+        block.max.x-=(block.max.x-screen_x);
+      }
+
+      if (block.max.y>screen_y)
+      {
+        block.min.y-=(block.max.y-screen_y);
+        block.max.y-=(block.max.y-screen_y);
+      }
     }
 
     /* Scale the scroll offset according to the old font size/new font size */
