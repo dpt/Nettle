@@ -16,6 +16,69 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
+static const struct session_struct *old_session;
+static int old_start, old_end;
+
+
+static void selection_changedbox_init (void)
+{
+  old_session = selection_session;
+  old_start = MIN(selection_start, selection_end);
+  old_end   = MAX(selection_start, selection_end);
+}
+
+
+static void selection_changedbox_redraw (const struct session_struct *session, int start, int end)
+{
+  struct coords from, to;
+
+  from.x = start % session->terminal_size.x;
+  from.y = start / session->terminal_size.x;
+  to.x   = end   % session->terminal_size.x;
+  to.y   = end   / session->terminal_size.x;
+
+  if (from.y == to.y)
+  {
+    /* redraw part of a line */
+    force_redraw (session->window_handle,
+                  from.x * redraw.r_charw << eig.x,
+                  (-to.y - 1) * redraw.r_charh << eig.y,
+                  (to.x+1)* redraw.r_charw << eig.x,
+                  -to.y * redraw.r_charh << eig.y);
+  }
+  else
+  {
+    /* redraw whole lines */
+    force_redraw (session->window_handle,
+                  0, ((-to.y - 1) * redraw.r_charh) << eig.y,
+                  session->terminal_size.x * redraw.r_charw << eig.x,
+                  -from.y * redraw.r_charh << eig.y);
+  }
+}
+
+
+static void selection_changedbox_draw (void)
+{
+  int new_start = MIN(selection_start, selection_end);
+  int new_end   = MAX(selection_start, selection_end);
+
+  if (old_session != selection_session || old_start == old_end)
+    selection_changedbox_redraw (selection_session, new_start, new_end);
+  else
+  {
+    if (new_start < old_start)
+      selection_changedbox_redraw (selection_session, new_start, old_start);
+    else if (new_start > old_start)
+      selection_changedbox_redraw (selection_session, old_start, new_start);
+
+    if (new_end < old_end)
+      selection_changedbox_redraw (selection_session, new_end, old_end);
+    else if (new_end > old_end)
+      selection_changedbox_redraw (selection_session, old_end, new_end);
+  }
+}
+
+
 void refresh_selection_set(void)
 {
   if (selection_session)
@@ -89,6 +152,7 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
 					selection_session->scrollback));
     }
 
+    selection_changedbox_init();
     refresh_selection_clear();
 
     if (click_point<selection_start)
@@ -118,12 +182,7 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
       }
     }
     refresh_selection_set();
-
-    force_redraw(selection_session->window_handle,0,
-       (-selection_session->terminal_size.y-
-	selection_session->scrollback)*
-	redraw.r_charh << eig.y,
-	      selection_session->terminal_size.x*redraw.r_charw << eig.x,0);
+    selection_changedbox_draw();
   }
 }
 
@@ -148,6 +207,7 @@ static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 					selection_session->scrollback));
     }
 
+    selection_changedbox_init();
     refresh_selection_clear();
 
     switch (selection_adjust_dragging)
@@ -161,12 +221,7 @@ static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
     }
 
     refresh_selection_set();
-
-    force_redraw(selection_session->window_handle,0,
-       (-selection_session->terminal_size.y-
-	selection_session->scrollback)*
-	redraw.r_charh << eig.y,
-	      selection_session->terminal_size.x*redraw.r_charw << eig.x, 0);
+    selection_changedbox_draw();
   }
 }
 
@@ -207,13 +262,13 @@ void save_selection(char *filename, bool ansi_colour)
         NETTLE_FLAG_INVERTED;
       int new_fg = read_assigned_fg(selection_session,loop);
       int new_bg = read_assigned_bg(selection_session,loop);
-      
+
       if (inverted && !was_inverted)
         fprintf(file_handle,"\x1B%s","7m");
       else if (was_inverted && !inverted)
         fprintf(file_handle,"\x1B%s","27m");
       was_inverted = inverted;
-      
+
       if (new_fg != current_fg)
       {
 	if (new_fg>7)
@@ -222,7 +277,7 @@ void save_selection(char *filename, bool ansi_colour)
 	  fprintf(file_handle, "\x1B" "3%cm", new_fg+48);
 	current_fg = new_fg;
       }
-      
+
       if (new_bg != current_bg)
       {
 	if (new_bg>7)
@@ -232,7 +287,7 @@ void save_selection(char *filename, bool ansi_colour)
 	current_bg = new_bg;
       }
     }
-    
+
     fputc(read_assigned_character(selection_session,loop),file_handle);
   }
 
@@ -316,6 +371,7 @@ void handle_selection_drag(void)
   {
     case 4:
       /* Drag SELECT - clear the selection, re-work it out, and set it again, then redraw */
+      selection_changedbox_init();
       refresh_selection_clear();
 
       selection_end = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
@@ -336,16 +392,11 @@ void handle_selection_drag(void)
       }
 
       refresh_selection_set();
-
-      force_redraw(selection_session->window_handle,0,
-	       (-selection_session->terminal_size.y-
-		selection_session->scrollback)*
-		redraw.r_charh << eig.y,
-		selection_session->terminal_size.x*redraw.r_charw << eig.x, 0);
+      selection_changedbox_draw();
 
       break;
     case 1:
-      /* ADJUST dragging - see c.seln */
+      /* ADJUST dragging */
       selection_adjust_drag(x,x_pos,y,y_pos);
       break;
   }
@@ -354,28 +405,10 @@ void handle_selection_drag(void)
 
 void force_redraw_selection (void)
 {
-  int top, bottom;
-
   if (selection_session)
   {
-    if (selection_start <= selection_end)
-    {
-      top = selection_start;
-      bottom = selection_end;
-    }
-    else
-    {
-      top = selection_end;
-      bottom = selection_start;
-    }
-
-    top /= selection_session->terminal_size.x;
-    bottom /= selection_session->terminal_size.x;
-
-    force_redraw (selection_session->window_handle, 0,
-  	          (-bottom - 1) * redraw.r_charh << eig.y,
-    		  selection_session->terminal_size.x * redraw.r_charw << eig.x,
-		  -top * redraw.r_charh << eig.y);
+    old_session = 0;
+    selection_changedbox_draw ();
   }
 }
 
@@ -388,15 +421,15 @@ void selection_paste(void)
   int     loop_start;
   int     loop_end;
   int     loop;
-  
+
   if (selection_session == NULL)
     return;
-  
+
   loop_start = MIN(selection_start, selection_end);
   loop_end   = MAX(selection_start, selection_end);
-  
+
   bufferptr = buffer;
-  
+
   for (loop=loop_start*4; loop<loop_end*4; loop+=4)
   {
     if (loop!=loop_start*4)
@@ -407,7 +440,7 @@ void selection_paste(void)
         *bufferptr++ = '\n';
       }
     }
-    
+
     *bufferptr++ = read_assigned_character(selection_session,loop);
     if (bufferptr - buffer >= sizeof(buffer) - 3)
     {
@@ -422,7 +455,7 @@ void selection_paste(void)
       bufferptr = buffer;
     }
   }
-  
+
   /* flush any data left in the buffer */
   if (socket_senddata(selection_session->socket_handle,
                       buffer,

@@ -16,7 +16,7 @@
 #define RESOLVER_INPROGRESS	1
 #define RESOLVER_SUCCESS	2
 
-extern char socket_resolvehost(char *, unsigned int *);
+extern char socket_resolvehost(const char *, unsigned int *);
 extern int socket_connecttoip(int, int);
 extern void socket_close(int);
 extern int socket_connected(int);

@@ -33,7 +33,7 @@ extern int close(int /*s*/);
 
 
 
-char socket_resolvehost(char *host_name, unsigned int *address)
+char socket_resolvehost(const char *host_name, unsigned int *address)
 {
   int status;
   struct hostent *hostent;

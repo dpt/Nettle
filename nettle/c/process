@@ -208,7 +208,7 @@ static void scroll_down (struct session_struct *session, bool wrap)
   if (wrap)
     wrapped_line = malloc (session->terminal_size.x * 4);
 
-  if (selection_session)
+  if (selection_session == session)
   {
     selection_start+=session->terminal_size.x;
     selection_end+=session->terminal_size.x;
