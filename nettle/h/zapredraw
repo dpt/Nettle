@@ -88,5 +88,7 @@ extern void reopen_zap_font_menu (void);
 extern void delete_zap_font_menu (void);
 extern void allocate_zapredraw_area(int, int, int);
 extern void lose_zapredraw_area(void);
+extern void recache_bitmaps(void);
+extern void lose_bitmaps(void);
 
 #endif
