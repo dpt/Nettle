@@ -20,6 +20,7 @@
 #include "wimp.h"
 #include "zapredraw.h"
 #include "wimputil.h"
+#include "url.h"
 
 #define MAX_TEMPLATES 10
 #define LOAD_TEMPLATE_NO_FONTS          (int *)(-1)
@@ -42,7 +43,9 @@ static void initialise_wimp(void)
     WIMP_MESSAGE_TASKWINDOW_OUTPUT,
     WIMP_MESSAGE_TASKWINDOW_EGO,
     WIMP_MESSAGE_TASKWINDOW_MORIO,
-    WIMP_MESSAGE_QUIT
+    URI_MReturnResult,
+    Wimp_MOpenUrl,
+    WIMP_MESSAGE_QUIT /* must be last! */
   };
 
   _swi(Wimp_Initialise, _INR(0,3)|_OUT(1), 310, 0x4b534154,

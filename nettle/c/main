@@ -13,6 +13,7 @@
 #include "misc.h"
 #include "quit.h"
 #include "sockwatch.h"
+#include "url.h"
 #include "wimp.h"
 
 
@@ -132,6 +133,10 @@ int main(void)
       case 18:
         /* wimp message */
         wimp_message(&wimp_block);
+        break;
+      case 19:
+        if (wimp_block.user_message.message_code == Wimp_MOpenUrl)
+          url_bounce(&wimp_block.user_message);
         break;
     }
   }

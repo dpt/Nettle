@@ -1894,6 +1894,10 @@ void wimp_message(union wimp_poll_block *wimp_block)
         colourpicker_handle = 0;
       }
       break;
+    
+    case URI_MReturnResult:
+      url_bounce(&wimp_block->user_message);
+      break;
   }
 }
 
