@@ -12,6 +12,9 @@
 #include "quit.h"
 #include "wimp.h"
 
+/* GCC build work-around */
+FILE *__stderr = stderr;
+
 int main(void)
 {
 #ifdef FORTIFY
