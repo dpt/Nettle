@@ -8,10 +8,10 @@
 /* Include fortify.h (Debugging) */
 #include "fortify.h"
 
-#define false 0
-#define true (!(false))
+typedef enum {
+  false = 0, true = 1
+} bool;
 
-#define bool char
 
 // Standard includes
 #include <stdio.h>
