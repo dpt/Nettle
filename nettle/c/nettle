@@ -1522,9 +1522,6 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     block.window_handle=session->window_handle;
     _swi(Wimp_GetWindowState, _IN(1), &block);
 
-    printf("Window size was %d,%d,%d,%d\n", block.min.x, block.min.y, block.max.x,block.max.y);
-    printf("charw %d,charh %d ,oldcharw %d,oldcharh %d\n", redraw.r_charw,redraw.r_charh,old_charw,old_charh);
-
     /* If terminal at fullsize, then reopen window at fullsize, otherwise leave it */
     if (block.max.x-block.min.x==(old_terminal_size_x*old_charw << old_eig.x))
     {
@@ -1566,8 +1563,6 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     /* Scale the scroll offset according to the old font size/new font size */
     block.scroll.x=(block.scroll.x*(redraw.r_charw << eig.x)/(old_charw << old_eig.x));
     block.scroll.y=(block.scroll.y*(redraw.r_charh << eig.y)/(old_charh << old_eig.y));
-
-    printf("Window size is now %d,%d,%d,%d\n", block.min.x, block.min.y, block.max.x,block.max.y);
 
     /* wimp_openwindow_block starts the same way as wimp_getwindowstate_block */
     _swi(Wimp_OpenWindow, _IN(1), &block);
