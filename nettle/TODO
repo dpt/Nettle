@@ -8,6 +8,9 @@ Spooling (logging? generic?)
 Drag binary to ANSI Task open dialog command line
 
 Sort tab order in hotlist dialog
+Grey-out buttons on hotlist list editor when unavailable for clicking
+Drag items on hotlist
+Stop hotlist redrawing all items when one is clicked on
 
 menu widths
  
