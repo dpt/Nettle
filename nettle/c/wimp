@@ -658,19 +658,16 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
          * position, we get the new size
          */
         _swi(Wimp_OpenWindow, _IN(1), block);
-      resize_terminal(session, new_x, new_y, session->scrollback, true);
+        resize_terminal(session, new_x, new_y, session->scrollback, true);
 
         /* Refetch the window state as the Wimp may have changed it if it
          * didn't fit on the screen etc.
          */
-      _swi(Wimp_GetWindowState, _IN(1), block);
-
-#if 0
+        _swi(Wimp_GetWindowState, _IN(1), block);
+      }
       block->max.x = block->min.x+(session->terminal_size.x)*(redraw.r_charw << eig.x);
       block->min.y = block->max.y-(session->terminal_size.y)*(redraw.r_charh << eig.y);
       block->scroll.y =-(session->terminal_size.y+session->scrollback)*(redraw.r_charh << eig.y);
-#endif
-      }
     }
     else
     {
