@@ -510,7 +510,7 @@ bool process_escape_length_3(int session_handle)
                 {
                   char block[3];
                   session[session_handle].session_flags[
-                                  session[session_handle].escape_string[2]]=false;
+                                  (unsigned char)session[session_handle].escape_string[2]]=false;
 
                   block[0]=255; // IAC
                   block[1]=status_negative(iac_type);
@@ -527,7 +527,7 @@ bool process_escape_length_3(int session_handle)
 
               done=true;
 
-              session[session_handle].session_flags[session[session_handle].escape_string[2]]=
+              session[session_handle].session_flags[(unsigned char)session[session_handle].escape_string[2]]=
                                                                                            false;
               block[0]=255; // IAC
               block[1]=status_negative(iac_type);
