@@ -2144,6 +2144,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       msg_ref = 0;
       switch (wimp_block->user_message.contents.data_save.filetype)
       {
+        case 0xFAF: /* Html */
         case 0xFFF: /* Text */
           /* text must be dragged to a terminal window or its input pane */
           {
@@ -2255,7 +2256,8 @@ void wimp_message(union wimp_poll_block *wimp_block)
           if (parse_acorn_uri (wimp_block))
             reply_to_dataload (wimp_block);
           break;
-        case 0xFFF:
+        case 0xFAF: /* html */
+        case 0xFFF: /* text */
           if (paste_text_file (wimp_block))
             reply_to_dataload (wimp_block);
           break;
