@@ -1,6 +1,6 @@
 /**
  * Nettle miscellaneous code headers
- * (C) Nettle Developers 2001
+ * (C) Nettle Developers 2001-2002
  *
  * $Id$
  */
@@ -14,6 +14,7 @@ char *get_system_variable(char *, const char *, int);
 int binary(const char *);
 int instr(const char *, const char *);
 int esc_instr(const char *, const char *, int);
+void misc_zero_terminate_ctrl_string(char *);
 char *read_mem(char *, const char *, int);
 void log_string(const char *);
 void log_byte(char);
