@@ -2154,16 +2154,17 @@ static void open_open_window(bool open_window_flag)
 static void create_menu_by_icon (int *menu, int window, int icon)
 {
   /* open the menu in the proper place next to a menu icon */
-  int ib[10]; /* quick and nasty */
+  struct wimp_geticonstate_block gisblock;
+  struct wimp_getwindowstate_block gwsblock;
 
-  ib[0] = window;
-  ib[1] = icon;
-  _swi (Wimp_GetIconState, _IN(1), (int) ib);
+  gisblock.window_handle = window;
+  gisblock.icon_handle = icon;
+  _swi (Wimp_GetIconState, _IN(1), (int) &gisblock);
 
-  wimp_block.open_window.window_handle = window;
-  _swi (Wimp_GetWindowState, _IN(1), (int) &wimp_block);
+  gwsblock.window_handle = window;
+  _swi (Wimp_GetWindowState, _IN(1), (int) &gwsblock);
 
   _swi(Wimp_CreateMenu, _INR(1,3), menu,
-       wimp_block.open_window.min.x + wimp_block.open_window.scroll.x + ib[4],
-       wimp_block.open_window.max.y + wimp_block.open_window.scroll.y + ib[5]);
+       gwsblock.min.x + gwsblock.scroll.x + gisblock.min.x,
+       gwsblock.max.y + gwsblock.scroll.y + gisblock.max.y);
 }
