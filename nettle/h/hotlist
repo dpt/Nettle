@@ -41,5 +41,9 @@ extern int hotlist_num_items(void);
 extern void hotlist_clear_states(void);
 extern int hotlist_populate_selected(void);
 extern hotlistnode *hotlist_createnew(void);
+extern void resize_hotpane(void);
+extern void win_panehot_click(int x, int y, int buttons, int icon_handle);
+extern void win_hotpane_click(int x, int y, int buttons, int icon_handle);
+extern void win_hotedit_click(int x, int y, int buttons, int icon_handle);
 
 #endif /* HOTLIST_H */

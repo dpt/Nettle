@@ -29,7 +29,7 @@ TEMPLATES = !Nettle.Resources.UK.Template3D
 
 OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o \
-       messages.o termlist.o
+       messages.o termlist.o wimputil.o
 
 RUNIMAGE = !Nettle.!RunImage
 
@@ -56,28 +56,32 @@ templ.h: templheadr $(TEMPLATES)
 	$(OBJASM) $(OBJASMFLAGS) $< -o $@ 
 
 
-hotlist.o:      hotlist.c hotlist.h generic.h globals.h misc.h nettle.h wimp.h
+hotlist.o:      hotlist.c hotlist.h generic.h globals.h misc.h nettle.h wimp.h \
+                wimputil.h
 chardefn.o:	chardefn.c generic.h globals.h chardefn.h misc.h
-choices.o:	choices.c generic.h globals.h choices.h misc.h wimp.h
+choices.o:	choices.c generic.h globals.h choices.h misc.h wimp.h wimputil.h \
+                templ.h zapredraw.h
 fortify.o:	fortify.c fortify.h ufortify.h
 globals.o:	globals.c generic.h globals.h zapredraw.h
 init.o: 	init.c generic.h globals.h chardefn.h init.h misc.h \
-              	nettle.h quit.h wimp.h zapredraw.h templ.h
-lineedit.o:   	lineedit.c generic.h globals.h lineedit.h misc.h wimp.h
+              	nettle.h quit.h wimp.h zapredraw.h templ.h wimputil.h
+lineedit.o:   	lineedit.c generic.h globals.h lineedit.h misc.h wimp.h wimputil.h
 main.o: 	main.c generic.h globals.h choices.h init.h main.h misc.h \
               	quit.h wimp.h hotlist.h
 misc.o: 	misc.c generic.h globals.h misc.h
 nettle.o:	nettle.h generic.h globals.h misc.h nettle.h seln.h socket.h \
-	      	wimp.h zapredraw.h
+	      	wimp.h zapredraw.h wimputil.h
 process.o:	process.h generic.h globals.h graphics.h misc.h nettle.h \
-		keyboard.h seln.h wimp.h zapredraw.h
+		keyboard.h seln.h wimp.h zapredraw.h wimputil.h
 quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h hotlist.h
-seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h
+seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h \
+                wimputil.h
 socket.o:	socket.c generic.h globals.h sockwatch.h socket.h
 wimp.o: 	wimp.c generic.h globals.h lineedit.h misc.h nettle.h process.h \
 		seln.h socket.h wimp.h zapredraw.h hotlist.h termlist.h \
-		choices.h templ.h
-zapgen.o:    	zapgen.c generic.h globals.h nettle.h
+		choices.h templ.h wimputil.h
+zapgen.o:    	zapgen.c generic.h globals.h nettle.h wimputil.h
 messages.o:     messages.c messages.h generic.h globals.h misc.h
 sockwatch.o:	sockwatch.c sockwatch.h
 termlist.o:	termlist.c generic.h globals.h termlist.h misc.h nettle.h wimp.h
+wimputil.o:     wimputil.h wimp.h globals.h generic.h nettle.h messages.h misc.h

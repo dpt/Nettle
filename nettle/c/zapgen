@@ -13,6 +13,7 @@
 #include "misc.h"
 #include "nettle.h"
 #include "wimp.h"
+#include "wimputil.h"
 #include "zapredraw.h"
 
 struct term_char

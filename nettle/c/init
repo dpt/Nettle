@@ -19,6 +19,7 @@
 #include "templ.h"
 #include "wimp.h"
 #include "zapredraw.h"
+#include "wimputil.h"
 
 #define MAX_TEMPLATES 10
 #define LOAD_TEMPLATE_NO_FONTS          (int *)(-1)

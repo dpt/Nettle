@@ -15,6 +15,7 @@
 #include "seln.h"
 #include "socket.h"
 #include "wimp.h"
+#include "wimputil.h"
 #include "zapredraw.h"
 
 static const struct session_struct *old_session;

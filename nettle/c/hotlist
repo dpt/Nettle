@@ -13,6 +13,7 @@
 #include "wimp.h"
 #include "messages.h"
 #include "templ.h"
+#include "wimputil.h"
 #include <ctype.h>
 
 static hotlistnode *hotlisthead = NULL;
@@ -436,3 +437,126 @@ err:
   return NULL;
 }
 
+
+void win_panehot_click(int x, int y, int buttons, int icon_handle)
+{
+  switch (icon_handle)
+  {
+    case icon_panehot_new:
+      {
+        hotlistnode *node = hotlist_createnew();
+        hotlist_clear_states();
+        node->internal_state |= 1;
+      }
+      hotlist_populate_selected();
+      open_window_centred(win_hotedit);
+      resize_hotpane();
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+      {
+        struct wimp_getwindowinfo_block window;
+        window.window_handle=win_hotpane;
+        _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
+        window.scroll.y=-(1<<28);
+        _swi(Wimp_OpenWindow, _IN(1), &window);
+      }
+      break;
+
+    case icon_panehot_edit:
+      if (hotlist_populate_selected())
+        open_window_centred(win_hotedit);
+      break;
+
+    case icon_panehot_delete:
+      close_window(win_hotedit);
+      if (hotlist_populate_selected())
+      {
+        if (generror_question(lookup_static("DeleteHot")))
+        {
+          /* delete it! */
+
+          resize_hotpane();
+          force_redraw(win_hotpane,0,-(1<<28),1024,0);
+        }
+      }
+      break;
+
+  }
+}
+
+
+void win_hotpane_click(int x, int y, int buttons, int icon_handle)
+{
+  int item, x_pos, y_pos;
+  hotlistnode *node;
+
+  {
+    struct wimp_getwindowstate_block block;
+
+    block.window_handle=win_hotpane;
+
+    _swi(Wimp_GetWindowState, _IN(1), &block);
+
+    x_pos=block.min.x-block.scroll.x;
+    y_pos=block.max.y-block.scroll.y;
+  }
+
+  item = -((y-y_pos)+8)/44;
+
+  node = decode_hotlist_menu(item);
+  if (!node)
+    return;
+
+  switch(buttons)
+  {
+    case ClickSelect:
+      hotlist_clear_states();
+      node->internal_state |= 1;
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+      break;
+
+    case ClickAdjust:
+      hotlist_clear_states();
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+      break;
+
+    case DoubleSelect:
+      win_panehot_click(0,0,4,icon_panehot_edit);
+      break;
+
+    case DragSelect:
+      hotlist_clear_states();
+      node->internal_state |= 1;
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+
+      /* Start dragging the item here */
+      break;
+  }
+}
+
+
+void win_hotedit_click(int x, int y, int buttons, int icon_handle)
+{
+  switch(icon_handle)
+  {
+    case icon_hotedit_cancel:
+      close_window(win_hotedit);
+      break;
+  }
+}
+
+void resize_hotpane(void)
+{
+  struct wimp_getwindowinfo_block window;
+  struct wimp_setextent_block ext;
+  window.window_handle=win_hotpane;
+
+  _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
+  ext.min.x = 0;
+  ext.max.y = 0;
+  ext.max.x = window.max.x - window.min.x;
+  ext.min.y = -(hotlist_num_items()*44 + 16);
+  if (ext.min.y> -(window.max.y - window.min.y))
+    ext.min.y = -(window.max.y - window.min.y);
+
+  _swi(Wimp_SetExtent,_INR(0,1),win_hotpane, &ext);
+}

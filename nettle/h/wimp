@@ -41,20 +41,14 @@ extern void mode_change(void);
 
 extern void lose_bitmaps(void);
 extern void lose_zapredraw_area(void);
-extern void generror(const char *, bool);
 extern void set_caret_position(int, int, int, int);
 extern void check_set_caret_position(int, int);
-extern void set_icon_state(int, int, int, int);
-extern void set_icon_data(int, int, const char *);
-extern char *read_icon_data(int, int, char *, int);
 
-extern void set_title_bar(int, const char *);
-extern void force_redraw(int,int,int,int,int);
-
-extern void create_menu_by_icon(int *menu, int window, int icon);
 extern void set_termsize_icons(int, int, int, int, struct coords, int);
 extern bool read_termsize_icons(int, int, int, int, struct coords *, int *);
 extern int read_lineeditor_type (int, int);
 extern enum nettle_terminal read_terminal_type (int, int);
+extern void create_terminal_type_menu(int window_handle, int text_icon, int by_icon);
+extern void create_lineeditor_type_menu(void);
 
 #endif

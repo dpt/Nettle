@@ -42,6 +42,10 @@ struct coords eig;
 
 int task_handle;
 int iconbar_handle;
+int menu_window, menu_icon; /* for use with the currently-open menu */
+int colourpicker_handle;
+int drag_window_handle=0;
+int drag_icon_handle=0;
 
 /* Template windows */
 int win_info;
@@ -77,6 +81,7 @@ int selection_adjust_dragging           =0;
 const struct session_struct *cursor_session=NULL;
 int nextcursortime;
 bool cursor_state = false;
+colour_t zap_palette[16];
 
 struct session_struct *terminal_menu_session = NULL;
 
