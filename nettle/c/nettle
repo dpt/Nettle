@@ -1690,8 +1690,10 @@ void nettle_reconnect(struct session_struct *session)
       assert(session->dns != NULL);
 
       set_title_bar(session->window_handle, lookup_static ("title_conn"));
-      write_out_strings (session, lookup_static ("lookup"),
-                         session->socket_host, "...\r\n", 0);
+      write_out_strings (session,
+                         lookup_static_var ("lookup", 1,
+                                             session->socket_host),
+                         "\r\n", 0);
       main_requirenull = true;
 
       break;
