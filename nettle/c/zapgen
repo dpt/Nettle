@@ -160,6 +160,12 @@ char * zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
         fg ^= bg;
       }
 
+      if (selected)
+      {
+        if (fg==bg)
+          fg=15-bg;
+      }
+
       if ((input->flags & NETTLE_FLAG_BLINK) && blinking && cursor_state)
         fg = bg;
 
@@ -245,7 +251,7 @@ void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrol
   int size_of_body         = ( terminal_size_x*(terminal_size_y+1) ) * size_of_one_char;
   int size_of_eols         = ( terminal_size_y+1 )*2;
   int size_of_cursor       = 8; /* 4bytes mb cursor, 4 bytes control */
-  
+
   int calculate_new_size   = size_of_row_pointers + size_of_body + size_of_eols + size_of_cursor;
 
   if (size_of_zapredraw_area < calculate_new_size)
