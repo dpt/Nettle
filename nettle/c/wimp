@@ -1384,9 +1384,9 @@ static bool generror_question(char *string)
 
 
 
-void set_caret_position(int window_handle, int icon_handle, int flags, int index)
+void set_caret_position(int window_handle, int icon_handle, int flags, int string_index)
 {
-  _swi(Wimp_SetCaretPosition, _INR(0,5), window_handle, icon_handle, -1, -1, flags, index);
+  _swi(Wimp_SetCaretPosition, _INR(0,5), window_handle, icon_handle, -1, -1, flags, string_index);
 }
 
 
