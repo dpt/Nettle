@@ -237,7 +237,12 @@ static void reprocess_position_scroll(struct session_struct *session)
   }
 
   if (scrolled)
+  {
     changedbox_update_whole ();
+    /* also mark the scrollback area for redraw if necessary */
+    if (session->scroll_start == 1)
+      changedbox_update (0, 0,  session->terminal_size.x - 1, session->scrollback);
+  }
 }
 
 
@@ -1450,7 +1455,7 @@ static bool process_escape_length_x(struct session_struct *session)
                               ((session->pos.y+1)*session->terminal_size.x)*4,
 
                               session->current_fg,
-                              session->current_bg,
+                              0, /* always black (ref. rxvt behaviour) */
                               0,
                               32);
 
@@ -1595,26 +1600,22 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 5:
                           /* Selects reverse video */
-                          session->other_session_flags=
-                                       session->other_session_flags | NETTLE_OTHER_REVERSE_VIDEO;
+                          session->other_session_flags |= NETTLE_OTHER_REVERSE_VIDEO;
                           break;
                         case 6:
                           /* Home position based in scrolling region */
-                          session->other_session_flags=
-                                         session->other_session_flags | NETTLE_OTHER_ORIGIN_MODE;
+                          session->other_session_flags |= NETTLE_OTHER_ORIGIN_MODE;
 
                           session->pos.x=0;
                           session->pos.y=session->scrollback+session->scroll_start-1;
                           break;
                         case 7:
                           /* Autowrap */
-                          session->other_session_flags=
-                                           session->other_session_flags | NETTLE_OTHER_WRAP_MODE;
+                          session->other_session_flags |= NETTLE_OTHER_WRAP_MODE;
                           break;
                         case 25:
                           /* Make cursor visible */
-                          session->other_session_flags=
-                                          session->other_session_flags | NETTLE_OTHER_CURSOR_VIS;
+                          session->other_session_flags |= NETTLE_OTHER_CURSOR_VIS;
                           break;
                       }
                     }
@@ -1639,13 +1640,11 @@ static bool process_escape_length_x(struct session_struct *session)
                       {
                         case 2:
                           /* Turn on keyboard lock */
-                          session->other_session_flags=
-                                        session->other_session_flags | NETTLE_OTHER_KEYLOCK_MODE;
+                          session->other_session_flags |= NETTLE_OTHER_KEYLOCK_MODE;
                           break;
                         case 4:
                           /* Turn on insert mode */
-                          session->other_session_flags=
-                                         session->other_session_flags | NETTLE_OTHER_INSERT_MODE;
+                          session->other_session_flags |= NETTLE_OTHER_INSERT_MODE;
                           break;
                         case 8:
                           /* Turn on auto repeat */
@@ -1656,8 +1655,11 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 20:
                           /* Make LF,FF,VT move to first column of next line */
-                          session->other_session_flags=
-                                       session->other_session_flags | NETTLE_OTHER_LINEFEED_MODE;
+                          session->other_session_flags |= NETTLE_OTHER_LINEFEED_MODE;
+                          break;
+                        case 67:
+                          /* Make Backspace send BS and Delete send DEL */
+                          session->other_session_flags |= NETTLE_OTHER_BACKSPACE_MODE;
                           break;
                       }
                     }
@@ -1760,6 +1762,10 @@ static bool process_escape_length_x(struct session_struct *session)
                         case 20:
                           /* Make LF,FF,VT move to next line (normal behaviour) */
                           session->other_session_flags &= ~NETTLE_OTHER_LINEFEED_MODE;
+                          break;
+                        case 67:
+                          /* Make Backspace send Delete and Delete send ESC '[3~' (requires DeepKeys) */
+                          session->other_session_flags &= ~NETTLE_OTHER_BACKSPACE_MODE;
                           break;
                       }
                     }
