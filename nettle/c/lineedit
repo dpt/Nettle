@@ -162,23 +162,28 @@ void open_pane_window(struct session_struct *session, struct wimp_openwindow_blo
 {
   struct wimp_getwindowoutline_block gwo_block;
   struct wimp_openwindow_block block;
-  int width;
+  struct wimp_getwindowstate_block gws_block;
+  int width,height=0;
 
   width=main_block->max.x-main_block->min.x;
 
   if (width>session->terminal_size.x*redraw.r_charw << eig.x)
     width=session->terminal_size.x*redraw.r_charw << eig.x;
 
+  gws_block.window_handle=session->window_handle;
+  _swi(Wimp_GetWindowState, _IN(1), &gws_block);
+  if (gws_block.window_flags & (1<<30))
+    height=toolheight;
+
   gwo_block.window_handle=session->window_handle;
   _swi(Wimp_GetWindowOutline, _IN(1), &gwo_block);
 
   block.window_handle=session->pane_handle;
   block.min.x=main_block->min.x;
-  block.min.y=(main_block->min.y)-40-48;
+  block.min.y=(main_block->min.y)-height-48;
   block.max.x=block.min.x+width;
 
-  /* This is wrong as it assumes a toolsprite height */
-  block.max.y=(main_block->min.y)-40;
+  block.max.y=(main_block->min.y)-height;
   block.scroll.x=0;
   block.scroll.y=0;
   block.handle_behind=main_block->handle_behind;
@@ -193,7 +198,8 @@ bool line_editor_active(struct session_struct *session)
 {
   switch (session->line_editor_type)
   {
-    case LINEEDIT_CHECKBOX_OFF: case LINEEDIT_CHECKBOX_ON:
+    case LINEEDIT_CHECKBOX_OFF:
+    case LINEEDIT_CHECKBOX_ON:
     {
       struct wimp_geticonstate_block block;
 
