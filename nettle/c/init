@@ -15,15 +15,15 @@
 
 int *initialise_messages(void)
 {
-  /* Set up the messages we want to get */
-  message_list=malloc(6*sizeof(int));
-
-  message_list[0]=2;	   /* DataSaveAck */
-  message_list[1]=0x400C1; /* ModeChange */
-  message_list[2]=0x808C1; /* TW_Output */
-  message_list[3]=0x808C2; /* TW_Ego */
-  message_list[4]=0x808C3; /* TW_Morio */
-  message_list[5]=0x0;     /* Quit */
+  static int message_list[] =
+  {
+    2,       /* DataSaveAck */
+    0x400C1, /* ModeChange */
+    0x808C1, /* TW_Output */
+    0x808C2, /* TW_Ego */
+    0x808C3, /* TW_Morio */
+    0        /* Quit */
+  };
 
   return message_list;
 }
@@ -225,30 +225,34 @@ void open_template(void)
 
 int load_template(int *font_array,char *window_name,int *sprite_area)
 {
+  char window_name_copy[12];
   int *template_data;
   int *indirected_data;
   int size_of_template_data;
   int size_of_indirected_data;
   int window_handle;
+  
+  /* template name must be in a writable 12-byte buffer */
+  strcpy(window_name_copy, window_name);
 
   /* get sizes of template data and indirected_data */
   regs.r[1]=0;
-  regs.r[5]=(int) window_name;
+  regs.r[5]=(int) window_name_copy;
   regs.r[6]=0;
   _kernel_swi(Wimp_LoadTemplate, &regs, &regs);
   size_of_template_data=regs.r[1];
   size_of_indirected_data=regs.r[2];
 
-  /* malloc this amount */
-  template_data=malloc(size_of_template_data);
+  /* malloc this amount, indirected first to be heap friendly */
   indirected_data=malloc(size_of_indirected_data);
+  template_data=malloc(size_of_template_data);
 
   /* load the template */
   regs.r[1]=(int) template_data;
   regs.r[2]=(int) indirected_data;
   regs.r[3]=(int) indirected_data+size_of_indirected_data;
   regs.r[4]=(int) font_array;
-  regs.r[5]=(int) window_name;
+  regs.r[5]=(int) window_name_copy;
   regs.r[6]=0;
   _kernel_swi(Wimp_LoadTemplate, &regs, &regs);
 
