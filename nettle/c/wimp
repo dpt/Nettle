@@ -1231,7 +1231,7 @@ void mode_change(void)
   }
 
   /* Reallocate the bitmaps area */
-  bitmaps_area=realloc(bitmaps_area,mem_required);
+  bitmaps_area=realloc(bitmaps_area, mem_required);
 
   redraw.r_flags=0;
   redraw.r_charw=zap_font_used[2];
@@ -1357,16 +1357,16 @@ void set_icon_data(int window_handle, int icon_handle, char *contents)
 
 char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_len)
 {
-  int block[10];
+  struct wimp_geticonstate_block block;
 
-  block[0] = window_handle;
-  block[1] = icon_handle;
+  block.window_handle = window_handle;
+  block.icon_handle   = icon_handle;
 
-  _swi(Wimp_GetIconState, _IN(1), block);
+  _swi(Wimp_GetIconState, _IN(1), &block);
 
-  if (block[6] & (1 << 8))
+  if (block.icon_flags & (1 << 8))
   {
-    return read_mem(buffer, (char *)block[7], buf_len);
+    return read_mem(buffer, block.contents.it.text, buf_len);
   }
   else
   {
@@ -1381,17 +1381,17 @@ char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_l
 
 static int get_icon_data_length(int window_handle, int icon_handle)
 {
-  int block[11];
+  struct wimp_geticonstate_block block;
   int length = 0;
 
-  block[0] = window_handle;
-  block[1] = icon_handle;
+  block.window_handle = window_handle;
+  block.icon_handle   = icon_handle;
 
-  _swi(Wimp_GetIconState, _IN(1), block);
+  _swi(Wimp_GetIconState, _IN(1), &block);
 
-  if (block[6] & (1 << 8))
+  if (block.icon_flags & (1 << 8))
   {
-    char *data = (char *)block[7];
+    char *data = block.contents.it.text;
 
     while (*data != '\0' && *data != '\x0d' && *data != '\x0a') {
       length++;
@@ -1604,7 +1604,7 @@ static char *get_grey_last_menu_item(char *name)
 
 static void create_iconbar_menu(void)
 {
-  int block[5];
+  struct wimp_getpointerinfo_block block;
 
   char *menu_title   = get_menu_item("AppName");
   char *menu_info    = get_menu_item("Info");
@@ -1613,9 +1613,9 @@ static void create_iconbar_menu(void)
 
   if (create_menu(menu_data,0,menu_title,menu_info,info,menu_choices,menu_quit))
   {
-    _swi(Wimp_GetPointerInfo, _IN(1), block);
+    _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block[0]-64, 252);
+    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.x-64, 252);
   }
 
   free(menu_title);
@@ -1630,7 +1630,7 @@ static void create_iconbar_menu(void)
 
 static void create_terminal_menu(void)
 {
-  int block[5];
+  struct wimp_getpointerinfo_block block;
 
   char *menu_title          =get_menu_item("Terminal");
   char *menu_selection;
@@ -1657,9 +1657,9 @@ static void create_terminal_menu(void)
     if (create_menu(menu_data2,0,menu_selection_title,menu_save,save,menu_launch_url,menu_send,
                     menu_clear))
     {
-      _swi(Wimp_GetPointerInfo, _IN(1), block);
+      _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-      _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block[0]-64, block[1]);
+      _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.x-64, block.y);
     }
   }
 
@@ -1680,7 +1680,7 @@ static void create_terminal_menu(void)
 
 static void create_connection_menu(void)
 {
-  int block[5];
+  struct wimp_getpointerinfo_block block;
 
   char *menu_title     =get_menu_item("Connection");
   char *menu_telnet    =get_menu_item("Telnet");
@@ -1689,9 +1689,9 @@ static void create_connection_menu(void)
 
   if (create_menu(menu_data,0,menu_title,menu_telnet,menu_ssh,menu_taskwindow))
   {
-    _swi(Wimp_GetPointerInfo, _IN(1), block);
+    _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block[0]-64, block[1]);
+    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.x-64, block.y);
   }
 
   menu_open=MENU_CONNECTION;
@@ -1701,7 +1701,7 @@ static void create_connection_menu(void)
 
 static void create_terminal_type_menu(void)
 {
-  int block[5];
+  struct wimp_getpointerinfo_block block;
 
   char *menu_title     =get_menu_item("Terminal");
   char *menu_term0     =get_grey_menu_item("Term0");
@@ -1716,9 +1716,9 @@ static void create_terminal_type_menu(void)
   if (create_menu(menu_data,0,menu_title,menu_term0,menu_term1,menu_term2,menu_term3,
     		  menu_term4,menu_term5,menu_term6,menu_term7))
   {
-    _swi(Wimp_GetPointerInfo, _IN(1), block);
+    _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block[0]-64, block[1]);
+    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.x-64, block.y);
   }
 
   free(menu_title);
@@ -1739,17 +1739,17 @@ static void create_terminal_type_menu(void)
 /* Set title bar code */
 void set_title_bar(int window_handle, char *title)
 {
-  int block[23];
+  struct wimp_getwindowinfo_block block;
 
-  block[0]=window_handle;
+  block.window_handle=window_handle;
 
-  _swi(Wimp_GetWindowInfo, _IN(1), ((char *) block)+1);
+  _swi(Wimp_GetWindowInfo, _IN(1), ((int) &block)+1);
 
-  if (block[15] & (1<<8))
+  if (block.icon_flags & (1<<8))
   {
-    if (strcmp((char *)block[19],title))
+    if (strcmp(block.title.it.text, title))
     {
-      strcpy((char *)block[19],title);
+      strcpy(block.title.it.text, title);
 
       _swi(Wimp_ForceRedraw, _INR(0,2), window_handle, 0x4B534154, 3);
     }
@@ -1765,27 +1765,29 @@ void set_title_bar(int window_handle, char *title)
 /* Force redraw code */
 void force_redraw(int window_handle, int minx, int miny, int maxx, int maxy)
 {
-  _swi(Wimp_ForceRedraw, _INR(0,4), window_handle, minx, miny,
-                                                                            maxx, maxy);
+  _swi(Wimp_ForceRedraw, _INR(0,4), window_handle, minx, miny, maxx, maxy);
 }
 
 
 
 static void drag_start(int window_handle, int icon_handle)
 {
-  int xstart,ystart,xeig,yeig,xsize,ysize;
-  int block[10];
+  int xstart, ystart, xeig, yeig, xsize, ysize;
   char string[256];
 
   drag_window_handle=window_handle;
   drag_icon_handle=icon_handle;
 
-  block[0]=window_handle;
+  {
+    struct wimp_getwindowstate_block block;
 
-  _swi(Wimp_GetWindowState, _IN(1), block);
+    block.window_handle=window_handle;
 
-  xstart=block[1]-block[5];
-  ystart=block[4]-block[6];
+    _swi(Wimp_GetWindowState, _IN(1), &block);
+
+    xstart=block.minx-block.scroll_x;
+    ystart=block.maxy-block.scroll_y;
+  }
 
   xeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 4);
   yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
@@ -1795,31 +1797,36 @@ static void drag_start(int window_handle, int icon_handle)
   xsize*=xeig*2;
   ysize*=yeig*2;
 
-  block[0]=window_handle;
-  block[1]=icon_handle;
-
-  _swi(Wimp_GetIconState, _IN(1), block);
-
-  block[0]=window_handle;
-  block[1]=5;
-  block[2]+=xstart;
-  block[3]+=ystart;
-  block[4]+=xstart;
-  block[5]+=ystart;
-  block[6]=0;
-  block[7]=0;
-  block[8]=xsize;
-  block[9]=ysize;
-
-  read_icon_data(window_handle, icon_handle, string, 256);
-
-  if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & 1)
   {
-    _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, string, ((char *) block)+8, 0);
-  }
-  else
-  {
-    _swi(Wimp_DragBox, _IN(1), block);
+    struct wimp_geticonstate_block gis_block;
+    struct wimp_dragbox_block block;
+
+    gis_block.window_handle=window_handle;
+    gis_block.icon_handle  =icon_handle;
+
+    _swi(Wimp_GetIconState, _IN(1), &gis_block);
+
+    block.window_handle=window_handle;
+    block.drag_type    =5;
+    block.minx         =gis_block.minx+xstart;
+    block.miny         =gis_block.miny+ystart;
+    block.maxx         =gis_block.maxx+xstart;
+    block.maxy         =gis_block.maxy+ystart;
+    block.parent_minx  =0;
+    block.parent_miny  =0;
+    block.parent_maxx  =xsize;
+    block.parent_maxy  =ysize;
+
+    read_icon_data(window_handle, icon_handle, string, 256);
+
+    if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & 1)
+    {
+      _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, string, &block.minx, 0);
+    }
+    else
+    {
+      _swi(Wimp_DragBox, _IN(1), &block);
+    }
   }
 }
 
@@ -1829,7 +1836,7 @@ static void open_open_window(bool open_window_flag)
 {
   char string[11];
   int connection_type;
-  int block[4];
+  struct wimp_seticonstate_block block;
 
   read_icon_data(open, 4, string, 11);
 
@@ -1847,48 +1854,47 @@ static void open_open_window(bool open_window_flag)
   switch (connection_type)
   {
     case NETTLE_TELNET:
-      block[0]=open;
-      block[1]=7; /* Command icon */
-      block[2]=1<<22;
-      block[3]=1<<22;
-      _swi(Wimp_SetIconState, _IN(1), block);
+      block.window_handle=open;
+      block.icon_handle  =7; /* Command icon */
+      block.eor          =1<<22;
+      block.clear        =1<<22;
+      _swi(Wimp_SetIconState, _IN(1), &block);
 
-      block[0]=open;
-      block[1]=0; /* Host icon */
-      block[2]=0;
-      block[3]=1<<22;
-      _swi(Wimp_SetIconState, _IN(1), block);
+      block.window_handle=open;
+      block.icon_handle  =0; /* Host icon */
+      block.eor          =0;
+      block.clear        =1<<22;
+      _swi(Wimp_SetIconState, _IN(1), &block);
 
       break;
 
     case NETTLE_SSH:
-      block[0]=open;
-      block[1]=7; /* Command icon */
-      block[2]=0;
-      block[3]=1<<22;
-      _swi(Wimp_SetIconState, _IN(1), block);
+      block.window_handle=open;
+      block.icon_handle  =7; /* Command icon */
+      block.eor          =0;
+      block.clear        =1<<22;
+      _swi(Wimp_SetIconState, _IN(1), &block);
 
-      block[0]=open;
-      block[1]=0; /* Host icon */
-      block[2]=0;
-      block[3]=1<<22;
-      _swi(Wimp_SetIconState, _IN(1), block);
+      block.window_handle=open;
+      block.icon_handle  =0; /* Host icon */
+      block.eor          =0;
+      block.clear        =1<<22;
+      _swi(Wimp_SetIconState, _IN(1), &block);
 
       break;
 
     case NETTLE_TASKWINDOW:
-      block[0]=open;
-      block[1]=7; /* Command icon */
-      block[2]=0;
-      block[3]=1<<22;
-      _swi(Wimp_SetIconState, _IN(1), block);
+      block.window_handle=open;
+      block.icon_handle  =7; /* Command icon */
+      block.eor          =0;
+      block.clear        =1<<22;
+      _swi(Wimp_SetIconState, _IN(1), &block);
 
-
-      block[0]=open;
-      block[1]=0;     /* Host icon */
-      block[2]=1<<22;
-      block[3]=1<<22;
-      _swi(Wimp_SetIconState, _IN(1), block);
+      block.window_handle=open;
+      block.icon_handle  =0;     /* Host icon */
+      block.eor          =1<<22;
+      block.clear        =1<<22;
+      _swi(Wimp_SetIconState, _IN(1), &block);
 
       break;
   }

@@ -266,19 +266,22 @@ void save_selection(char *filename, bool ansi_colour)
 
 void handle_selection_drag(void)
 {
-  int block[23];
   int x, y, buttons, window_handle, icon_handle;
   int x_pos, y_pos;
   bool do_scroll;
   int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
-  _swi(Wimp_GetPointerInfo, _IN(1), block);
+  {
+    struct wimp_getpointerinfo_block block;
 
-  x=block[0];
-  y=block[1];
-  buttons=block[2];
-  window_handle=block[3];
-  icon_handle=block[4];
+    _swi(Wimp_GetPointerInfo, _IN(1), &block);
+
+    x            =block.x;
+    y            =block.y;
+    buttons      =block.buttons;
+    window_handle=block.window_handle;
+    icon_handle  =block.icon_handle;
+  }
 
   if (buttons==0)
   {
@@ -290,43 +293,47 @@ void handle_selection_drag(void)
     return;
   }
 
-  block[0]=selection_session->window_handle;
-
-  _swi(Wimp_GetWindowInfo, _IN(1), ((char *) block)+1);
-
-  x_pos=block[1]-block[5];
-  y_pos=block[4]-block[6];
-
-  /* Scroll when selection happening and we're near the edge of the window */
-  do_scroll = false;
-
-  if (x<(block[1]+32))
   {
-    block[5]-=(block[1]+32-x);
-    do_scroll = true;
-  }
+    struct wimp_getwindowinfo_block block;
 
-  if (x>(block[3]-32))
-  {
-    block[5]+=(x-block[3]+32);
-    do_scroll = true;
-  }
+    block.window_handle=selection_session->window_handle;
 
-  if (y<(block[2]+32))
-  {
-    block[6]-=(block[2]+32-y);
-    do_scroll = true;
-  }
+    _swi(Wimp_GetWindowInfo, _IN(1), ((int) &block)+1);
 
-  if (y>(block[4]-32))
-  {
-    block[6]+=(y-block[4]+32);
-    do_scroll = true;
-  }
+    x_pos=block.minx-block.scroll_x;
+    y_pos=block.maxy-block.scroll_y;
 
-  if (do_scroll)
-  {
-    _swi(Wimp_OpenWindow, _IN(1), block);
+    /* Scroll when selection happening and we're near the edge of the window */
+    do_scroll = false;
+
+    if (x<(block.minx+32))
+    {
+      block.scroll_x-=(block.minx+32-x);
+      do_scroll = true;
+    }
+
+    if (x>(block.maxx-32))
+    {
+      block.scroll_x+=(x-block.maxx+32);
+      do_scroll = true;
+    }
+
+    if (y<(block.miny+32))
+    {
+      block.scroll_y-=(block.miny+32-y);
+      do_scroll = true;
+    }
+
+    if (y>(block.maxy-32))
+    {
+      block.scroll_y+=(y-block.maxy+32);
+      do_scroll = true;
+    }
+
+    if (do_scroll)
+    {
+      _swi(Wimp_OpenWindow, _IN(1), &block);
+    }
   }
 
   switch (buttons)

@@ -159,6 +159,26 @@ struct wimp_deletewindow_block
   int window_handle;
 };
 
+struct wimp_dragbox_block
+{
+  int window_handle;
+  int drag_type;
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
+  int parent_minx;
+  int parent_miny;
+  int parent_maxx;
+  int parent_maxy;
+  int r12_value;
+
+  /* Maybe... */
+  int *drawbox_routine;
+  int *removebox_routine;
+  int *movebox_routine;
+};
+
 struct wimp_getcaretposition_block
 {
   int window_handle;
@@ -188,6 +208,39 @@ struct wimp_getpointerinfo_block
   int buttons;
   int window_handle;
   int icon_handle;
+};
+
+struct wimp_getwindowinfo_block
+{
+  int window_handle;
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
+  int scroll_x;
+  int scroll_y;
+  int handle_behind;
+  int window_flags;
+  unsigned char title_fg;
+  unsigned char title_bg;
+  unsigned char work_fg;
+  unsigned char work_bg;
+  unsigned char scroll_outer_colour;
+  unsigned char scroll_inner_colour;
+  unsigned char title_focus_colour;
+  unsigned char flags;
+  int work_minx;
+  int work_miny;
+  int work_maxx;
+  int work_maxy;
+  int icon_flags;
+  int workarea_flags;
+  int sprite_area;
+  unsigned short min_width;
+  unsigned short min_height;
+  union icon_data title;
+  int number_of_icons;
+  /* Icon definitions follow... */
 };
 
 struct wimp_getwindowoutline_block

@@ -14,8 +14,6 @@ char *application_name="Nettle";
 char *application_icon_name="!nettle";
 bool quit_flag=false;
 
-/* _kernel_oserror *e; */
-
 struct os_spriteop_area *sprite_area;
 int messagetrans_area[4];
 int *messagetrans_buffer;
