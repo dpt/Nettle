@@ -24,6 +24,8 @@
 #define TERMINAL_HEIGHT         24
 #define SCROLLBACK_LINES        96
 
+#define TERMINAL_SPEED          38400
+
 #define MAX_LINE_EDITOR_SIZE    255
 #define MIN_TERMINAL_WIDTH      8
 #define MAX_TERMINAL_WIDTH      256
@@ -36,7 +38,7 @@
 #define LOGGING                 false
 #define LINE_EDITOR             0
 #define PASS_F12                false
-#define BLINKING                true
+#define BLINKING                false
 
 #define CURSOR_BLINK            false
 #define CURSOR_BLINK_DELAY      50
@@ -144,6 +146,7 @@ struct session_struct
   int escape_string_length;	/* length of escape array so far */
   unsigned char escape_state;	/* escape state (see nettle.h for states) */
   bool session_flags[256];	/* session flags (same as telnet options so far) */
+  bool local_echo;		/* true if we're doing local echo */
   int scroll_start;		/* start of scroll area */
   int scroll_end;		/* end of scroll area */
   int other_session_flags;	/* other session flags (see nettle.h) */
