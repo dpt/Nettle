@@ -1138,6 +1138,12 @@ bool process_escape_length_x(struct session_struct *session)
               if (session->scroll_start<1)
                 session->scroll_start=1;
 
+              if (session->scroll_end<1)
+                session->scroll_end=1;
+
+              if (session->scroll_start>session->terminal_size.y)
+                session->scroll_start=session->terminal_size.y;
+
               if (session->scroll_end>session->terminal_size.y)
                 session->scroll_end=session->terminal_size.y;
 

@@ -1049,7 +1049,7 @@ void reset_terminal(struct session_struct *session)
 
 bool valid_x(struct session_struct *session, int xpos)
 {
-  if (xpos<0 || xpos>=session->terminal_size.x)
+  if (xpos<0 || xpos>session->terminal_size.x)
   {
     printf("Attempt to read/write outside alternate line, X position %d\n", xpos);
     return false;
@@ -1059,7 +1059,7 @@ bool valid_x(struct session_struct *session, int xpos)
 
 bool valid_y(struct session_struct *session, int ypos)
 {
-  if (ypos<0 || ypos>=session->terminal_size.y+session->scrollback)
+  if (ypos<0 || ypos>session->terminal_size.y+session->scrollback)
   {
     printf("Attempt to read/write outside assigned area %p, Y position %d\n", session, ypos);
     return false;
@@ -1069,7 +1069,7 @@ bool valid_y(struct session_struct *session, int ypos)
 
 bool valid_alt_y(struct session_struct *session, int ypos)
 {
-  if (ypos<0 || ypos>=session->terminal_size.y)
+  if (ypos<0 || ypos>session->terminal_size.y)
   {
     printf("Attempt to read/write outside alternate area %p, Y position %d\n", session, ypos);
     return false;
