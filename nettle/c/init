@@ -72,10 +72,7 @@ static void open_template(void)
     strcpy(country,"UK");
 
   /* Put together filename */
-  sprintf(template_filename,"<%s$Dir>.Resources.%s",application_name,country);
-
-  /* append filename */
-  strcat(template_filename,".Templates");
+  sprintf(template_filename,"<%s$Dir>.Resources.%s.Templates",application_name,country);
 
   file_handle=fopen(template_filename,"r");
 
@@ -90,10 +87,7 @@ static void open_template(void)
   }
 
   /* Put together filename */
-  sprintf(template_filename,"<%s$Dir>.Resources.%s",application_name,country);
-
-  /* append filename */
-  strcat(template_filename,".Templates");
+  sprintf(template_filename,"<%s$Dir>.Resources.%s.Templates",application_name,country);
 
   file_handle=fopen(template_filename,"r");
 
@@ -151,7 +145,7 @@ static int load_template(int *font_array, const char *window_name, struct os_spr
   /* This might not be preserved by a template editor, so do it here! */
   if (furniture)
     template_data->window_flags |= (1<<23);
-  
+
   window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), template_data);
 
   /* free the template data (indirected is still needed) */
