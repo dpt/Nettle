@@ -476,7 +476,7 @@ create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
       /* got a directory entry - buffer it */
       if (strcmp("CVS", dir_entry.name) != 0)
       {
-        if ( entry_offset + strlen (dir_entry.name) + 2 >= allocated)
+        if ( (entry_offset + strlen (dir_entry.name) + 2) >= allocated)
         {
           menu_entries = realloc (menu_entries, allocated += 1024);
           if (!menu_entries)
@@ -497,7 +497,9 @@ create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
     int loop;
 
     /* free up a small amount of memory */
-    menu_entries = realloc (menu_entries, entry_offset); /* FIXME: Dangerous use of realloc() */
+    menu_entries = realloc (menu_entries, entry_offset);
+    if (!menu_entries)
+      goto done;
 
     /* claim space for the menu */
     menu_block = malloc (28 + 24 * items);
