@@ -16,8 +16,11 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
+#define MAX_TEMPLATES 10
 
 static int zapredraw_block[128];
+static int maxindirected=0;
+static int *indirected[MAX_TEMPLATES];
 
 void initialise_wimp(void)
 {
@@ -198,6 +201,8 @@ static int load_template(int *font_array, const char *window_name, struct os_spr
   int size_of_template_data;
   int size_of_indirected_data;
   int window_handle;
+  
+  assert(maxindirected<MAX_TEMPLATES);
 
   /* template name must be in a writable 12-byte buffer */
   strcpy(window_name_copy, window_name);
@@ -211,6 +216,8 @@ static int load_template(int *font_array, const char *window_name, struct os_spr
   assert(indirected_data != NULL);
   template_data = malloc(size_of_template_data);
   assert(template_data != NULL);
+  
+  indirected[maxindirected++]=indirected_data;
 
   /* load the template */
   _swi(Wimp_LoadTemplate, _INR(1,6), template_data, indirected_data,
@@ -234,6 +241,13 @@ static void close_template(void)
   _swi(Wimp_CloseTemplate, 0);
 }
 
+
+void lose_templates(void)
+{
+  int i;
+  for(i=0; i<maxindirected; i++)
+    free(indirected[i]);
+}
 
 void load_templates(void)
 {
