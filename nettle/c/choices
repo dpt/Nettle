@@ -349,6 +349,8 @@ bool win_choices_read(int save)
   char new_zap_lowres_font[256];
   char string[32];
   bool changed = false;
+  int old_charw=redraw.r_charw;
+  int old_charh=redraw.r_charh;
 
   /* Read paneterm type options */
   {
@@ -435,7 +437,18 @@ bool win_choices_read(int save)
 
   /* Resize & redraw; also updates the palette */
   if (changed)
+  {
+    struct session_struct *session = sessions;
+
     mode_change();
+    while (session)
+    {
+      reopen_and_size_window(session, session->terminal_size.x, session->terminal_size.y,
+                             session->scrollback, old_charw, old_charh);
+      session->window_needs_resized=false;
+      session=session->next;
+    }
+  }
 
   if (save == false)
     return finish_hotlist_editing(1);

@@ -454,16 +454,28 @@ void redraw_window(union wimp_poll_block *wimp_block)
 
   if (session)
   {
+    int first_line;
+    int last_line;
+
     struct wimp_getwindowstate_block block;
     block.window_handle = wimp_block->redraw_window.window_handle;
     _swi (Wimp_GetWindowState, _IN(1), &block);
 
+    first_line=-(block.scroll.y >> eig.y) / redraw.r_charh;
+    last_line=(((block.max.y - block.min.y- block.scroll.y) >> eig.y) + redraw.r_charh - 1)
+	      / redraw.r_charh;
+
+    if (first_line<0)
+      first_line=0;
+
+    if (last_line>session->terminal_size.y+session->scrollback)
+      last_line=session->terminal_size.y+session->scrollback;
+
     zapgen_code(zapredraw_area,
                 session->assigned_area,
                 session->terminal_size.x,
-		-(block.scroll.y >> eig.y) / redraw.r_charh,
-		(((block.max.y - block.min.y- block.scroll.y) >> eig.y) + redraw.r_charh - 1)
-		  / redraw.r_charh,
+		first_line,
+		last_line,
                 session->other_session_flags,
                 session==selection_session ? selection_start / session->terminal_size.x : -1,
                 session==selection_session ? selection_start % session->terminal_size.x : -1,
@@ -2097,7 +2109,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       quit_flag=true;
       break;
     case WIMP_MESSAGE_DATASAVE:
-      if (msg_ref && wimp_block->user_message./*your*/my_ref != msg_ref)
+      if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
         break;
 
       msg_ref = 0;
@@ -2139,7 +2151,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       {
         char string[1024];
 
-        if (!msg_ref || wimp_block->user_message./*your*/my_ref != msg_ref)
+        if (!msg_ref || wimp_block->user_message.your_ref != msg_ref)
           break;
 
         msg_ref = 0;
@@ -2198,7 +2210,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       break;
 
     case WIMP_MESSAGE_DATALOAD:
-      if (msg_ref && wimp_block->user_message./*your*/my_ref != msg_ref)
+      if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
         break;
 
       msg_ref = 0;

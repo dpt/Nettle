@@ -1089,9 +1089,6 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
       block.scroll.y-=(session->scrollback-old_scrollback)*old_charh << eig.y;
     }
 
-    /* This *should* make the window snap inside the screen, but it doesn't ;(
-     * Thoughts???                                                             */
-
     {
       int screen_x=(_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 11)+1) <<
                          _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 4);
