@@ -14,6 +14,6 @@ extern char *read_mem(char *, char *);
 extern void log_string(char *);
 extern void log_byte(char);
 extern void close_log(void);
-extern char *get_country(char *);
+extern char *get_country(char *, int);
 
 #endif
