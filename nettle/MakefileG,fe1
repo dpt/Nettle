@@ -11,7 +11,9 @@ endif
 
 CC = gcc
 CFLAGS = -c $(SCINC) $(SCLIB) -mthrowback -O2 -Wall -Wno-unknown-pragmas \
-  -DFORTIFY
+   -Wshadow -Wundef -Wpointer-arith -Wcast-align -Wwrite-strings \
+   -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations \
+   -Wnested-externs -Wcast-qual -DFORTIFY
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = gcc
