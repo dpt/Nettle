@@ -12,6 +12,7 @@
 #include "misc.h"
 #include "wimp.h"
 #include "messages.h"
+#include "templ.h"
 #include <ctype.h>
 
 static hotlistnode *hotlisthead = NULL;
@@ -138,14 +139,14 @@ static char *get_line(FILE *in)
   return string;
 }
 
-static void create_entry(char *title, FILE *in)
+static hotlistnode *create_blank(void)
 {
-  char *str,*tail,tmp;
   hotlistnode *node = (hotlistnode *) malloc(sizeof(hotlistnode));
   if (!node)
-    goto error;
+    return NULL;
 
-  node->type = ht_invalid;
+  node->internal_state = 0;
+  node->type = ht_telnet;
   node->label = NULL;
   node->host = NULL;
   node->command = NULL;
@@ -156,6 +157,16 @@ static void create_entry(char *title, FILE *in)
   node->terminal_width = defaultsize.x;
   node->terminal_height = defaultsize.y;
   node->scrollback = defaultscroll;
+
+  return node;
+}
+
+static void create_entry(char *title, FILE *in)
+{
+  char *str,*tail,tmp;
+  hotlistnode *node = create_blank();
+  if (!node)
+    goto error;
 
   node->label = malloc(strlen(title)+1);
   if (!node->label)
@@ -283,11 +294,13 @@ void create_hotlist_menu(void)
       menublock[position++]= node->next ? 0 : (1<<7);  /* Set "last" bit if this is the end of the list */
       menublock[position++]=-1;  /* No submenu */
       menublock[position++]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | \
-  			    WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT;
+  			    WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_SPRITE_BIT;
 
       menublock[position+0]=(int) node->label;
+      menublock[position+1]=(int)(node->type == ht_ssh ? "snettle_ssh" : \
+                                  node->type == ht_telnet ? "snettle_telnt" :
+                                  "snettle_task");
       menublock[position+2]=strlen(node->label)+1;
-      menublock[position+1]=(int) menublock[position+0]+menublock[position+2]-1;
       position+=3;
 
       node = node->next;
@@ -312,3 +325,114 @@ hotlistnode *decode_hotlist_menu(int entry)
 
   return node;
 }
+
+void hotlist_draw(struct wimp_getrectangle_block *getrect_block)
+{
+  struct wimp_ploticon_block pib;
+  int y=-4;
+  hotlistnode *node = hotlisthead;
+
+  pib.min.x = 12;
+  pib.max.x = 1024;
+  pib.icon_flags = WIMP_ICON_TEXT_BIT | WIMP_ICON_SPRITE_BIT | WIMP_ICON_VCENT_BIT | \
+                   WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_FILLED_BIT | WIMP_ICON_FGCOL(7);
+
+  for(;node;node=node->next)
+  {
+    pib.max.y = y;
+    pib.min.y = y-44;
+    y-=44;
+
+    pib.contents.it.text = node->label;
+    pib.contents.it.validation = (char *)(int) (node->type == ht_ssh ? "snettle_ssh" : \
+                                 node->type == ht_telnet ? "snettle_telnt" :
+                                 "snettle_task");
+
+    if (node->internal_state & 1)
+      pib.icon_flags |= WIMP_ICON_BGCOL(2);
+    else
+      pib.icon_flags &= ~WIMP_ICON_BGCOL((unsigned int)15);
+
+    pib.contents.it.text_len = strlen(pib.contents.it.text)+1;
+    _swi(Wimp_PlotIcon, _IN(1), &pib);
+  }
+}
+
+int hotlist_num_items(void)
+{
+  return items;
+}
+
+void hotlist_clear_states(void)
+{
+  hotlistnode *node = hotlisthead;
+
+  for(;node;node=node->next)
+  {
+    node->internal_state &= ~1;
+  }
+}
+
+int hotlist_populate_selected(void)
+{
+  hotlistnode *node = hotlisthead;
+  char tmp[20];
+
+  for(;node;node=node->next)
+  {
+    if(node->internal_state & 1)
+    {
+      set_icon_data(win_hotedit, icon_hotedit_label, node->label ? node->label : "<unnamed>");
+      set_icon_data(win_hotedit, icon_hotedit_hostname, node->host ? node->host : "");
+      set_icon_data(win_hotedit, icon_hotedit_command, node->command ? node->command : "");
+      sprintf(tmp,"%d",node->terminal_width);
+      set_icon_data(win_hotedit, icon_hotedit_termwidth, tmp);
+      sprintf(tmp,"%d",node->terminal_height);
+      set_icon_data(win_hotedit, icon_hotedit_termheight, tmp);
+      sprintf(tmp,"%d",node->scrollback);
+      set_icon_data(win_hotedit, icon_hotedit_scrollback, tmp);
+
+      /* Need to set connection, term type, line editor type */
+
+      return 1;
+    }
+  }
+  return 0;
+}
+
+hotlistnode *hotlist_createnew(void)
+{
+  hotlistnode *node = create_blank();
+  if (!node)
+    return NULL;
+
+  if (menublock)
+    free(menublock);
+  menublock = NULL;
+
+  node->label = malloc(100);
+  if (!node->label)
+    goto err;
+  node->command = malloc(256);
+  if (!node->label)
+    goto err;
+  node->host = malloc(256);
+  if (!node->label)
+    goto err;
+
+  strcpy(node->label, "New item");
+  node->command[0]='\0';
+  node->host[0]='\0';
+
+  addnodetolist(node);
+  return node;
+
+err:
+  if (node->label) free(node->label);
+  if (node->command) free(node->command);
+  if (node->host) free(node->host);
+  free(node);
+
+  return NULL;
+}
+

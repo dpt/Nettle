@@ -65,6 +65,7 @@ static void create_connection_menu(void);
 static void create_terminal_type_menu(int, int, int);
 static void drag_start(int, int);
 static bool win_choices_read(int save);
+static void resize_hotpane(void);
 
 static bool win_is_open(int window_handle)
 {
@@ -421,7 +422,12 @@ void redraw_window(union wimp_poll_block *wimp_block)
 
     more = _swi(Wimp_RedrawWindow, _IN(1)|_RETURN(0), wimp_block);
     while (more)
+    {
+      if (window_handle == win_hotpane)
+        hotlist_draw((struct wimp_getrectangle_block *) wimp_block);
+
       more = _swi(Wimp_GetRectangle, _IN(1)|_RETURN(0), wimp_block);
+    }
   }
 }
 
@@ -950,6 +956,16 @@ static void win_panecols_click(int x, int y, int buttons, int icon_handle)
       set_colour_icon (loop, default_palette[loop], false);
     }
   }
+  else if (icon_handle==icon_panecols_invertall)
+  {
+    int loop;
+    for (loop=15; loop>=0; loop--)
+    {
+      /* It's important to invert the colour in the icon here, NOT the palette[] value */
+      unsigned long colour = get_colour_icon(loop, false);
+      set_colour_icon (loop, colour^0xffffff00, false);
+    }
+  }
 }
 
 
@@ -958,33 +974,44 @@ static void win_panehot_click(int x, int y, int buttons, int icon_handle)
   switch (icon_handle)
   {
     case icon_panehot_new:
+      {
+        hotlistnode *node = hotlist_createnew();
+        hotlist_clear_states();
+        node->internal_state |= 1;
+      }
+      hotlist_populate_selected();
       open_window_centred(win_hotedit);
+      resize_hotpane();
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+      {
+        struct wimp_getwindowinfo_block window;
+        window.window_handle=win_hotpane;
+        _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
+        window.scroll.y=-(1<<28);
+        _swi(Wimp_OpenWindow, _IN(1), &window);
+      }
       break;
 
     case icon_panehot_edit:
-      if (0)/* if(something is selected) */
+      if (hotlist_populate_selected())
         open_window_centred(win_hotedit);
       break;
 
     case icon_panehot_delete:
-      if (0)/* if(something is selected) */
+      close_window(win_hotedit);
+      if (hotlist_populate_selected())
       {
         if (generror_question(lookup_static("DeleteHot")))
         {
           /* delete it! */
+
+          resize_hotpane();
+          force_redraw(win_hotpane,0,-(1<<28),1024,0);
         }
       }
       break;
 
   }
-}
-
-static void win_hotpane_click(int x, int y, int buttons, int icon_handle)
-{
-}
-
-static void win_hotedit_click(int x, int y, int buttons, int icon_handle)
-{
 }
 
 /** Button enumeration for a click/drag/double click icon */
@@ -1000,6 +1027,65 @@ enum
   DoubleSelect = 0x004 * 1
 };
 
+
+static void win_hotpane_click(int x, int y, int buttons, int icon_handle)
+{
+  int item, x_pos, y_pos;
+  hotlistnode *node;
+
+  {
+    struct wimp_getwindowstate_block block;
+
+    block.window_handle=win_hotpane;
+
+    _swi(Wimp_GetWindowState, _IN(1), &block);
+
+    x_pos=block.min.x-block.scroll.x;
+    y_pos=block.max.y-block.scroll.y;
+  }
+
+  item = -((y-y_pos)+8)/44;
+
+  node = decode_hotlist_menu(item);
+  if (!node)
+    return;
+
+  switch(buttons)
+  {
+    case ClickSelect:
+      hotlist_clear_states();
+      node->internal_state |= 1;
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+      break;
+
+    case ClickAdjust:
+      hotlist_clear_states();
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+      break;
+
+    case DoubleSelect:
+      win_panehot_click(0,0,4,icon_panehot_edit);
+      break;
+
+    case DragSelect:
+      hotlist_clear_states();
+      node->internal_state |= 1;
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+
+      /* Start dragging the item here */
+      break;
+  }
+}
+
+static void win_hotedit_click(int x, int y, int buttons, int icon_handle)
+{
+  switch(icon_handle)
+  {
+    case icon_hotedit_cancel:
+      close_window(win_hotedit);
+      break;
+  }
+}
 
 
 /**
@@ -2868,7 +2954,7 @@ void force_redraw(int window_handle, int minx, int miny, int maxx, int maxy)
 static void drag_start(int window_handle, int icon_handle)
 {
   int xstart, ystart, xsize, ysize;
-  char string[256];
+  char string[256], *ptr;
 
   drag_window_handle=window_handle;
   drag_icon_handle=icon_handle;
@@ -2910,11 +2996,13 @@ static void drag_start(int window_handle, int icon_handle)
     block.parent_max.x =xsize;
     block.parent_max.y =ysize;
 
-    read_icon_data(window_handle, icon_handle, string, sizeof(string));
+    strcpy(string, get_icon_validation(window_handle, icon_handle));
+    ptr=strchr(string,';');
+    if (ptr) *ptr='\0';
 
     if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & (1<<1))
     {
-      _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, string, &block.min.x, 0);
+      _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, &string[1], &block.min.x, 0);
     }
     else
     {
@@ -3067,6 +3155,10 @@ static void open_choices_window(void)
     open_window_centred(win_choices);
     set_caret_position(win_paneterm, icon_paneterm_termwidth, -1, get_icon_data_length(win_paneterm, icon_paneterm_termwidth));
   }
+
+  resize_hotpane();
+  close_window(win_panehot);
+  close_window(win_panecols);
 }
 
 static bool win_choices_read(int save)
@@ -3329,4 +3421,21 @@ enum nettle_terminal read_terminal_type (int window_handle, int icon_handle)
   }
 
   return default_terminal;
+}
+
+static void resize_hotpane(void)
+{
+  struct wimp_getwindowinfo_block window;
+  struct wimp_setextent_block ext;
+  window.window_handle=win_hotpane;
+
+  _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
+  ext.min.x = 0;
+  ext.max.y = 0;
+  ext.max.x = window.max.x - window.min.x;
+  ext.min.y = -(hotlist_num_items()*44 + 16);
+  if (ext.min.y> -(window.max.y - window.min.y))
+    ext.min.y = -(window.max.y - window.min.y);
+
+  _swi(Wimp_SetExtent,_INR(0,1),win_hotpane, &ext);
 }
