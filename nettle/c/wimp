@@ -194,7 +194,7 @@ static void wimp_pollsocket(struct session_struct *session)
     else
     {
       write_out_strings(session, "\r\n", "Nettle: Socket error '",
-                        socket_strerror(errno), "' occurred", 0);
+                        socket_strerror(errno), "' occurred\r\n", 0);
     }
 
     write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
