@@ -60,13 +60,17 @@ int main(void)
   while (!quit_flag)
   {
     int event;
+    int time;
+
+    _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);
+    time = regs.r[0];
 
     /* Ignore Pointer Enter/Leave events */
-    regs.r[0]= (1 << 4) | (1 << 5);
-    regs.r[1]=(int) wimp_block;
-    regs.r[2]= _swi(OS_ReadMonotonicTime, _RETURN(0)) + 5;
+    regs.r[0] = (1 << 4) | (1 << 5);
+    regs.r[1] = (int)wimp_block;
+    regs.r[2] = time + 5;
     _kernel_swi(Wimp_PollIdle, &regs, &regs);
-    event=regs.r[0];
+    event = regs.r[0];
 
     switch (event)
     {
