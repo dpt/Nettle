@@ -9,7 +9,6 @@ RO 3.1 bits (C icons, titlebar redraw...)
 
 Wimp slot size settable for new tasks?
 
-* Reordering of hotlist items within hotlist editor
 * ANSI commandline task shell for ANSI task window (ROSH)
 * Scroll to bottom on keypress
 * VT 320/420/510
