@@ -9,7 +9,7 @@
 #include "globals.h"
 
 #include <ctype.h>
-#include <errno.h>
+#include <time.h>
 #include "sys/errno.h"
 
 #ifdef USE_TCPIPLIB
@@ -17,9 +17,9 @@
 #  include "unixlib.h"
 #else
 #  include "sys/socket.h"
+#  include "sys/select.h"
 #endif
 
-#include "sys/select.h"
 #include "sys/time.h"
 #include "netdb.h"
 

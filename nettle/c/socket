@@ -8,21 +8,20 @@
 #include "generic.h"
 #include "globals.h"
 
+#include <time.h>
+
 #include "sys/types.h"
 
-#ifndef USE_TCPIPLIB
-#include "sys/byteorder.h"
-#endif
-
-#include "sys/errno.h"
 #include "sys/ioctl.h"
 #include "sys/socket.h"
 #ifdef USE_TCPIPLIB
 #  include "socklib.h"
+#  include "inetlib.h"
 #else
+#  include "sys/byteorder.h"
 #  include "sys/select.h"
 #endif
-#include "sys/select.h"
+#include "sys/errno.h"
 #include "sys/time.h"
 
 #include "netinet/in.h"
@@ -149,7 +148,13 @@ int socket_readdata(int socket_handle, char * buffer, int length)
 
 int socket_senddata(int socket_handle, const char * buffer, int length)
 {
-  int result=send(socket_handle, (const void *) buffer, length, 0);
+  int result;
+
+#ifdef USE_TCPIPLIB  
+  result = send(socket_handle, (void *) buffer, length, 0);
+#else
+  result = send(socket_handle, (const void *) buffer, length, 0);
+#endif
 
   if (result==-1)
   {
