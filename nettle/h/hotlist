@@ -18,7 +18,7 @@ typedef enum
 
 extern void lose_hotlist(void);
 extern void load_hotlist(void);
-extern void create_hotlist_menu(void);
+extern void create_hotlist_menu (int);
 extern hotlisttype get_hotlist_entry(int entry, char **host, unsigned short *port, char **command);
 
 #endif /* HOTLIST_H */

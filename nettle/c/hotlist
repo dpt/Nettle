@@ -275,7 +275,7 @@ void load_hotlist(void)
 }
 
 
-void create_hotlist_menu(void)
+void create_hotlist_menu (int window)
 {
   hotlistnode *node = hotlisthead;
   struct wimp_getpointerinfo_block block;
@@ -315,10 +315,17 @@ void create_hotlist_menu(void)
     node = node->next;
   }
 
-  _swi(Wimp_GetPointerInfo, _IN(1), &block);
-  _swi(Wimp_CreateMenu, _INR(1,3), menublock, block.pos.x-64, 96+(items*44));
-
-  menu_open=MENU_HOTLIST;
+  if (window)
+  {
+    create_menu_by_icon (menublock, win_open, 8);
+    menu_open = MENU_HOTLIST;
+  }
+  else
+  {
+    _swi(Wimp_GetPointerInfo, _IN(1), &block);
+    _swi(Wimp_CreateMenu, _INR(1,3), menublock, block.pos.x-64, 96+(items*44));
+    menu_open = MENU_HOTLIST_IBAR;
+  }
 }
 
 
