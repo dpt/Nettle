@@ -1,5 +1,5 @@
 
-Set RelVer 0-2032r
+Set RelVer 0-2040r
 
 Echo Releasing Nettle <RelVer> *SOURCE CODE* ...
 
@@ -18,7 +18,6 @@ Set DestApp <This$Dir>.Release.src<RelVer>.!Nettle
 %Copy <This$Dir>.TODO     <DestApp>.^.TODO A~C~DF~L~N~PQR~S~T~V
 %Copy <This$Dir>.c        <DestApp>.^.c A~C~DF~L~N~PQR~S~T~V
 %Copy <This$Dir>.h        <DestApp>.^.h A~C~DF~L~N~PQR~S~T~V
-%Copy <This$Dir>.s        <DestApp>.^.s A~C~DF~L~N~PQR~S~T~V
 %Copy <This$Dir>.!Make    <DestApp>.^.!Make A~C~DF~L~N~PQR~S~T~V
 %Copy <This$Dir>.Makefile <DestApp>.^.Makefile A~C~DF~L~N~PQR~S~T~V
 
@@ -32,7 +31,6 @@ Set Alias$NukeCvs X Wipe <DestApp>.%%0.CVS ~CFR~V
 NukeCvs ^.!Nettle
 NukeCvs ^.c
 NukeCvs ^.h
-NukeCvs ^.s
 NukeCvs Choices
 NukeCvs Fonts
 NukeCvs Fonts.08x08

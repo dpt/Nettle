@@ -1,6 +1,6 @@
 # Makefile for Nettle
 # by A. Macfarlane Smith
-# (C) Archifishal Software 2001
+# (C) Nettle Developers 2001-2003
 #
 # $Id$
 
@@ -13,8 +13,7 @@ LIBS = C:o.stubsg TCPIPLibs:o.socklib-32 TCPIPLibs:o.inetlib-32
 LINK = link
 LINKFLAGS = #-d
 
-MKDIR = cdir
-
+SQUEEZE = squeeze
 WIPE = wipe
 WIPEFLAGS = ~CFR~V
 
@@ -33,7 +32,7 @@ templheadr: templheadr.o
 
 !Nettle.!RunImage:	$(OBJS)
 	$(LINK) -o $@ $(LINKFLAGS) $(OBJS) $(LIBS)
-	squeeze $@
+	$(SQUEEZE) $@
 
 clean:
 	$(WIPE) o.* $(WIPEFLAGS)
