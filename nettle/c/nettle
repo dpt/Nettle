@@ -245,7 +245,8 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
       write_assigned(session,loop,7,0,0,32);
     }
 
-    memcpy(session->alternate_area, session->assigned_area,
+    memcpy(session->alternate_area,
+           session->assigned_area+(session->terminal_size.x*session->scrollback*4),
            session->terminal_size.x * session->terminal_size.y * 4);
   }
 
@@ -406,6 +407,8 @@ void write_out_data(struct session_struct *session, const char *data, int length
   {
     /* log the byte */
     log_byte(data[loop]);
+
+    /*close_log(true);*/
 
     /* process the current byte at this position */
     process_data(session, data[loop]);

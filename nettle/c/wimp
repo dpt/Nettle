@@ -1838,10 +1838,9 @@ void wimp_message(union wimp_poll_block *wimp_block)
           set_title_bar (session->window_handle, lookup_static ("title_closed"));
           session->socket_state=NETTLE_SESSION_NONE;
           session->socket_handle=0;
+          reset_terminal (session);
+          write_out_strings (session, "\r\n", lookup_static ("twclosed"), "\r\n", 0);
         }
-
-        reset_terminal (session);
-        write_out_strings (session, "\r\n", lookup_static ("twclosed"), "\r\n", 0);
       }
       break;
 
@@ -2777,6 +2776,9 @@ static bool win_choices_read(int save)
 
   strcpy(zap_font, read_icon_data(win_paneterm, icon_paneterm_hifont, string, sizeof(string)));
   strcpy(zap_lowres_font, read_icon_data(win_paneterm, icon_paneterm_lofont, string, sizeof(string)));
+
+  /* Read panecols type options */
+
 
   /* make the choices in the new_* variables permanent */
   default_terminal = new_default_terminal;

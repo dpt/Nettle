@@ -270,7 +270,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  printf("Template to .h converter version 0.01. (C) Nettle Developers, 2001\r\n");
+  printf("Template to .h converter version 0.01. (C) Nettle developers, 2001\r\n");
 
   return template2header(argv[1], argv[2]);
 }
