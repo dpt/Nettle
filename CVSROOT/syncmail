@@ -1,1041 +1,218 @@
-<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN"
- "http://www.w3.org/TR/REC-html40/loose.dtd">
-<html><head>
-<!-- ViewCVS       -- http://viewcvs.sourceforge.net/
-     by Greg Stein -- mailto:gstein@lyra.org
-  -->
+#! /usr/bin/python
+#  -*- Python -*-
 
-<title>CVS log for mailman/CVSROOT/syncmail</title>
-</head>
-<body text="#000000" bgcolor="#ffffff">
-<table width="100&#37;" border=0 cellspacing=0 cellpadding=0>
-  <tr><td><h1>CVS log for mailman/CVSROOT/syncmail</h1></td><td align=right><img src="/sflogo.png" alt="[LOGO]" border=0 width=142 height=69></td></tr></table>
+"""Complicated notification for CVS checkins.
 
-<a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/#syncmail"><img src="/viewcvs/back.gif" alt="[BACK_ICON]" border=0 width=16 height=16></a>
-<b>Up to <a href="/cgi-bin/viewcvs.cgi/#dirlist">[Development]</a> / <a href="/cgi-bin/viewcvs.cgi/mailman/#dirlist">mailman</a> / <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/#dirlist">CVSROOT</a></b><p>
-<a href="#diff">Request diff between arbitrary revisions</a>
-<hr noshade>
-Default branch: MAIN
-<br>Bookmark a link to
-<a href="syncmail?rev=HEAD&content-type=text/vnd.viewcvs-markup"
-><b>HEAD</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=HEAD&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=HEAD&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-<br>
-<hr size=1 noshade>
-<a name="rev3.17"></a>
-<a name="HEAD"></a>
-<a name="MAIN"></a>
-Revision
-<a href="syncmail?rev=3.17&content-type=text/vnd.viewcvs-markup"
-><b>3.17</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.17&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.17&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.17">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.17">[select for diffs]</a>
-, <i>Mon Jul 23 16:40:42 2001 UTC</i> (7 days, 2 hours ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>CVS Tags: <b><a href="syncmail?only_with_tag=HEAD">HEAD</a></b>
-<br>Changes since <b>3.16: +10 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.16&r2=3.17">3.16</a>
-<pre>Sync with Fred's latest patches (from Python's syncmail script):
+This script is used to provide email notifications of changes to the CVS
+repository.  These email changes will include context diffs of the changes.
+Really big diffs will be trimmed.
 
-    Make sure we deal better with filenames that include spaces.  This
-    *still* won't distinguish between tabs, spaces, and multiple
-    spaces; that does not appear possible given the parsed command
-    line we receive.  This always assumes filename parts are always
-    separated by single spaces.
+This script is run from a CVS loginfo file (see $CVSROOT/CVSROOT/loginfo).  To
+set this up, create a loginfo entry that looks something like this:
 
-    Also make sure that a minimal diff is generated (for improved
-    readability).
-</pre>
-<hr size=1 noshade>
-<a name="rev3.16"></a>
-Revision
-<a href="syncmail?rev=3.16&content-type=text/vnd.viewcvs-markup"
-><b>3.16</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.16&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.16&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.16">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.16">[select for diffs]</a>
-, <i>Fri Apr 27 03:51:52 2001 UTC</i> (3 months ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.15: +31 -8 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.15&r2=3.16">3.15</a>
-<pre>Merge in Fred's latest patch, specifically...
+    mymodule /path/to/this/script %%s some-email-addr@your.domain
 
-    Update to syncmail 3.14 from the Python Snippets collection on SF:
+In this example, whenever a checkin that matches `mymodule' is made, this
+script is invoked, which will generate the diff containing email, and send it
+to some-email-addr@your.domain.
 
-    Added options -c, -C, -u to control the type of diff that's generated.
+    Note: This module used to also do repository synchronizations via
+    rsync-over-ssh, but since the repository has been moved to SourceForge,
+    this is no longer necessary.  The syncing functionality has been ripped
+    out in the 3.0, which simplifies it considerably.  Access the 2.x versions
+    to refer to this functionality.  Because of this, the script is misnamed.
 
-    For new files, include the file name in the "banner" that labels it a new
-    file in the generated email.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.15"></a>
-Revision
-<a href="syncmail?rev=3.15&content-type=text/vnd.viewcvs-markup"
-><b>3.15</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.15&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.15&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.15">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.15">[select for diffs]</a>
-, <i>Mon Nov  6 16:29:48 2000 UTC</i> (8 months, 3 weeks ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.14: +0 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.14&r2=3.15">3.14</a>
-<pre>Sync'ing with the Python project's version.  Specifically,
+It no longer makes sense to run this script from the command line.  Doing so
+will only print out this usage information.
 
-Attempt to work around newly checked in files that go missing during the
-execution of syncmail, by calling 'cvs -fn update -p -r &lt;rev&gt;' for the file
-in question.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.13"></a>
-Revision
-<a href="syncmail?rev=3.13&content-type=text/vnd.viewcvs-markup"
-><b>3.13</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.13&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.13&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.13">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.13">[select for diffs]</a>
-, <i>Mon Nov  6 16:29:37 2000 UTC</i> (8 months, 3 weeks ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.12: +21 -14 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.12&r2=3.13">3.12</a>
-<pre>intermediate
-</pre>
-<hr size=1 noshade>
-<a name="rev3.14"></a>
-Revision
-<a href="syncmail?rev=3.14&content-type=text/vnd.viewcvs-markup"
-><b>3.14</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.14&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.14&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.14">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.14">[select for diffs]</a>
-, <i>Thu Nov  2 21:44:32 2000 UTC</i> (8 months, 3 weeks ago) by <i>twouters</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.13: +1 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.13&r2=3.14">3.13</a>
-<pre>
-Add some debug statements for when the opening of a new file fails.
-cvs.python.sourceforge.net seems to be running Python 1.5 or 1.5.1, so
-IOErrors do not contain the filename :-S. Also the current working directory
-might be useful.
+Usage:
 
-(This is all to track down why syncmail doesn't like Barry's new files ;)
-</pre>
-<hr size=1 noshade>
-<a name="rev3.12"></a>
-Revision
-<a href="syncmail?rev=3.12&content-type=text/vnd.viewcvs-markup"
-><b>3.12</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.12&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.12&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.12">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.12">[select for diffs]</a>
-, <i>Thu Sep  7 15:18:24 2000 UTC</i> (10 months, 3 weeks ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.11: +2 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.11&r2=3.12">3.11</a>
-<pre>Sync'ing w/ Python project version.  Fred Drake says:
+    %(PROGRAM)s [options] <%%S> email-addr [email-addr ...]
 
-    Do not attempt to generate diffs of imported sources.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.11"></a>
-Revision
-<a href="syncmail?rev=3.11&content-type=text/vnd.viewcvs-markup"
-><b>3.11</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.11&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.11&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.11">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.11">[select for diffs]</a>
-, <i>Fri Aug 25 06:02:04 2000 UTC</i> (11 months ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.10: +4 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.10&r2=3.11">3.10</a>
-<pre>Fred Drake sez:
+Where options is:
 
-    When deleting a file, do not attempt to create a diff, just note
-    that it is being deleted.
+    --cvsroot=<path>
+    	Use <path> as the environment variable CVSROOT.  Otherwise this
+    	variable must exist in the environment.
 
-Install patch from the Python cvsroot.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.10"></a>
-Revision
-<a href="syncmail?rev=3.10&content-type=text/vnd.viewcvs-markup"
-><b>3.10</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.10&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.10&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.10">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.10">[select for diffs]</a>
-, <i>Fri Jun 16 04:38:12 2000 UTC</i> (13 months, 2 weeks ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.9: +2 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.9&r2=3.10">3.9</a>
-<pre>Fred Drake's says:
+    --help
+    -h
+        Print this text.
 
-    If we are adding a directory, do not try to do diffs on the "- New
-    directory" stuff that CVS magically appends to the subject line.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.9"></a>
-Revision
-<a href="syncmail?rev=3.9&content-type=text/vnd.viewcvs-markup"
-><b>3.9</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.9&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.9&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.9">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.9">[select for diffs]</a>
-, <i>Thu Jun  8 04:11:53 2000 UTC</i> (13 months, 3 weeks ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.8: +21 -11 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.8&r2=3.9">3.8</a>
-<pre>calculate_diff(): Two modifications.  First a patch by Juergen Hermann
-(modified by BAW) to handle new files by including the entire text of
-the new file in the diff (subject to DIFF_TRUNCATE_IF_LARGER
-restrictions).
+    --context=#
+    -C #
+        Include # lines of context around lines that differ (default: 2).
 
-Second, a suggestion by Greg Ward to include the -kk rcsdiff option
-which generates only keyword names in keyword substitutions (so the
-emailed diff doesn't include the useless $Revision$ diffs).
-</pre>
-<hr size=1 noshade>
-<a name="rev3.8"></a>
-Revision
-<a href="syncmail?rev=3.8&content-type=text/vnd.viewcvs-markup"
-><b>3.8</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.8&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.8&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.8">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.8">[select for diffs]</a>
-, <i>Thu May 25 05:19:04 2000 UTC</i> (14 months ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.7: +0 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.7&r2=3.8">3.7</a>
-<pre>Remove that bit of experimentation.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.7"></a>
-Revision
-<a href="syncmail?rev=3.7&content-type=text/vnd.viewcvs-markup"
-><b>3.7</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.7&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.7&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.7">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.7">[select for diffs]</a>
-, <i>Thu May 25 05:17:12 2000 UTC</i> (14 months ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.6: +0 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.6&r2=3.7">3.6</a>
-<pre>removed some debugging
-</pre>
-<hr size=1 noshade>
-<a name="rev3.6"></a>
-Revision
-<a href="syncmail?rev=3.6&content-type=text/vnd.viewcvs-markup"
-><b>3.6</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.6&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.6&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.6">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.6">[select for diffs]</a>
-, <i>Thu May 25 05:16:48 2000 UTC</i> (14 months ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.5: +1 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.5&r2=3.6">3.5</a>
-<pre>Craft a special From: field
-</pre>
-<hr size=1 noshade>
-<a name="rev3.5"></a>
-Revision
-<a href="syncmail?rev=3.5&content-type=text/vnd.viewcvs-markup"
-><b>3.5</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.5&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.5&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.5">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.5">[select for diffs]</a>
-, <i>Sat May 20 17:03:41 2000 UTC</i> (14 months, 1 week ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.4: +4 -2 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.4&r2=3.5">3.4</a>
-<pre>Slightly different print messages.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.4"></a>
-Revision
-<a href="syncmail?rev=3.4&content-type=text/vnd.viewcvs-markup"
-><b>3.4</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.4&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.4&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.4">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.4">[select for diffs]</a>
-, <i>Sat May 20 01:43:23 2000 UTC</i> (14 months, 1 week ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.3: +2 -2 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.3&r2=3.4">3.3</a>
-<pre>syncmail: Fixed name error on sts; now just sys.exit(0) explicitly.
+    -c
+        Produce a context diff (default).
 
-loginfo: debugging.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.3"></a>
-Revision
-<a href="syncmail?rev=3.3&content-type=text/vnd.viewcvs-markup"
-><b>3.3</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.3&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.3&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.3">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.3">[select for diffs]</a>
-, <i>Sat May 20 01:36:01 2000 UTC</i> (14 months, 1 week ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.2: +1 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.2&r2=3.3">3.2</a>
-<pre>debugging
-</pre>
-<hr size=1 noshade>
-<a name="rev3.2"></a>
-Revision
-<a href="syncmail?rev=3.2&content-type=text/vnd.viewcvs-markup"
-><b>3.2</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.2&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.2&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.2">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.2">[select for diffs]</a>
-, <i>Fri May 19 18:42:50 2000 UTC</i> (14 months, 1 week ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.1: +1 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.1&r2=3.2">3.1</a>
-<pre>debugging
-</pre>
-<hr size=1 noshade>
-<a name="rev3.1"></a>
-Revision
-<a href="syncmail?rev=3.1&content-type=text/vnd.viewcvs-markup"
-><b>3.1</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.1&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.1&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.1">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.1">[select for diffs]</a>
-, <i>Fri May 19 18:29:46 2000 UTC</i> (14 months, 1 week ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Changes since <b>3.0: +7 -9 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=3.0&r2=3.1">3.0</a>
-<pre>blast_mail(): Fixed some non-local names.
-</pre>
-<hr size=1 noshade>
-<a name="rev3.0"></a>
-Revision
-<a href="syncmail?rev=3.0&content-type=text/vnd.viewcvs-markup"
-><b>3.0</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.0&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=3.0&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=3.0">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=3.0">[select for diffs]</a>
-, <i>Fri May 19 16:45:16 2000 UTC</i> (14 months, 1 week ago) by <i>bwarsaw</i>
-<br>Branch: <b><a href="syncmail?only_with_tag=MAIN">MAIN</a></b>
-<br>Diff
-<pre>Trivial change to bump the major rev number.
-</pre>
-<hr size=1 noshade>
-<a name="rev2.19"></a>
-Revision
-<a href="syncmail?rev=2.19&content-type=text/vnd.viewcvs-markup"
-><b>2.19</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.19&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.19&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.19">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.19">[select for diffs]</a>
-, <i>Fri May 19 16:45:07 2000 UTC</i> (14 months, 1 week ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.18: +1 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.18&r2=2.19">2.18</a>
-<pre>intermediate
-</pre>
-<hr size=1 noshade>
-<a name="rev2.18"></a>
-Revision
-<a href="syncmail?rev=2.18&content-type=text/vnd.viewcvs-markup"
-><b>2.18</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.18&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.18&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.18">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.18">[select for diffs]</a>
-, <i>Fri May 19 16:44:07 2000 UTC</i> (14 months, 1 week ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.17: +63 -225 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.17&r2=2.18">2.17</a>
-<pre>intermediate
-</pre>
-<hr size=1 noshade>
-<a name="rev2.17"></a>
-Revision
-<a href="syncmail?rev=2.17&content-type=text/vnd.viewcvs-markup"
-><b>2.17</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.17&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.17&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.17">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.17">[select for diffs]</a>
-, <i>Fri Apr 28 19:13:57 2000 UTC</i> (15 months ago) by <i>fdrake</i>
-<br>Changes since <b>2.16: +3 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.16&r2=2.17">2.16</a>
-<pre>Revise docstring to note that %{sVv} in the loginfo file will allow
-context diffs to be generated as part of any emails that need to be
-sent.
-</pre>
-<hr size=1 noshade>
-<a name="rev2.16"></a>
-Revision
-<a href="syncmail?rev=2.16&content-type=text/vnd.viewcvs-markup"
-><b>2.16</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.16&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.16&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.16">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.16">[select for diffs]</a>
-, <i>Mon Mar 13 16:37:43 2000 UTC</i> (16 months, 2 weeks ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.15: +2 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.15&r2=2.16">2.15</a>
-<pre>Fix NameError when --nosync is used.
-</pre>
-<hr size=1 noshade>
-<a name="rev2.15"></a>
-Revision
-<a href="syncmail?rev=2.15&content-type=text/vnd.viewcvs-markup"
-><b>2.15</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.15&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.15&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.15">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.15">[select for diffs]</a>
-, <i>Mon Mar 13 16:28:06 2000 UTC</i> (16 months, 2 weeks ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.14: +46 -15 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.14&r2=2.15">2.14</a>
-<pre>Improve the docstring
-</pre>
-<hr size=1 noshade>
-<a name="rev2.14"></a>
-Revision
-<a href="syncmail?rev=2.14&content-type=text/vnd.viewcvs-markup"
-><b>2.14</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.14&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.14&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.14">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.14">[select for diffs]</a>
-, <i>Mon Mar 13 02:15:30 2000 UTC</i> (16 months, 2 weeks ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.13: +3 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.13&r2=2.14">2.13</a>
-<pre>Better error message and exit when no module is given
-</pre>
-<hr size=1 noshade>
-<a name="rev2.13"></a>
-Revision
-<a href="syncmail?rev=2.13&content-type=text/vnd.viewcvs-markup"
-><b>2.13</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.13&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.13&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.13">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.13">[select for diffs]</a>
-, <i>Tue Feb 15 22:14:42 2000 UTC</i> (17 months, 1 week ago) by <i>jhylton</i>
-<br>Changes since <b>2.12: +18 -8 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.12&r2=2.13">2.12</a>
-<pre>fix (ha!) syncmail to work on Linux
+    -u
+        Produce a unified diff (smaller, but harder to read).
 
-- remove absolute path for ssh (needs to be on your path)
-- test sys.platform and set MAILPROG accordingly
+    <%%S>
+        CVS %%s loginfo expansion.  When invoked by CVS, this will be a single
+        string containing the directory the checkin is being made in, relative
+        to $CVSROOT, followed by the list of files that are changing.  If the
+        %%s in the loginfo file is %%{sVv}, context diffs for each of the
+        modified files are included in any email messages that are generated.
 
-other change to get checkins to work on Jeremy's checked out version
-of nondist. cvs seems to pass syncmail an absolute path where it
-typically passes a relative path.  as the code says:
-   We don't know why CVS occasionally has an initial slash, but we we
-   expect that this path should always be interpreted relative to
-   CVSROOT.  (And it's clear we know what we're doing &lt;wink&gt;.)
-</pre>
-<hr size=1 noshade>
-<a name="rev2.12"></a>
-Revision
-<a href="syncmail?rev=2.12&content-type=text/vnd.viewcvs-markup"
-><b>2.12</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.12&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.12&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.12">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.12">[select for diffs]</a>
-, <i>Thu Dec  9 22:07:06 1999 UTC</i> (19 months, 2 weeks ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.11: +1 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.11&r2=2.12">2.11</a>
-<pre>calculate_diff(): added -f option to not read ~/.cvsrc.  This script
-gets run as the user doing the checkin, and Fred's actually got one of
-these!
-</pre>
-<hr size=1 noshade>
-<a name="rev2.11"></a>
-Revision
-<a href="syncmail?rev=2.11&content-type=text/vnd.viewcvs-markup"
-><b>2.11</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.11&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.11&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.11">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.11">[select for diffs]</a>
-, <i>Fri Dec  3 00:38:56 1999 UTC</i> (19 months, 3 weeks ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.10: +1 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.10&r2=2.11">2.10</a>
-<pre>retaddr must be initialized to None or we get a name error
-</pre>
-<hr size=1 noshade>
-<a name="rev2.10"></a>
-Revision
-<a href="syncmail?rev=2.10&content-type=text/vnd.viewcvs-markup"
-><b>2.10</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.10&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.10&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.10">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.10">[select for diffs]</a>
-, <i>Thu Dec  2 13:57:42 1999 UTC</i> (19 months, 4 weeks ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.9: +3 -3 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.9&r2=2.10">2.9</a>
-<pre>Implemented Greg Stein's algorithm.  Truncate diffs iff &gt; 1000 lines
-</pre>
-<hr size=1 noshade>
-<a name="rev2.9"></a>
-Revision
-<a href="syncmail?rev=2.9&content-type=text/vnd.viewcvs-markup"
-><b>2.9</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.9&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.9&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.9">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.9">[select for diffs]</a>
-, <i>Wed Dec  1 23:39:32 1999 UTC</i> (19 months, 4 weeks ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.8: +56 -5 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.8&r2=2.9">2.8</a>
-<pre>Added option calculation and appending of diffs, if %{sVv} is used in
-loginfo
-</pre>
-<hr size=1 noshade>
-<a name="rev2.8"></a>
-Revision
-<a href="syncmail?rev=2.8&content-type=text/vnd.viewcvs-markup"
-><b>2.8</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.8&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.8&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.8">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.8">[select for diffs]</a>
-, <i>Mon Aug 30 17:51:10 1999 UTC</i> (23 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.7: +1 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.7&r2=2.8">2.7</a>
-<pre>Removed -v from SSH_CMD so it isn't as verbose
-</pre>
-<hr size=1 noshade>
-<a name="rev2.7"></a>
-Revision
-<a href="syncmail?rev=2.7&content-type=text/vnd.viewcvs-markup"
-><b>2.7</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.7&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.7&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.7">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.7">[select for diffs]</a>
-, <i>Tue Mar 16 00:31:37 1999 UTC</i> (2 years, 4 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.6: +1 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.6&r2=2.7">2.6</a>
-<pre>Give the full path to Mail in MAILPROG
-</pre>
-<hr size=1 noshade>
-<a name="rev2.6"></a>
-Revision
-<a href="syncmail?rev=2.6&content-type=text/vnd.viewcvs-markup"
-><b>2.6</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.6&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.6&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.6">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.6">[select for diffs]</a>
-, <i>Sun Mar  7 02:49:50 1999 UTC</i> (2 years, 4 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.5: +8 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.5&r2=2.6">2.5</a>
-<pre>Added --cvsroot=&lt;path&gt; option so a different $CVSROOT can be
-specified.
-</pre>
-<hr size=1 noshade>
-<a name="rev2.5"></a>
-Revision
-<a href="syncmail?rev=2.5&content-type=text/vnd.viewcvs-markup"
-><b>2.5</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.5&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.5&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.5">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.5">[select for diffs]</a>
-, <i>Mon Dec 21 23:06:48 1998 UTC</i> (2 years, 7 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.4: +7 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.4&r2=2.5">2.4</a>
-<pre>Added --help / -h options
-</pre>
-<hr size=1 noshade>
-<a name="rev2.4"></a>
-Revision
-<a href="syncmail?rev=2.4&content-type=text/vnd.viewcvs-markup"
-><b>2.4</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.4&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.4&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.4">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.4">[select for diffs]</a>
-, <i>Thu Dec  3 19:10:17 1998 UTC</i> (2 years, 7 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.3: +24 -17 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.3&r2=2.4">2.3</a>
-<pre>Do --norecurse completely differently, because the old way didn't work
-when deleting (or let's say that deleting didn't work with the way I
-had implemented no recursion).
+    email-addrs
+        At least one email address.
 
-This way seems to work better.  Thanks to Ken for the solution!
-</pre>
-<hr size=1 noshade>
-<a name="rev2.3"></a>
-Revision
-<a href="syncmail?rev=2.3&content-type=text/vnd.viewcvs-markup"
-><b>2.3</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.3&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.3&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.3">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.3">[select for diffs]</a>
-, <i>Wed Oct 28 00:11:43 1998 UTC</i> (2 years, 9 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.2: +3 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.2&r2=2.3">2.2</a>
-<pre>Put email command in background when --fg is not used.  This still
-doesn't seem to speed things up much.  :-(
-</pre>
-<hr size=1 noshade>
-<a name="rev2.2"></a>
-Revision
-<a href="syncmail?rev=2.2&content-type=text/vnd.viewcvs-markup"
-><b>2.2</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.2&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.2&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.2">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.2">[select for diffs]</a>
-, <i>Fri Oct 23 15:03:46 1998 UTC</i> (2 years, 9 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.1: +3 -2 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.1&r2=2.2">2.1</a>
-<pre>--exclude options for rsync do not take an = sign between option and
-pattern, and patterns must be surrounded by quotes.
-</pre>
-<hr size=1 noshade>
-<a name="rev2.1"></a>
-Revision
-<a href="syncmail?rev=2.1&content-type=text/vnd.viewcvs-markup"
-><b>2.1</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.1&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.1&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.1">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.1">[select for diffs]</a>
-, <i>Mon Oct 19 16:38:42 1998 UTC</i> (2 years, 9 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>2.0: +3 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=2.0&r2=2.1">2.0</a>
-<pre>Added a to-do list
-</pre>
-<hr size=1 noshade>
-<a name="rev2.0"></a>
-Revision
-<a href="syncmail?rev=2.0&content-type=text/vnd.viewcvs-markup"
-><b>2.0</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.0&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=2.0&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=2.0">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=2.0">[select for diffs]</a>
-, <i>Wed Oct  7 16:32:27 1998 UTC</i> (2 years, 9 months ago) by <i>bwarsaw</i>
-<br>Diff
-<pre>Merged in the return address munging from maintmail, necessary when
-remote users are checking stuff in.
-</pre>
-<hr size=1 noshade>
-<a name="rev1.10"></a>
-Revision
-<a href="syncmail?rev=1.10&content-type=text/vnd.viewcvs-markup"
-><b>1.10</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.10&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.10&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.10">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.10">[select for diffs]</a>
-, <i>Fri Aug 28 19:58:56 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.9: +11 -2 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.9&r2=1.10">1.9</a>
-<pre>Added --fg option
-</pre>
-<hr size=1 noshade>
-<a name="rev1.9"></a>
-Revision
-<a href="syncmail?rev=1.9&content-type=text/vnd.viewcvs-markup"
-><b>1.9</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.9&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.9&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.9">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.9">[select for diffs]</a>
-, <i>Tue Aug 11 19:12:46 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.8: +3 -2 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.8&r2=1.9">1.8</a>
-<pre>Put the rsync command in the background
-</pre>
-<hr size=1 noshade>
-<a name="rev1.8"></a>
-Revision
-<a href="syncmail?rev=1.8&content-type=text/vnd.viewcvs-markup"
-><b>1.8</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.8&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.8&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.8">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.8">[select for diffs]</a>
-, <i>Mon Aug 10 16:41:22 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.7: +4 -0 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.7&r2=1.8">1.7</a>
-<pre>*** empty log message ***
-</pre>
-<hr size=1 noshade>
-<a name="rev1.7"></a>
-Revision
-<a href="syncmail?rev=1.7&content-type=text/vnd.viewcvs-markup"
-><b>1.7</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.7&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.7&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.7">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.7">[select for diffs]</a>
-, <i>Fri Aug  7 16:13:10 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.6: +1 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.6&r2=1.7">1.6</a>
-<pre>Fixed minor typo, with big consequences: if =&gt; elif
-</pre>
-<hr size=1 noshade>
-<a name="rev1.6"></a>
-Revision
-<a href="syncmail?rev=1.6&content-type=text/vnd.viewcvs-markup"
-><b>1.6</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.6&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.6&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.6">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.6">[select for diffs]</a>
-, <i>Thu Aug  6 15:18:40 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.5: +26 -6 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.5&r2=1.6">1.5</a>
-<pre>Added --norecurse option, so both recursion and no recursion can be
-supported.  Recursion is the default.
-</pre>
-<hr size=1 noshade>
-<a name="rev1.5"></a>
-Revision
-<a href="syncmail?rev=1.5&content-type=text/vnd.viewcvs-markup"
-><b>1.5</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.5&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.5&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.5">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.5">[select for diffs]</a>
-, <i>Thu Aug  6 15:10:52 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.4: +10 -14 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.4&r2=1.5">1.4</a>
-<pre>Changed the rsync command not to use -a, but instead to use the
-equivalent sans -r (recursive).  LOC_SYNCDIR now has a trailing `*' to
-wildcard everything in the current directory, and REM_SYNCDIR now
-specifies the target directory.  This should mean that only those
-files that are changed in the current directory are sync'd.
+"""
 
-Also, removed --nomail.  Now if email addresses are omitted, no mail
-is sent.
-</pre>
-<hr size=1 noshade>
-<a name="rev1.4"></a>
-Revision
-<a href="syncmail?rev=1.4&content-type=text/vnd.viewcvs-markup"
-><b>1.4</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.4&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.4&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.4">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.4">[select for diffs]</a>
-, <i>Wed Aug  5 20:52:16 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.3: +37 -16 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.3&r2=1.4">1.3</a>
-<pre>Added --nomail option (for testing).  Also, REM_SYNCDIR must point to
-the parent of the directory being updated.
-</pre>
-<hr size=1 noshade>
-<a name="rev1.3"></a>
-Revision
-<a href="syncmail?rev=1.3&content-type=text/vnd.viewcvs-markup"
-><b>1.3</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.3&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.3&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.3">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.3">[select for diffs]</a>
-, <i>Wed Aug  5 20:22:02 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.2: +1 -1 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.2&r2=1.3">1.2</a>
-<pre>Update docs
-</pre>
-<hr size=1 noshade>
-<a name="rev1.2"></a>
-Revision
-<a href="syncmail?rev=1.2&content-type=text/vnd.viewcvs-markup"
-><b>1.2</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.2&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.2&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.2">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.2">[select for diffs]</a>
-, <i>Wed Aug  5 18:09:29 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Changes since <b>1.1: +3 -3 lines</b>
-<br>Diff
-to previous <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff?r1=1.1&r2=1.2">1.1</a>
-<pre>Working sync + email
-</pre>
-<hr size=1 noshade>
-<a name="rev1.1"></a>
-Revision
-<a href="syncmail?rev=1.1&content-type=text/vnd.viewcvs-markup"
-><b>1.1</b></a>
-/
-(<a href="/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.1&content-type=text/plain"
- target="cvs_checkout"
- onClick="window.open('/cgi-bin/viewcvs.cgi/~checkout~/mailman/CVSROOT/syncmail?rev=1.1&content-type=text/plain','cvs_checkout','resizeable=1,scrollbars=1 ');"
-><b>download</b></a>)
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?annotate=1.1">annotate</a>
-- <a href="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail?r1=1.1">[select for diffs]</a>
-, <i>Wed Aug  5 16:31:55 1998 UTC</i> (2 years, 11 months ago) by <i>bwarsaw</i>
-<br>Diff
-<pre>Initial revision
-</pre>
-<a name=diff><hr noshade>
-This form allows you to request diffs between any two revisions of
-a file. You may select a symbolic revision name using the selection
-box or you may type in a numeric name using the type-in text box.
-</a><p>
-<form method="GET" action="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail.diff" name="diff_select">
-Diffs between
-<select name="r1">
-<option value="text" selected>Use Text Field</option>
-<option value="0.3:MAIN">MAIN</option>
-<option value="3.17:HEAD">HEAD</option>
-</select>
-<input type="TEXT" size="12" name="tr1" value="1.1"  onChange="document.diff_select.r1.selectedIndex=0">
-and
-<select name="r2">
-<option value="text" selected>Use Text Field</option>
-<option value="0.3:MAIN">MAIN</option>
-<option value="3.17:HEAD">HEAD</option>
-</select>
-<input type="TEXT" size="12" name="tr2" value="3.17"  onChange="document.diff_select.r2.selectedIndex=0">
-<br>Type of Diff should be a
-<select name="diff_format"
-onchange="submit()"
->
-<option value="h" selected>Colored Diff</option>
-<option value="H">Long Colored Diff</option>
-<option value="u">Unidiff</option>
-<option value="c">Context Diff</option>
-<option value="s">Side by Side</option>
-</select>
-<input type=submit value="  Get Diffs  "></form>
-<hr noshade>
-<a name=branch><form method="GET" action="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail">
+import os
+import sys
+import string
+import time
+import getopt
 
-View only Branch:
-<select name="only_with_tag"
-onchange="submit()"
->
-<option value="">Show all branches</option>
-<option >MAIN</option>
-</select>
-<input type=submit value="  View Branch  "></form></a>
-<a name=logsort>
-<form method="GET" action="/cgi-bin/viewcvs.cgi/mailman/CVSROOT/syncmail">
+# Notification command
+MAILCMD = '/bin/mail -s "CVS: %(SUBJECT)s" %(PEOPLE)s 2>&1 > /dev/null'
 
-Sort log by:
-<select name="logsort"
-onchange="submit()"
->
-<option value="cvs">Not sorted</option>
-<option value="date" selected>Commit date</option>
-<option value="rev">Revision</option>
-</select><input type=submit value="  Sort  "></form></a>
-<hr noshade><table width="100&#37;" border=0 cellpadding=0 cellspacing=0><tr>
-<td align=left><address><a href="http://sourceforge.net/">Back to SourceForge</a></address></td>
-<td align=right>Powered by<br><a href="http://viewcvs.sourceforge.net/">ViewCVS 0.7</a>
-</td></tr></table>
-</body></html>
+# Diff trimming stuff
+DIFF_HEAD_LINES = 20
+DIFF_TAIL_LINES = 20
+DIFF_TRUNCATE_IF_LARGER = 1000
+
+PROGRAM = sys.argv[0]
+
+
+
+def usage(code, msg=''):
+    print __doc__ % globals()
+    if msg:
+        print msg
+    sys.exit(code)
+
+
+
+def calculate_diff(filespec, contextlines):
+    try:
+        file, oldrev, newrev = string.split(filespec, ',')
+    except ValueError:
+        # No diff to report
+        return '***** Bogus filespec: %s' % filespec
+    if oldrev == 'NONE':
+        try:
+            if os.path.exists(file):
+                fp = open(file)
+            else:
+                update_cmd = 'cvs -fn update -r %s -p %s' % (newrev, file)
+                fp = os.popen(update_cmd)
+            lines = fp.readlines()
+            fp.close()
+            lines.insert(0, '--- NEW FILE: %s ---\n' % file)
+        except IOError, e:
+            lines = ['***** Error reading new file: ',
+                     str(e), '\n***** file: ', file, ' cwd: ', os.getcwd()]
+    elif newrev == 'NONE':
+        lines = ['--- %s DELETED ---\n' % file]
+    else:
+        # This /has/ to happen in the background, otherwise we'll run into CVS
+        # lock contention.  What a crock.
+        if contextlines > 0:
+            difftype = "-C " + str(contextlines)
+        else:
+            difftype = "-u"
+        diffcmd = "/usr/bin/cvs -f diff -kk %s --minimal -r %s -r %s '%s'" % (
+            difftype, oldrev, newrev, file)
+        fp = os.popen(diffcmd)
+        lines = fp.readlines()
+        sts = fp.close()
+        # ignore the error code, it always seems to be 1 :(
+##        if sts:
+##            return 'Error code %d occurred during diff\n' % (sts >> 8)
+    if len(lines) > DIFF_TRUNCATE_IF_LARGER:
+        removedlines = len(lines) - DIFF_HEAD_LINES - DIFF_TAIL_LINES
+        del lines[DIFF_HEAD_LINES:-DIFF_TAIL_LINES]
+        lines.insert(DIFF_HEAD_LINES,
+                     '[...%d lines suppressed...]\n' % removedlines)
+    return string.join(lines, '')
+
+
+
+def blast_mail(mailcmd, filestodiff, contextlines):
+    # cannot wait for child process or that will cause parent to retain cvs
+    # lock for too long.  Urg!
+    if not os.fork():
+        # in the child
+        # give up the lock you cvs thang!
+        time.sleep(2)
+        fp = os.popen(mailcmd, 'w')
+        fp.write(sys.stdin.read())
+        fp.write('\n')
+        # append the diffs if available
+        for file in filestodiff:
+            fp.write(calculate_diff(file, contextlines))
+            fp.write('\n')
+        fp.close()
+        # doesn't matter what code we return, it isn't waited on
+        os._exit(0)
+
+
+
+# scan args for options
+def main():
+    contextlines = 2
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'hC:cu',
+                                   ['context=', 'cvsroot=', 'help'])
+    except getopt.error, msg:
+        usage(1, msg)
+
+    # parse the options
+    for opt, arg in opts:
+        if opt in ('-h', '--help'):
+            usage(0)
+        elif opt == '--cvsroot':
+            os.environ['CVSROOT'] = arg
+        elif opt in ('-C', '--context'):
+            contextlines = int(arg)
+        elif opt == '-c':
+            if contextlines <= 0:
+                contextlines = 2
+        elif opt == '-u':
+            contextlines = 0
+
+    # What follows is the specification containing the files that were
+    # modified.  The argument actually must be split, with the first component
+    # containing the directory the checkin is being made in, relative to
+    # $CVSROOT, followed by the list of files that are changing.
+    if not args:
+        usage(1, 'No CVS module specified')
+    SUBJECT = args[0]
+    specs = string.split(args[0])
+    del args[0]
+
+    # The remaining args should be the email addresses
+    if not args:
+        usage(1, 'No recipients specified')
+
+    # Now do the mail command
+    PEOPLE = string.join(args)
+    mailcmd = MAILCMD % vars()
+
+    print 'Mailing %s...' % PEOPLE
+    if specs == ['-', 'Imported', 'sources']:
+        return
+    if specs[-3:] == ['-', 'New', 'directory']:
+        del specs[-3:]
+    elif len(specs) > 2:
+        L = specs[:2]
+        for s in specs[2:]:
+            prev = L[-1]
+            if string.count(prev, ",") < 2:
+                L[-1] = "%s %s" % (prev, s)
+            else:
+                L.append(s)
+        specs = L
+    print 'Generating notification message...'
+    blast_mail(mailcmd, specs[1:], contextlines)
+    print 'Generating notification message... done.'
+
+
+
+if __name__ == '__main__':
+    main()
+    sys.exit(0)
