@@ -144,8 +144,8 @@ void null_reason_code(void)
             {
               set_title_bar (current_session->window_handle,
                              lookup_static ("title_disconnect"));
-              write_out_strings (current_session, "\r\n", lookup_static ("closed"),
-                                 "\r\n", lookup_static ("disconn"), "\r\n", 0);
+              write_out_strings (current_session, "\r\n", lookup_static ("closed"), 0);
+              write_out_strings (current_session, "\r\n", lookup_static ("disconn"), "\r\n", 0);
               socket_close(current_session->socket_handle);
               current_session->socket_handle=0;
               current_session->socket_state=NETTLE_SESSION_NONE;
@@ -1004,7 +1004,7 @@ void menu_choice()
         set_icon_data(win_open, 9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
       }
       break;
-      
+
     case MENU_HOTLIST:
       {
         char tmpbuf[100];
@@ -1038,7 +1038,7 @@ void menu_choice()
 	  case ht_invalid:
 	    break;   /* Just to keep the compiler quiet - handle all enums! */
 	}
-	
+
 	if (type != ht_invalid)
 	{
 	  start_connection();
