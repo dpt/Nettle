@@ -113,11 +113,7 @@ void null_reason_code(void)
     }
   }
 
-  current_socket++;
-  if (current_socket>=current_session)
-  {
-    current_socket=0;
-  }
+  current_socket = (current_socket + 1) % current_session;
 
   close_log();
 
