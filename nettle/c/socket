@@ -129,7 +129,7 @@ int socket_readdata(int socket_handle, char * buffer, int length)
 
 int socket_senddata(int socket_handle, const char * buffer, int length)
 {
-  return send(socket_handle, (char *) buffer, length, 0);
+  return send(socket_handle, (const void *) buffer, length, 0);
 }
 
 
