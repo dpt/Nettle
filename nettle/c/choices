@@ -9,9 +9,12 @@
 #include "globals.h"
 
 #include "choices.h"
+#include "messages.h"
 #include "misc.h"
+#include "wimp.h"
 
-
+#include <errno.h>
+#include <time.h>
 
 static void read_choice(char *variable, const char *line, const char *lookfor)
 {
@@ -31,7 +34,7 @@ static void read_boolean_choice(bool *var, const char *line, const char *lookfor
 
   if (strncmp(line,lookfor,len)==0)
   {
-    if (strncmp(line+len,"1",1)==0)
+    if (strncmp(line+len,"1",1) == 0)
     {
       *var=true;
     }
@@ -73,6 +76,9 @@ void load_choices(void)
   char string[256];
   char *str;
   int len;
+  struct coords new_termsize = defaultsize;
+  int new_scrollback = defaultscroll;
+  int new_line_editor_size = line_editor_size;
 
   get_system_variable(choices_path, "Choices$Write", sizeof(choices_path));
 
@@ -112,11 +118,100 @@ void load_choices(void)
     read_character_choice(&line_editor, string, "LineEditor:");
     read_boolean_choice(&pass_f12, string, "PassF12:");
 
-    read_integer_choice(&defaultsize.x, string, "TerminalWidth:");
-    read_integer_choice(&defaultsize.y, string, "TerminalHeight:");
-    read_integer_choice(&defaultscroll, string, "TerminalScroll:");
-    read_integer_choice(&line_editor_size, string, "LineEditorSize:");
+    read_integer_choice(&new_termsize.x, string, "TerminalWidth:");
+    read_integer_choice(&new_termsize.y, string, "TerminalHeight:");
+    read_integer_choice(&new_scrollback, string, "TerminalScroll:");
+    read_integer_choice(&new_line_editor_size, string, "LineEditorSize:");
   }
 
   fclose(file_handle);
+
+  /* sanity checking in case of breakage through direct edit */
+  /* May sanity check fonts, although if they're wrong, it'll default back to 08x16/08x08 */
+  if (new_termsize.x > 0 && new_termsize.x <= MAX_TERMINAL_WIDTH)
+    defaultsize.x = new_termsize.x;
+
+  if (new_termsize.y > 0 && new_termsize.y <= MAX_TERMINAL_HEIGHT)
+    defaultsize.y = new_termsize.y;
+
+  /* if (new_scrollback > 0 && new_scrollback <= MAX_SCROLLBACK)*/
+  defaultscroll=new_scrollback; /* We should probably set some limits on this */
+
+  if (new_line_editor_size > 0 && new_line_editor_size <= MAX_LINE_EDITOR_SIZE)
+    line_editor_size = new_line_editor_size;
+}
+
+bool save_choices(void)
+{
+  FILE *file_handle;
+  char choices_path[256];
+  char string[512];
+  time_t current_time;
+
+  get_system_variable(choices_path, "Choices$Write", sizeof(choices_path));
+
+  if (choices_path[0]=='\0')
+  {
+    sprintf(string, "<%s$Dir>.Choices.Choices", application_name);
+  }
+  else
+  {
+    sprintf(string, "<Choices$Write>.%s.Choices", application_name);
+  }
+
+  _kernel_last_oserror();
+
+  {
+    bool error=false;
+
+    file_handle=fopen(string, "w");
+    if (file_handle==NULL)
+    {
+      /* Couldn't open the file for writing */
+      error=true;
+    }
+    else
+    {
+      time(&current_time);
+
+      /* Darren did an if statement here, personally I'd rather do this (even if */
+      /* it might break) - feel free to change it */
+
+      fprintf(file_handle, "# Nettle choices file\n");
+      fprintf(file_handle, "# Created on %s\n\n", ctime(&current_time));
+      fprintf(file_handle, "ZapFontHi:%s\n", zap_font);
+      fprintf(file_handle, "ZapFontLo:%s\n", zap_lowres_font);
+
+      fprintf(file_handle, "Logging:%d\n", (logging==true) ? 1 : 0);
+      fprintf(file_handle, "PassF12:%d\n", (pass_f12==true) ? 1 : 0);
+
+      fprintf(file_handle, "TerminalWidth:%d\n", defaultsize.x);
+      fprintf(file_handle, "TerminalHeight:%d\n", defaultsize.y);
+      fprintf(file_handle, "TerminalScroll:%d\n", defaultscroll);
+      fprintf(file_handle, "LineEditor:%d\n", line_editor);
+      fprintf(file_handle, "LineEditorSize:%d\n", line_editor_size);
+
+      fclose(file_handle);
+      file_handle=NULL;
+    }
+
+    if (error)
+    {
+      /* An error - report it */
+      _kernel_oserror *error = _kernel_last_oserror();
+
+      lookup("CantSaveChoices", string, 256);
+      strcat(string, error ? error->errmess : strerror(errno));
+      string[251]='\0'; /* Terminate to fit error block (just in case it went further) */
+
+      generror(string, false);
+
+      if (file_handle)
+        fclose(file_handle);
+
+      return false;
+    }
+
+    return true;
+  }
 }

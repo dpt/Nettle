@@ -23,6 +23,10 @@
 #define TERMINAL_HEIGHT         24
 #define SCROLLBACK_LINES        96
 
+#define MAX_LINE_EDITOR_SIZE    255
+#define MAX_TERMINAL_WIDTH      256
+#define MAX_TERMINAL_HEIGHT     128
+
 #define LOGGING                 false
 #define LINE_EDITOR             0
 #define PASS_F12                false
@@ -100,7 +104,7 @@ struct session_struct
   char *title;			/* titlebar contents */
   char escape_string[256];	/* Escape array */
   int escape_string_length;	/* length of escape array so far */
-  signed char escape_state;	/* escape state (see nettle.h for states) */
+  unsigned char escape_state;	/* escape state (see nettle.h for states) */
   bool session_flags[256];	/* session flags (same as telnet options so far) */
   int scroll_start;		/* start of scroll area */
   int scroll_end;		/* end of scroll area */
