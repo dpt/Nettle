@@ -1182,7 +1182,7 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
 void process_line_editor(struct session_struct *session)
 {
   char *icon_text;
-  char data[512];
+  char data[MAX_LINEEDITOR_LENGTH];
   int line_editor_icon=0;
 
   read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
@@ -1200,12 +1200,12 @@ void process_line_editor(struct session_struct *session)
 
     for (loop=line_editor_size-1; loop>1; loop--)
     {
-      strcpy(session->line_editor_history+(loop*512),
-                      session->line_editor_history+((loop-1)*512));
+      strcpy(session->line_editor_history+(loop*MAX_LINEEDITOR_LENGTH),
+                      session->line_editor_history+((loop-1)*MAX_LINEEDITOR_LENGTH));
     }
   }
 
-  strcpy(session->line_editor_history+(1*512), icon_text);
+  strcpy(session->line_editor_history+(1*MAX_LINEEDITOR_LENGTH), icon_text);
 
   set_icon_data(session->pane_handle,line_editor_icon,"");
 

@@ -51,6 +51,8 @@
 
 #define MAX_TAB_NUMBER		32
 
+#define MAX_LINEEDITOR_LENGTH   512
+
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
 
@@ -194,7 +196,7 @@ struct session_struct
   char *line_editor_history;    /* line editor history */
   int line_editor_position;	/* current position in the line editor */
   int line_editor_total;	/* total number of items in the history */
-  char line_editor_buffer[512]; /* line editor buffer */
+  char line_editor_buffer[MAX_LINEEDITOR_LENGTH]; /* line editor buffer */
 
   int character_set_gl;		/* currently selected character set GL */
   int character_set_gr;         /* currently selected character set GR */

@@ -1,6 +1,6 @@
 /**
  * Wimp_Poll / Wimp code
- * (C) Nettle developers 2000-2002
+ * (C) Nettle developers 2000-2003
  *
  * $Id$
  */
@@ -1759,7 +1759,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
 
             set_icon_data(session->pane_handle, line_editor_icon,
                 read_mem((char *)icon_data, session->line_editor_history +
-                (session->line_editor_position * 512), sizeof(icon_data)));
+                (session->line_editor_position * MAX_LINEEDITOR_LENGTH), sizeof(icon_data)));
           }
 
           set_caret_position(session->pane_handle, line_editor_icon, -1,
@@ -1791,7 +1791,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
 
              set_icon_data(session->pane_handle,line_editor_icon,
                 read_mem(icon_data, session->line_editor_history+
-                 (session->line_editor_position * 512), sizeof(icon_data)));
+                 (session->line_editor_position * MAX_LINEEDITOR_LENGTH), sizeof(icon_data)));
           }
 
           set_caret_position(session->pane_handle, line_editor_icon, -1,
@@ -3641,12 +3641,109 @@ static bool paste_text_file (union wimp_poll_block *block)
     return false;
 
   text = load_file (block->user_message.contents.data_load.file_name, &size);
+
   if (text)
   {
-    /* Removed requirement for Text filetype */
-    /*if (block->user_message.contents.data_load.filetype==0xFFF)*/
+    /* This may be overly simplistic at present */
+    if (session->pane_handle==window_handle && line_editor_active(session))
     {
+      /* Handling for drags to the lineeditor pane */
+      struct wimp_getcaretposition_block block;
+      char line_editor_buffer[MAX_LINEEDITOR_LENGTH];
+      int position_in_lineeditor;
+      int position_of_return=0;
+      int position_in_text=0;
+
+      /* First we find out if the caret is in the pane */
+      _swi(Wimp_GetCaretPosition, _IN(1), &block);
+
+      printf("block.window_handle=%x, session->pane_handle=%x\n", block.window_handle, session->pane_handle);
+      if (block.window_handle==session->pane_handle)
+      {
+        /* If so, we want the pasted text to be inserted at the relevant position */
+        position_in_lineeditor=block.index;
+      }
+      else
+      {
+        /* Otherwise, we just want it added on the end */
+        position_in_lineeditor=strlen(session->line_editor_buffer);
+      }
+
+      /* So, let's iterate through the text file */
+      while (position_in_text<size)
+      {
+        printf("position_in_text=%d, size=%d, position_in_lineeditor=%d\n", position_in_text, size, position_in_lineeditor);
+        printf("position_of_return before loop=%d\n", position_of_return);
+
+        /* Find the next return character, or til we reach the end of the file */
+        while (position_of_return<size && text[position_of_return]!=10)
+        {
+          position_of_return++;
+        }
+
+        printf("position_of_return after loop=%d\n", position_of_return);
+
+        /* If the return+the length of the existing lineeditor is less than the max length then */
+        if (position_of_return+strlen(session->line_editor_buffer)<MAX_LINEEDITOR_LENGTH)
+        {
+          int i;
+
+          printf("copying 0 to %d in session->line_editor_buffer to 0 to %d in line_editor_buffer\n", position_in_lineeditor, position_in_lineeditor);
+          /* Copy the chunk before the caret into line_editor_buffer */
+          for (i=0; i<position_in_lineeditor; i++)
+          {
+            line_editor_buffer[i]=session->line_editor_buffer[i];
+          }
+
+          printf("copying %d to %d in text to %d to %d in line_editor_buffer\n", position_in_text, position_of_return, position_in_lineeditor, position_in_lineeditor+position_of_return-position_in_text);
+          /* Copy the chunk from the text file to the line_editor_buffer */
+          for (i=0; i<position_of_return-position_in_text; i++)
+          {
+            line_editor_buffer[i+position_in_lineeditor]=text[position_in_text+i];
+          }
+
+          printf("copying %d to %d in session->line_editor_buffer to %d to %d in line_editor_buffer\n", position_in_lineeditor, strlen(session->line_editor_buffer), position_in_lineeditor+position_of_return-position_in_text, strlen(session->line_editor_buffer)+position_of_return-position_in_text);
+          /* And finally copy the chunk from after the caret to the line_editor_buffer */
+          for (i=position_in_lineeditor; i<strlen(session->line_editor_buffer); i++)
+          {
+            line_editor_buffer[i+position_of_return-position_in_text]=session->line_editor_buffer[i];
+          }
+
+          printf("setting line_editor_buffer[%d] to '\\0'\n", position_of_return+strlen(session->line_editor_buffer));
+          line_editor_buffer[position_of_return+strlen(session->line_editor_buffer)-position_in_text]='\0';
+        }
+
+        /* Plonk it into the lineeditor */
+        strcpy(session->line_editor_buffer, line_editor_buffer);
+
+        /* If the character we found was actually a return as opposed to the end of the file */
+        /* then call the line editor processor */
+        if (text[position_of_return]==10)
+        {
+          process_line_editor(session);
+        }
+
+        /* Set the position in text for next time to the position after the return */
+        /* and set the lineeditor length appropriately */
+        position_of_return++;
+        position_in_text=position_of_return;
+        position_in_lineeditor=strlen(session->line_editor_buffer);
+        printf("position_in_text is %d, position_in_lineeditor is %d\n", position_in_text, position_in_lineeditor);
+      }
+
+      if (block.window_handle==session->pane_handle)
+      {
+        /* Update the writable icon position */
+        _swi(Wimp_SetCaretPosition, _INR(0,5), block.window_handle, block.icon_handle, -1, -1, -1, position_in_lineeditor);
+      }
+
+      set_icon_state(session->pane_handle, 0, 0, 0);
+    }
+    else
+    {
+      /* Handling for drags to the terminal window */
       int loop;
+
       for (loop=0; loop<size; loop++)
       {
         switch (text[loop])
@@ -3663,10 +3760,14 @@ static bool paste_text_file (union wimp_poll_block *block)
             break;
         }
       }
+
+      process_data_transmission (session, text, size);
     }
-    process_data_transmission (session, text, size);
+
     free (text);
+
     return true;
   }
+
   return false;
 }

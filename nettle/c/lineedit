@@ -124,14 +124,14 @@ void lineedit_allocate_space(struct session_struct *session, bool dont_discard)
   /* Note - this *must* be called if the lineeditor is turned on at any point */
   if (!dont_discard || session->line_editor_history == NULL)
   {
-    session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
+    session->line_editor_history=malloc(line_editor_size*MAX_LINEEDITOR_LENGTH*sizeof(char));
     assert(session->line_editor_history != NULL);
     session->line_editor_position=0;
     session->line_editor_total=1;
 
     for (loop=0; loop<line_editor_size; loop++)
     {
-      strcpy(session->line_editor_history+(loop*512),"");
+      strcpy(session->line_editor_history+(loop*MAX_LINEEDITOR_LENGTH),"");
     }
 
     /* When we create the line editor buffer we must always clear the input
