@@ -182,9 +182,7 @@ void save_selection(char *filename, bool ansi_colour)
 
   if (file_handle==0)
   {
-    char string[1024];
-    sprintf (string, lookup_static ("cantwrite"), filename);
-    generror(string, false);
+    generror(lookup_static("nocreate"), false);
     return;
   }
 

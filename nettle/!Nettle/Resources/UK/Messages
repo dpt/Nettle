@@ -1,10 +1,10 @@
 # Messages for Nettle
-# Last modified on 02-Aug-2001
+# Last modified on 11-Aug-2001
 
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.1601b (11-Aug-2001)
+AppVersion:v0.1602b (11-Aug-2001)
 
 Info:Info>
 Choices:.Choices...
@@ -33,9 +33,9 @@ InvalidPort:The port you entered was either malformed or too large.
 InvalidComm:You must enter a command to start a Nettle taskwindow.
 TooMany:There are too many telnet sessions already open.
 
-Telnet:telnet
-SSH:ssh
-Taskwindow:taskwindow
+Telnet:Telnet
+SSH:SSH
+Taskwindow:Task window
 
 Term0:vt100
 Term1:vt102
@@ -47,24 +47,24 @@ Term6:rxvt
 Term7:xterm
 
 # Title bar
-title_conn:nettle (Connecting)
-title_disconnect:nettle (Disconnected)
-title_noconn:nettle (Connection refused)
-title_open:nettle (Open)
-title_closed:nettle (Closed)
+title_conn:Nettle (Connecting)
+title_disconnect:Nettle (Disconnected)
+title_noconn:Nettle (Connection refused)
+title_open:Nettle (Open)
+title_closed:Nettle (Closed)
 
 # Session messages
-connecting:nettle: connecting to 
-connected:nettle: connected to 
+connecting:Nettle: Connecting to 
+connected:Nettle: Connected to 
 
-lookup:nettle: looking up host 
-noresolv:nettle: failed to resolve remote host
-nosocket:nettle: failed to create socket
-noconn:nettle: connection refused
-closed:nettle: remote has closed connection
-disconn:nettle: disconnected
-twclosed:nettle: taskwindow has been closed
+lookup:Nettle: Looking up host 
+noresolv:Nettle: Failed to resolve remote host
+nosocket:Nettle: Failed to create socket
+noconn:Nettle: Connection refused
+closed:Nettle: Remote has closed the connection
+disconn:Nettle: Disconnected
+twclosed:Nettle: Task window has been closed
 
-# Erk
-cantwrite:Failed to open file '%s' for writing
+# Errors
+nocreate:Couldn't create file.  Is the disc write-protected?
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.
