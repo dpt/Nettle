@@ -1172,7 +1172,7 @@ void process_line_editor(struct session_struct *session)
 {
   char *icon_text;
   char data[512];
-  int line_editor_icon=((session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON) ? 1 : 0);
+  int line_editor_icon=0;
 
   read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
 
