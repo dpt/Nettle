@@ -293,9 +293,9 @@ static void start_connection_int (struct connection_params *params )
         char temp_string[1024];
 
         sprintf(temp_string, "%d", params->height);
-        _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string)+1, 0, 4);
+        _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string), 0, 4);
         sprintf(temp_string, "%d", params->width);
-        _swi(OS_SetVarVal, _INR(0,4), "COLUMNS", temp_string, strlen(temp_string)+1, 0, 4);
+        _swi(OS_SetVarVal, _INR(0,4), "COLUMNS", temp_string, strlen(temp_string), 0, 4);
 
         if (params->command && params->command[0]!='\0')
         {
@@ -912,9 +912,18 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
       old_terminal_size.y || old_scrollback != scrollback)
   {
     struct coords terminal_size;
+    char temp_string[12];
 
     terminal_size.x=terminal_size_x;
     terminal_size.y=terminal_size_y;
+
+    if (session->connection_type == NETTLE_TASKWINDOW)
+    {
+      sprintf(temp_string, "%d", terminal_size_y);
+      _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string), 0, 4);
+      sprintf(temp_string, "%d", terminal_size_x);
+      _swi(OS_SetVarVal, _INR(0,4), "COLUMNS", temp_string, strlen(temp_string), 0, 4);
+    }
 
     /* NB - this need fixed in order to allow copying of data from old to new */
     delete_terminal(session);
