@@ -3447,6 +3447,7 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
 
         /* finally (!) send it */
         process_data_transmission (session, uri + offset, eol - uri - offset);
+        free(uri);
         return true;
       }
     }
