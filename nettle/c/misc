@@ -95,6 +95,17 @@ int esc_instr(const char *string, const char *test, int length)
   return -1;
 }
 
+/*
+ * Ensure a 'string' is zero-terminated.  Typically to work around bugs in
+ * other apps which don't obey the DataLoad protocol on PRM P3-253 which
+ * clearly states that the filename must be ZERO-terminated
+ */
+void misc_zero_terminate_ctrl_string(char *string)
+{
+  for(;*string>31;string++);
+
+  *string=0;
+}
 
 
 /* read a 'string' */
