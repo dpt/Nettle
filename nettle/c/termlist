@@ -71,22 +71,18 @@ create_termlist_menu (void)
   node = sessions;
   while (node)
   {
-    char *entry;
-    int el;
-
     menublock[position++] = node->next ? 0 : 0x80;
       /* set "last" bit if this is the end of the list */
     menublock[position++] = -1;	/* no submenu */
     menublock[position++] =
       WIMP_ICON_FGCOL (7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT |
-      WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT;
+      WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_SPRITE_BIT;
 
-    entry = node->socket_host;
-    el = strlen (entry);
-
-    menublock[position++] = (int) entry;
-    menublock[position++] = (int) (entry + el);
-    menublock[position++] = el + 1;
+      menublock[position++]=(int) node->label;
+      menublock[position++]=(int)(node->connection_type == NETTLE_SSH ? "snettle_ssh" : \
+                                  node->connection_type == NETTLE_TELNET ? "snettle_telnt" :
+                                  "snettle_task");
+      menublock[position++]=strlen(node->label)+1;
 
     node = node->next;
   }

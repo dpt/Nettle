@@ -23,10 +23,9 @@ typedef struct _hotlistnode
   char *label;
   char *host;
   char *command;
-  unsigned short port;
   unsigned char internal_state;       /* Used for selection etc */
   unsigned char vttype;               /* An index in to the vt type array -- the user gives a string, and we match that to the array at load time */
-  unsigned char uselineeditor;        /* bit=0:use yes/no.    bit1:intially active?    bit3:type (inline or below) */
+  unsigned char uselineeditor;
   unsigned short terminal_width;
   unsigned short terminal_height;
   unsigned short scrollback;
@@ -34,7 +33,7 @@ typedef struct _hotlistnode
 
 extern void lose_hotlist(void);
 extern void load_hotlist(void);
-extern void create_hotlist_menu(void);
+extern int *create_hotlist_menu(void);
 extern hotlistnode *decode_hotlist_menu(int entry);
 extern void hotlist_draw(struct wimp_getrectangle_block *getrect_block);
 extern int hotlist_num_items(void);
@@ -45,5 +44,6 @@ extern void resize_hotpane(void);
 extern void win_panehot_click(int x, int y, int buttons, int icon_handle);
 extern void win_hotpane_click(int x, int y, int buttons, int icon_handle);
 extern void win_hotedit_click(int x, int y, int buttons, int icon_handle);
+extern void fire_hotlist(int item);
 
 #endif /* HOTLIST_H */

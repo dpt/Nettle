@@ -41,8 +41,8 @@
 #include "templ.h"
 #include "url.h"
 
-static int menu_data[64];
-static int menu_data2[64];
+static int menu_data[96];
+static int menu_data2[96];
 static int *bitmaps_area=0;
 static int bitmaps_area_number=0;
 
@@ -619,7 +619,16 @@ static void iconbar_click(int x, int y, int buttons, int icon_handle)
   	 create_iconbar_menu();
   	 break;
        case 1:
-         create_hotlist_menu();
+         {
+           struct wimp_getpointerinfo_block block;
+           int items = hotlist_num_items();
+           if (items)
+           {
+             _swi(Wimp_GetPointerInfo, _IN(1), &block);
+             _swi(Wimp_CreateMenu, _INR(1,3), create_hotlist_menu(), block.pos.x-64, 96+(items*44));
+             menu_open = MENU_HOTLIST;
+           }
+         }
          break;
      }
   }
@@ -1406,6 +1415,11 @@ void wimp_menu_selection(int *selection)
           break;
 
         case 3:
+          if (selection[1] >= 0)
+            fire_hotlist(selection[1]);
+          break;
+
+        case 4:
           /* Bring a session window to the front */
           if (selection[1] >= 0)
           {
@@ -1415,7 +1429,7 @@ void wimp_menu_selection(int *selection)
           }
           break;
 
-        case 4:
+        case 5:
           /* Quit */
           close_program();
       }
@@ -1481,42 +1495,9 @@ void wimp_menu_selection(int *selection)
       break;
 
     case MENU_HOTLIST:
-      {
-        hotlistnode *hot = decode_hotlist_menu(selection[0]);
-
-        char tmpbuf[100];
-        char connection[MESSAGE_MAX_CONNECTION];
-
-        if (!hot)
-          return;
-
-        switch(hot->type)
-	{
-	  case ht_telnet:
-	    set_icon_data(win_open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
-	    if (hot->port!=23) sprintf(tmpbuf, "%s:%d", hot->host, hot->port);
-	      else strcpy(tmpbuf, hot->host);
-	    set_icon_data(win_open, 0, tmpbuf);
-	    set_icon_data(win_open, 7, "");
-	    break;
-	  case ht_ssh:
-	    set_icon_data(win_open, 4, lookup("SSH",  connection, MESSAGE_MAX_CONNECTION));
-	    if (hot->port!=22) sprintf(tmpbuf, "%s:%d", hot->host, hot->port);
-	      else strcpy(tmpbuf, hot->host);
-	    set_icon_data(win_open, 0, tmpbuf);
-	    set_icon_data(win_open, 7, hot->command);
-	    break;
-	  case ht_task:
-	    set_icon_data(win_open, 4, lookup("Taskwindow", connection, MESSAGE_MAX_CONNECTION));
-	    set_icon_data(win_open, 0, "");
-	    set_icon_data(win_open, 7, hot->command);
-	    break;
-	  case ht_invalid:
-	    break;
-	}
-
-      }
+      fire_hotlist(selection[0]);
       break;
+
     case MENU_LINEED_TYPE:
       if (selection[0] != -1)
       {
@@ -1562,7 +1543,7 @@ void wimp_menu_selection(int *selection)
           break;
 
         case MENU_HOTLIST:
-          create_hotlist_menu();
+          iconbar_click(0,0,1,iconbar_handle);
           break;
 
 	case MENU_LINEED_TYPE:
@@ -1872,6 +1853,16 @@ void wimp_message(union wimp_poll_block *wimp_block)
           }
           break;
 
+        case MENU_HOTLIST:
+          {
+            const int *menublock=create_hotlist_menu();
+            if (menublock)
+              _swi (Wimp_CreateSubMenu, _INR(1,3), menublock,
+                    wimp_block->user_message.contents.menu_warning.pos.x,
+                    wimp_block->user_message.contents.menu_warning.pos.y);
+          }
+          break;
+
         case MENU_ZAPFONTLIST:
           create_zap_font_submenu (wimp_block->user_message.contents.menu_warning.selection,
                                     wimp_block->user_message.contents.menu_warning.pos);
@@ -2080,6 +2071,7 @@ static void create_iconbar_menu(void)
   char *menu_choices = get_menu_item("Choices");
   char *menu_connect = get_menu_item("Connect");
   char *menu_session;
+  char *menu_hotlist;
   char *menu_quit    = get_last_menu_item("Quit");
 
   if (sessions)
@@ -2087,17 +2079,23 @@ static void create_iconbar_menu(void)
   else
     menu_session = get_grey_menu_item("Session]");
 
+  if (hotlist_num_items())
+    menu_hotlist = get_menu_item("Hotlist]");
+  else
+    menu_hotlist = get_grey_menu_item("Hotlist]");
+
   if (create_menu(menu_data, 0, menu_title,
                   menu_info, win_info,
                   menu_choices,
                   menu_connect,
+                  menu_hotlist, MENU_HOTLIST,
                   menu_session, MENU_TERMLIST,
                   menu_quit))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
     _swi(Wimp_CreateMenu, _INR(1,3), menu_data,
-                                     block.pos.x-64, 96+24 + (5*44) );
+                                     block.pos.x-64, 96+(24*2) + (6*44) );
   }
 
   free(menu_title);
@@ -2105,6 +2103,7 @@ static void create_iconbar_menu(void)
   free(menu_choices);
   free(menu_connect);
   free(menu_session);
+  free(menu_hotlist);
   free(menu_quit);
 
   menu_open=MENU_ICONBAR;

@@ -14,6 +14,7 @@
 #include "messages.h"
 #include "templ.h"
 #include "wimputil.h"
+#include "nettle.h"
 #include <ctype.h>
 
 static hotlistnode *hotlisthead = NULL;
@@ -151,7 +152,6 @@ static hotlistnode *create_blank(void)
   node->label = NULL;
   node->host = NULL;
   node->command = NULL;
-  node->port = 23;
   /* The following should be pulled from the global choices! */
   hash_term(&node->vttype, "vt220");
   node->uselineeditor = line_editor;
@@ -204,7 +204,6 @@ static void create_entry(char *title, FILE *in)
 
         if(read_hot_string(&node->host           , tail, str, "host")) goto errbarf;
         if(read_hot_string(&node->command        , tail, str, "cmnd")) goto errbarf;
-        if(read_hot_number(&node->port           , tail, str, "port")) goto errbarf;
         if(read_hot_number(&node->terminal_width , tail, str, "wide")) goto errbarf;
         if(read_hot_number(&node->terminal_height, tail, str, "high")) goto errbarf;
         if(read_hot_number(&node->scrollback     , tail, str, "scrl")) goto errbarf;
@@ -268,20 +267,19 @@ void load_hotlist(void)
   fclose(file_handle);
 }
 
-void create_hotlist_menu(void)
+int *create_hotlist_menu(void)
 {
   hotlistnode *node = hotlisthead;
-  struct wimp_getpointerinfo_block block;
   int position=7;
 
   if (!items)
-    return;
+    return NULL;
 
   if (!menublock)
   {
     menublock = (int *) malloc(24*items+28);
     if (!menublock)
-      return;
+      return NULL;
 
     strcpy((char *)menublock, lookup_static("Hotlist"));
 
@@ -297,20 +295,16 @@ void create_hotlist_menu(void)
       menublock[position++]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | \
   			    WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_SPRITE_BIT;
 
-      menublock[position+0]=(int) node->label;
-      menublock[position+1]=(int)(node->type == ht_ssh ? "snettle_ssh" : \
+      menublock[position++]=(int) node->label;
+      menublock[position++]=(int)(node->type == ht_ssh ? "snettle_ssh" : \
                                   node->type == ht_telnet ? "snettle_telnt" :
                                   "snettle_task");
-      menublock[position+2]=strlen(node->label)+1;
-      position+=3;
+      menublock[position++]=strlen(node->label)+1;
 
       node = node->next;
     }
   }
-
-  _swi(Wimp_GetPointerInfo, _IN(1), &block);
-  _swi(Wimp_CreateMenu, _INR(1,3), menublock, block.pos.x-64, 96+(items*44));
-  menu_open = MENU_HOTLIST;
+  return (int *) menublock;
 }
 
 
@@ -559,4 +553,43 @@ void resize_hotpane(void)
     ext.min.y = -(window.max.y - window.min.y);
 
   _swi(Wimp_SetExtent,_INR(0,1),win_hotpane, &ext);
+}
+
+void fire_hotlist(int item)
+{
+  hotlistnode *hot = decode_hotlist_menu(item);
+  struct connection_params params;
+
+  if (!hot)
+    return;
+
+  params.terminal_type    = (enum nettle_terminal) hot->vttype;
+  params.host             = hot->host;
+  params.port             = 0;
+  params.command          = hot->command;
+  params.width            = hot->terminal_width;
+  params.height           = hot->terminal_height;
+  params.scrollback       = hot->scrollback;
+  params.line_editor_type = hot->uselineeditor;
+  strcpy(params.label, hot->label);
+
+  switch(hot->type)
+  {
+    case ht_telnet:
+      params.connection_type = NETTLE_TELNET;
+      break;
+
+    case ht_ssh:
+      params.connection_type = NETTLE_SSH;
+      break;
+
+    case ht_task:
+      params.connection_type = NETTLE_TASKWINDOW;
+      break;
+
+    default:
+      return;
+  }
+
+  start_connection_friedport(&params);
 }

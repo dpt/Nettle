@@ -21,7 +21,9 @@
 #include "zapredraw.h"
 #include "messages.h"
 
+
 static void allocate_zapredraw_area(int, int, int);
+static void start_connection_int (struct connection_params *params );
 
 
 #ifdef DEBUG
@@ -82,8 +84,8 @@ int get_host_port (char *string, int *port)
     loop++;
   }
 
-  /* look at the string to find a port if any (separated by colon or comma) */
-  sptr = strpbrk (string, ":,");
+  /* look at the string to find a port if any (separated by colon, space or comma) */
+  sptr = strpbrk (string, ": ,");
   if (sptr)
   {
     *sptr = '\0';
@@ -103,9 +105,32 @@ int get_host_port (char *string, int *port)
   return false;
 }
 
+bool start_connection_friedport(struct connection_params *params )
+{
+  int port;
+  char host[256];
+
+  if (params->connection_type != NETTLE_TASKWINDOW)
+  {
+    if (!params->host)
+      return false;
+
+    strcpy(host,params->host);
+    if (get_host_port (host, &port))
+      return false;
+
+    params->host = host;
+    params->port = port;
+  }
+
+  start_connection_int(params);
+
+  return true;
+}
 
 bool start_connection(void)
 {
+  struct connection_params params;
   char string[1024];
   int loop;
   int connection_type;
@@ -127,13 +152,27 @@ bool start_connection(void)
 
   terminal_type = read_terminal_type (win_open, icon_open_termtype);
 
+  params.connection_type  = connection_type;
+  params.terminal_type    = terminal_type;
+  params.host             = NULL;
+  params.port             = 0;
+  params.command          = NULL;
+  params.width            = defaultsize.x;
+  params.height           = defaultsize.y;
+  params.scrollback       = defaultscroll;
+  params.line_editor_type = line_editor;
+  params.label[0]         = '\0';
+
   switch (connection_type)
   {
     case NETTLE_TELNET:
       read_icon_data(win_open, icon_open_host, string, sizeof(string));
       if (get_host_port (string, &port))
         return false;
-      start_connection_int (connection_type, terminal_type, string, port, icon_open_host);
+
+      params.host = string;
+      params.port = port;
+      start_connection_int (&params);
       break;
 
     case NETTLE_TASKWINDOW:
@@ -144,7 +183,8 @@ bool start_connection(void)
       string[loop] = '\0';		/* trim trailing spaces */
       loop = strspn (string, " ");	/* number of leading spaces */
 
-      start_connection_int (connection_type, terminal_type, 0, 0, string+loop);
+      params.command = string+loop;
+      start_connection_int (&params);
       break;
 
     default:
@@ -154,13 +194,46 @@ bool start_connection(void)
 }
 
 
-void start_connection_int (int connection_type, enum nettle_terminal terminal_type,
-			   const char *host, int port, const char *command)
+static void start_connection_int (struct connection_params *params )
 {
 #define INITIAL_MAX_Y (1088)
   static int max_y = INITIAL_MAX_Y; /* the top of the next window to be opened */
   int loop;
   struct session_struct *session;
+
+  if (params->connection_type == NETTLE_SSH)
+    return; /* Not implemented yet! */
+
+  if (params->label[0]=='\0')
+  {
+    switch(params->connection_type)
+    {
+    case NETTLE_TASKWINDOW:
+      if (params->command)
+        strcpy(params->label, params->command);
+      else
+        sprintf(params->label, "<%s>", lookup_static("taskwindow"));
+      break;
+
+    case NETTLE_TELNET:
+      if (!params->host)
+        return;
+      if (params->port!=23)
+        sprintf(params->label, "%s:%d", params->host, params->port);
+      else
+        strcpy(params->label, params->host);
+      break;
+
+    case NETTLE_SSH:
+      if (!params->host)
+        return;
+      if (params->port!=22)
+        sprintf(params->label, "%s:%d", params->host, params->port);
+      else
+        strcpy(params->label, params->host);
+      break;
+    }
+  }
 
   session = malloc(sizeof(struct session_struct));
   if (session == NULL)
@@ -184,14 +257,14 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
     session->session_flags[loop]=false;
   }
 
-  switch (connection_type)
+  switch (params->connection_type)
   {
     case NETTLE_TELNET:
       /* host, port already parsed */
       session->socket_handle=0;
       session->socket_state=NETTLE_SESSION_RESOLVE;
-      session->socket_port = port;
-      strcpy (session->socket_host, host);
+      session->socket_port = params->port;
+      strcpy (session->socket_host, params->host);
       break;
 
     case NETTLE_TASKWINDOW:
@@ -199,13 +272,15 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
       {
         char temp_string[1024];
 
-        if (command[0]!='\0')
+        if (params->command && params->command[0]!='\0')
         {
-          sprintf (temp_string, "%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X -txt &%X", command, task_handle, (int)session);
+          sprintf (temp_string, "%%TaskWindow \"%s\" -ctrl -name \"Nettle task\"" \
+                     " -quit -task &%X -txt &%X", params->command, task_handle, (int)session);
         }
         else
         {
-          sprintf (temp_string, "%%TaskWindow -ctrl -name \"Nettle task\" -task &%X -txt &%X", task_handle, (int)session);
+          sprintf (temp_string, "%%TaskWindow -ctrl -name \"Nettle task\"" \
+                     " -task &%X -txt &%X", task_handle, (int)session);
         }
 
         _swi(Wimp_StartTask, _IN(0), temp_string);
@@ -218,9 +293,10 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
   }
 
   /* set all the attributes to their defaults */
-  session->terminal_size.x = defaultsize.x;
-  session->terminal_size.y = defaultsize.y;
-  session->scrollback = defaultscroll;
+  strcpy(session->label, params->label);
+  session->terminal_size.x = params->width;
+  session->terminal_size.y = params->height;
+  session->scrollback = params->scrollback;
   session->title=malloc(256);
   assert(session->title != NULL);
   strcpy(session->title,"");
@@ -232,8 +308,8 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
   assert(session->assigned_area);
   session->pos.x=0;
   session->pos.y=session->scrollback;
-  session->connection_type=connection_type;
-  session->terminal_type=terminal_type;
+  session->connection_type=params->connection_type;
+  session->terminal_type=params->terminal_type;
   reset_terminal(session);
 
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
@@ -260,7 +336,7 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
     session->number_of_tabs++;
   }
 
-  session->line_editor_type=line_editor;
+  session->line_editor_type=params->line_editor_type;
 
   /* if line editor is turned on, allocate all the lineeditor space */
   if (session->line_editor_type==LINEEDIT_NONE)
@@ -349,7 +425,7 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
     }
   }
 
-  switch (connection_type)
+  switch (params->connection_type)
   {
     case NETTLE_TELNET:
       set_title_bar(session->window_handle, lookup_static ("title_conn"));
