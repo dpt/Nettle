@@ -51,6 +51,7 @@ static int menu_data3[96];
 static char indirected[1024];
 
 static struct session_struct *paste_session;
+static struct session_struct *options_session;
 
 static int old_charw;
 static int old_charh;
@@ -74,6 +75,7 @@ static enum ansi_colour_flag allow_ansi_colour = SAVE_FLAG_ANSI;
 
 static void create_iconbar_menu(void);
 static void open_open_window(bool open_window_flag);
+static void open_options_window(bool open_window_flag);
 static void create_terminal_menu(void);
 
 static bool parse_ant_url (union wimp_poll_block *);
@@ -1015,6 +1017,48 @@ static void win_resize_click(int x, int y, int buttons, int icon_handle)
   }
 }
 
+static void win_termterm_click(int x, int y, int buttons, int icon_handle)
+{
+  switch (icon_handle)
+  {
+    case icon_termterm_cancel:
+      if ((buttons & 1)==0)
+      {
+        close_window(win_termterm);
+      }
+      else
+      {
+        open_options_window(false);
+      }
+
+      break;
+
+    case icon_termterm_set:
+      options_session->line_editor_type=read_lineeditor_type(win_termterm, icon_termterm_lineedittype);
+      lineedit_free_space(options_session, true);
+      lineedit_allocate_space(options_session, true);
+
+      reopen_and_size_window(options_session, options_session->terminal_size.x, options_session->terminal_size.y,
+                             options_session->scrollback, redraw.r_charw, redraw.r_charh, eig);
+
+      if (read_icon_ticked(win_termterm, icon_termterm_localecho))
+        options_session->local_echo=true;
+      else
+        options_session->local_echo=false;
+
+      if ((buttons & 1)==0)
+      {
+        close_window(win_termterm);
+      }
+
+      break;
+
+    case icon_termterm_lineeditbut:
+      create_lineeditor_type_menu(win_termterm, icon_termterm_lineedittype, icon_termterm_lineeditbut);
+      break;
+  }
+}
+
 /**
  * Set the caret to be in the given session
  *
@@ -1384,6 +1428,7 @@ void wimp_mouse_click(int x, int y, int buttons, int window_handle, int icon_han
     {&win_hotedit,   win_hotedit_click   },
     {&win_panemisc,  win_panemisc_click  },
     {&win_spoolsave, win_spoolsave_click },
+    {&win_termterm,  win_termterm_click  },
     {NULL,NULL}
   };
   int i;
@@ -1882,6 +1927,9 @@ void wimp_menu_selection(int *selection)
           clipboard_datarequest(terminal_menu_session);
           break;
         case 3: /* options */
+          options_session=terminal_menu_session;
+          open_options_window(true);
+
           break;
         case 4: /* spool menu */
           switch (selection[1])
@@ -2950,7 +2998,7 @@ static void create_terminal_menu(void)
   char *menu_selection;
   char *menu_resize         =get_menu_item("Resize");
   char *menu_paste_clipboard=get_menu_item("PasteClip");
-  char *menu_options        =get_grey_menu_item("Options");
+  char *menu_options        =get_menu_item("Options");
   char *menu_spool          =get_menu_item("Spool>");
   char *menu_reconnect      =get_last_menu_item("Reconnect");
 
@@ -3275,6 +3323,55 @@ static void open_open_window(bool open_window_flag)
   }
 }
 
+static void open_options_window(bool open_window_flag)
+{
+  /* set icon contents */
+  {
+    char string[32];
+    char string_lineedit[32];
+
+    sprintf(string_lineedit,"LineEd%d",options_session->line_editor_type);
+    set_icon_data(win_termterm, icon_termterm_lineedittype, lookup(string_lineedit, string, sizeof(string)));
+  }
+
+  if (options_session->local_echo)
+  {
+    set_icon_state(win_termterm, icon_termterm_localecho, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+  }
+  else
+  {
+    set_icon_state(win_termterm, icon_termterm_localecho, 0, WIMP_ICON_SELECTED_BIT);
+  }
+
+
+  if (open_window_flag)
+  {
+    struct wimp_getwindowstate_block window;
+
+    window.window_handle = win_termterm;
+    _swi(Wimp_GetWindowState, _IN(1), &window);
+
+    window.handle_behind = -1;  /* Open on top of stack */
+
+    if ((window.window_flags & (1 << 16)) == 0)
+    {
+      /* window is not open, open it centred on the pointer taking care to
+       * not obscure the icon bar */
+      struct wimp_getpointerinfo_block pointer;
+      int width = window.max.x - window.min.x;
+      int height = window.max.y - window.min.y;
+
+      _swi(Wimp_GetPointerInfo, _IN(1), &pointer);
+
+      window.min.x = pointer.pos.x - width / 2;
+      window.min.y = pointer.pos.y - height / 2;
+
+      window.max.x = window.min.x + width;
+      window.max.y = window.min.y + height;
+    }
+    _swi(Wimp_OpenWindow, _IN(1), &window);
+  }
+}
 
 
 void set_termsize_icons (int window_handle, int xicon, int yicon, int sicon,
