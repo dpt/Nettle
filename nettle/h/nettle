@@ -83,12 +83,23 @@ struct connection_params
   int         height;
   int         scrollback;
   char        line_editor_type;
-  char        label[150];
+  char        label[150]; /**< appears on session menu and in title bar */
 };
 
-int get_host_port (char *string, int *port);
+int get_host_port(char *string, int *port);
 bool start_connection(void);
 bool start_connection_friedport(struct connection_params *params );
+
+/**
+ * Start a telnet connection with default choices
+ *
+ * @param host     Hostname to connect to
+ * @param port     Port number to connect on
+ *
+ * @return true if connection started successfully, false otherwise
+ */
+bool nettle_start_telnet_connection(const char *host, int port);
+
 void write_out_string(struct session_struct *, const char *);
 void write_out_strings(struct session_struct *, ...); /* term with NUL ptr */
 void write_out_data(struct session_struct *, const char *, int);

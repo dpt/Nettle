@@ -128,6 +128,29 @@ bool start_connection_friedport(struct connection_params *params )
   return true;
 }
 
+
+bool nettle_start_telnet_connection(const char *host, int port)
+{
+  struct connection_params params;
+
+  params.connection_type  = NETTLE_TELNET;
+  params.terminal_type    = default_terminal;
+  params.host             = host;
+  params.port             = port;
+  params.command          = NULL;
+  params.width            = defaultsize.x;
+  params.height           = defaultsize.y;
+  params.scrollback       = defaultscroll;
+  params.line_editor_type = line_editor;
+  sprintf(params.label, "%.*s:%d", sizeof(params.label) - 16, host, port);
+
+  start_connection_int(&params);
+
+  return true;
+}
+
+
+
 bool start_connection(void)
 {
   struct connection_params params;

@@ -3,7 +3,8 @@
 |   © Nettle developers 2000-2001
 
 Set Nettle$Dir <Obey$Dir>
-IconSprites <Nettle$Dir>.!Sprites
 
-| This file is innoculated against the Extend virus
-||||ÿ
+Set Alias$Open_URI_telnet  <Nettle$Dir>.!Run
+Set Alias$URLOpen_telnet   <Nettle$Dir>.!Run -url %%*0
+
+IconSprites <Nettle$Dir>.!Sprites

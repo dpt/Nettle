@@ -297,3 +297,21 @@ char *strdup(const char *s)
 
 #endif
 
+
+
+char *strndup(const char *s, size_t len)
+{
+  char    *t;
+
+  if (s == NULL)
+    return NULL;
+  
+  t = malloc(len + 1);
+  if (t == NULL)
+    return NULL;
+
+  memcpy(t, s, len);
+  t[len] = '\0';
+
+  return t;
+}

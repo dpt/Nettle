@@ -43,6 +43,7 @@ static void initialise_wimp(void)
     WIMP_MESSAGE_TASKWINDOW_OUTPUT,
     WIMP_MESSAGE_TASKWINDOW_EGO,
     WIMP_MESSAGE_TASKWINDOW_MORIO,
+    URI_MProcess,
     URI_MReturnResult,
     Wimp_MOpenUrl,
     WIMP_MESSAGE_QUIT /* must be last! */

@@ -1778,6 +1778,64 @@ void gain_caret(int window_handle)
 
 
 
+/**
+ * Call back function for url_receivebroadcast.
+ *
+ * @param url        Url to be handled
+ * @param checkonly  non-zero if we should only check if the return can be handle
+ *
+ * @return non-zero if url has been [or can be] handled
+ */
+static int wimp_handleurl(const char *url, int checkonly)
+{
+  const char *hostptr;
+  const char *hostend;
+  int         port;
+  char       *hostcopy;
+  int         retval;
+  
+  if (strncmp(url, "telnet:", strlen("telnet:")) != 0)
+    /* not a telnet url */
+    return 0;
+  
+  if (checkonly != 0)
+    return 1;
+  
+  hostptr = url + strlen("telnet:");
+  while (*hostptr == '/')
+    hostptr++;
+  
+  port = 23;
+  
+  hostend = strchr(hostptr, ':');
+  if (hostend != NULL)
+  {
+    /* found ':' - attempt to extract port number */
+    if (isdigit((int)hostend[1]))
+      port = atoi(hostend+1);
+  }
+  else
+  {
+    /* no port number - remove any trailing '/'s */
+    hostend = hostptr + strlen(hostptr);
+    while (hostend > hostptr && hostend[-1] == '/')
+      hostend--;
+  }
+
+  /* make copy of hostname with port or trailing '/'s removed */
+  hostcopy = strndup(hostptr, hostend - hostptr);
+  if (hostcopy == NULL)
+    return 0;
+  
+  retval = nettle_start_telnet_connection(hostcopy, port);
+  
+  free(hostcopy);
+  
+  return retval;
+}
+
+
+
 /* Wimp message */
 
 void wimp_message(union wimp_poll_block *wimp_block)
@@ -1940,6 +1998,11 @@ void wimp_message(union wimp_poll_block *wimp_block)
 
     case URI_MReturnResult:
       url_bounce(&wimp_block->user_message);
+      break;
+    
+    case Wimp_MOpenUrl:
+    case URI_MProcess:
+      url_recvbroadcast(&wimp_block->user_message, wimp_handleurl);
       break;
   }
 }

@@ -5,6 +5,10 @@
 
 Set Nettle$Dir <Obey$Dir>
 Set NettleFonts$Path <Nettle$Dir>.Fonts.
+
+Set Alias$Open_URI_telnet  <Nettle$Dir>.!Run
+Set Alias$URLOpen_telnet   <Nettle$Dir>.!Run -url %%*0
+
 IconSprites <Nettle$Dir>.!Sprites
 
 Set Nettle$ZapRedrawPath <Zap$Redraw>
@@ -19,4 +23,4 @@ RMEnsure ColourPicker 0.31 RMLoad System:Modules.Picker
 RMEnsure ColourPicker 0.31 Error Nettle requires ColourPicker 0.31 or later
 
 WimpSlot -min 256K -max 256K
-Run <Nettle$Dir>.!RunImage ><Nettle$Dir>.stdout 2><Nettle$Dir>.stderr
+Run <Nettle$Dir>.!RunImage %*0 ><Nettle$Dir>.stdout 2><Nettle$Dir>.stderr
