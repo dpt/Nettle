@@ -122,7 +122,7 @@ static bool get_user_pass (char *string, char *tempbuf, struct connection_params
   }
 
   /* success */
-  return false;
+  return true;
 }
 
 static int get_host_port (char *string, int *port)
@@ -186,7 +186,9 @@ bool start_connection_friedport(struct connection_params *params )
       return false;
 
     strcpy(host,params->host);
-    get_user_pass(host, tempbuf, params);
+
+    if (get_user_pass(host, tempbuf, params) == false)
+      return false;
 
     if (get_host_port (host, &port) == false)
       return false;
@@ -314,7 +316,8 @@ bool start_connection(void)
     case NETTLE_SSH:
       read_icon_data(win_open, icon_open_host, string, sizeof(string));
 
-      get_user_pass(string, tempbuf, &params);
+      if (get_user_pass(string, tempbuf, &params) == false)
+        return false;
 
       if (get_host_port(string, &port) == false)
         return false;
@@ -733,6 +736,26 @@ static void start_connection_int (struct connection_params *params )
   }
 
   allocate_zapredraw_area(session->terminal_size.x, session->terminal_size.y, session->scrollback);
+
+  {
+    char cursor_flags;
+    struct coords pos;
+
+    pos=get_cursor_position(session);
+
+    /* get the cursor flags */
+    cursor_flags=read_assigned_flags(session, pos.x, pos.y) &
+          (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
+
+    /* if the cursor flags don't have cursor set, make it so */
+    cursor_flags |= NETTLE_FLAG_CURSOR;
+
+    if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
+    {
+      write_assigned_flags(session, pos.x, pos.y,
+                           read_assigned_flags(session, pos.x, pos.y) | cursor_flags);
+    }
+  }
 }
 
 void write_out_string(struct session_struct *session, const char *string)
@@ -932,6 +955,15 @@ void remove_session(struct session_struct *session)
 
 int nettle_senddata(struct session_struct *session, const char *data, int length)
 {
+  int i;
+
+  /*printf("attempting to send to session %p: ",session);
+
+  for (i=0; i<length; i++)
+  {
+    printf("%c", data[i]);
+  }*/
+
   switch (session->connection_type)
   {
     case NETTLE_TELNET:
@@ -1536,4 +1568,35 @@ void scroll_term (struct session_struct *session, int direction)
   _swi (Wimp_GetWindowState, _IN(1), (int) &block);
   block.scroll.y += direction * (block.max.y - block.min.y);
   _swi (Wimp_OpenWindow, _IN(1), (int) &block);
+}
+
+void nettle_reconnect(struct session_struct *session)
+{
+  switch (session->connection_type)
+  {
+    case NETTLE_TELNET:
+      /* This is probably nasty for anything but telnet */
+      if (session->socket_handle!=-1)
+      {
+        socket_close(session->socket_handle);
+      }
+
+      session->socket_state=NETTLE_SESSION_RESOLVE;
+
+      if (session->dns)
+      {
+        dns_dispose(session->dns);
+        session->dns=NULL;
+      }
+
+      session->dns = dns_gethostbyname(session->socket_host);
+      assert(session->dns != NULL);
+
+      set_title_bar(session->window_handle, lookup_static ("title_conn"));
+      write_out_strings (session, lookup_static ("lookup"),
+                         session->socket_host, "...\r\n", 0);
+      main_requirenull = true;
+
+      break;
+  }
 }

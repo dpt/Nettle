@@ -170,4 +170,6 @@ void reopen_and_size_window(struct session_struct *, int, int, int, int, int);
 
 void scroll_term(struct session_struct *, int);
 
+void nettle_reconnect(struct session_struct *);
+
 #endif
