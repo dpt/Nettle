@@ -259,14 +259,24 @@ int *load_font(char *font)
   /* Set real character size (will be needed to implement graphics characters) */
   char_size=((width+ 7) & ~7)*height/8;
 
-  zap_load_area=malloc(char_size*(0x11D-first_char)+0x20);
+  zap_load_area=malloc(char_size*0x11D+0x20);
   assert(zap_load_area != NULL);
 
   _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);
 
+  {
+    char *area=(char *) zap_load_area;
+
+    MEMMOVE(area+0x20, area+0x20+(first_char*char_size),
+            (last_char-first_char)*char_size);
+  }
+
   /* fill in graphics chars */
-  define_zap_chars(zap_load_area+8+(char_size*(0x40-(zap_load_area[4]))),
+  define_zap_chars(zap_load_area+8+(char_size*0x40),
                    char_size, width, height, zap_load_area+8);
+
+  zap_load_area[4]=0;
+  zap_load_area[5]=0x11D;
 
   return zap_load_area;
 }

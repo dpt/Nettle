@@ -2293,7 +2293,7 @@ void mode_change(void)
   redraw.r_cbpc=b;
   redraw.r_linesp=0;
 
-  _swi(ZapRedraw_ConvertBitmap, _INR(1,4), &redraw, zap_font_used[4], 0x11D,
+  _swi(ZapRedraw_ConvertBitmap, _INR(1,4), &redraw, 0, 0x11D,
                                 ((char *) zap_font_used)+32);
 
   redraw.r_palette=zap_palette;

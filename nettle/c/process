@@ -1249,10 +1249,12 @@ static bool process_escape_length_3(struct session_struct *session)
               case 'F':
                 /* 7-bit */
                 session->bit_controls=false;
+                done=true;
                 break;
               case 'G':
                 /* 8-bit */
                 session->bit_controls=true;
+                done=true;
                 break;
             }
           }

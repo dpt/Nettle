@@ -143,7 +143,6 @@ bool start_connection(void)
       string[loop] = '\0';		/* trim trailing spaces */
       loop = strspn (string, " ");	/* number of leading spaces */
 
-      generror(string, false);
       start_connection_int (connection_type, terminal_type, 0, 0, string+loop);
       break;
 
