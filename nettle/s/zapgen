@@ -25,14 +25,17 @@ zapgen_code
 ;    R1 = area to read data from
 ;    R2 = total X size
 ;    R3 = total Y size
-;    R4 = other session flags
+;    [R13,#0] = other session flags
 ;
 ; On exit
 ;    R0 = last address in R0 written to
+;
+;    Can corrupt R1-R3, R12, R14
+;    Must preserve R4-R11
 
-	STMFD   R13!,{R1-R12}
+	STMFD   R13!,{R4-R10}
 
-        MOV     R11,R4 ; shift other session flags out of the way
+        LDR     R12,[R13,#0] ; get session flags from stack
 
 	ADD     R4,R3,#1
 	MOV     R4,R4,LSL#2 ; R4 is current_pointer%
@@ -59,19 +62,19 @@ code_x_loop
 	TST	R10,#16 ; selected bit
 	BNE	code_selected ; branch if this char is selected
 
-	TST     R11,#128 ; test reverse video
+	TST     R12,#128 ; test reverse video
 	BNE     code_reverse_video
 	BEQ     code_not_reverse_video
 
 code_reverse_video
 	TST     R10,#4 ; invert bit
-	BEQ     code_inverted
-	BNE     code_not_inverted
+	BNE     code_inverted
+	BEQ     code_not_inverted
 
 code_not_reverse_video
 	TST     R10,#4 ; invert bit
-        BEQ     code_not_inverted
-        BNE	code_inverted
+        BNE     code_not_inverted
+        BEQ	code_inverted
 
 code_not_inverted
 	LDRB    R8,[R7],#1
@@ -92,7 +95,7 @@ code_after_inverted
 
 code_selected
 
-	TST     R11,#128 ; test reverse video
+	TST     R12,#128 ; test reverse video
 	BNE     code_selected_reverse_video
 	BEQ     code_selected_not_reverse_video
 
@@ -215,7 +218,7 @@ code_next_stage
 
 	MOV     R0,R4 ; put last addr written to in R0
 
-	LDMFD   R13!,{R1-R12}
+	LDMFD   R13!,{R4-R10}
 
 	MOV     PC,R14
 
