@@ -263,6 +263,8 @@ void save_selection(char *filename, bool ansi_colour)
   int was_inverted = 0;
   int loop_start;
   int loop_end;
+  char currentchar;
+  int spacerun = 0; /* number of spaces found in a run, to avoid outputting them at end of line */
 
   file_handle=fopen(filename,"wb");
 
@@ -281,6 +283,7 @@ void save_selection(char *filename, bool ansi_colour)
     {
       if ((loop % (selection_session->terminal_size.x*4))==0)
       {
+        spacerun = 0; /* suppress spaces at end of line */
 	fputc('\n',file_handle);
       }
     }
@@ -316,18 +319,32 @@ void save_selection(char *filename, bool ansi_colour)
       }
     }
 
-    fputc(read_assigned_character(selection_session,loop),file_handle);
+    currentchar = read_assigned_character(selection_session,loop);
+    if (currentchar == ' ')
+    {
+      spacerun++;
+    }
+    else
+    {
+      /* non-space, output any suppressed run of spaces */
+      if (spacerun > 0)
+      {
+        fprintf(file_handle, "%*s", spacerun, "");
+        spacerun = 0;
+      }
+      fputc(currentchar,file_handle);
+    }
 
     if (ferror(file_handle))
       break;
   }
 
-  if (ferror (file_handle))
+  if (ferror(file_handle))
     gensaveerror (NULL, "nocreate");
   else
   {
-    if (fclose (file_handle))
-      gensaveerror (NULL, "nocreate");
+    if (fclose(file_handle))
+      gensaveerror(NULL, "nocreate");
     else
       misc_setfiletype(filename, 0xFFF);
   }
