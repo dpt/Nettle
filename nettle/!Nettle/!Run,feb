@@ -1,6 +1,6 @@
 |
-| (C) Nettle developers 2000-2002
-|
+| !Nettle.!Run
+| © Nettle developers 2000-2003
 
 Set Nettle$Dir <Obey$Dir>
 Set NettleFonts$Path <Nettle$Dir>.Fonts.

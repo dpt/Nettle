@@ -613,8 +613,34 @@ static void start_connection_int (struct connection_params *params )
              fclose(pipefile);
              misc_setfiletype("Pipe:$.NettleTask", 0xfeb);
 
-             sprintf (temp_string, "%%TaskWindow \"%%Obey -c Pipe:$.NettleTask\" -ctrl -name \"Nettle task - %s\"" \
-                        " -quit -task &%X -txt &%X", params->command, task_handle, (int)session);
+             {
+               char *temp_command=malloc((strlen(params->command)+1)*2); /* At most, everything will be a " */
+               int i=0;
+
+               assert(temp_command);
+
+               strcpy(temp_command, "");
+
+               while (i<strlen(params->command))
+               {
+                 switch (params->command[i])
+                 {
+                   case '"':
+                     strcat(temp_command,"\"\"");
+                     break;
+                   default:
+                     temp_command[strlen(temp_command)+1]='\0';
+                     temp_command[strlen(temp_command)]=params->command[i];
+                     break;
+                 }
+
+                 i++;
+               }
+               sprintf (temp_string, "%%TaskWindow \"%%Obey -c Pipe:$.NettleTask\" -ctrl -name \"Nettle task - %s\"" \
+                          " -quit -task &%X -txt &%X", temp_command, task_handle, (int)session);
+
+               free(temp_command);
+             }
            }
         }
         else
