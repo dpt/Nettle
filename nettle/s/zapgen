@@ -1,4 +1,7 @@
-; zapgengc.s
+;
+; Nettle zapgen code
+; (C) Nettle developers 2000-2001
+; $Id$
 ;
 
 
