@@ -380,14 +380,14 @@ Fortify_Allocate(size_t size, unsigned char allocator, const char *file, unsigne
         st_CheckBlock(st_AllocatedHead, file, line);
         /* what should we do if this fails? (apart from panic) */
 
-        st_AllocatedHead->Prev = (struct Header *)ptr;
+        st_AllocatedHead->Prev = (struct Header *)(void *)ptr;
         st_MakeHeaderValid(st_AllocatedHead);  
     }
 
     /*
      * Initialize and validate the header
      */
-    h = (struct Header *)ptr;
+    h = (struct Header *)(void *)ptr;
     h->Size      = size;
     h->File      = file;
     h->Line      = line;  
@@ -456,7 +456,7 @@ Fortify_Deallocate(void *uptr, unsigned char deallocator, const char *file, unsi
     unsigned char *ptr = (unsigned char *)uptr
                         - FORTIFY_HEADER_SIZE
                         - FORTIFY_ALIGNED_BEFORE_SIZE;
-    struct Header *h   = (struct Header *)ptr;
+    struct Header *h   = (struct Header *)(void *)ptr;
 
 #ifdef FORTIFY_CHECK_ALL_MEMORY_ON_DEALLOCATE
     Fortify_CheckAllMemory(file, line);
@@ -670,11 +670,11 @@ Fortify_Deallocate(void *uptr, unsigned char deallocator, const char *file, unsi
          */
         if(st_DeallocatedHead)
         {
-            st_DeallocatedHead->Prev = (struct Header *)ptr;
+            st_DeallocatedHead->Prev = (struct Header *)(void *)ptr;
             st_MakeHeaderValid(st_DeallocatedHead);
         }
 
-        h = (struct Header *)ptr;
+        h = (struct Header *)(void *)ptr;
         h->FreedFile   = file;
         h->FreedLine   = line;
         h->Deallocator = deallocator;
@@ -746,7 +746,7 @@ Fortify_LabelPointer(void *uptr, const char *label, const char *file, unsigned l
 	{
 		unsigned char *ptr = (unsigned char *)uptr
                               - FORTIFY_HEADER_SIZE - FORTIFY_ALIGNED_BEFORE_SIZE;
-		struct Header *h = (struct Header *)ptr;
+		struct Header *h = (struct Header *)(void *)ptr;
 
 		/* make sure the pointer is okay */
 		Fortify_CheckPointer(uptr, file, line);
@@ -781,7 +781,7 @@ Fortify_CheckPointer(void *uptr, const char *file, unsigned long line)
 {
     unsigned char *ptr = (unsigned char *)uptr
                               - FORTIFY_HEADER_SIZE - FORTIFY_ALIGNED_BEFORE_SIZE;
-    struct Header *h = (struct Header *)ptr;
+    struct Header *h = (struct Header *)(void *)ptr;
     int r;
 
     if(st_Disabled)
@@ -843,6 +843,7 @@ Fortify_SetOutputFunc(Fortify_OutputFuncPtr Output)
     return(Old);
 }
 
+#ifdef UNUSED_CODE
 /*
  * Fortify_SetAllocateFailRate(int Percent) - 
  * Fortify_Allocate() will "fail" this Percent of 
@@ -860,8 +861,9 @@ Fortify_SetAllocateFailRate(int Percent)
   
     return(Old);
 }
+#endif /* UNUSED_CODE */
 
- 
+
 /*
  * Fortify_CheckAllMemory() - Checks the fortifications
  * of all memory on the allocated list. And, if 
@@ -1842,8 +1844,8 @@ Fortify_malloc(size_t size, const char *file, unsigned long line)
 void *
 Fortify_realloc(void *uptr, size_t new_size, const char *file, unsigned long line)
 {
-    unsigned char *ptr = (unsigned char *)uptr - FORTIFY_HEADER_SIZE - FORTIFY_ALIGNED_BEFORE_SIZE;
-    struct Header *h = (struct Header *)ptr;
+    unsigned char *ptr = (unsigned char *)(void *)uptr - FORTIFY_HEADER_SIZE - FORTIFY_ALIGNED_BEFORE_SIZE;
+    struct Header *h = (struct Header *)(void *)ptr;
     void *new_ptr;
 
     /*
