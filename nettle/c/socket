@@ -177,12 +177,12 @@ int socket_senddata(int socket_handle, char * buffer, int length)
   return send(socket_handle, buffer, length, 0);
 }
 
-char *ip_to_string(int ip_address)
+char *socket_ip_string(int ip_address, char *buffer)
 {
-  sprintf((char *) temp_block,"%d.%d.%d.%d",(ip_address & 0x000000ff),
-                                            (ip_address & 0x0000ff00)>>8,
-                                            (ip_address & 0x00ff0000)>>16,
-                                            (ip_address & 0xff000000)>>24);
+  unsigned char *ip_byte = (unsigned char *)&ip_address;
 
-  return (char *) temp_block;
+  /* This is, of course, small-endian specific */
+  sprintf(buffer, "%d.%d.%d.%d", ip_byte[0], ip_byte[1], ip_byte[2], ip_byte[3]);
+
+  return buffer;
 }
