@@ -481,6 +481,14 @@ void byte_reverse_horizontal_tabulation(struct session_struct *session)
 void byte_linefeed(struct session_struct *session)
 {
   /* LF,VT,FF */
+  bool are_we_in_scroll_area=false;
+
+  if (session->pos.y>session->scroll_start+session->scrollback-1 &&
+      session->pos.y<session->scroll_end+session->scrollback-1)
+  {
+    are_we_in_scroll_area=true;
+  }
+
   session->pos.y++;
 
   if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
@@ -488,8 +496,11 @@ void byte_linefeed(struct session_struct *session)
     session->pos.x=0;
   }
 
-  /*reprocess_position(session);*/
-  reprocess_position_scroll(session);
+  if (are_we_in_scroll_area)
+  {
+    /*reprocess_position(session);*/
+    reprocess_position_scroll(session);
+  }
 }
 
 void byte_carriage_return(struct session_struct *session)
