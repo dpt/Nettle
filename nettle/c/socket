@@ -14,13 +14,8 @@
 
 #include "sys/ioctl.h"
 #include "sys/socket.h"
-#ifdef USE_TCPIPLIB
-#  include "socklib.h"
-#  include "inetlib.h"
-#else
-#  include "sys/byteorder.h"
-#  include "sys/select.h"
-#endif
+#include "socklib.h"
+#include "inetlib.h"
 #include "sys/errno.h"
 #include "sys/time.h"
 
@@ -32,14 +27,8 @@
 #include "socket.h"
 #include "sockwatch.h"
 
-#ifdef USE_TCPIPLIB
 #define ioctl socketioctl
 #define close socketclose
-#else
-/* this is only needed for NetLib */
-extern int close(int /*s*/);
-#endif
-
 
 int socket_connecttoip(unsigned long ip_address,int port_number)
 {
@@ -150,11 +139,7 @@ int socket_senddata(int socket_handle, const char * buffer, int length)
 {
   int result;
 
-#ifdef USE_TCPIPLIB  
   result = send(socket_handle, (void *) buffer, length, 0);
-#else
-  result = send(socket_handle, (const void *) buffer, length, 0);
-#endif
 
   if (result==-1)
   {
@@ -197,9 +182,7 @@ const char *socket_strerror(int errnum)
 
     case ENOENT               : return "Not found"; /* 2 */
     case EBADF                : return "Invalid descriptor"; /* 9 */
-#ifndef USE_TCPIPLIB
     case EAGAIN               : return "No more ports"; /* 11 */
-#endif
     case EFAULT               : return "Bad address"; /* 14 */
     case EINVAL               : return "Invalid argument"; /* 22 */
     case ENOSPC               : return "No space on device/DNS buffer overflow"; /* 28 */

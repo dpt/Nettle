@@ -12,13 +12,8 @@
 #include <time.h>
 #include "sys/errno.h"
 
-#ifdef USE_TCPIPLIB
-#  include "socklib.h"
-#  include "unixlib.h"
-#else
-#  include "sys/socket.h"
-#  include "sys/select.h"
-#endif
+#include "socklib.h"
+#include "unixlib.h"
 
 #include "sys/time.h"
 #include "netdb.h"

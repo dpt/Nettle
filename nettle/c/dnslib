@@ -8,11 +8,9 @@
 
 #include "generic.h"
 
-#ifdef USE_TCPIPLIB
-#  include "sys/types.h"
-#  include "inetlib.h"
-#  include "netinet/in.h"
-#endif
+#include "sys/types.h"
+#include "inetlib.h"
+#include "netinet/in.h"
 
 #include "arpa/inet.h" /* inet_aton */
 #include "netdb.h" /* gethostname */
