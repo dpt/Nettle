@@ -33,6 +33,7 @@ struct dns_s
 };
 
 
+#ifndef __UNIXLIB_TYPES_H
 
 static char *strdup(const char *s)
 {
@@ -53,6 +54,7 @@ static char *strdup(const char *s)
   return t;
 }
 
+#endif
 
 
 dns_t *dns_gethostbyname(const char *hostname)
