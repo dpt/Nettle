@@ -946,10 +946,7 @@ void remove_session(struct session_struct *session)
   }
 
   /* free lineeditor space */
-  if (session->line_editor_type!=LINEEDIT_NONE)
-  {
-    lineedit_free_space(session, false);
-  }
+  lineedit_free_space(session, false);
 
   /* free auto-login details */
   free(session->login_user);
