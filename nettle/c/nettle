@@ -257,6 +257,8 @@ static void start_connection_int (struct connection_params *params )
     session->session_flags[loop]=false;
   }
 
+  session->dns = NULL; /* Should be null for non telnet/ssh sessions */
+
   switch (params->connection_type)
   {
     case NETTLE_TELNET:
