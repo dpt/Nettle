@@ -272,6 +272,7 @@ static void start_connection_int (struct connection_params *params )
   {
     session->session_flags[loop]=false;
   }
+  session->local_echo = true;
 
   session->dns = NULL; /* Should be null for non telnet/ssh sessions */
 
@@ -334,6 +335,7 @@ static void start_connection_int (struct connection_params *params )
 
       /* set ECHO bit to true */
       session->session_flags[1]=true;
+      session->local_echo = false;
 
       break;
   }
