@@ -73,8 +73,12 @@ int socket_connecttoip(unsigned long ip_address,int port_number)
 
 void socket_close(int socket_handle)
 {
-  socketwatch_deregister(socket_handle);
-  close(socket_handle);
+  /* Check socket_handle is sane before passing it here */
+  if (socket_handle!=-1)
+  {
+    socketwatch_deregister(socket_handle);
+    close(socket_handle);
+  }
 }
 
 
