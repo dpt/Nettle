@@ -74,13 +74,12 @@ char *lookup(const char *token, char *buffer, int buf_size)
   return buffer;
 }
 
-/*************************************************** Gerph *********
- Function:     lookup_inbuffer
- Description:  Look up a messagetrans token and return a pointer to
-               it in the MessageTrans buffer.
- Parameters:   token-> the token to look up
- Returns:      NULL if not found; pointer to buffer entry if found
- ******************************************************************/
+/*
+ * Description:  Look up a messagetrans token and return a pointer to
+ *               it in the MessageTrans buffer.
+ * Parameters:   token-> the token to look up
+ * Returns:      NULL if not found; pointer to buffer entry if found
+ */
 char *lookup_inbuffer(const char *token)
 {
   char *buffer;

@@ -486,7 +486,7 @@ bool win_choices_read(int save)
 
   /* Read the cursor type in use */
   {
-    char cursor_type_string[32]; /* JRF: Make this size a define */
+    char cursor_type_string[32];
     int counter=0;
 
     read_icon_data(win_panemisc, icon_panemisc_cursortype, cursor_type_string,
@@ -521,9 +521,10 @@ bool win_choices_read(int save)
     {
       changed = true;
       cursor_type = (cursor_t) counter;
-      /* JRF: Updating the cursors here may result in the cursors being
-              written twice if the font is also changed; it's not a
-              stressful operation anyhow */
+      /* Updating the cursors here may result in the cursors being
+       * written twice if the font is also changed; it's not a
+       * stressful operation anyhow
+       */
       update_cursors(zap_font_area);
       update_cursors(zap_lowres_font_area);
     }

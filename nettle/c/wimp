@@ -917,7 +917,7 @@ static void win_spoolsave_click(int x, int y, int buttons, int icon_handle)
   }
 }
 
-/* Function:    win_resize_set
+/*
  * Description: Perform the 'set' action on the resize dialogue,
  *              with NO closing of the dialogue
  * Parameters:  none
@@ -2072,44 +2072,7 @@ void gain_caret(int window_handle)
  */
 static int wimp_handletelneturl(const char *url)
 {
-  /* JRF: This looks like it's duplicating start_connection_friedport */
-  const char *hostptr;
-  const char *hostend;
-  int         port;
-  char       *hostcopy;
-  int         retval;
-
-  hostptr = url;
-  while (*hostptr == '/')
-    hostptr++;
-
-  port = 23;
-
-  hostend = strchr(hostptr, ':');
-  if (hostend != NULL)
-  {
-    /* found ':' - attempt to extract port number */
-    if (isdigit((int)hostend[1]))
-      port = atoi(hostend+1);
-  }
-  else
-  {
-    /* no port number - remove any trailing '/'s */
-    hostend = hostptr + strlen(hostptr);
-    while (hostend > hostptr && hostend[-1] == '/')
-      hostend--;
-  }
-
-  /* make copy of hostname with port or trailing '/'s removed */
-  hostcopy = strndup(hostptr, hostend - hostptr);
-  if (hostcopy == NULL)
-    return 0;
-
-  retval = nettle_start_telnet_connection(hostcopy, port);
-
-  free(hostcopy);
-
-  return retval;
+  return nettle_start_telnet_connection_friedport(url);
 }
 
 
@@ -2335,9 +2298,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
             if (session)
             {
               /* Prompt the user if they try to paste something other than those above */
-              /* Is there a nice way to read the proper name for a filetype other than */
-              /* OS_ReadVarVal? I thought there was, but couldn't find it, so have */
-              /* just left it as the base type */
+              /* We should get the filetype textual form via OS_FSControl 18 here */
 
               if (generror_question("SureFileTypeLoadButtons",
                                     "SureFileTypeLoad",
@@ -2682,7 +2643,11 @@ void mode_change(void)
   }
   else
   {
-    bitmaps_area=realloc(bitmaps_area, mem_required); /* FIXME: Dangerous use of realloc() */
+    int *tmp=(int *) realloc(bitmaps_area, mem_required);
+    if (tmp)
+        bitmaps_area=tmp;
+    else
+        assert(0);  /* Duh. Panic! */
   }
 
   redraw.r_flags=0;
@@ -2728,21 +2693,6 @@ void lose_bitmaps(void)
   else
   {
     free(bitmaps_area);
-  }
-}
-
-void lose_zapredraw_area(void)
-{
-  if (dynamic_areas_available())
-  {
-    if (zapredraw_area_number!=0)
-    {
-      _swi(OS_DynamicArea, _INR(0,1), 1, zapredraw_area_number);
-    }
-  }
-  else
-  {
-    free(zapredraw_area);
   }
 }
 
@@ -2865,7 +2815,7 @@ static void create_terminal_menu(void)
   char *menu_spool          =get_last_menu_item("Spool>");
 
   char *menu_selection_title=get_menu_item("Selection");
-  char *menu_save	    =get_menu_item("Save");
+  char *menu_save           =get_menu_item("Save");
   char *menu_launch_url     =get_menu_item("LaunchURL");
   char *menu_send           =get_menu_item("Send");
   char *menu_copy_clipboard =get_menu_item("CopyClip");
@@ -3018,17 +2968,16 @@ void create_terminal_type_menu(int window_handle, int text_icon, int by_icon)
 
 
 
-/*************************************************** Gerph *********
- Function:     create_cursor_type_menu
- Description:  Create a menu for the cursor type and place it beside
-               the icon designated
- Parameters:   window_handle = handle of the window we're called from
-               text_icon = the icon that holds the current text for
-                           this menu (info&menu style)
-               by_icon = the icon beside which the menu should be
-                         placed (the menu icon)
- Returns:      none
- ******************************************************************/
+/*
+ * Description:  Create a menu for the cursor type and place it beside
+ *               the icon designated
+ * Parameters:   window_handle = handle of the window we're called from
+ *               text_icon = the icon that holds the current text for
+ *                           this menu (info&menu style)
+ *               by_icon = the icon beside which the menu should be
+ *                         placed (the menu icon)
+ * Returns:      none
+ */
 void create_cursor_type_menu(int window_handle, int text_icon, int by_icon)
 {
   char *menu_title     =get_menu_item("CursorType");
