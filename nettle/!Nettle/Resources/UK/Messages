@@ -4,7 +4,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.1604b (22-Aug-2001)
+AppVersion:v0.1605b (25-Aug-2001)
 
 Info:Info>
 Choices:Choices...
@@ -32,7 +32,7 @@ LineEd0:Off
 LineEd1:Optional
 LineEd2:Permanent
 
-ZapFont:Zap font
+MenuFont:Font
 
 NoTemplates:No Templates file was found.
 NoSprites:No Sprites file was found.
@@ -69,10 +69,10 @@ title_open:Nettle (Open)
 title_closed:Nettle (Closed)
 
 # Session messages
-connecting:Nettle: Connecting to 
-connected:Nettle: Connected to 
+connecting:Nettle: Connecting to
+connected:Nettle: Connected to
 
-lookup:Nettle: Looking up host 
+lookup:Nettle: Looking up host
 noresolv:Nettle: Failed to resolve remote host
 nosocket:Nettle: Failed to create socket
 noconn:Nettle: Connection refused
