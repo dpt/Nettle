@@ -143,7 +143,7 @@ void open_pane_window(struct session_struct *session, struct wimp_openwindow_blo
 
   block.window_handle=session->pane_handle;
   block.minx=main_block->minx;
-  block.miny=(gwo_block.miny)-48;
+  block.miny=(main_block->miny)-40-48;
   block.maxx=width;
 
   /* This is wrong as it assumes a toolsprite height */

@@ -402,9 +402,12 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         {
           char string[8];
 
-          resize_terminal(terminal_menu_session, atoi(read_icon_data(resize, 0, string, sizeof(string))),
-                                                 atoi(read_icon_data(resize, 2, string, sizeof(string))),
-                                                 atoi(read_icon_data(resize, 4, string, sizeof(string))));
+          resize_terminal(terminal_menu_session,
+                          atoi(read_icon_data(resize, 0, string, sizeof(string))),
+                          atoi(read_icon_data(resize, 2, string, sizeof(string))),
+                          atoi(read_icon_data(resize, 4, string, sizeof(string))),
+                          true);
+
           if (buttons!=1)
           {
             _swi(Wimp_CreateMenu, _IN(1), -1);
@@ -754,9 +757,11 @@ void key_pressed(int window_handle, int icon_handle, int key)
             {
               char string[8];
 
-              resize_terminal(terminal_menu_session, atoi(read_icon_data(resize, 0, string, sizeof(string))),
-                                                     atoi(read_icon_data(resize, 2, string, sizeof(string))),
-                                                     atoi(read_icon_data(resize, 4, string, sizeof(string))));
+              resize_terminal(terminal_menu_session,
+                              atoi(read_icon_data(resize, 0, string, sizeof(string))),
+                              atoi(read_icon_data(resize, 2, string, sizeof(string))),
+                              atoi(read_icon_data(resize, 4, string, sizeof(string))),
+                              true);
             }
             key_status=true;
         }
@@ -1714,6 +1719,18 @@ static void create_terminal_menu(void)
   char *menu_launch_url     =get_grey_menu_item("LaunchURL");
   char *menu_send           =get_grey_menu_item("Send");
   char *menu_clear          =get_grey_last_menu_item("Clear");
+
+  {
+    char string[8];
+    sprintf(string,"%d",terminal_menu_session->terminal_size_x);
+    set_icon_data(resize, 0, string);
+
+    sprintf(string,"%d",terminal_menu_session->terminal_size_y);
+    set_icon_data(resize, 2, string);
+
+    sprintf(string,"%d",terminal_menu_session->scrollback);
+    set_icon_data(resize, 4, string);
+  }
 
   if (!selection_session || (selection_start==selection_end))
   {

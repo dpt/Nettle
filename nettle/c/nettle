@@ -410,11 +410,11 @@ void start_connection(void)
 
   if (size_of_zapredraw_area<(session->terminal_size_x*
                               (session->terminal_size_y+
-                               session->scrollback)*6)) /* 6 is 'some value' */
+                               session->scrollback)*8)) /* 8 is 'some value' */
   {
     size_of_zapredraw_area=(session->terminal_size_x*
                               (session->terminal_size_y+
-                               session->scrollback)*6); /* same here */
+                               session->scrollback)*8); /* same here */
 
     zapredraw_area=realloc(zapredraw_area,size_of_zapredraw_area);
 
@@ -722,10 +722,85 @@ void write_assigned_character(struct session_struct *session, int pointer, char 
 }
 
 void resize_terminal(struct session_struct *session, int terminal_size_x, int terminal_size_y,
-                     int scrollback)
+                     int scrollback, bool use_naws)
 {
-  char string[256];
+  char *old_assigned_area=session->assigned_area;
+  int old_terminal_size_x=session->terminal_size_x;
+  int old_terminal_size_y=session->terminal_size_y;
+  int old_scrollback     =session->scrollback;
 
-  sprintf(string,"TX: %d, TY: %d, SC: %d",terminal_size_x, terminal_size_y, scrollback);
-  generror(string,false);
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+
+  session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
+  session->terminal_size_x=terminal_size_x;
+  session->terminal_size_y=terminal_size_y;
+  session->scrollback     =scrollback;
+
+  /* Blank area */
+  /* remove once move is implemented */
+  {
+    int loop;
+
+    for (loop=0; loop<terminal_size_x*(terminal_size_y+scrollback)*4; loop+=4)
+    {
+      write_assigned(session, loop, 7, 0, 0, 32);
+    }
+  }
+
+  /* move old data to new area */
+  /* Implement... */
+
+  free(old_assigned_area);
+
+  if (size_of_zapredraw_area<(session->terminal_size_x*
+                              (session->terminal_size_y+
+                               session->scrollback)*8)) /* 8 is 'some value' */
+  {
+    size_of_zapredraw_area=(session->terminal_size_x*
+                              (session->terminal_size_y+
+                               session->scrollback)*8); /* same here */
+
+    zapredraw_area=realloc(zapredraw_area,size_of_zapredraw_area);
+  }
+
+  {
+    struct wimp_setextent_block block;
+
+    block.minx=0;
+    block.miny=-((session->terminal_size_y+session->scrollback)*redraw.r_charh*2*zap_yeig);
+    block.maxx=session->terminal_size_x*redraw.r_charw*2;
+    block.maxy=0;
+
+    _swi(Wimp_SetExtent, _INR(0,1), session->window_handle, &block);
+
+    if (line_editor)
+    {
+      block.minx=0;
+      block.miny=-48;
+      block.maxx=session->terminal_size_x*redraw.r_charw*2;
+      block.maxy=0;
+
+      _swi(Wimp_SetExtent, _INR(0,1), session->pane_handle, &block);
+    }
+  }
+
+  if (use_naws)
+  {
+    if (session->session_flags[31])
+    {
+      /* NAWS is on */
+      char block[9];
+
+      block[0]=255; /* IAC */
+      block[1]=250; /* SB */
+      block[2]=31;  /* NAWS */
+      block[3]=session->terminal_size_x / 256;
+      block[4]=session->terminal_size_x % 256;
+      block[5]=session->terminal_size_y / 256;
+      block[6]=session->terminal_size_y % 256;
+      block[7]=255; /* IAC */
+      block[8]=240; /* SE */
+      nettle_senddata(session, block, 9);
+    }
+  }
 }

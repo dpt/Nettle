@@ -89,6 +89,6 @@ char read_assigned_character(struct session_struct *, int);
 void write_assigned_flags(struct session_struct *, int, char);
 void write_assigned_character(struct session_struct *, int, char);
 
-void resize_terminal(struct session_struct *, int, int, int);
+void resize_terminal(struct session_struct *, int, int, int, bool);
 
 #endif
