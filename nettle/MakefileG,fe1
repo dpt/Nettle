@@ -3,11 +3,12 @@
 # (C) Archifishal Software 2001
 
 CC = gcc
-CFLAGS = -c -INetlib: -mstubs -mthrowback -O2 -Wall -Wno-unknown-pragmas -DFORTIFY
+CFLAGS = -c -INetlib: -mlibscl -mthrowback -O2 -Wall -Wno-unknown-pragmas \
+  -DFORTIFY
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = gcc
-LINKFLAGS = -mstubs -debug
+LINKFLAGS = -mlibscl -debug
 
 WIPE = wipe
 WIPEFLAGS = ~CFR~V
@@ -15,8 +16,8 @@ WIPEFLAGS = ~CFR~V
 OBJASM = gcc
 OBJASMFLAGS = -c
 
-OBJS = o.chardefn o.choices o.globals o.init o.lineedit o.main o.misc \
-       o.nettle o.process o.socket o.quit o.seln o.wimp o.zapgen o.fortify
+OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o \
+       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
 
 RUNIMAGE = !Nettle.!RunImage
 
@@ -30,31 +31,28 @@ clean:
 
 .SUFFIXES: .o .s .c
 
-.s.o:
-	$(ASM) $(ASMFLAGS) $< -o $@
-
 .c.o:
 	$(CC) $(CFLAGS) -o $@ $<
 
 
-o.chardefn:	c.chardefn h.generic h.globals h.chardefn h.misc
-o.choices:	c.choices h.generic h.globals h.choices h.misc
-o.fortify:	c.fortify h.fortify h.ufortify
-o.globals:	c.globals h.generic h.globals h.zapredraw
-o.init:		c.init h.generic h.globals h.chardefn h.init h.misc \
-		h.nettle h.quit h.wimp h.zapredraw
-o.lineedit:	c.lineedit h.generic h.globals h.lineedit h.misc h.wimp
-o.main:		c.main h.generic h.globals h.choices h.init h.main h.misc \
-		h.quit h.wimp
-o.misc:		c.misc h.generic h.globals h.misc
-o.nettle:	c.nettle h.generic h.globals h.misc h.nettle h.seln h.socket \
-                h.wimp h.zapredraw
-o.process:	c.process h.generic h.globals h.graphics h.misc h.nettle \
-                h.process h.seln h.wimp h.zapredraw
-o.quit:		c.quit h.generic h.globals h.misc h.nettle h.quit
-o.seln:		c.seln h.generic h.globals h.nettle h.seln h.wimp h.zapredraw
-o.socket:	c.socket h.generic h.globals h.socket
-o.wimp:		c.wimp h.generic h.globals h.misc h.nettle h.process h.seln \
-		h.socket h.wimp h.zapredraw
-o.zapgen:	s.zapgengc
-		$(OBJASM) $(OBJASMFLAGS) s.zapgengc -o o.zapgen
+chardefn.o:	chardefn.c generic.h globals.h chardefn.h misc.h
+choices.o:	choices.c generic.h globals.h choices.h misc.h
+fortify.o:	fortify.c fortify.h ufortify.h
+globals.o:	globals.c generic.h globals.h zapredraw.h
+init.o: 	init.c generic.h globals.h chardefn.h init.h misc.h \
+              	nettle.h quit.h wimp.h zapredraw.h
+lineedit.o:   	lineedit.c generic.h globals.h lineedit.h misc.h wimp.h
+main.o: 	main.c generic.h globals.h choices.h init.h main.h misc.h \
+              	quit.h wimp.h
+misc.o: 	misc.c generic.h globals.h misc.h
+nettle.o:	nettle.h generic.h globals.h misc.h nettle.h seln.h socket.h \
+	      	wimp.h zapredraw.h
+process.o:	process.h generic.h globals.h graphics.h misc.h nettle.h \
+		process.h seln.h wimp.h zapredraw.h
+quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h
+seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h
+socket.o:	socket.c generic.h globals.h socket.h
+wimp.o: 	wimp.c generic.h globals.h misc.h nettle.h process.h seln.h \
+              	socket.h wimp.h zapredraw.h
+zapgen.o:    	zapgengc.s
+		$(OBJASM) $(OBJASMFLAGS) zapgengc.s -o zapgen.o
