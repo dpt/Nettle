@@ -77,6 +77,7 @@ quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h hotlist.h
 seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h \
                 wimputil.h
 socket.o:	socket.c generic.h globals.h sockwatch.h socket.h
+spool.o:	spool.c generic.h globals.h misc.h spool.h templ.h wimputil.h
 wimp.o: 	wimp.c generic.h globals.h lineedit.h misc.h nettle.h process.h \
 		seln.h socket.h wimp.h zapredraw.h hotlist.h termlist.h \
 		choices.h templ.h wimputil.h
