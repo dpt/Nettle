@@ -213,8 +213,10 @@ void save_selection(char *filename, bool ansi_colour)
   int was_inverted = 0;
   int loop_start;
   int loop_end;
-  char currentchar;
-  int spacerun = 0; /* number of spaces found in a run, to avoid outputting them at end of line */
+  int last_valid_char=0;
+  int xpos;
+  int ypos=0;
+  int old_ypos=-1;
 
   file_handle=fopen(filename,"wb");
 
@@ -229,15 +231,18 @@ void save_selection(char *filename, bool ansi_colour)
 
   for (loop=loop_start; loop<loop_end; loop++)
   {
-    int xpos=loop % selection_session->terminal_size.x;
-    int ypos=loop / selection_session->terminal_size.x;
+    xpos=loop % selection_session->terminal_size.x;
+    old_ypos=ypos;
+    ypos=loop / selection_session->terminal_size.x;
 
-    if (loop!=loop_start)
+    if (ypos!=old_ypos)
     {
-      if ((loop % selection_session->terminal_size.x)==0)
+      last_valid_char=selection_session->terminal_size.x-1;
+
+      while (last_valid_char>=0 &&
+        !(read_assigned_flags(selection_session, last_valid_char, ypos) & NETTLE_FLAG_VALID))
       {
-        spacerun = 0; /* suppress spaces at end of line */
-	fputc('\n',file_handle);
+        last_valid_char--;
       }
     }
 
@@ -272,21 +277,11 @@ void save_selection(char *filename, bool ansi_colour)
       }
     }
 
-    currentchar = read_assigned_character(selection_session, xpos, ypos);
-    if (currentchar == ' ')
-    {
-      spacerun++;
-    }
-    else
-    {
-      /* non-space, output any suppressed run of spaces */
-      if (spacerun > 0)
-      {
-        fprintf(file_handle, "%*s", spacerun, "");
-        spacerun = 0;
-      }
-      fputc(currentchar,file_handle);
-    }
+    if (xpos<=last_valid_char)
+      fputc(read_assigned_character(selection_session, xpos, ypos), file_handle);
+
+    if (xpos==last_valid_char)
+      fputc('\n', file_handle);
 
     if (ferror(file_handle))
       break;
@@ -374,10 +369,10 @@ void handle_selection_drag(void)
     {
       _swi(Wimp_OpenWindow, _IN(1), &block);
     }
-    
+
     if ( x<block.min.x )
       x = block.min.x;
-    
+
     if ( x>block.max.x )
       x = block.max.x;
   }
@@ -435,6 +430,10 @@ void selection_paste(struct session_struct *session)
   int     loop_start;
   int     loop_end;
   int     loop;
+  int     last_valid_char=0;
+  int     xpos;
+  int     ypos=0;
+  int     old_ypos=-1;
 
   if (selection_session == NULL)
     return;
@@ -449,20 +448,32 @@ void selection_paste(struct session_struct *session)
 
   for (loop=loop_start; loop<loop_end; loop++)
   {
-    int xpos=loop % selection_session->terminal_size.x;
-    int ypos=loop / selection_session->terminal_size.x;
+    xpos=loop % selection_session->terminal_size.x;
+    old_ypos=ypos;
+    ypos=loop / selection_session->terminal_size.x;
 
-    if (loop!=loop_start)
+    if (ypos!=old_ypos)
     {
-      if ((loop % selection_session->terminal_size.x)==0)
+      last_valid_char=selection_session->terminal_size.x-1;
+
+      while (last_valid_char>=0 &&
+        !(read_assigned_flags(selection_session, last_valid_char, ypos) & NETTLE_FLAG_VALID))
       {
-        *(buffer+bufferptr) = '\r';
-        bufferptr++;
+        last_valid_char--;
       }
     }
 
-    *(buffer+bufferptr) = read_assigned_character(selection_session, xpos, ypos);
-    bufferptr++;
+    if (xpos<=last_valid_char)
+    {
+      *(buffer+bufferptr) = read_assigned_character(selection_session, xpos, ypos);
+      bufferptr++;
+    }
+
+    if (xpos==last_valid_char)
+    {
+      *(buffer+bufferptr) = '\r';
+      bufferptr++;
+    }
   }
 
   for (loop=0; loop<bufferptr; loop+=1024)
