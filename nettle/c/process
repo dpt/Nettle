@@ -1,6 +1,6 @@
 /**
  * Processing code
- * (C) Nettle developers 2000-2002
+ * (C) Nettle developers 2000-2003
  *
  * $Id$
  */
@@ -108,15 +108,15 @@ void primary_da_request(struct session_struct *session)
 void shuffle_up(struct session_struct *session, int start, int end)
 {
   struct term_char *wrapped_line;
-  bool wrapped_line_wrap=false;
+  char wrapped_line_flags=0;
   int loop;
 
   /* copy the wrapped line to a temporary buffer */
   wrapped_line=session->assigned_area[start];
 
-  if (session->assigned_area_line_wrap)
+  if (session->line_flags)
   {
-    wrapped_line_wrap=session->assigned_area_line_wrap[start];
+    wrapped_line_flags=session->line_flags[start];
   }
 
   for (loop=start+1; loop<end+1; loop++)
@@ -124,40 +124,30 @@ void shuffle_up(struct session_struct *session, int start, int end)
     if (valid_y(session, loop-1) && valid_y(session, loop))
     {
       session->assigned_area[loop-1]=session->assigned_area[loop];
-    }
-  }
-
-  if (session->assigned_area_line_wrap)
-  {
-    for (loop=start+1; loop<end+1; loop++)
-    {
-      if (valid_y(session, loop-1) && valid_y(session, loop))
-      {
-        session->assigned_area_line_wrap[loop-1]=session->assigned_area_line_wrap[loop];
-      }
+      if (session->line_flags)
+        session->line_flags[loop-1]=session->line_flags[loop];
     }
   }
 
   session->assigned_area[end]=wrapped_line;
 
-  if (session->assigned_area_line_wrap)
+  if (session->line_flags)
   {
-    session->assigned_area_line_wrap[end]=wrapped_line_wrap;
+    session->line_flags[end]=wrapped_line_flags;
   }
 }
 
 void shuffle_down(struct session_struct *session, int start, int end)
 {
   struct term_char *wrapped_line;
-  bool wrapped_line_wrap=false;
+  char wrapped_line_flags=0;
   int loop;
 
-  /* copy the wrapped line to a temporary buffer */
   wrapped_line=session->assigned_area[end];
 
-  if (session->assigned_area_line_wrap)
+  if (session->line_flags)
   {
-    wrapped_line_wrap=session->assigned_area_line_wrap[end];
+    wrapped_line_flags=session->line_flags[end];
   }
 
   for (loop=end; loop>start; loop--)
@@ -165,25 +155,16 @@ void shuffle_down(struct session_struct *session, int start, int end)
     if (valid_y(session, loop) && valid_y(session, loop-1))
     {
       session->assigned_area[loop]=session->assigned_area[loop-1];
-    }
-  }
-
-  if (session->assigned_area_line_wrap)
-  {
-    for (loop=end; loop>start; loop--)
-    {
-      if (valid_y(session, loop) && valid_y(session, loop-1))
-      {
-        session->assigned_area_line_wrap[loop]=session->assigned_area_line_wrap[loop-1];
-      }
+      if (session->line_flags)
+        session->line_flags[loop]=session->line_flags[loop-1];
     }
   }
 
   session->assigned_area[start]=wrapped_line;
 
-  if (session->assigned_area_line_wrap)
+  if (session->line_flags)
   {
-    session->assigned_area_line_wrap[start]=wrapped_line_wrap;
+    session->line_flags[start]=wrapped_line_flags;
   }
 }
 
@@ -224,7 +205,7 @@ void scroll_up(struct session_struct *session, bool wrap)
                      7, 0, 0, 32);
     }
 
-    session->assigned_area_line_wrap[session->scroll_end+session->scrollback-1]=false;
+    session->line_flags[session->scroll_end+session->scrollback-1]=0;
   }
 
   if (session->scroll_start == 1 &&
@@ -276,7 +257,7 @@ void scroll_down (struct session_struct *session, bool wrap)
                      7, 0, 0, 32);
     }
 
-    session->assigned_area_line_wrap[session->scroll_start+session->scrollback-1]=false;
+    session->line_flags[session->scroll_start+session->scrollback-1]=0;
   }
 
 
@@ -318,7 +299,7 @@ void reprocess_position(struct session_struct *session)
     if (session->other_session_flags & NETTLE_OTHER_WRAP_MODE)
     {
       session->pos.x=0;
-      session->assigned_area_line_wrap[session->pos.y]=true;
+      session->line_flags[session->pos.y]=NETTLE_LINE_WRAP;
       session->pos.y++;
       reprocess_position_scroll(session);
     }
@@ -766,7 +747,7 @@ void clear_screen(struct session_struct *session, int calc, int calc2, char fg, 
     {
       if (loop>calc && ((loop / session->terminal_size.x)-1)>=0)
       {
-        session->assigned_area_line_wrap[(loop / session->terminal_size.x)-1]=false;
+        session->line_flags[(loop / session->terminal_size.x)-1]=0;
       }
     }
   }
@@ -789,7 +770,7 @@ void clear_alt_screen(struct session_struct *session, int calc, int calc2, char 
     {
       if (loop>calc && ((loop / session->terminal_size.x)-1)>=0)
       {
-        session->assigned_area_line_wrap[(loop / session->terminal_size.x)-1]=false;
+        session->line_flags[(loop / session->terminal_size.x)-1]=0;
       }
     }
   }
@@ -898,15 +879,15 @@ void swap_alternate_main(struct session_struct *session)
     }
   }
 
-  if (session->assigned_area_line_wrap && session->alternate_area_line_wrap)
+  if (session->line_flags && session->alternate_line_flags)
   {
     for (ypos=0; ypos<session->terminal_size.y; ypos++)
     {
-      bool state=session->assigned_area_line_wrap[ypos+session->scrollback];
+      char state=session->line_flags[ypos+session->scrollback];
 
-      session->assigned_area_line_wrap[ypos+session->scrollback]=session->alternate_area_line_wrap[ypos];
+      session->line_flags[ypos+session->scrollback]=session->alternate_line_flags[ypos];
 
-      session->alternate_area_line_wrap[ypos]=state;
+      session->alternate_line_flags[ypos]=state;
     }
   }
 }
@@ -932,11 +913,11 @@ void copy_alternate_main(struct session_struct *session)
     }
   }
 
-  if (session->assigned_area_line_wrap && session->alternate_area_line_wrap)
+  if (session->line_flags && session->alternate_line_flags)
   {
     for (ypos=0; ypos<session->terminal_size.y; ypos++)
     {
-      session->assigned_area_line_wrap[ypos+session->scrollback]=session->alternate_area_line_wrap[ypos];
+      session->line_flags[ypos+session->scrollback]=session->alternate_line_flags[ypos];
     }
   }
 }
@@ -961,11 +942,11 @@ void copy_main_alternate(struct session_struct *session)
     }
   }
 
-  if (session->assigned_area_line_wrap && session->alternate_area_line_wrap)
+  if (session->line_flags && session->alternate_line_flags)
   {
     for (ypos=0; ypos<session->terminal_size.y; ypos++)
     {
-      session->alternate_area_line_wrap[ypos]=session->assigned_area_line_wrap[ypos+session->scrollback];
+      session->alternate_line_flags[ypos]=session->line_flags[ypos+session->scrollback];
     }
   }
 }

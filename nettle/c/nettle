@@ -1209,38 +1209,34 @@ void create_terminal(struct session_struct *session, struct coords terminal_size
 {
   int loop;
 
+  /****
+   **** TO BE DONE - return a failure code from here rather than all the assert()s!
+   ****/
+
   session->assigned_area=malloc((terminal_size.y+scrollback)*sizeof (int *));
   assert(session->assigned_area);
 
-  session->assigned_area_line_wrap=malloc((terminal_size.y+scrollback)*sizeof(bool));
+  session->line_flags=malloc( terminal_size.y+scrollback );
+  assert(session->line_flags);
+  memset( session->line_flags, 0, terminal_size.y+scrollback );
 
   for (loop=0; loop<terminal_size.y+scrollback; loop++)
   {
     session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
     assert(session->assigned_area[loop]);
-
-    if (session->assigned_area_line_wrap)
-    {
-      session->assigned_area_line_wrap[loop]=false;
-    }
   }
 
   session->alternate_area=malloc(terminal_size.y*sizeof (int *));
+  assert( session->alternate_area );
 
-  if (session->alternate_area)
+  session->alternate_line_flags=malloc( terminal_size.y );
+  assert( session->alternate_line_flags );
+  memset( session->alternate_line_flags, 0, terminal_size.y );
+
+  for (loop=0; loop<terminal_size.y; loop++)
   {
-    session->alternate_area_line_wrap=malloc((terminal_size.y+scrollback)*sizeof(bool));
-
-    for (loop=0; loop<terminal_size.y; loop++)
-    {
-      session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
-      assert(session->alternate_area[loop]);
-
-      if (session->alternate_area_line_wrap)
-      {
-        session->alternate_area_line_wrap[loop]=false;
-      }
-    }
+    session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
+    assert(session->alternate_area[loop]);
   }
 
   session->terminal_size=terminal_size;
@@ -1257,18 +1253,15 @@ void delete_terminal(struct session_struct *session)
   }
 
   free(session->assigned_area);
-  free(session->assigned_area_line_wrap);
+  free(session->line_flags);
 
-  if (session->alternate_area)
+  for (loop=0; loop<session->terminal_size.y; loop++)
   {
-    for (loop=0; loop<session->terminal_size.y; loop++)
-    {
-      free(session->alternate_area[loop]);
-    }
-
-    free(session->alternate_area);
-    free(session->alternate_area_line_wrap);
+    free(session->alternate_area[loop]);
   }
+
+  free(session->alternate_area);
+  free(session->alternate_line_flags);
 }
 
 
@@ -1286,6 +1279,19 @@ static void resize_terminal_dimensions(struct session_struct *session,
 
   session->terminal_size = terminal_size;
   session->scrollback = scrollback;
+
+  /****
+   **** TO BE DONE : Attempt to be less crap about line flags here. It'll be very hard!
+   ****/
+
+  free( session->line_flags );
+  free( session->alternate_line_flags );
+
+  session->line_flags = malloc( terminal_size.y + scrollback );
+  memset( session->line_flags, 0, terminal_size.y + scrollback );
+
+  session->alternate_line_flags = malloc( terminal_size.y );
+  memset( session->alternate_line_flags, 0, terminal_size.y );
 
   for (area = 0; area < ((session->alternate_area != NULL) ? 2 : 1); area++)
   {
@@ -1420,7 +1426,7 @@ static void resize_terminal_dimensions(struct session_struct *session,
 
           if (!new_area[loop])
           {
-            generror("Nettle has ran out of memory in a rather nasty spot and will die hideously now. Sometime this will be fixed better.", false);
+            generror("Nettle has run out of memory in a rather nasty spot and will die hideously now. Sometime this will be fixed better.", false);
             assert(false);
           }
 

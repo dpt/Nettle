@@ -28,6 +28,9 @@
 /*#define NETTLE_FLAG_VALID         (1<<5)*/ /* we can use this one now */
 #define NETTLE_FLAG_UNDERLINE     (1<<6)
 
+/* for line_flags */
+#define NETTLE_LINE_WRAP          (1<<0)
+
 #define NETTLE_OTHER_VT52_MODE	    (1<<0)
 #define NETTLE_OTHER_INSERT_MODE    (1<<1)
 #define NETTLE_OTHER_KEYLOCK_MODE   (1<<2)

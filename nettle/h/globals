@@ -150,8 +150,8 @@ struct session_struct
 
   struct term_char **assigned_area;  /* pointer to list of pointers for each line in terminal */
   struct term_char **alternate_area; /* ditto, alternate (no scrollback) */
-  bool *assigned_area_line_wrap; /* pointer to list of whether this line has wrapped or not */
-  bool *alternate_area_line_wrap; /* ditto for alternate screen */
+  char *line_flags;             /* array of flags for each line, whether line has wrapped or not */
+  char *alternate_line_flags;   /* ditto for alternate screen */
 
   enum nettle_terminal terminal_type; /* terminal type */
   struct coords pos;		/* current position */
