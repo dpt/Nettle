@@ -6,7 +6,7 @@
 #define MISC_H
 
 extern char *lookup(const char *, char *, int);
-extern char *get_system_variable(char *, char *);
+extern char *get_system_variable(char *, char *, int);
 extern int binary(char *);
 extern int instr(char *, char *);
 extern int esc_instr(char *, char *, int);

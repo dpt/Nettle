@@ -76,7 +76,8 @@ void create_line_editor_icons(int session_handle, int width)
   {
     old_width=block[4];
 
-    if (width==old_width) { return; }
+    if (width==old_width)
+      return;
 
     if (block[6] & (1<<21))
       selected=true;
@@ -152,18 +153,19 @@ void create_line_editor_icons(int session_handle, int width)
 
 bool line_editor_active(int session_handle)
 {
-  int block[9];
+  int block[10];
 
-  if (!line_editor) { return false; }
+  if (line_editor)
+  {
+    block[0]=session[session_handle].pane_handle;
+    block[1]=0;
 
-  block[0]=session[session_handle].pane_handle;
-  block[1]=0;
+    regs.r[1]=(int) block;
+    _kernel_swi(Wimp_GetIconState, &regs, &regs);
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetIconState, &regs, &regs);
-
-  if ((block[6] & (1<<21)) || (block[6] & (1<<23)))
-    return true;
+    if ((block[6] & (1<<21)) || (block[6] & (1<<23)))
+      return true;
+  }
 
   return false;
 }

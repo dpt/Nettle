@@ -65,9 +65,12 @@ extern void reset_terminal(int);
 
 extern void write_assigned(int, int, char, char, char, char);
 
+extern char read_assigned_fg(int, int);
+extern char read_assigned_bg(int, int);
 extern char read_assigned_flags(int, int);
-extern void write_assigned_flags(int, int, char);
+extern char read_assigned_character(int, int);
 
+extern void write_assigned_flags(int, int, char);
 extern void write_assigned_character(int, int, char);
 
 #endif

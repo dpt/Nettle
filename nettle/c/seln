@@ -5,6 +5,7 @@
 #include "generic.h"
 #include "globals.h"
 
+#include "misc.h"
 #include "nettle.h"
 #include "seln.h"
 #include "wimp.h"
@@ -19,16 +20,16 @@ void refresh_selection_set(void)
     {
       for (loop=selection_end; loop<selection_start; loop+=1)
       {
-        *(session[selection_session].assigned_area+((loop*4)+2))=
-        *(session[selection_session].assigned_area+((loop*4)+2)) | NETTLE_FLAG_SELECTED;
+        write_assigned_flags(selection_session, loop*4,
+        		  read_assigned_flags(selection_session, loop*4) | NETTLE_FLAG_SELECTED);
       }
     }
     else
     {
       for (loop=selection_start; loop<selection_end; loop+=1)
       {
-        *(session[selection_session].assigned_area+((loop*4)+2))=
-        *(session[selection_session].assigned_area+((loop*4)+2)) | NETTLE_FLAG_SELECTED;
+        write_assigned_flags(selection_session, loop*4,
+        		  read_assigned_flags(selection_session, loop*4) | NETTLE_FLAG_SELECTED);
       }
     }
   }
@@ -43,16 +44,16 @@ void refresh_selection_clear(void)
     {
       for (loop=selection_end; loop<selection_start; loop+=1)
       {
-        *(session[selection_session].assigned_area+((loop*4)+2))=
-        *(session[selection_session].assigned_area+((loop*4)+2)) & ~NETTLE_FLAG_SELECTED;
+        write_assigned_flags(selection_session, loop*4,
+        		 read_assigned_flags(selection_session, loop*4) & ~NETTLE_FLAG_SELECTED);
       }
     }
     else
     {
       for (loop=selection_start; loop<selection_end; loop+=1)
       {
-        *(session[selection_session].assigned_area+((loop*4)+2))=
-        *(session[selection_session].assigned_area+((loop*4)+2)) & ~NETTLE_FLAG_SELECTED;
+        write_assigned_flags(selection_session, loop*4,
+        		 read_assigned_flags(selection_session, loop*4) & ~NETTLE_FLAG_SELECTED);
       }
     }
   }
@@ -215,51 +216,50 @@ void save_selection(char *filename, bool ansi_colour)
 
     if (ansi_colour==true)
     {
-      if (*(session[selection_session].assigned_area+(loop+2)) & NETTLE_FLAG_INVERTED)
+      if (read_assigned_flags(selection_session, loop) & NETTLE_FLAG_INVERTED)
       {
         if (!(current_flags & NETTLE_FLAG_INVERTED))
         {
           fprintf(file_handle,"\x1B%s","7m");
         }
       }
-      if (!(*(session[selection_session].assigned_area+(loop+2)) & NETTLE_FLAG_INVERTED))
+      if (!(read_assigned_flags(selection_session, loop) & NETTLE_FLAG_INVERTED))
       {
         if (current_flags & NETTLE_FLAG_INVERTED)
         {
           fprintf(file_handle,"\x1B%s","27m");
         }
       }
-      if (*(session[selection_session].assigned_area+(loop+0))!=current_fg)
+      if (read_assigned_fg(selection_session,loop)!=current_fg)
       {
-        if (*(session[selection_session].assigned_area+(loop+0))>7)
+        if (read_assigned_fg(selection_session,loop)>7)
         {
           fprintf(file_handle,"\x1B%s%c%c","1;3",
-          			*(session[selection_session].assigned_area+(loop+0))-8+48,'m');
+          			              read_assigned_fg(selection_session,loop)-8+48,'m');
         }
         else
         {
-          fprintf(file_handle,"\x1B%c%c%c",'3',
-           		*(session[selection_session].assigned_area+(loop+0))+48,'m');
+          fprintf(file_handle,"\x1B%c%c%c",'3',read_assigned_fg(selection_session,loop)+48,'m');
         }
       }
-      if (*(session[selection_session].assigned_area+(loop+1))!=current_bg)
+      if (read_assigned_bg(selection_session,loop)!=current_bg)
       {
-        if (*(session[selection_session].assigned_area+(loop+1))>7)
+        if (read_assigned_bg(selection_session,loop)>7)
         {
           fprintf(file_handle,"\x1B%s%c%c","1;4",
-          			*(session[selection_session].assigned_area+(loop+1))-8+48,'m');
+          			read_assigned_bg(selection_session,loop)-8+48,'m');
         }
         else
         {
           fprintf(file_handle,"\x1B%c%c%c",'4',
-          			*(session[selection_session].assigned_area+(loop+1))+48,'m');
+          			read_assigned_bg(selection_session,loop)+48,'m');
         }
       }
-      current_fg=*(session[selection_session].assigned_area+(loop+0));
-      current_bg=*(session[selection_session].assigned_area+(loop+1));
-      current_flags=*(session[selection_session].assigned_area+(loop+2));
+      current_fg=read_assigned_fg(selection_session,loop);
+      current_bg=read_assigned_bg(selection_session,loop);
+      current_flags=read_assigned_flags(selection_session,loop);
     }
-    fputc(*(session[selection_session].assigned_area+(loop+3)),file_handle);
+    fputc(read_assigned_character(selection_session,loop),file_handle);
   }
 
   fclose(file_handle);
@@ -371,6 +371,7 @@ void handle_selection_drag(void)
                	session[selection_session].scrollback)*
                	redraw.r_charh*2*zap_yeig,
                       session[selection_session].terminal_size_x*redraw.r_charw*2,0);
+
       break;
     case 1:
       // ADJUST dragging - see c.seln

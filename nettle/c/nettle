@@ -380,7 +380,8 @@ void write_out_data(int session_handle, char *data, int length_data)
   int loop,calc,zap_yeig;
   char cursor_flags;
 
-  if (length_data==0) { return; }
+  if (length_data==0)
+    return;
 
   calc=get_cursor_position(session_handle);
 
@@ -632,6 +633,34 @@ void write_assigned(int session_handle,int pointer, char fg, char bg, char flags
   *(session[session_handle].assigned_area+(pointer+3))=character;
 }
 
+char read_assigned_fg(int session_handle, int pointer)
+{
+  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
+    			    session[session_handle].scrollback)*
+    			    session[session_handle].terminal_size_x*4)
+  {
+    printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    generror("Erk", false);
+    return 0;
+  }
+
+  return *(session[session_handle].assigned_area+(pointer+0));
+}
+
+char read_assigned_bg(int session_handle, int pointer)
+{
+  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
+    			    session[session_handle].scrollback)*
+    			    session[session_handle].terminal_size_x*4)
+  {
+    printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    generror("Erk", false);
+    return 0;
+  }
+
+  return *(session[session_handle].assigned_area+(pointer+1));
+}
+
 char read_assigned_flags(int session_handle, int pointer)
 {
   if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
@@ -644,6 +673,20 @@ char read_assigned_flags(int session_handle, int pointer)
   }
 
   return *(session[session_handle].assigned_area+(pointer+2));
+}
+
+char read_assigned_character(int session_handle, int pointer)
+{
+  if (pointer<0 || pointer>(session[session_handle].terminal_size_y+
+    			    session[session_handle].scrollback)*
+    			    session[session_handle].terminal_size_x*4)
+  {
+    printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
+    generror("Erk", false);
+    return 0;
+  }
+
+  return *(session[session_handle].assigned_area+(pointer+3));
 }
 
 void write_assigned_flags(int session_handle, int pointer, char flags)

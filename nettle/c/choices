@@ -14,7 +14,7 @@ void load_choices(void)
   char choices_path[256];
   char string[256];
 
-  get_system_variable(choices_path,"Choices$Write");
+  get_system_variable(choices_path,"Choices$Write",256);
 
   if (strlen(choices_path)==0)
   {

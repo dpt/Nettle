@@ -25,7 +25,7 @@ char *lookup(const char *token, char *buffer, int buf_len)
 
 // Gets a system variable's contents
 
-char *get_system_variable(char *variable, char *variable_name)
+char *get_system_variable(char *variable, char *variable_name, int variable_length)
 {
   char *string;
   string=getenv(variable_name);
@@ -33,7 +33,7 @@ char *get_system_variable(char *variable, char *variable_name)
   // if it exists, copy it into variable
   if (string!=0)
   {
-    strncpy(variable,string,sizeof(variable));
+    strncpy(variable,string,variable_length);
   }
   else
   {
