@@ -10,6 +10,15 @@
 
 #include <stdio.h>
 
+/* UnixLib doesn't give you the RISC OS socket handle,
+   it's an internal file handle, so we need to get at it. */
+
+#ifdef __UNIXLIB_TYPES_H
+#define __UNIXLIB_INTERNALS
+#include <sys/unix.h>
+#endif
+
+
 #include "kernel.h"
 #include "swis.h"
 
@@ -27,6 +36,10 @@ void socketwatch_register(int socket)
 {
   const unsigned int bitmask = 1;
   
+#ifdef __UNIXLIB_TYPES_H
+  socket = (int)__u->fd[socket].handle;
+#endif
+
   if (socketwatch_pollword)
     _swi(SocketWatch_Register, _INR(0,2),
            socketwatch_pollword, bitmask, socket);
@@ -34,6 +47,10 @@ void socketwatch_register(int socket)
 
 void socketwatch_deregister(int socket)
 {
+#ifdef __UNIXLIB_TYPES_H
+  socket = (int)__u->fd[socket].handle;
+#endif
+
   if (socketwatch_pollword)
     _swi(SocketWatch_Deregister, _INR(0,1), socket, socketwatch_pollword);
 }
