@@ -839,7 +839,7 @@ static bool copy_hotedit_to_selected(void)
   assert(node->host);
 
   free(node->command);
-  node->command = strdup(tmp);
+  node->command = strdup(command);
   assert(node->command);
 
   node->terminal_width = width;
