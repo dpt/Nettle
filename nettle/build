@@ -48,3 +48,4 @@ done
 
 make -f MakeCross GCCDIR=$cross_path NETLIB=$INTERNET_PATH LIB=$library && rm *.o
 rm *.[chs]
+rm ./templheadr
