@@ -30,6 +30,8 @@
 #define MAX_TERMINAL_HEIGHT     128
 #define MAX_SCROLLBACK_SIZE     (1<<16)
 
+#define NO_OF_TERMINAL_TYPES    9
+
 #define LOGGING                 false
 #define LINE_EDITOR             0
 #define PASS_F12                false
@@ -89,6 +91,7 @@ extern bool logging;
 extern char line_editor;
 extern bool pass_f12;
 extern int line_editor_size;
+extern enum nettle_terminal default_terminal;
 extern struct coords defaultsize;
 extern int defaultscroll;
 
@@ -164,7 +167,7 @@ extern const struct session_struct *cursor_session;
 extern int nextcursortime;
 extern bool cursor_state;
 
-extern const char terminal_name[8][6];
+extern const char terminal_name[NO_OF_TERMINAL_TYPES][12];
 
 union wimp_poll_block
 {

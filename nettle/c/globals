@@ -8,6 +8,7 @@
 #include "generic.h"
 #include "globals.h"
 
+#include "nettle.h"
 #include "zapredraw.h"
 
 const char *application_name     =APPLICATION_NAME;
@@ -53,12 +54,13 @@ int win_resize;
 int win_save;
 int menu_open=0;
 
-bool logging             =LOGGING;
-char line_editor         =LINE_EDITOR;
-bool pass_f12            =PASS_F12;
-int line_editor_size     =LINE_EDITOR_SIZE;
-struct coords defaultsize={TERMINAL_WIDTH, TERMINAL_HEIGHT};
-int defaultscroll        =SCROLLBACK_LINES;
+bool logging                         =LOGGING;
+char line_editor                     =LINE_EDITOR;
+bool pass_f12                        =PASS_F12;
+int line_editor_size                 =LINE_EDITOR_SIZE;
+enum nettle_terminal default_terminal=NETTLE_TERMINAL_VT220;
+struct coords defaultsize            ={TERMINAL_WIDTH, TERMINAL_HEIGHT};
+int defaultscroll                    =SCROLLBACK_LINES;
 
 struct session_struct *sessions       =NULL;
 struct session_struct *current_session=NULL;
@@ -73,4 +75,13 @@ const struct session_struct *cursor_session=NULL;
 int nextcursortime;
 bool cursor_state = false;
 
-const char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};
+const char terminal_name[NO_OF_TERMINAL_TYPES][12]={"vt100",
+                                                    "vt102",
+                                                    "vt220",
+                                                    "vt320",
+                                                    "vt420",
+                                                    "vt510",
+                                                    "rxvt",
+                                                    "xterm",
+                                                    "xterm-color"};
+

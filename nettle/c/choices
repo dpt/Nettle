@@ -57,6 +57,16 @@ static void read_integer_choice(int *var, const char *line, const char *lookfor)
   }
 }
 
+static void read_terminal_choice(enum nettle_terminal *var, const char *line,const char *lookfor)
+{
+  int len=strlen(lookfor);
+
+  if (strncmp(line,lookfor,len)==0)
+  {
+    *var=(enum nettle_terminal) atoi(line+len);
+  }
+}
+
 
 static void read_character_choice(char *var, const char *line, const char *lookfor)
 {
@@ -77,7 +87,9 @@ void load_choices(void)
   struct coords new_termsize = defaultsize;
   int new_scrollback = defaultscroll;
   int new_line_editor_size = line_editor_size;
+  enum nettle_terminal new_default_terminal = default_terminal;
   colour_t new_palette[16];
+  bool valid_palette=true;
 
   memcpy(new_palette, default_palette, sizeof(default_palette));
 
@@ -121,12 +133,12 @@ void load_choices(void)
     read_character_choice(&line_editor, string, "LineEditor:");
     read_boolean_choice(&pass_f12, string, "PassF12:");
 
+    read_terminal_choice(&new_default_terminal, string, "TerminalType:");
     read_integer_choice(&new_termsize.x, string, "TerminalWidth:");
     read_integer_choice(&new_termsize.y, string, "TerminalHeight:");
     read_integer_choice(&new_scrollback, string, "TerminalScroll:");
     read_integer_choice(&new_line_editor_size, string, "LineEditorSize:");
 
-    /* Maybe I'm wrong but I don't think this works... */
     if (!strncmp(string, "Palette:", 8))
     {
       int loop;
@@ -137,7 +149,7 @@ void load_choices(void)
         new_palette[loop]=strtoul(str, &str, 16) << 8;
         if (errno)
         {
-          new_palette[0]=1; /* invalid */
+          valid_palette=false; /* invalid */
           break;
         }
       }
@@ -160,8 +172,11 @@ void load_choices(void)
   if (new_line_editor_size > 0 && new_line_editor_size <= MAX_LINE_EDITOR_SIZE)
     line_editor_size = new_line_editor_size;
 
-  /* May redo this as potentially '1' is a valid palette entry (I believe) */
-  if (new_palette[0] != 1)
+  if (new_default_terminal >= 0 && new_default_terminal < NO_OF_TERMINAL_TYPES)
+    default_terminal = new_default_terminal;
+
+  /* If palette is valid then copy it as the default */
+  if (valid_palette)
     memcpy(palette, new_palette, sizeof(palette));
 }
 
@@ -207,6 +222,7 @@ bool save_choices(void)
       fprintf(file_handle, "Logging:%d\n", (logging==true) ? 1 : 0);
       fprintf(file_handle, "PassF12:%d\n", (pass_f12==true) ? 1 : 0);
 
+      fprintf(file_handle, "TerminalType:%d\n", default_terminal);
       fprintf(file_handle, "TerminalWidth:%d\n", defaultsize.x);
       fprintf(file_handle, "TerminalHeight:%d\n", defaultsize.y);
       fprintf(file_handle, "TerminalScroll:%d\n", defaultscroll);

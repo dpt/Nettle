@@ -37,7 +37,7 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
-#define URI_Dispatch 0x4E381
+#define URI_Dispatch   0x4E381
 #define URI_RequestURI 0x4E382
 
 static int menu_data[64];
@@ -73,6 +73,20 @@ static bool win_is_open(int window_handle)
     return true;
 
   return false;
+}
+
+static void close_choices_window(void)
+{
+  if (win_is_open(win_paneterm))
+    close_window(win_paneterm);
+
+  if (win_is_open(win_panefonts))
+    close_window(win_panefonts);
+
+  if (win_is_open(win_panehot))
+    close_window(win_panehot);
+
+  close_window(win_choices);
 }
 
 void closedown_wimp(void)
@@ -756,28 +770,17 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
       break;
     case 3: /* save */
       if (win_choices_read(true) && save_choices() && (buttons & 1) == 0)
-        close_window(win_choices);
+        close_choices_window();
       break;
     case 1: /* cancel */
       if ((buttons & 1) == 0)
-      {
-        if (win_is_open(win_paneterm))
-          close_window(win_paneterm);
-
-        if (win_is_open(win_panefonts))
-          close_window(win_panefonts);
-
-        if (win_is_open(win_panehot))
-          close_window(win_panehot);
-
-        close_window(win_choices);
-      }
+        close_choices_window();
       else
         open_choices_window();
       break;
     case 2: /* set */
       if (win_choices_read(false) && (buttons & 1) == 0)
-        close_window(win_choices);
+        close_choices_window();
       break;
   }
 }
@@ -2451,10 +2454,11 @@ static void create_terminal_type_menu(void)
   char *menu_term4     =get_grey_menu_item("Term4");
   char *menu_term5     =get_grey_menu_item("Term5");
   char *menu_term6     =get_grey_menu_item("Term6");
-  char *menu_term7     =get_last_menu_item("Term7");
+  char *menu_term7     =get_menu_item("Term7");
+  char *menu_term8     =get_last_menu_item("Term8");
 
   if (create_menu(menu_data,0,menu_title,menu_term0,menu_term1,menu_term2,menu_term3,
-    		  menu_term4,menu_term5,menu_term6,menu_term7))
+    		  menu_term4,menu_term5,menu_term6,menu_term7,menu_term8))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
@@ -2470,6 +2474,7 @@ static void create_terminal_type_menu(void)
   free(menu_term5);
   free(menu_term6);
   free(menu_term7);
+  free(menu_term8);
 
   menu_open=MENU_TERMINAL_TYPE;
 }
@@ -2673,7 +2678,7 @@ static void open_choices_window(void)
 
   /* Set paneterm type options */
 
-  /* Set terminal type */
+  set_icon_data(win_paneterm, 9, terminal_name[default_terminal]);
   set_termsize_icons(win_paneterm, 2, 3, 6, defaultsize, defaultscroll);
   sprintf(string, "%d", line_editor_size);
   set_icon_data(win_paneterm, 13, string);
@@ -2685,11 +2690,12 @@ static void open_choices_window(void)
     set_icon_data(win_paneterm, 16, lookup(string_lineedit, string, sizeof(string)));
   }
 
+  /* Set panefont type options */
   set_icon_data(win_panefonts, 2, zap_font);
   set_icon_data(win_panefonts, 5, zap_lowres_font);
 
   open_window_centred(win_choices);
-  /*set_caret_position(win_paneterm, 2, -1, get_icon_data_length(win_choices, 2));*/
+  set_caret_position(win_paneterm, 2, -1, get_icon_data_length(win_paneterm, 2));
 }
 
 static bool win_choices_read(int save)
@@ -2697,22 +2703,69 @@ static bool win_choices_read(int save)
   struct coords new_termsize;
   int new_scrollback;
   int new_line_editor_size;
-  char string[8];
+  enum nettle_terminal new_default_terminal;
+  char string[32];
 
-  if (!read_termsize_icons (win_choices, 15, 16, 17,
+  /* Read paneterm type options */
+  {
+    char terminal_type_string[32];
+    int counter=0;
+
+    strcpy(terminal_type_string, read_icon_data(win_paneterm, 9, string, sizeof(string)));
+
+    while (counter<NO_OF_TERMINAL_TYPES &&
+           strcmp(terminal_type_string, terminal_name[counter]))
+    {
+      counter++;
+    }
+
+    if (counter!=NO_OF_TERMINAL_TYPES)
+    {
+      new_default_terminal=(enum nettle_terminal) counter;
+    }
+    else
+    {
+      generror("BadTermType", true);
+      return false;
+    }
+  }
+
+  if (!read_termsize_icons (win_paneterm, 2, 3, 6,
 			    &new_termsize, &new_scrollback))
     return false;
 
-  new_line_editor_size = atoi (read_icon_data (win_choices, 19, string, sizeof (string)));
+  new_line_editor_size = atoi (read_icon_data (win_paneterm, 13, string, sizeof (string)));
+
+  if (new_termsize.x < MIN_TERMINAL_WIDTH || new_termsize.x > MAX_TERMINAL_WIDTH)
+  {
+    generror("BadTermSize", true);
+    return false;
+  }
+
+  if (new_termsize.y < MIN_TERMINAL_HEIGHT || new_termsize.y > MAX_TERMINAL_HEIGHT)
+  {
+    generror("BadTermSize", true);
+    return false;
+  }
+
+  if (new_scrollback < 1 || new_scrollback > MAX_SCROLLBACK_SIZE)
+  {
+    generror("BadTermSize", true);
+    return false;
+  }
+
   if (new_line_editor_size < 1 || new_line_editor_size > MAX_LINE_EDITOR_SIZE)
   {
     generror ("BadLineEdSize", true);
     return false;
   }
 
-  /* read the option icons - these must be the last things to be read */
+  /* Read panefont type options */
+  strcpy(zap_font, read_icon_data(win_panefonts, 2, string, sizeof(string)));
+  strcpy(zap_lowres_font, read_icon_data(win_panefonts, 5, string, sizeof(string)));
 
   /* make the choices in the new_* variables permanent */
+  default_terminal = new_default_terminal;
   defaultsize = new_termsize;
   defaultscroll = new_scrollback;
 
