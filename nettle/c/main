@@ -42,7 +42,9 @@ int main(void)
   /* create the iconbar icon */
   create_icon_bar_icon();
   
+#ifdef SOCKETWATCH
   socketwatch_initialise();
+#endif /*SOCKETWATCH*/
 
   /* Turn off hourglass */
   _swi(Hourglass_Smash, 0);
@@ -52,24 +54,30 @@ int main(void)
     union wimp_poll_block wimp_block;
     int event;
     int nextpolltime;
-    const int mask = (1<<4)  | /* pointer enter window */
-                     (1<<5)  | /* pointer leave window */
-#ifdef SOCKETWATCH
-                     (1<<22) | /* R3 is pointer to pollword */
-#endif /*SOCKETWATCH*/
-                     0;
+    int mask = (1<<4)  | /* pointer enter window */
+               (1<<5)  | /* pointer leave window */
+               0;
 
-#ifdef SOCKETWATCH
-    nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0)) + 500;
-#else /*SOCKETWATCH*/
-    nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0)) + 5;
-#endif /*SOCKETWATCH*/
+    if (socketwatch_pollword != NULL)
+    {
+      mask |= (1<<22); /* R3 is pointer to pollword */
+      /* FIXME: need to set nextpolltime shorter if dns or connect in
+       * progress (and selection too?) */
+      nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0)) + 500;
+    }
+    else
+    {
+      nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0)) + 5;
+    }
 
     /* Provide a suitable default in case DeepKeys isn't available */
     wimp_block.key_pressed.extra = 0;
-
+    
     event = _swi(Wimp_PollIdle, _INR(0,3) | _RETURN(0),
                  mask, &wimp_block, nextpolltime, socketwatch_pollword);
+
+    if (socketwatch_pollword != NULL)
+      *socketwatch_pollword = 0;
 
     switch (event)
     {
@@ -123,6 +131,10 @@ int main(void)
       case 12:
         /* gain caret */
         gain_caret(wimp_block.caret.window_handle);
+        break;
+      case 13:
+        /* pollword non-zero - ie. data on a socket */
+        wimp_nullreasoncode();
         break;
       case 17:
       case 18:

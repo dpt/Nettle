@@ -20,6 +20,7 @@
 
 #include "netdb.h"
 
+#include "sockwatch.h"
 #include "socket.h"
 
 
@@ -61,13 +62,17 @@ int socket_connecttoip(int ip_address,int port_number)
   struct sockaddr_in address;
 
   socket_handle=socket(AF_INET,SOCK_STREAM, PF_UNSPEC);
-  if (socket_handle==-1) { return -1; }
+  if (socket_handle==-1)
+    return -1;
 
   if (ioctl(socket_handle,FIONBIO,&data))
   {
+    close(socket_handle);
     return -1;
   }
 
+  socketwatch_register(socket_handle);
+  
   address.sin_family=AF_INET;
   address.sin_port=htons(port_number);
   address.sin_addr.s_addr=ip_address;
@@ -80,6 +85,7 @@ int socket_connecttoip(int ip_address,int port_number)
 
 void socket_close(int socket_handle)
 {
+  socketwatch_deregister(socket_handle);
   close(socket_handle);
 }
 

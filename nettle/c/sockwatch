@@ -15,7 +15,7 @@
 
 #include "sockwatch.h"
 
-int *socketwatch_pollword = 0;
+int *socketwatch_pollword = NULL;
 
 #define SocketWatch_Register      0x52280
 #define SocketWatch_Deregister    0x52281
@@ -45,7 +45,7 @@ void socketwatch_initialise(void)
   e = _swix(SocketWatch_AllocPW, _OUT(0), &socketwatch_pollword);
   if (e)
   {
-    socketwatch_pollword = 0;
+    socketwatch_pollword = NULL;
     fprintf(stderr, "Socketwatch could not be initialised (%s), "
             "will use null polls instead\n", e->errmess);
   }
@@ -58,5 +58,8 @@ void socketwatch_initialise(void)
 void socketwatch_finalise(void)
 {
   if (socketwatch_pollword)
+  {
     _swi(SocketWatch_DeallocPW, _IN(0), socketwatch_pollword);
+    socketwatch_pollword = NULL;
+  }
 }
