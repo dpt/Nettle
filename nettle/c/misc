@@ -9,16 +9,16 @@
 
 // Looks up a messagetrans token
 
-char *lookup(char *token)
+char *lookup(const char *token, char *buffer, int buf_len)
 {
-  regs.r[0]=(int) messagetrans_area;
-  regs.r[1]=(int) token;
-  regs.r[2]=(int) temp_block;
-  regs.r[3]=1024;
+  regs.r[0] = (int)messagetrans_area;
+  regs.r[1] = (int)token;
+  regs.r[2] = (int)buffer;
+  regs.r[3] = buf_len;
 
   _kernel_swi(MessageTrans_Lookup, &regs, &regs);
 
-  return (char *)temp_block;
+  return buffer;
 }
 
 // Gets a system variable's contents

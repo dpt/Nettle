@@ -14,7 +14,9 @@
 
 int main(void)
 {
+#ifdef FORTIFY
   Fortify_EnterScope();
+#endif
 
   // Set log file time
   _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);

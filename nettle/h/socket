@@ -21,6 +21,6 @@ extern int socket_readdata(int,char *,int);
 extern int socket_readdata_flags(int,char *,int,int);
 extern char *socket_readline(int);
 extern int socket_senddata(int, char *, int);
-extern char *ip_to_string(int);
+extern char *socket_ip_string(int, char *);
 
 #endif

@@ -43,10 +43,12 @@ void null_reason_code(void)
 
             if (session[current_socket].socket_handle!=-1)
             {
-              session[current_socket].socket_state=NETTLE_SESSION_CONNECT;
-              write_out_string(current_socket,"nettle: Connecting to ");
-              write_out_string(current_socket,ip_to_string(session[current_socket].socket_ip));
-              write_out_string(current_socket,"...\r\n");
+              char ip_buffer[20];
+
+              session[current_socket].socket_state = NETTLE_SESSION_CONNECT;
+              write_out_string(current_socket, "nettle: Connecting to ");
+              write_out_string(current_socket, socket_ip_string(session[current_socket].socket_ip, ip_buffer));
+              write_out_string(current_socket, "...\r\n");
             }
             else
             {
@@ -69,18 +71,20 @@ void null_reason_code(void)
           case 4:
             {
               char string[1024];
+              char ip_buffer[20];
               sprintf(string,"nettle/%s (%s,%d)",
                       terminal_name[session[current_socket].terminal_type],
                       session[current_socket].socket_host,
                       session[current_socket].socket_port);
 
               set_title_bar(session[current_socket].window_handle,string);
-            }
-            write_out_string(current_socket,"nettle: Connected to ");
-            write_out_string(current_socket,ip_to_string(session[current_socket].socket_ip));
-            write_out_string(current_socket,"\r\n");
-            session[current_socket].socket_state=NETTLE_SESSION_CONNECTED;
-            break;
+
+              session[current_socket].socket_state = NETTLE_SESSION_CONNECTED;
+              write_out_string(current_socket, "nettle: Connected to ");
+              write_out_string(current_socket, socket_ip_string(session[current_socket].socket_ip, ip_buffer));
+              write_out_string(current_socket, "\r\n");
+              break;
+           }
         }
         break;
       case NETTLE_SESSION_CONNECTED:
@@ -238,17 +242,14 @@ void close_window(int window_handle)
   {
     if (session[loop].socket_state==NETTLE_SESSION_CONNECTED)
     {
-      int status=generror_question(lookup("ConnectionOpen"));
+      char message[200];
+      bool status = generror_question(lookup("ConnectionOpen", message, 200));
 
-      if (status==1)
-      {
-        remove_session(loop);
+      if (!status) {
+        return;
       }
     }
-    else
-    {
-      remove_session(loop);
-    }
+    remove_session(loop);
   }
   else
   {
@@ -334,7 +335,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         }
         else
         {
-          generror("To save, drag the icon to a directory display");
+          generror("To save, drag the icon to a directory display", false);
         }
         break;
       case 3:
@@ -621,6 +622,7 @@ void drag_finished(void)
 void key_pressed(int window_handle, int icon_handle, int key)
 {
   bool key_status=false;
+  char message[20];
 
   if (window_handle==open)
   {
@@ -629,9 +631,9 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
     strcpy(string,read_icon_data(open,4));
 
-    if (strcmp(string,lookup("SSH"))==0)
+    if (strcmp(string, lookup("SSH", message, 20))==0)
       connection_type=NETTLE_SSH;
-    else if (strcmp(string,lookup("Taskwindow"))==0)
+    else if (strcmp(string,lookup("Taskwindow", message, 20))==0)
       connection_type=NETTLE_TASKWINDOW;
     else
       connection_type=NETTLE_TELNET;
@@ -839,26 +841,31 @@ void menu_selection()
       }
       break;
     case MENU_CONNECTION:
-      switch (wimp_block[0])
       {
-        case 0:
-          set_icon_data(open,4,lookup("Telnet"));
-          break;
-        case 1:
-          set_icon_data(open,4,lookup("SSH"));
-          break;
-        case 2:
-          set_icon_data(open,4,lookup("Taskwindow"));
-          break;
+        char connection[20];
+
+        switch (wimp_block[0])
+        {
+          case 0:
+            set_icon_data(open, 4, lookup("Telnet", connection, 20));
+            break;
+          case 1:
+            set_icon_data(open, 4, lookup("SSH",  connection, 20));
+            break;
+          case 2:
+            set_icon_data(open, 4, lookup("Taskwindow", connection, 20));
+            break;
+        }
+        open_open_window(false);
       }
-      open_open_window(false);
       break;
     case MENU_TERMINAL_TYPE:
       {
+        char terminal[12];
         char string[6];
-        sprintf(string,"Term%d",wimp_block[0]);
+        sprintf(string, "Term%d", wimp_block[0]);
 
-        set_icon_data(open,9,lookup(string));
+        set_icon_data(open,9, lookup(string, terminal, 12));
       }
       break;
   }
@@ -1238,9 +1245,14 @@ void mode_change(void)
 // Other Wimp related code
 //
 
-void generror(char *string)
+void generror(const char *string, bool is_message)
 {
+  char message[256];
   int block[64];
+
+  if (is_message) {
+    string = lookup(string, message, 256);
+  }
 
   block[0]=0x52380; // fill in the error number - error numbers aren't allocated the same as
                     // SWIs, so this number is wrong...
@@ -1252,7 +1264,7 @@ void generror(char *string)
   _kernel_swi(Wimp_ReportError, &regs, &regs);
 }
 
-int generror_question(char *string)
+bool generror_question(char *string)
 {
   int block[64];
 
@@ -1265,7 +1277,7 @@ int generror_question(char *string)
   regs.r[2]=(int) application_name;
   _kernel_swi(Wimp_ReportError, &regs, &regs);
 
-  return regs.r[1];
+  return (bool)(regs.r[1] == 1);
 }
 
 void set_caret_position(int window_handle, int icon_handle, int flags, int index)
@@ -1305,7 +1317,7 @@ void set_icon_data(int window_handle, int icon_handle, char *contents)
   {
     char string[1024];
     sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
-    generror(string);
+    generror(string, false);
   }
 }
 
@@ -1335,7 +1347,7 @@ void set_icon_validation(int window_handle, int icon_handle, char *contents)
   {
     char string[1024];
     sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
-    generror(string);
+    generror(string, false);
   }
 }
 
@@ -1358,14 +1370,14 @@ char *read_icon_data(int window_handle, int icon_handle)
   {
     char string[1024];
     sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
-    generror(string);
+    generror(string, false);
   }
   return "";
 }
 
 // Create menu code
 
-int *create_menu(int *menu_data, char *indirected, char *title, char *entries, ... )
+static int *create_menu(int *menu_data, char *indirected, char *title, char *entries, ... )
 {
   va_list args;
   int window_handle;
@@ -1381,7 +1393,7 @@ int *create_menu(int *menu_data, char *indirected, char *title, char *entries, .
   }
   else
   {
-    generror("Title string too long (can be fixed, but not important right now)");
+    generror("Title string too long (can be fixed, but not important right now)", false);
     return 0;
   }
 
@@ -1504,39 +1516,45 @@ int *create_menu(int *menu_data, char *indirected, char *title, char *entries, .
   return menu_data;
 }
 
-char *get_menu_item(char *name)
+static char *get_menu_item(char *name)
 {
-  char *item=malloc(strlen(lookup(name))+1);
-  strcpy(item,lookup(name));
+  char contents[20];
+  char *value = lookup(name, contents, 20);
+  char *item = malloc(strlen(value) + 1);
 
-  return item;
+  return strcpy(item, value);
 }
 
-char *get_last_menu_item(char *name)
+static char *get_last_menu_item(char *name)
 {
-  char *item=malloc(strlen(lookup(name))+2);
-  strcpy(item,lookup(name));
+  char contents[20];
+  char *value = lookup(name, contents, 20);
+  char *item = malloc(strlen(value) + 2);
+
+  strcpy(item, value);
+  return strcat(item, "\\");
+}
+
+static char *get_grey_menu_item(char *name)
+{
+  char contents[20];
+  char *value = lookup(name, contents, 20);
+  char *item = malloc(strlen(value) + 2);
+
+  item[0] = '#';
+  item[1] = '\0';
+  return strcat(item, value);
+}
+
+static char *get_grey_last_menu_item(char *name)
+{
+  char contents[20];
+  char *value = lookup(name, contents, 20);
+  char *item = malloc(strlen(value) + 3);
+
+  item[0] = '#';
+  strcpy(item + 1, value);
   strcat(item,"\\");
-
-  return item;
-}
-
-char *get_grey_menu_item(char *name)
-{
-  char *item=malloc(strlen(lookup(name))+2);
-  strcpy(item,"#");
-  strcat(item,lookup(name));
-
-  return item;
-}
-
-char *get_grey_last_menu_item(char *name)
-{
-  char *item=malloc(strlen(lookup(name))+3);
-  strcpy(item,"#");
-  strcat(item,lookup(name));
-  strcat(item,"\\");
-
   return item;
 }
 
@@ -1544,10 +1562,10 @@ void create_iconbar_menu(void)
 {
   int block[5];
 
-  char *menu_title=  get_menu_item("AppName");
-  char *menu_info=   get_menu_item("Info");
-  char *menu_choices=get_grey_menu_item("Choices");
-  char *menu_quit=   get_last_menu_item("Quit");
+  char *menu_title   = get_menu_item("AppName");
+  char *menu_info    = get_menu_item("Info");
+  char *menu_choices = get_grey_menu_item("Choices");
+  char *menu_quit    = get_last_menu_item("Quit");
 
   if (create_menu(menu_data,0,menu_title,menu_info,info,menu_choices,menu_quit))
   {
@@ -1706,7 +1724,7 @@ void set_title_bar(int window_handle, char *title)
   }
   else
   {
-    generror("Title bar in window is not indirected.");
+    generror("Title bar in window is not indirected.", false);
   }
 }
 
@@ -1809,12 +1827,16 @@ void open_open_window(bool open_window_flag)
 
   strcpy(string,read_icon_data(open,4));
 
-  if (strcmp(string,lookup("SSH"))==0)
-    connection_type=NETTLE_SSH;
-  else if (strcmp(string,lookup("Taskwindow"))==0)
-    connection_type=NETTLE_TASKWINDOW;
-  else
-    connection_type=NETTLE_TELNET;
+  {
+    char type[20];
+
+    if (strcmp(string, lookup("SSH", type, 20)) == 0)
+      connection_type = NETTLE_SSH;
+    else if (strcmp(string,lookup("Taskwindow", type, 20)) == 0)
+      connection_type = NETTLE_TASKWINDOW;
+    else
+      connection_type = NETTLE_TELNET;
+  }
 
   switch (connection_type)
   {

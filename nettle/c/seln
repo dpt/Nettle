@@ -188,7 +188,7 @@ void save_selection(char *filename, bool ansi_colour)
   {
     char string[1024];
     sprintf(string,"Failed to open file '%s' for writing",filename);
-    generror(string);
+    generror(string, false);
     return;
   }
 

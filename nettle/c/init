@@ -87,7 +87,7 @@ void load_sprites(void)
   file_handle=fopen(file_name,"r");
   if (file_handle==0)
   {
-    generror(lookup("NoSprites"));
+    generror("NoSprites", true);
     closedown_application();
   }
   else
@@ -123,20 +123,22 @@ void load_sprites(void)
 
 void load_templates(void)
 {
+  char info_data[60];
+
   // open the templates file
   open_template();
 
   // read template definitions
   info=load_template(LOAD_TEMPLATE_NO_FONTS,"info",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-  set_icon_data(info,0,lookup("AppName"));
-  set_icon_data(info,1,lookup("AppAuthor"));
-  set_icon_data(info,5,lookup("AppVersion"));
-  set_icon_data(info,6,lookup("AppPurpose"));
+  set_icon_data(info,0,lookup("AppName", info_data, 60));
+  set_icon_data(info,1,lookup("AppAuthor", info_data, 60));
+  set_icon_data(info,5,lookup("AppVersion", info_data, 60));
+  set_icon_data(info,6,lookup("AppPurpose", info_data, 60));
 
   choices=load_template(LOAD_TEMPLATE_NO_FONTS,"choices",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   open=load_template(LOAD_TEMPLATE_NO_FONTS,"open",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-  set_icon_data(open,4,lookup("Telnet"));
+  set_icon_data(open,4,lookup("Telnet", info_data, 60));
   set_icon_data(open,9,terminal_name[NETTLE_TERMINAL_VT220]);
 
   resize=load_template(LOAD_TEMPLATE_NO_FONTS,"resize",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
@@ -209,7 +211,7 @@ void open_template(void)
   // this time, if we fail to open, moan about lack of templates and quit
   if (file_handle==0)
   {
-    generror(lookup("NoTemplates"));
+    generror("NoTemplates", true);
     closedown_application();
   }
   else

@@ -28,9 +28,9 @@ void start_connection(void)
   zap_yeig=regs.r[2];
 
   // give up if too many sessions
-  if (current_session==64)
+  if (current_session == 64)
   {
-    generror(lookup("TooMany"));
+    generror("TooMany", true);
     return;
   }
 
@@ -42,21 +42,26 @@ void start_connection(void)
 
   strcpy(string,read_icon_data(open,4));
 
-  if (strcmp(string,lookup("SSH"))==0)
-    connection_type=NETTLE_SSH;
-  else if (strcmp(string,lookup("Taskwindow"))==0)
-    connection_type=NETTLE_TASKWINDOW;
-  else
-    connection_type=NETTLE_TELNET;
+  {
+    char connection[20];
+
+    if (strcmp(string,lookup("SSH", connection, 20))==0)
+      connection_type=NETTLE_SSH;
+    else if (strcmp(string,lookup("Taskwindow", connection, 20))==0)
+      connection_type=NETTLE_TASKWINDOW;
+    else
+      connection_type=NETTLE_TELNET;
+  }
 
   strcpy(string,read_icon_data(open,9));
 
   terminal_type = NETTLE_TERMINAL_VT100;
   for (loop=0; loop<8; loop++)
   {
+    char type[20];
     char term[7];
     sprintf(term,"Term%d",loop);
-    if (strcmp(string,lookup(term))==0)
+    if (strcmp(string,lookup(term, type, 20))==0)
       terminal_type = (enum nettle_terminal)loop;
   }
 
@@ -67,7 +72,7 @@ void start_connection(void)
 
       if (strlen(string)==0)
       {
-        generror(lookup("InvalidAddr"));
+        generror("InvalidAddr", true);
         return;
       }
 
@@ -129,7 +134,7 @@ void start_connection(void)
       // if the port is <1, then it's either invalid or was too big and got wrapped
       if (session[current_session].socket_port<1)
       {
-        generror(lookup("InvalidPort"));
+        generror("InvalidPort", true);
         return;
       }
 
@@ -143,7 +148,7 @@ void start_connection(void)
       strcpy(string,read_icon_data(open,7));
       if (strlen(string)==0)
       {
-        generror(lookup("InvalidComm"));
+        generror("InvalidComm", true);
         return;
       }
 
@@ -243,9 +248,10 @@ void start_connection(void)
     block[20]=256;
     block[21]=0;
 
+    regs.r[1] = ((int)block) + 4;
     regs.r[1]=(int) block;
-    _kernel_swi(Wimp_CreateWindow, &regs, &regs);
-    session[current_session].window_handle=regs.r[0];
+    _kernel_raise_error(_kernel_swi(Wimp_CreateWindow, &regs, &regs));
+    session[current_session].window_handle = regs.r[0];
 
     set_title_bar(session[current_session].window_handle,"nettle");
   }
@@ -580,7 +586,7 @@ void write_assigned(int session_handle,int pointer, char fg, char bg, char flags
     			    session[session_handle].terminal_size_x*4)
   {
     printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
-    generror("Erk");
+    generror("Erk", false);
     return;
   }
 
@@ -597,7 +603,7 @@ char read_assigned_flags(int session_handle, int pointer)
     			    session[session_handle].terminal_size_x*4)
   {
     printf("Attempt to read from outside assigned area: session %d, pointer %d\n",session_handle,pointer);
-    generror("Erk");
+    generror("Erk", false);
     return 0;
   }
 
@@ -611,7 +617,7 @@ void write_assigned_flags(int session_handle, int pointer, char flags)
     			    session[session_handle].terminal_size_x*4)
   {
     printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
-    generror("Erk");
+    generror("Erk", false);
     return;
   }
 
@@ -625,7 +631,7 @@ void write_assigned_character(int session_handle, int pointer, char character)
     			    session[session_handle].terminal_size_x*4)
   {
     printf("Attempt to write to outside assigned area: session %d, pointer %d\n",session_handle,pointer);
-    generror("Erk");
+    generror("Erk", false);
     return;
   }
 

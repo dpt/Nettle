@@ -21,8 +21,8 @@ void process_data(char byte, int session_handle)
   {
     if (session[session_handle].escape_string_length==255)
     {
-      generror("Escape sequence too long. This is probably due to an unsupported escape \
-                sequence. Please contact the author(s).");
+      generror("Escape sequence too long. This is probably due to an unsupported escape "
+               "sequence. Please contact the author(s).", false);
       session[session_handle].escape_state=NETTLE_ESCAPE_NONE;
       session[session_handle].escape_string_length=0;
     }
