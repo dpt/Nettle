@@ -4,6 +4,7 @@
 |   © Archifishal Software 2000-2001
 
 Set Nettle$Dir <Obey$Dir>
+Set NettleFonts$Path <Nettle$Dir>.Fonts.
 IconSprites <Nettle$Dir>.!Sprites
 
 Set Nettle$ZapRedrawPath <Zap$Redraw>

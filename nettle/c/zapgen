@@ -313,16 +313,11 @@ read_zap_font_selection (const int *selection, char *string, int length)
     if (sum >= length - 2)
       break;			/* silently truncate */
 
-    if (string[-1] != ':' && string[-1] != '.')
-      strcat(string, ".");
-
     strcat (string, item);
     if (selection[++loop] == -1)
       break;
 
-    if (string[0] != '.')
-      strcat (string, ".");
-    /* more to do... */
+    strcat (string, "."); /* more to do... */
   }
 
   if (string != font_path + font_path_base)
@@ -500,7 +495,7 @@ done:
 bool create_zap_font_menu(int window_handle, int icon_handle)
 {
   get_system_variable(font_path, "ZapFonts$Path", sizeof (font_path));
-  strcpy(font_path, *font_path ? "ZapFonts:" : "<Nettle$Dir>.Fonts");
+  strcpy(font_path, *font_path ? "ZapFonts:" : "NettleFonts:");
   font_path_base = strlen (font_path);
 
   if(create_zap_font_menu_internal (zapfont_menu, zapfont_menu_entries, true))
