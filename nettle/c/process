@@ -9,6 +9,7 @@
 #include "globals.h"
 
 #include "graphics.h"
+#include "keyboard.h"
 #include "misc.h"
 #include "nettle.h"
 #include "process.h"
@@ -2138,147 +2139,7 @@ void process_data(struct session_struct *session, char byte)
 }
 
 
-static int decode_key(struct session_struct *session, int key, char *block)
-{
-  int size_of_block;
-
-#define SETBLOCK(LEN,STR) { size_of_block = LEN; strcpy (block, STR); }
-
-  switch (key)
-  {
-    case 0x00D: /* Return */
-      if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
-      {
-        SETBLOCK (3, "\r\n\n");
-      }
-      else
-      {
-        SETBLOCK (2, "\r\n");
-      }
-      break;
-    case 0x01E: /* Home */
-      SETBLOCK (4, "\x1B[1~");
-      break;
-    case 0x07F: /* Delete */
-      SETBLOCK (4, "\x1B[3~");
-      break;
-    case 0x181: /* F1 */
-      SETBLOCK (3, "\x1BOP");
-      break;
-    case 0x182: /* F2 */
-      SETBLOCK (3, "\x1BOQ");
-      break;
-    case 0x183: /* F3 */
-      SETBLOCK (3, "\x1BOR");
-      break;
-    case 0x184: /* F4 */
-      SETBLOCK (3, "\x1BOS");
-      break;
-    case 0x185: /* F5 */
-      SETBLOCK (5, "\x1B[15~");
-      break;
-    case 0x186: /* F6 */
-      SETBLOCK (5, "\x1B[17~");
-      break;
-    case 0x187: /* F7 */
-      SETBLOCK (5, "\x1B[18~");
-      break;
-    case 0x188: /* F8 */
-      SETBLOCK (5, "\x1B[19~");
-      break;
-    case 0x189: /* F9 */
-      SETBLOCK (5, "\x1B[20~");
-      break;
-    case 0x18A: /* Tab */
-      SETBLOCK (1, "\t");
-      break;
-    case 0x18B: /* Copy */
-      SETBLOCK (4, "\x1B[4~");
-      break;
-    case 0x18C: /* Left */
-      SETBLOCK (3, (session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOD" : "\x1B[D");
-      break;
-    case 0x18D: /* Right */
-      SETBLOCK (3, (session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOC" : "\x1B[C");
-      break;
-    case 0x18E: /* Down */
-      SETBLOCK (3, (session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOB" : "\x1B[B");
-      break;
-    case 0x18F: /* Up */
-      SETBLOCK (3, (session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOA" : "\x1B[A");
-      break;
-    case 0x191: /* Shift+F1 */
-      SETBLOCK (5, "\x1B[23~");
-      break;
-    case 0x192: /* Shift+F2 */
-      SETBLOCK (5, "\x1B[24~");
-      break;
-    case 0x193: /* Shift+F3 */
-      SETBLOCK (5, "\x1B[25~");
-      break;
-    case 0x194: /* Shift+F4 */
-      SETBLOCK (5, "\x1B[26~");
-      break;
-    case 0x195: /* Shift+F5 */
-      SETBLOCK (5, "\x1B[28~");
-      break;
-    case 0x196: /* Shift+F6 */
-      SETBLOCK (5, "\x1B[29~");
-      break;
-    case 0x197: /* Shift+F7 */
-      SETBLOCK (5, "\x1B[31~");
-      break;
-    case 0x198: /* Shift+F8 */
-      SETBLOCK (5, "\x1B[32~");
-      break;
-    case 0x199: /* Shift+F9 */
-      SETBLOCK (5, "\x1B[33~");
-      break;
-    case 0x19E: /* Page down */
-      SETBLOCK (4, "\x1B[6~");
-      break;
-    case 0x19F: /* Page up */
-      SETBLOCK (4, "\x1B[5~");
-      break;
-    case 0x1CA: /* F10 */
-      SETBLOCK (5, "\x1B[21~");
-      break;
-    case 0x1CB: /* F11 */
-      SETBLOCK (5, "\x1B[23~");
-      break;
-    case 0x1CC: /* F12 */
-      SETBLOCK (5, "\x1B[24~");
-      break;
-    case 0x1CD: /* Insert */
-      SETBLOCK (4, "\x1B[2~");
-      break;
-    case 0x1DA: /* Shift+F10 */
-      SETBLOCK (5, "\x1B[34~");
-      break;
-    case 0x1DB: /* Shift+F11 */
-      SETBLOCK (5, "\x1B[23~");
-      break;
-    case 0x1DC: /* Shift+F12 */
-      SETBLOCK (5, "\x1B[24~");
-      break;
-    default:
-      if (key<0x100)
-      {
-        sprintf(block,"%c",key);
-        size_of_block=1;
-      }
-      else
-      {
-        size_of_block=0;
-      }
-      break;
-  }
-
-  return size_of_block;
-}
-
-
-void process_wimp_key(struct session_struct *session, int key)
+void process_wimp_key(struct session_struct *session, int key, int extra)
 {
   char block[256];
   int size_of_block=0;
@@ -2305,7 +2166,7 @@ void process_wimp_key(struct session_struct *session, int key)
 
   changedbox_init (session);
 
-  size_of_block=decode_key(session,key,block);
+  size_of_block = decode_key (session, key, extra, block);
 
   if (session->session_flags[1]==false)
   {
@@ -2449,7 +2310,7 @@ void process_line_editor(struct session_struct *session)
   {
     int key=icon_text[icon_text_loop];
 
-    size_of_block=decode_key(session,key,block);
+    size_of_block = decode_key (session, key, 0, block);
 
     if (session->session_flags[1]==false)
     {
