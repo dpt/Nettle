@@ -1995,7 +1995,8 @@ void wimp_message(union wimp_poll_block *wimp_block)
         char string[1024];
 
         read_mem(string, wimp_block->user_message.contents.data_save_ack.file_name, sizeof(string));
-        if (drag_window_handle == win_save)
+        if (drag_window_handle == win_save ||
+            drag_window_handle == selection_session->window_handle)
         {
           struct wimp_geticonstate_block block;
 
@@ -2013,7 +2014,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
             save_selection(string, false);
           }
 
-          if (instr(string,"Wimp$Scrap")==-1)
+          if (instr(string,"Wimp$Scrap")==-1 && drag_window_handle == win_save)
           {
             set_icon_data(drag_window_handle, icon_save_filename, string);
           }
