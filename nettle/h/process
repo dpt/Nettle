@@ -17,7 +17,7 @@ extern void force_redraw_changedbox (void);
 
 extern void process_data(struct session_struct *, char);
 
-extern void process_wimp_key(struct session_struct *, int);
+extern void process_wimp_key(struct session_struct *, int, int);
 extern void process_line_editor(struct session_struct *);
 
 extern int get_cursor_position(struct session_struct *);
