@@ -416,9 +416,9 @@ void initialise_application(void)
   initialise_wimp();
 
   /* load things in */
+  load_messages();
   load_choices();
   load_hotlist();
-  load_messages();
   load_sprites();
   load_templates();
   load_zap_fonts();

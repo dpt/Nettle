@@ -206,7 +206,7 @@ static void create_entry(char *title, FILE *in)
   } while (str);
 
 errbarf:
-  generror((const void*)lookup_static("BadHotlist"), false);
+  generror("BadHotlist", true);
 error:
   if (node)
   {
