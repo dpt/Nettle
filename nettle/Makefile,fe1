@@ -1,23 +1,14 @@
-# Acorn / NetLib Makefile for Nettle
+# Makefile for Nettle
 # by A. Macfarlane Smith
 # (C) Archifishal Software 2001
 #
 # $Id$
 
-
-# Uncomment /these/ to use NetLib
-NETINCLUDE = NetLib:
-NETLIBS    = NetLib:o.netlib
-NETLIBFLAG = 
-
-# Uncomment /these/ to use TCPIPLibs
-#NETINCLUDE = TCPIPLibs:
-#NETLIBS    = TCPIPLibs:o.socklib TCPIPLIBS:o.inetlib
-#NETLIBFLAG = -DUSE_TCPIPLIB
-
-
 CC = cc
-CFLAGS = -c -strict -IC: -I$(NETINCLUDE) -fa -apcs 3/26 -throwback -depend !Depend $(NETLIBFLAG) #-DBETA_VERSION #-g #-DFORTIFY
+CFLAGS = -c -strict -IC: -ITCPIPLibs: -fa -apcs 3/32/fpe2/swst/fp/nofpr -throwback -depend !Depend
+DBGFLAGS = #-DBETA_VERSION #-g #-DFORTIFY
+
+LIBS = C:o.stubsg TCPIPLibs:o.socklib-32 TCPIPLibs:o.inetlib-32
 
 LINK = link
 LINKFLAGS = #-d
@@ -26,9 +17,6 @@ MKDIR = cdir
 
 WIPE = wipe
 WIPEFLAGS = ~CFR~V
-
-ASM = objasm
-ASMFLAGS = -apcs 3/26
 
 TEMPLATES = !Nettle.Resources.UK.Templates
 
@@ -41,11 +29,11 @@ OBJS = chardefn.o choices.o dnslib.o globals.o init.o keyboard.o lineedit.o \
 all:	!Nettle.!RunImage
 
 templheadr: templheadr.o
-        $(LINK) -o $@ $(LINKFLAGS) $? C:o.stubs
+        $(LINK) -o $@ $(LINKFLAGS) $? $(LIBS)
 
 !Nettle.!RunImage:	$(OBJS)
-	$(LINK) -o $@ $(LINKFLAGS) $(OBJS) C:o.stubs $(NETLIBS)
-	|squeeze $@
+	$(LINK) -o $@ $(LINKFLAGS) $(OBJS) $(LIBS)
+	squeeze $@
 
 clean:
 	$(WIPE) o.* $(WIPEFLAGS)
@@ -54,13 +42,10 @@ templ.h: templheadr $(TEMPLATES)
 	If "<Prefix$Dir>" <> "" Then /<Prefix$Dir>.templheadr $(TEMPLATES) $@
 	If "<Prefix$Dir>" = ""  Then /templheadr $(TEMPLATES) $@
 
-.SUFFIXES: .o .s .c
-
-.s.o:
-	$(ASM) $(ASMFLAGS) $< -o $@
+.SUFFIXES: .o .c
 
 .c.o:
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) $(DBGFLAGS) -o $@ $<
 
 o.wimp: templ.h
 o.spool: templ.h
