@@ -3,31 +3,31 @@
 #
 # $Id$
 
-GCCDIR = /home/riscos/cross/bin
-BITS = ../../nettlebits
 
-CC = $(GCCDIR)/gcc
-CFLAGS = -c -nostdinc -I$(BITS)/clib -I$(BITS)/netlib -O2 -mapcs -Wall -Wno-unknown-pragmas -DFORTIFY
+
+CC = $(GCCDIR)/cross/bin/gcc
+CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -DFORTIFY -mlibscl \
+	-I$(GCCDIR)/lib/netlib
 # -mamu : generate !Depend file - only useful with AMU
 
-LINK = $(GCCDIR)/gcc
-LINKFLAGS = $(BITS)/clib/o/stubs,ffd -debug
+LINK = $(CC)
+LINKFLAGS = -debug
 
 WIPE = rm
 WIPEFLAGS = -rf
 
-OBJASM = $(GCCDIR)/gcc
+OBJASM = $(CC)
 OBJASMFLAGS = -c
 
 OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
 
-RUNIMAGE = !Nettle/!RunImage,ff8
+RUNIMAGE = !Nettle.!RunImage,ff8
 
 all: $(RUNIMAGE)
 
 $(RUNIMAGE): $(OBJS)
-	$(LINK) $(LINKFLAGS) $(BITS)/netlib/o/NetLib $(OBJS) -o $(RUNIMAGE)
+	$(LINK) $(LINKFLAGS) $(OBJS) -o $(RUNIMAGE)
 
 clean:
 	$(WIPE) $(WIPEFLAGS) *.o 

@@ -1,4 +1,14 @@
 #!/bin/sh
+#
+# Unix cross compile helper script
+# (C) Nettle developers 2000-2001
+#
+# $Id$
+
+if [ "$cross_path" == "" ] ; then
+  cross_path=/home/riscos
+fi  
+
 
 rm *.o *.c *.h *.s 2>/dev/null
 
@@ -15,7 +25,9 @@ do
   cd -
 done
 
-# Uuugh!
-export INTERNET_PATH=../../nettlebits/netlib
+if [ ! -e $cross_path/lib/netlib ] ; then
+  echo Cannot find Netlib in $cross_path/lib/netlib
+  exit 1
+fi
 
-make -f MakeCross
+make -f MakeCross GCCDIR=$cross_path
