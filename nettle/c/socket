@@ -53,6 +53,12 @@ int socket_connecttoip(unsigned long ip_address,int port_number)
     return -1;
   }
 
+  if (setsockopt(socket_handle, SOL_SOCKET, SO_OOBINLINE, (char *) &data, sizeof(data)))
+  {
+    close(socket_handle);
+    return -1;
+  }
+
   socketwatch_register(socket_handle);
 
   address.sin_family=AF_INET;

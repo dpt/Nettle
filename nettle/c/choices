@@ -535,8 +535,8 @@ bool win_choices_read(int save)
        * written twice if the font is also changed; it's not a
        * stressful operation anyhow
        */
-      update_cursors(zap_font_area);
-      update_cursors(zap_lowres_font_area);
+      zapredraw_update_cursors(zap_font_area, cursor_type);
+      zapredraw_update_cursors(zap_lowres_font_area, cursor_type);
     }
   }
 

@@ -113,12 +113,12 @@ DeleteHot:Diesen Favoriten-Eintrag wirklich löschen?
 DeleteHotButtons:Löschen,Abbrechen
 BadHotlist:Fehler in der Favoriten-Datei. Wurde sie von Hand verändert?
 nocreate:Nettle konnte die Datei %0 nicht speichern
-CantSaveChoices:Nettle konnte die Einstellungsdatei %0 nicht speichern
-CantSaveHotlist:Nettle konnte die Favoritendatei %0 nicht speichern
+CantSaveChoices:Nettle konnte die Einstellungsdatei nicht speichern: %0
+CantSaveHotlist:Nettle konnte die Favoritendatei nicht speichern: %0
 esctoolong:Escape-Anweisung zu lang. Eventuell wird die Escape-Anweisung nicht unterstützt, bitte die Autoren kontaktieren.
 NoStartTask:Nettle konnte den ANSI Task nicht anlegen
 CantAlloc:Nettle konnte nicht genügend Speicher für die geforderte Operation erwerben
-CantLoad:Nettle konnte die Datei %0 nicht laden
+CantLoad:Nettle konnte die Datei nicht laden: %0
 ChoicesNotKnown:Diese Nettle-Version kann keine Einstellungen von Version %0 laden - benutze daher Standardvorgaben
 SureFileTypeLoad:Datei vom Typ '%0' wirklich laden?
 SureFileTypeLoadButtons:Laden,Abbrechen
