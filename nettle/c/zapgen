@@ -278,7 +278,12 @@ void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrol
       new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
     }
 
-    assert(new_zapredraw_area != NULL);
+    if (!new_zapredraw_area)
+    {
+      generror("Nettle has run out of memory in a nasty place. Sometime this will be fixed better.\n", false);
+      assert(false);
+    }
+
     zapredraw_area = new_zapredraw_area;
   }
 }
@@ -431,7 +436,13 @@ int *load_font(char *font)
   if (first_char != last_char)
   {
     zap_load_area=malloc(char_size*(0x100+EXTRA_ZAP_CHARS)+0x20);
-    assert(zap_load_area != NULL);
+    if (!zap_load_area)
+    {
+      /* FIXME: This might leave DAs lying about */
+      generror(lookup_inbuffer("OutOfMem"), false);
+      assert(false);
+    }
+
     memset (zap_load_area, 0, char_size*(0x100+EXTRA_ZAP_CHARS) + 0x20);
     fseek(file_handle,0,SEEK_SET);
     fread ((char *) zap_load_area, 1, 0x20, file_handle);
@@ -445,7 +456,13 @@ int *load_font(char *font)
     width = 8;
     char_size = height = (eig.y > 1) ? 8 : 16;
     zap_load_area = realloc (zap_load_area, char_size * (0x100+EXTRA_ZAP_CHARS) + 0x20);
-    assert(zap_load_area);
+    if (!zap_load_area)
+    {
+      /* FIXME: This might leave DAs lying about */
+      generror(lookup_inbuffer("OutOfMem"), false);
+      assert(false);
+    }
+
     zap_load_area[2] = width;
     zap_load_area[3] = height;
     zap_load_area[4] = first_char = 32;
@@ -804,11 +821,16 @@ void recache_bitmaps(void)
   }
   else
   {
-    int *tmp=(int *) realloc(bitmaps_area, mem_required);
+    int *tmp=realloc(bitmaps_area, mem_required);
     if (tmp)
-        bitmaps_area=tmp;
+    {
+      bitmaps_area=tmp;
+    }
     else
-        assert(0);  /* Duh. Panic! */
+    {
+      generror("Nettle has run out of memory in a bad way. Sometime this will be fixed better.\n", false);
+      assert(false);  /* Duh. Panic! */
+    }
   }
 
   redraw.r_flags=0;

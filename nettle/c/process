@@ -699,7 +699,7 @@ void byte_default(struct session_struct *session, char byte)
     write_assigned(session, session->pos.x, session->pos.y,
                    session->current_fg,
                    session->current_bg,
-                   session->current_flags,
+                   session->current_flags | NETTLE_FLAG_VALID,
                    '?');
 
     work_out_character(session, session->pos.x, session->pos.y, byte);
@@ -1327,7 +1327,7 @@ void process_handle_buffer(struct session_struct *session,
             write_assigned(session, session->pos.x, session->pos.y,
                            session->current_fg,
             		   session->current_bg,
-              		   session->current_flags,
+              		   session->current_flags | NETTLE_FLAG_VALID,
               		   '^');
 
             session->pos.x++;
@@ -1339,7 +1339,7 @@ void process_handle_buffer(struct session_struct *session,
           write_assigned(session, session->pos.x, session->pos.y,
                          session->current_fg,
                          session->current_bg,
-              		 session->current_flags,
+              		 session->current_flags | NETTLE_FLAG_VALID,
               		 '?');
 
           if (send_block->data[loop]<32)

@@ -952,7 +952,7 @@ bool process_escape_length_x(struct session_struct *session)
                       emboldening=false;
                       session->current_fg=7;
                       session->current_bg=0;
-                      session->current_flags=NETTLE_FLAG_VALID;
+                      session->current_flags=0;
                       break;
                     case 1:
                       /* Bold */

@@ -994,11 +994,11 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
       {
         /* send a WIMP message */
         union wimp_poll_block block;
-        int copy = (length > 223) ? 223 : length;
+        int copy = (length > 219) ? 219 : length;
 
         memcpy (block.user_message.contents.task_window_input.data, data, copy);
 
-        block.user_message.length                         =(28+copy) & ~3;
+        block.user_message.length                         =(24+3+copy) & ~3;
         block.user_message.my_ref                         =0;
         block.user_message.message_code                   =WIMP_MESSAGE_TASKWINDOW_INPUT;
         block.user_message.contents.task_window_input.size=copy;
@@ -1017,7 +1017,7 @@ void reset_terminal(struct session_struct *session)
   session->other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE;
   session->current_fg=7;
   session->current_bg=0;
-  session->current_flags=NETTLE_FLAG_VALID;
+  session->current_flags=0;
   session->escape_string_length=0;
   session->escape_state=NETTLE_ESCAPE_NONE;
   session->scroll_start=1;
@@ -1277,18 +1277,30 @@ static void resize_terminal_dimensions(struct session_struct *session,
     if (area == 0)
     {
       old_area = session->assigned_area;
-      new_area = session->assigned_area =
-                  malloc((terminal_size.y + scrollback) * sizeof(int *));
-      assert(session->assigned_area);
+      new_area = malloc((terminal_size.y + scrollback) * sizeof(int *));
+
+      if (!new_area)
+      {
+        generror(lookup_inbuffer("OutOfMem"), false);
+        return;
+      }
+
+      session->assigned_area = new_area;
 
       split = total_new_y - total_old_y;
     }
     else
     {
       old_area = session->alternate_area;
-      new_area = session->alternate_area =
-                 malloc((terminal_size.y) * sizeof(int *));
-      assert(session->alternate_area);
+      new_area = malloc((terminal_size.y) * sizeof(int *));
+
+      if (!new_area)
+      {
+        generror(lookup_inbuffer("OutOfMem"), false);
+        return;
+      }
+
+      session->alternate_area = new_area;
 
       split = terminal_size.y - old_terminal_size.y;
     }
@@ -1319,8 +1331,14 @@ static void resize_terminal_dimensions(struct session_struct *session,
 
         if (loop >= split)
         {
-          new_area[loop ] = realloc(old_area[old_loop],
+          new_area[loop] = realloc(old_area[old_loop],
             terminal_size.x * sizeof(struct term_char));
+
+          if (!new_area[loop])
+          {
+            generror("Nettle has ran out of memory in a rather nasty spot and will die hideously now. Sometime this will be fixed better.", false);
+            assert(false);
+          }
 
           /* Clear the rest of the line */
           for (loop2 = old_terminal_size.x; loop2 < terminal_size.x; loop2++)
@@ -1331,7 +1349,12 @@ static void resize_terminal_dimensions(struct session_struct *session,
         else
         {
           new_area[loop] = malloc(terminal_size.x * sizeof(struct term_char));
-          assert(new_area[loop]);
+
+          if (!new_area[loop])
+          {
+            generror("Nettle has ran out of memory in a rather nasty spot and will die hideously now. Sometime this will be fixed better.", false);
+            assert(false);
+          }
 
           if (area == 0)
           {
@@ -1374,7 +1397,12 @@ static void resize_terminal_dimensions(struct session_struct *session,
         {
           new_area[loop] = realloc(old_area[old_loop],
             terminal_size.x * sizeof(struct term_char));
-          assert(new_area[loop]);
+
+          if (!new_area[loop])
+          {
+            generror("Nettle has ran out of memory in a rather nasty spot and will die hideously now. Sometime this will be fixed better.", false);
+            assert(false);
+          }
 
           /* Clear the rest of the line */
           for (loop2 = old_terminal_size.x; loop2 < terminal_size.x; loop2++)
