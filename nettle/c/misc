@@ -1,6 +1,10 @@
-/* Miscellaneous code */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Miscellaneous code
+ * by A. Macfarlane Smith 
+ * (C) Archifishal Software 2001
+ *
+ * $Id$
+ */
 
 #include <assert.h>
 
@@ -9,65 +13,87 @@
 
 #include "misc.h"
 
+
+
 /* Looks up a messagetrans token */
 
-char *lookup(const char *token, char *buffer, int buf_len)
+char *lookup(const char *token, char *buffer, int buf_size)
 {
-  _swi(MessageTrans_Lookup, _IN(0)|_IN(1)|_IN(2)|_IN(3), messagetrans_area, token, buffer,
-                                                         buf_len);
+  assert(token != NULL);
+  assert(buffer != NULL);
+  assert(buf_size > 0);
+  
+  _swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer,
+                                                         buf_size);
 
   return buffer;
 }
 
+
+
 /* Gets a system variable's contents */
 
-char *get_system_variable(char *variable, char *variable_name, int variable_length)
+char *get_system_variable(char *variable, const char *variable_name,
+                          int variable_size)
 {
   char *string;
-  string=getenv(variable_name);
+  
+  assert(variable != NULL);
+  assert(variable_name != NULL);
+  assert(variable_size > 0);
+  
+  string = getenv(variable_name);
 
   /* if it exists, copy it into variable */
-  if (string!=0)
-  {
-    strncpy(variable,string,variable_length);
-  }
-  else
-  {
-    strcpy(variable,"");
-  }
+  variable[0] = '\0';
+  if (string != NULL)
+    strncat(variable, string, variable_size - 1);
 
   return variable;
 }
 
+
+
 /* Converts a string into a binary integer */
 
-int binary(char *string)
+int binary(const char *string)
 {
-  int value = 0;
-
-  while (*string!=0)
+  int          value = 0;
+  const char  *s;
+  
+  assert(string != NULL);
+  
+  for (s = string; *s != 0; s++)
   {
-    value*=2;
-    if (*string=='1')
-    {
+    value *= 2;
+    if (*s == '1')
       value++;
-    }
-    string++;
   }
 
   return value;
 }
 
+
+
 /* Implementation of BASIC's INSTR command */
-int instr(char *string, char *test)
+int instr(const char *string, const char *test)
 {
+  assert(string != NULL);
+  assert(test   != NULL);
+  
   return esc_instr(string,test,strlen(string));
 }
 
+
+
 /* Implementation of BASIC's INSTR command with the length of the string too */
-int esc_instr(char *string, char *test, int length)
+int esc_instr(const char *string, const char *test, int length)
 {
   int loop;
+  
+  assert(string != NULL);
+  assert(test   != NULL);
+  assert(length >= 0);
 
   for (loop=0; loop<length; loop++)
   {
@@ -85,11 +111,15 @@ int esc_instr(char *string, char *test, int length)
   return -1;
 }
 
+
+
 /* read a 'string' */
-char *read_mem(char *dest, char *source, int max_length)
+char *read_mem(char *dest, const char *source, int max_length)
 {
   int loop = 0;
 
+  assert(dest       != NULL); 
+  assert(source     != NULL);
   assert(max_length > 0);
 
   while (loop < max_length - 1 && source[loop] != '\0' &&
@@ -104,70 +134,89 @@ char *read_mem(char *dest, char *source, int max_length)
   return dest;
 }
 
-/* log a string to the log file */
-void log_string(char *string)
-{
-  if (!logging) { return; }
 
-  if (log_file==0)
-  {
-    log_file=fopen("<Nettle$Dir>.Log","a");
-  }
-  if (log_file==0)
-  {
-    log_file=fopen("<Nettle$Dir>.Log","w");
-  }
+
+/* log a string to the log file */
+void log_string(const char *string)
+{
+  assert(string != NULL);
+  
+  if (!logging)
+    return;
+
+  if (log_file == NULL)
+    log_file=fopen("<Nettle$Dir>.Log", "a");
+
+  if (log_file == NULL)
+    log_file=fopen("<Nettle$Dir>.Log", "w");
+
+  if (log_file == NULL)
+    return;
+
   fputs(string,log_file);
 
-  log_file_time=_swi(OS_ReadMonotonicTime, _RETURN(0));
+  log_file_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
 }
+
+
 
 /* log a byte to the log file */
 void log_byte(char character)
 {
-  if (!logging) { return; }
+  if (!logging)
+    return;
 
-  if (log_file==0)
-  {
-    log_file=fopen("<Nettle$Dir>.Log","a");
-  }
-  if (log_file==0)
-  {
-    log_file=fopen("<Nettle$Dir>.Log","w");
-  }
+  if (log_file == NULL)
+    log_file=fopen("<Nettle$Dir>.Log", "a");
+
+  if (log_file == NULL)
+    log_file=fopen("<Nettle$Dir>.Log", "w");
+  
+  if (log_file == NULL)
+    return;
+
   fputc(character,log_file);
 
   log_file_time=_swi(OS_ReadMonotonicTime, _RETURN(0));
 }
+
+
 
 /* close the log file if we haven't used it for 5 seconds */
 void close_log(void)
 {
   int current_time;
 
-  if (!logging) { return; }
-  if (log_file==0) { return; }
+  if (!logging)
+    return;
+  
+  if (log_file == NULL)
+    return;
 
-  current_time=_swi(OS_ReadMonotonicTime, _RETURN(0));
+  current_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
 
-  if (current_time>log_file_time+500)
+  if (current_time > log_file_time+500)
   {
     fclose(log_file);
-    log_file=0;
+    log_file = NULL;
   }
 }
+
+
 
 /* Get what country we're in */
 char *get_country(char *string, int size)
 {
   int country_number;
+  
+  assert(string != NULL);
+  assert(size   > 0);
 
-  strcpy(string,"");
+  string[0] = '\0';
 
-  if (_swix(OS_Byte,_IN(0)|_IN(1)|_OUT(2), 0x46, 127, &country_number)==0)
+  if (_swix(OS_Byte,_INR(0,1)|_OUT(2), 0x46, 127, &country_number)==0)
   {
-    _swi(OS_ServiceCall, _IN(1)|_IN(2)|_IN(3)|_IN(4)|_IN(5), 0x43, 2, country_number, string,
-                                                             size);
+    _swi(OS_ServiceCall, _INR(1,5), 0x43, 2, country_number, string, size);
   }
 
   return string;

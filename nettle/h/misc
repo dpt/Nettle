@@ -1,19 +1,23 @@
-/* Nettle miscellaneous code headers */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Nettle miscellaneous code headers
+ * by A. Macfarlane Smith 
+ * (C) Archifishal Software 2001
+ *
+ * $Id$
+ */
 
 #ifndef MISC_H
 #define MISC_H
 
-extern char *lookup(const char *, char *, int);
-extern char *get_system_variable(char *, char *, int);
-extern int binary(char *);
-extern int instr(char *, char *);
-extern int esc_instr(char *, char *, int);
-extern char *read_mem(char *, char *, int);
-extern void log_string(char *);
-extern void log_byte(char);
-extern void close_log(void);
-extern char *get_country(char *, int);
+char *lookup(const char *, char *, int);
+char *get_system_variable(char *, const char *, int);
+int binary(const char *);
+int instr(const char *, const char *);
+int esc_instr(const char *, const char *, int);
+char *read_mem(char *, const char *, int);
+void log_string(const char *);
+void log_byte(char);
+void close_log(void);
+char *get_country(char *, int);
 
-#endif
+#endif /* MISC_H */
