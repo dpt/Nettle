@@ -178,9 +178,14 @@ static void load_templates(void)
   /* read template definitions */
   win_info=load_template(LOAD_TEMPLATE_NO_FONTS,"info",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
   set_icon_data(win_info,icon_info_name,lookup("AppName", info_data, sizeof(info_data)));
-  set_icon_data(win_info,icon_info_author,lookup("AppAuthor", info_data, sizeof(info_data)));
-  set_icon_data(win_info,icon_info_version,lookup("AppVersion", info_data, sizeof(info_data)));
   set_icon_data(win_info,icon_info_purpose,lookup("AppPurpose", info_data, sizeof(info_data)));
+  set_icon_data(win_info,icon_info_author,lookup("AppAuthor", info_data, sizeof(info_data)));
+#ifdef BETA_VERSION
+  sprintf(info_data, "Development (%s)", __DATE__);
+  set_icon_data(win_info,icon_info_version, info_data);
+#else
+  set_icon_data(win_info,icon_info_version,lookup("AppVersion", info_data, sizeof(info_data)));
+#endif
 
   win_choices=load_template(LOAD_TEMPLATE_NO_FONTS,"choices",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
   win_paneterm=load_template(LOAD_TEMPLATE_NO_FONTS,"paneterm",LOAD_TEMPLATE_WIMP_SPRITE_AREA, 0);
