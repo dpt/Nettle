@@ -490,8 +490,6 @@ static void close_program(void)
 
 
 
-/* Mouse click */
-
 static void iconbar_click(int x, int y, int buttons, int icon_handle)
 {
   if (icon_handle==iconbar_handle)
@@ -639,42 +637,69 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
 }
 
 
-static void session_window_click(int x, int y, int buttons, int icon_handle, struct session_struct *session)
+/** Button enumeration for a click/drag/double click icon */
+enum
 {
-  int x_pos;
-  int y_pos;
+  ClickAdjust  = 0x001 * 256,
+  ClickMenu    = 0x002 * 1,
+  ClickSelect  = 0x004 * 256,
+  DragAdjust   = 0x001 * 16,
+  DragMenu     = 0x002 * 16,
+  DragSelect   = 0x004 * 16,
+  DoubleAdjust = 0x001 * 1,
+  DoubleSelect = 0x004 * 1
+};
 
-  /* if we're not pressing MENU */
-  if (buttons!=2 && buttons!=32)
+
+
+/**
+ * Set the caret to be in the given session
+ *
+ * (Either the window or line editor, if lineeditor is on)
+ *
+ * @param session   Session to place caret into
+ */
+static void wimp_claimcaret(struct session_struct *session)
+{
+  if (line_editor_active(session))
   {
-    /* set the caret to be in the window or line editor (depending if lineeditor is on) */
-    if (line_editor_active(session))
+    struct wimp_getcaretposition_block block;
+
+    _swi(Wimp_GetCaretPosition, _IN(1), &block);
+
+    if (session->line_editor_type==LINEEDIT_CHECKBOX)
     {
-      struct wimp_getcaretposition_block block;
-
-      _swi(Wimp_GetCaretPosition, _IN(1), &block);
-
-      if (session->line_editor_type==LINEEDIT_CHECKBOX)
+      if (block.window_handle!=session->pane_handle)
       {
-        if (block.window_handle!=session->pane_handle)
-        {
-  	  set_caret_position(session->pane_handle, 1, -1,
-	    get_icon_data_length(session->pane_handle, 1));
-        }
-      }
-      else
-      {
-        if (block.window_handle!=session->window_handle)
-        {
-  	  set_caret_position(session->window_handle, -1, -1, -1);
-        }
+        set_caret_position(session->pane_handle, 1, -1,
+          get_icon_data_length(session->pane_handle, 1));
       }
     }
     else
     {
-      set_caret_position(session->window_handle,-1,-1,-1);
+      if (block.window_handle!=session->window_handle)
+      {
+        set_caret_position(session->window_handle, -1, -1, -1);
+      }
     }
   }
+  else
+  {
+    /* no line editor, place in window */
+    set_caret_position(session->window_handle,-1,-1,-1);
+  }
+}
+
+
+
+static void session_window_click(int x, int y, int buttons, int icon_handle, struct session_struct *session)
+{
+  int x_pos;
+  int y_pos;
+  
+  /* if we're not pressing MENU */
+  if (buttons != ClickMenu && buttons != DragMenu)
+    wimp_claimcaret(session);
 
   {
     struct wimp_getwindowstate_block block;
@@ -689,7 +714,7 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 
   switch (buttons)
   {
-    case 64:
+    case DragSelect:
       /* if SELECT drag, then clear the selection and work out what where the selection */
       /* start is */
       refresh_selection_clear();
@@ -716,7 +741,8 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       selection_end=selection_start;
       selection_in_progress=true;
       break;
-    case 16:
+      
+    case DragAdjust:
       /* if ADJUST drag, then if there is no selection, then start one */
       if (!selection_session)
       {
@@ -750,7 +776,8 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 	selection_in_progress=true;
       }
       break;
-    case 4:
+      
+    case ClickSelect:
       /* if SELECT click, then clear the selection */
       if (selection_session)
       {
@@ -763,16 +790,20 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 	selection_session = NULL;
       }
       break;
-    case 2:
+      
+    case ClickMenu: /* menu click */
       terminal_menu_session = session;
       create_terminal_menu();
       break;
-    case 1:
+      
+    case ClickAdjust:
       /* if ADJUST click, then extend the selection */
       selection_adjust(x,x_pos,y,y_pos);
       break;
   }
 }
+
+
 
 static void session_pane_click(int x, int y, int buttons, int icon_handle, struct session_struct *session)
 {
@@ -836,7 +867,7 @@ static void session_pane_click(int x, int y, int buttons, int icon_handle, struc
 
 /* Mouse click */
 
-void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
+void wimp_mouseclick(int x, int y, int buttons, int window_handle, int icon_handle)
 {
   if (window_handle==-2)
   {

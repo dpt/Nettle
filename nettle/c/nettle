@@ -241,7 +241,6 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
   session->terminal_type=terminal_type;
   reset_terminal(session);
 
-Fortify_CheckAllMemory();
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
   {
     int loop_limit=((session->terminal_size.x)*
@@ -261,7 +260,6 @@ Fortify_CheckAllMemory();
     session->tabs[session->number_of_tabs]=loop;
     session->number_of_tabs++;
   }
-Fortify_CheckAllMemory();
 
   session->line_editor_type=line_editor;
 
@@ -271,7 +269,6 @@ Fortify_CheckAllMemory();
   else
     lineedit_allocate_space(session);
 
-Fortify_CheckAllMemory();
   /* make new terminal window */
   {
     struct wimp_createwindow_block block;
@@ -304,7 +301,8 @@ Fortify_CheckAllMemory();
     block.work_max.y=0;
 
     block.icon_flags    =0x00000119;
-    block.workarea_flags=6<<12;
+    block.workarea_flags=10<<12; /* clicks (*256), drags (*16),
+                                  * double clicks (*1) */
     block.sprite_area   =(struct os_spriteop_area *) 1;
     block.min_width     =4;
     block.min_height    =4;
@@ -319,7 +317,6 @@ Fortify_CheckAllMemory();
 
     set_title_bar(session->window_handle,"nettle");
   }
-Fortify_CheckAllMemory();
 
   open_window(NULL, session->window_handle);
 
@@ -362,8 +359,6 @@ Fortify_CheckAllMemory();
   }
 
   allocate_zapredraw_area(session->terminal_size.x, session->terminal_size.y, session->scrollback);
-Fortify_CheckAllMemory();
-
 }
 
 void write_out_string(struct session_struct *session, const char *string)

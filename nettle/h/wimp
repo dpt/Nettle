@@ -24,7 +24,8 @@ extern void redraw_window(union wimp_poll_block *);
 extern void open_window(struct wimp_openwindow_block *, int);
 extern void open_window_centred(int);
 extern void close_window(int);
-extern void mouse_click(int, int, int, int, int);
+extern void wimp_mouseclick(int /*x*/, int /*y*/, int /*buttons*/,
+                            int /*window*/, int /*icon*/);
 extern void drag_finished(void);
 extern void key_pressed(int, int, int, int);
 extern void wimp_menuchoice(int */*selection*/);
