@@ -71,22 +71,24 @@ enum nettle_terminal {
 struct session_struct;
 
 
-extern void start_connection(void);
-extern void write_out_string(struct session_struct *, char *);
-extern void write_out_data(struct session_struct *, char *, int);
+void start_connection(void);
+void write_out_string(struct session_struct *, char *);
+void write_out_data(struct session_struct *, char *, int);
 
-extern void remove_session(struct session_struct *);
-extern void nettle_senddata(struct session_struct *, char *, int);
-extern void reset_terminal(struct session_struct *);
+void remove_session(struct session_struct *);
+void nettle_senddata(struct session_struct *, char *, int);
+void reset_terminal(struct session_struct *);
 
-extern void write_assigned(struct session_struct *, int, char, char, char, char);
+void write_assigned(struct session_struct *, int, char, char, char, char);
 
-extern char read_assigned_fg(struct session_struct *, int);
-extern char read_assigned_bg(struct session_struct *, int);
-extern char read_assigned_flags(struct session_struct *, int);
-extern char read_assigned_character(struct session_struct *, int);
+char read_assigned_fg(struct session_struct *, int);
+char read_assigned_bg(struct session_struct *, int);
+char read_assigned_flags(struct session_struct *, int);
+char read_assigned_character(struct session_struct *, int);
 
-extern void write_assigned_flags(struct session_struct *, int, char);
-extern void write_assigned_character(struct session_struct *, int, char);
+void write_assigned_flags(struct session_struct *, int, char);
+void write_assigned_character(struct session_struct *, int, char);
+
+void resize_terminal(struct session_struct *, int, int, int);
 
 #endif

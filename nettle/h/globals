@@ -33,6 +33,7 @@ extern int *zapredraw_area;
 extern int size_of_zapredraw_area;
 
 extern int *bitmaps_area;
+extern int bitmaps_area_number;
 
 extern struct os_spriteop_area *sprite_area;
 extern int messagetrans_area[4];

@@ -26,7 +26,7 @@ static int get_icon_data_length(int window_handle, int icon_handle);
 static void create_terminal_menu(void);
 static void create_connection_menu(void);
 static void create_terminal_type_menu(void);
-static void drag_start(int,int);
+static void drag_start(int, int);
 
 
 
@@ -230,9 +230,9 @@ void open_window(int window_handle, bool poll_flag)
 
   /* open the main window */
   if (poll_flag)
-      _swi(Wimp_OpenWindow, _IN(1), &wimp_block);
+    _swi(Wimp_OpenWindow, _IN(1), &wimp_block);
   else
-      _swi(Wimp_OpenWindow, _IN(1), &block);
+    _swi(Wimp_OpenWindow, _IN(1), &block);
 }
 
 
@@ -367,11 +367,14 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
               save_selection(save_data, false);
             }
 
-            _swi(Wimp_CreateMenu, _IN(1), -1);
+            if (buttons!=1)
+            {
+              _swi(Wimp_CreateMenu, _IN(1), -1);
+            }
           }
           else
           {
-            generror("To save, drag the icon to a directory display", false);
+            generror("ToSaveDrag", true);
           }
         }
         break;
@@ -382,6 +385,30 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
             /* Drag */
             drag_start(save, 3);
             break;
+        }
+        break;
+    }
+    return;
+  }
+
+  if (window_handle==resize)
+  {
+    switch (icon_handle)
+    {
+      case 6:
+        _swi(Wimp_CreateMenu, _IN(1), -1);
+        break;
+      case 7:
+        {
+          char string[8];
+
+          resize_terminal(terminal_menu_session, atoi(read_icon_data(resize, 0, string, 8)),
+                                                 atoi(read_icon_data(resize, 2, string, 8)),
+                                                 atoi(read_icon_data(resize, 4, string, 8)));
+          if (buttons!=1)
+          {
+            _swi(Wimp_CreateMenu, _IN(1), -1);
+          }
         }
         break;
     }
@@ -715,7 +742,29 @@ void key_pressed(int window_handle, int icon_handle, int key)
         break;
     }
   }
-  else
+
+  if (window_handle==resize)
+  {
+    switch (icon_handle)
+    {
+      case 4:
+        switch (key)
+        {
+          case 13:
+            {
+              char string[8];
+
+              resize_terminal(terminal_menu_session, atoi(read_icon_data(resize, 0, string, 8)),
+                                                     atoi(read_icon_data(resize, 2, string, 8)),
+                                                     atoi(read_icon_data(resize, 4, string, 8)));
+            }
+            key_status=true;
+        }
+        break;
+    }
+  }
+
+  if (key_status==false)
   {
     {
       {
@@ -1175,11 +1224,11 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
       {
         struct session_struct *session = sessions;
 
-        if (session) {
+        if (session)
           return;
-        }
 
-        while (session && session->socket_handle != sender_ref) {
+        while (session && session->socket_handle != sender_ref)
+        {
           session = session->next;
         }
 
@@ -1231,7 +1280,32 @@ void mode_change(void)
   }
 
   /* Reallocate the bitmaps area */
-  bitmaps_area=realloc(bitmaps_area, mem_required);
+  switch (dynamic_areas_available())
+  {
+    case true:
+      if (bitmaps_area_number==0)
+      {
+        char string[]="Nettle bitmaps area";
+
+        _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, mem_required, -1, 0x80,
+                             (zap_font_used[2]*zap_font_used[3]*384*4),
+                             0, -1, string, &bitmaps_area_number, &bitmaps_area);
+      }
+      else
+      {
+        int current_size;
+
+        _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, bitmaps_area_number, &current_size);
+
+        if (mem_required-current_size!=0)
+        {
+          _swi(OS_ChangeDynamicArea, _INR(0,1), bitmaps_area_number, mem_required-current_size);
+        }
+      }
+      break;
+    case false:
+      bitmaps_area=realloc(bitmaps_area, mem_required);
+  }
 
   redraw.r_flags=0;
   redraw.r_charw=zap_font_used[2];
@@ -1312,8 +1386,7 @@ static bool generror_question(char *string)
 
 void set_caret_position(int window_handle, int icon_handle, int flags, int index)
 {
-  _swi(Wimp_SetCaretPosition, _INR(0,5),
-                              window_handle, icon_handle, -1, -1, flags, index);
+  _swi(Wimp_SetCaretPosition, _INR(0,5), window_handle, icon_handle, -1, -1, flags, index);
 }
 
 
@@ -1634,7 +1707,7 @@ static void create_terminal_menu(void)
 
   char *menu_title          =get_menu_item("Terminal");
   char *menu_selection;
-  char *menu_resize         =get_grey_menu_item("Resize");
+  char *menu_resize         =get_menu_item("Resize");
   char *menu_options        =get_grey_last_menu_item("Options");
   char *menu_selection_title=get_menu_item("Selection");
   char *menu_save	    =get_menu_item("Save");

@@ -16,14 +16,26 @@ void closedown_application(void)
 {
   /* Quit! */
 
-  while (sessions) {
+  while (sessions)
+  {
     remove_session(sessions);
   }
 
   _swi(MessageTrans_CloseFile, _IN(0), messagetrans_area);
 
-  free(message_list);
-  free(bitmaps_area);
+  switch (dynamic_areas_available())
+  {
+    case true:
+      if (bitmaps_area_number!=0)
+      {
+        _swi(OS_DynamicArea, _INR(0,1), 1, bitmaps_area_number);
+      }
+      break;
+    case false:
+      free(bitmaps_area);
+      break;
+  }
+
   free(messagetrans_buffer);
   free(sprite_area);
   free(zap_font_area);

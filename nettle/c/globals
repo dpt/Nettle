@@ -41,6 +41,7 @@ int *zapredraw_area=0;
 int size_of_zapredraw_area=0;
 
 int *bitmaps_area=0;
+int bitmaps_area_number=0;
 
 FILE *log_file;
 int log_file_time;

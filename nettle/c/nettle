@@ -720,3 +720,12 @@ void write_assigned_character(struct session_struct *session, int pointer, char 
 
   *(session->assigned_area+(pointer+3))=character;
 }
+
+void resize_terminal(struct session_struct *session, int terminal_size_x, int terminal_size_y,
+                     int scrollback)
+{
+  char string[256];
+
+  sprintf(string,"TX: %d, TY: %d, SC: %d",terminal_size_x, terminal_size_y, scrollback);
+  generror(string,false);
+}
