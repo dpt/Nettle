@@ -59,6 +59,8 @@
   }                                                 \
 }
 
+static int *bitmaps_area=0;
+static int bitmaps_area_number=0;
 
 
 char * zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
@@ -211,10 +213,10 @@ char * zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
         {
           *write++ = ZR_CTRL;
           *write++ = ZR_CTRL_MERGE;   /* character merge */
-          *write++ = bg;              /* foreground colour */
+          *write++ = fg;              /* foreground colour */
           *write++ = fg;              /* background colour */
           ZAP_WRITE_CHAR(write, input);
-          *write++ = '_';             /* The underline itself! */
+          ZAP_WRITE_MULTIBYTE(write, 0x11D); /* The underline itself! */
         }
         else
         {
@@ -239,7 +241,7 @@ void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrol
   int size_of_row_pointers = ( terminal_size_y+scrollback+1 ) * 4;
   int size_of_one_char     = 4  /* A colour change */
                            + 4  /* Multibyte char */
-                           + 5; /* Underline */
+                           + 5+3; /* Underline (merge+multibyte)*/
   int size_of_body         = ( terminal_size_x*(terminal_size_y+1) ) * size_of_one_char;
   int size_of_eols         = ( terminal_size_y+1 )*2;
   int size_of_cursor       = 8; /* 4bytes mb cursor, 4 bytes control */
@@ -434,9 +436,9 @@ int *load_font(char *font)
 
   if (first_char != last_char)
   {
-    zap_load_area=malloc(char_size*0x11D+0x20);
+    zap_load_area=malloc(char_size*(0x100+EXTRA_ZAP_CHARS)+0x20);
     assert(zap_load_area != NULL);
-    memset (zap_load_area, 0, char_size*0x11D + 0x20);
+    memset (zap_load_area, 0, char_size*(0x100+EXTRA_ZAP_CHARS) + 0x20);
     fseek(file_handle,0,SEEK_SET);
     fread ((char *) zap_load_area, 1, 0x20, file_handle);
     fread ((char *) zap_load_area + 0x20 + first_char * char_size,
@@ -448,7 +450,7 @@ int *load_font(char *font)
     /* Eek! Fall back on system font... */
     width = 8;
     char_size = height = (eig.y > 1) ? 8 : 16;
-    zap_load_area = realloc (zap_load_area, char_size * 0x11D + 0x20);
+    zap_load_area = realloc (zap_load_area, char_size * (0x100+EXTRA_ZAP_CHARS) + 0x20);
     assert(zap_load_area);
     zap_load_area[2] = width;
     zap_load_area[3] = height;
@@ -467,7 +469,7 @@ int *load_font(char *font)
                           char_size, width, height);
 
   zap_load_area[4]=0;
-  zap_load_area[5]=0x11D;
+  zap_load_area[5]=0x100+EXTRA_ZAP_CHARS;
 
   return zap_load_area;
 }
@@ -754,4 +756,102 @@ void delete_zap_font_menu (void)
     zapfont_menu_entries[loop] = 0;
   }
   zapfont_depth = 0;
+}
+
+void recache_bitmaps(void)
+{
+  int *zap_font_used;
+  int mem_required;
+  int a;
+  int b;
+
+  /* work out which font we should be using */
+  zap_font_used = (eig.y == 1) ? zap_font_area : zap_lowres_font_area;
+
+  _swi(ZapRedraw_ReadVduVars, _IN(1), &redraw);
+
+  mem_required=((zap_font_used[2]+7) & ~7)*zap_font_used[3]*(zap_font_used[5]-zap_font_used[4]);
+
+  switch (redraw.r_bpp)
+  {
+    case 0:mem_required/=8;break;
+    case 1:mem_required/=4;break;
+    case 2:mem_required/=2;break;
+    case 4:mem_required*=2;break;
+    case 5:mem_required*=4;break;
+  }
+
+  /* Reallocate the bitmaps area */
+  if (dynamic_areas_available())
+  {
+    if (bitmaps_area_number==0)
+    {
+      const char string[]="Nettle bitmaps area";
+
+      /* Currently, in a 32bpp mode, with the biggest available ZapFont (14x12.Luc)
+         we can use up to 444K of space, so we set a 1MB max area size here.  If we
+	 don't, then the OS_ChangeDynamicArea below will die and we will all be upset */
+
+      _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, mem_required, -1, 0x80,
+                           1024*1024 /* allow room for loading bigger fonts later */,
+                           0, -1, string, &bitmaps_area_number, &bitmaps_area);
+    }
+    else
+    {
+      int current_size;
+
+      _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, bitmaps_area_number, &current_size);
+
+      if (mem_required-current_size!=0)
+      {
+        _swi(OS_ChangeDynamicArea, _INR(0,1), bitmaps_area_number, mem_required-current_size);
+      }
+    }
+  }
+  else
+  {
+    int *tmp=(int *) realloc(bitmaps_area, mem_required);
+    if (tmp)
+        bitmaps_area=tmp;
+    else
+        assert(0);  /* Duh. Panic! */
+  }
+
+  redraw.r_flags=0;
+  redraw.r_charw=zap_font_used[2];
+  redraw.r_charh=zap_font_used[3];
+  redraw.r_caddr=bitmaps_area;
+
+  _swi(ZapRedraw_CachedCharSize, _INR(0,3)|_OUTR(2,3),
+                                 redraw.r_bpp, 0, redraw.r_charw, redraw.r_charh, &a, &b);
+
+  redraw.r_cbpl=a;
+  redraw.r_cbpc=b;
+  redraw.r_linesp=0;
+
+  _swi(ZapRedraw_ConvertBitmap, _INR(1,4), &redraw, 0, 0x100+EXTRA_ZAP_CHARS,
+                                ((char *) zap_font_used)+32);
+
+  redraw.r_palette=zap_palette;
+
+  _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette, zap_palette, 16);
+
+  redraw.r_for=7;
+  redraw.r_bac=0;
+}
+
+
+void lose_bitmaps(void)
+{
+  if (dynamic_areas_available())
+  {
+    if (bitmaps_area_number!=0)
+    {
+      _swi(OS_DynamicArea, _INR(0,1), 1, bitmaps_area_number);
+    }
+  }
+  else
+  {
+    free(bitmaps_area);
+  }
 }
