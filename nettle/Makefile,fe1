@@ -6,14 +6,14 @@
 
 
 # Uncomment /these/ to use NetLib
-#NETINCLUDE = NetLib:
-#NETLIBS    = NetLib:o.netlib
-#NETLIBFLAG = 
+NETINCLUDE = NetLib:
+NETLIBS    = NetLib:o.netlib
+NETLIBFLAG = 
 
 # Uncomment /these/ to use TCPIPLibs
-NETINCLUDE = TCPIPLibs:
-NETLIBS    = TCPIPLibs:o.socklib TCPIPLIBS:o.inetlib
-NETLIBFLAG = -DUSE_TCPIPLIB
+#NETINCLUDE = TCPIPLibs:
+#NETLIBS    = TCPIPLibs:o.socklib TCPIPLIBS:o.inetlib
+#NETLIBFLAG = -DUSE_TCPIPLIB
 
 
 CC = cc
@@ -21,6 +21,8 @@ CFLAGS = -c -strict -IC: -I$(NETINCLUDE) -fa -apcs 3/26 -throwback -depend !Depe
 
 LINK = link
 LINKFLAGS = #-d
+
+MKDIR = cdir
 
 WIPE = wipe
 WIPEFLAGS = ~CFR~V
@@ -33,7 +35,8 @@ TEMPLATES = !Nettle.Resources.UK.Templates
 OBJS = chardefn.o choices.o dnslib.o globals.o init.o keyboard.o lineedit.o \
        main.o misc.o hotlist.o nettle.o process.o socket.o quit.o seln.o \
        wimp.o zapgen.o fortify.o sockwatch.o messages.o termlist.o url.o \
-       wimputil.o spool.o mouse.o scripts.o
+       wimputil.o spool.o mouse.o scripts.o processesc.o processiac.o \
+       procesescx.o
 
 all:	!Nettle.!RunImage
 
@@ -61,5 +64,8 @@ templ.h: templheadr $(TEMPLATES)
 
 o.wimp: templ.h
 o.spool: templ.h
+
+.INIT:
+	$(MKDIR) o
 
 # Dynamic dependencies:

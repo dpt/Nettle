@@ -1,5 +1,5 @@
 # linux crossbuild gcc / NetLib Makefile for Nettle
-# (C) Nettle developers 2000-2001
+# (C) Nettle developers 2000-2002
 #
 # $Id$
 
@@ -30,7 +30,8 @@ TEMPLATES = !Nettle/Resources/UK/Templates,fec
 OBJS = chardefn.o choices.o dnslib.o fortify.o globals.o hotlist.o init.o \
        keyboard.o lineedit.o main.o messages.o  misc.o mouse.o nettle.o \
        process.o quit.o seln.o socket.o spool.o sockwatch.o termlist.o \
-       url.o  wimputil.o wimp.o zapgen.o scripts.o
+       url.o  wimputil.o wimp.o zapgen.o scripts.o processesc.o processiac.o \
+       procesescx.o
 
 RUNIMAGE = !Nettle/!RunImage,ff8
 
@@ -82,6 +83,9 @@ nettle.o:	nettle.c nettle.h generic.h globals.h misc.h nettle.h seln.h \
 		socket.h wimp.h zapredraw.h wimputil.h
 process.o:	process.c process.h generic.h globals.h graphics.h misc.h \
 		nettle.h keyboard.h seln.h wimp.h zapredraw.h wimputil.h
+processiac.o:   processiac.c process.h
+processesc.o:   processesc.c process.h
+procesescx.o:   procesescx.c process.h
 quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h hotlist.h
 seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h \
                 wimputil.h
