@@ -1,0 +1,65 @@
+# linux crossbuild gcc / NetLib Makefile for Nettle
+# (C) Nettle developers 2000-2001
+#
+# $Id$
+
+GCCDIR = /home/riscos/cross/bin
+BITS = ../../nettlebits
+
+CC = $(GCCDIR)/gcc
+CFLAGS = -c -nostdinc -I$(BITS)/clib -I$(BITS)/netlib -O2 -mapcs -Wall -Wno-unknown-pragmas -DFORTIFY
+# -mamu : generate !Depend file - only useful with AMU
+
+LINK = $(GCCDIR)/gcc
+LINKFLAGS = $(BITS)/clib/o/stubs,ffd -debug
+
+WIPE = rm
+WIPEFLAGS = -rf
+
+OBJASM = $(GCCDIR)/gcc
+OBJASMFLAGS = -c
+
+OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o \
+       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
+
+RUNIMAGE = !Nettle/!RunImage,ff8
+
+all: $(RUNIMAGE)
+
+$(RUNIMAGE): $(OBJS)
+	$(LINK) $(LINKFLAGS) $(BITS)/netlib/o/NetLib $(OBJS) -o $(RUNIMAGE)
+
+clean:
+	$(WIPE) $(WIPEFLAGS) *.o 
+
+.SUFFIXES: .o .s .c
+
+.s.o:
+	$(ASM) $(ASMFLAGS) $< -o $@
+
+.c.o:
+	$(CC) $(CFLAGS) -o $@ $<
+
+
+chardefn.o:	chardefn.c generic.h globals.h chardefn.h misc.h
+choices.o:	choices.c generic.h globals.h choices.h misc.h
+fortify.o:	fortify.c fortify.h ufortify.h
+globals.o:	globals.c generic.h globals.h zapredraw.h
+init.o: 	init.c generic.h globals.h chardefn.h init.h misc.h \
+              	nettle.h quit.h wimp.h zapredraw.h
+lineedit.o:   	lineedit.c generic.h globals.h lineedit.h misc.h wimp.h
+main.o: 	main.c generic.h globals.h choices.h init.h main.h misc.h \
+              	quit.h wimp.h
+misc.o: 	misc.c generic.h globals.h misc.h
+nettle.o:	nettle.h generic.h globals.h misc.h nettle.h seln.h socket.h \
+	      	wimp.h zapredraw.h
+process.o:	process.h generic.h globals.h graphics.h misc.h nettle.h \
+		process.h seln.h wimp.h zapredraw.h
+quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h
+seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h
+socket.o:	socket.c generic.h globals.h socket.h
+wimp.o: 	wimp.c generic.h globals.h misc.h nettle.h process.h seln.h \
+              	socket.h wimp.h zapredraw.h
+zapgen.o:    	zapgengc.s
+		$(OBJASM) $(OBJASMFLAGS) zapgengc.s -o zapgen.o
+
