@@ -2071,8 +2071,13 @@ static void create_iconbar_menu(void)
   char *menu_info    = get_menu_item("Info");
   char *menu_choices = get_menu_item("Choices");
   char *menu_connect = get_menu_item("Connect");
-  char *menu_session = get_menu_item("Session]");
+  char *menu_session;
   char *menu_quit    = get_last_menu_item("Quit");
+
+  if (sessions)
+    menu_session = get_menu_item("Session]");
+  else
+    menu_session = get_grey_menu_item("Session]");
 
   if (create_menu(menu_data, 0, menu_title,
                   menu_info, win_info,
