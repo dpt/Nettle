@@ -29,7 +29,7 @@ TEMPLATES = !Nettle.Resources.UK.Templates
 
 OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o \
-       messages.o termlist.o wimputil.o spool.o
+       messages.o termlist.o wimputil.o spool.o mouse.o
 
 RUNIMAGE = !Nettle.!RunImage
 
@@ -69,6 +69,7 @@ lineedit.o:   	lineedit.c generic.h globals.h lineedit.h misc.h wimp.h wimputil.
 main.o: 	main.c generic.h globals.h choices.h init.h main.h misc.h \
               	quit.h wimp.h hotlist.h
 misc.o: 	misc.c generic.h globals.h misc.h
+mouse.o:	generic.h globals.h main.h mouse.h nettle.h wimputil.h zapredraw.h
 nettle.o:	nettle.h generic.h globals.h misc.h nettle.h seln.h socket.h \
 	      	wimp.h zapredraw.h wimputil.h
 process.o:	process.h generic.h globals.h graphics.h misc.h nettle.h \

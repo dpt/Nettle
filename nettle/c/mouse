@@ -1,0 +1,116 @@
+/**
+ * Mouse handling code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#include "generic.h"
+#include "globals.h"
+
+#include "main.h"
+#include "mouse.h"
+#include "nettle.h"
+#include "wimputil.h"
+#include "zapredraw.h"
+
+void mouse_handle_event(struct session_struct *session, int x, int y, int buttons)
+{
+  int unix_button;
+  struct wimp_getwindowstate_block block;
+  int x_pos;
+  int y_pos;
+  int unix_x;
+  int unix_y;
+
+  block.window_handle=session->window_handle;
+
+  _swi(Wimp_GetWindowState, _IN(1), &block);
+
+  x_pos=block.min.x-block.scroll.x;
+  y_pos=block.max.y-block.scroll.y;
+
+  unix_x=( ( (x - x_pos) >> eig.x ) / redraw.r_charw )+1;
+  unix_y=-( ( (y - y_pos) >> eig.y ) / redraw.r_charh )+1-session->scrollback;
+
+  /* Snap it inside and cancel */
+  if (unix_x<0)
+  {
+    unix_x=0;
+    buttons=0;
+  }
+
+  if (unix_x>session->terminal_size.x-1)
+  {
+    unix_x=session->terminal_size.x-1;
+    buttons=0;
+  }
+
+  if (unix_y<0)
+  {
+    unix_y=0;
+    buttons=0;
+  }
+
+  if (unix_y>session->terminal_size.y-1)
+  {
+    unix_y=session->terminal_size.y-1;
+    buttons=0;
+  }
+
+  if (buttons!=0)
+    mouse_handling_session=session;
+  else
+    mouse_handling_session=NULL;
+
+  switch (buttons)
+  {
+    case ClickSelect:
+      unix_button=0;
+      break;
+    case ClickMenu:
+      unix_button=1;
+      break;
+    case ClickAdjust:
+      unix_button=2;
+      break;
+    case 0:
+      unix_button=3;
+      break;
+    default:
+      unix_button=-1;
+      break;
+  }
+
+  /* Calculate unix_button based on SHIFT, ALT, CTRL keys here */
+
+  printf("Mouse event: X = %d, Y = %d, button = %d\n",unix_x,unix_y,unix_button);
+
+  switch (session->mouse_mode)
+  {
+    case MOUSE_MODE_OFF:
+      /* Muhuh... */
+      break;
+    case MOUSE_MODE_CLICK: case MOUSE_MODE_CLICK_RELEASE:
+      if (session->mouse_mode==MOUSE_MODE_CLICK_RELEASE || buttons!=0)
+      {
+        char block[6];
+
+        strcpy(block,"\x1B[Mbxy");
+        block[3]=unix_button+' ';
+        block[4]=unix_x+' ';
+        block[5]=unix_y+' ';
+
+        printf("\tTransmitting %s\n",block);
+
+        nettle_senddata(session, block, 6);
+      }
+      break;
+    case MOUSE_MODE_HILITE:
+      /* Not supported (yet?) */
+      break;
+  }
+
+  /* Need to poll regularly until event finished */
+  main_requirenull = true;
+}

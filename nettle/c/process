@@ -13,6 +13,7 @@
 #include "lineedit.h"
 #include "messages.h"
 #include "misc.h"
+#include "mouse.h"
 #include "nettle.h"
 #include "process.h"
 #include "seln.h"
@@ -2025,6 +2026,10 @@ static bool process_escape_length_x(struct session_struct *session)
                           /* Autowrap */
                           session->other_session_flags |= NETTLE_OTHER_WRAP_MODE;
                           break;
+                        case 9:
+                          /* Send Mouse X & Y on button press */
+                          session->mouse_mode=MOUSE_MODE_CLICK;
+                          break;
                         case 25:
                           /* Make cursor visible */
                           session->other_session_flags |= NETTLE_OTHER_CURSOR_VIS;
@@ -2045,6 +2050,14 @@ static bool process_escape_length_x(struct session_struct *session)
                         case 67:
                           /* Make Backspace send BS and Delete send DEL */
                           session->other_session_flags |= NETTLE_OTHER_BACKSPACE_MODE;
+                          break;
+                        case 1000:
+                          /* Send mouse X & Y on button press and release */
+                          session->mouse_mode=MOUSE_MODE_CLICK_RELEASE;
+                          break;
+                        case 1001:
+                          /* Use hilite Mouse Tracking */
+                          session->mouse_mode=MOUSE_MODE_HILITE;
                           break;
                         case 1048:
                           save_cursor_position (session);
@@ -2168,6 +2181,10 @@ static bool process_escape_length_x(struct session_struct *session)
                         case 8:
                           /* Turn off auto repeat */
                           break;
+                        case 9:
+                          /* Don't send Mouse X & Y on button press */
+                          session->mouse_mode=MOUSE_MODE_OFF;
+                          break;
                         case 25:
                           /* Make cursor invisible */
                           session->other_session_flags &= ~NETTLE_OTHER_CURSOR_VIS;
@@ -2189,6 +2206,14 @@ static bool process_escape_length_x(struct session_struct *session)
                         case 67:
                           /* Make Backspace send Delete and Delete send ESC '[3~' (requires DeepKeys) */
                           session->other_session_flags &= ~NETTLE_OTHER_BACKSPACE_MODE;
+                          break;
+                        case 1000:
+                          /* Don't send mouse X & Y on button press and release */
+                          session->mouse_mode=MOUSE_MODE_OFF;
+                          break;
+                        case 1001:
+                          /* Don't use hilite Mouse Tracking */
+                          session->mouse_mode=MOUSE_MODE_OFF;
                           break;
                         case 1047:
                           /* Primary screen, clear, restore cursor (xterm) */
@@ -2816,7 +2841,11 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
 
         case 9:  byte_horizontal_tabulation(session); break;
         case 10: byte_linefeed             (session); break;
-        case 13: byte_carriage_return      (session); break;
+        case 13: byte_carriage_return      (session);
+                 #ifdef KEYBOARD_RETURN_BODGE
+                 byte_linefeed(session);
+                 #endif
+                 break;
 
         default:
           reprocess_position(session);
@@ -2989,7 +3018,11 @@ void process_data_transmission(struct session_struct *session,
 
           case 9:  byte_horizontal_tabulation(session); break;
           case 10: byte_linefeed             (session); break;
-          case 13: byte_carriage_return      (session); break;
+          case 13: byte_carriage_return      (session);
+                   #ifdef KEYBOARD_RETURN_BODGE
+                   byte_linefeed(session);
+                   #endif
+                   break;
 
           default:
             reprocess_position(session);

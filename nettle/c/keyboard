@@ -64,6 +64,16 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
     }
       /* Leaving this as it is for now - it's more likely to break things if we change it */
       /* now IMO - leave it til post 1st Sep */
+    #ifdef KEYBOARD_RETURN_BODGE
+    else if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
+    {
+      SETBLOCK (2, "\r\n");
+    }
+    else
+    {
+      SETBLOCK (1, "\r");
+    }
+    #else
     else if (session->connection_type == NETTLE_TASKWINDOW)
     {
       SETBLOCK (1, "\r");
@@ -76,6 +86,7 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
     {
       SETBLOCK (2, "\r\n");
     }
+    #endif
   case 0x01E:			/* Home */
     if (ekey != 32)
     {

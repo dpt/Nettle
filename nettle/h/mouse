@@ -1,0 +1,18 @@
+/**
+ * Mouse handling code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#ifndef MOUSE_H
+#define MOUSE_H
+
+#define MOUSE_MODE_OFF            0
+#define MOUSE_MODE_CLICK          1
+#define MOUSE_MODE_CLICK_RELEASE  2
+#define MOUSE_MODE_HILITE         3
+
+void mouse_handle_event(struct session_struct *, int, int, int);
+
+#endif

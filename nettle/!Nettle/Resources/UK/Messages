@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.2002 (05 Sep 2001)
+AppVersion:v0.2004 (09 Sep 2001)
 
 Info:Info>
 Choices:Choices...
@@ -92,7 +92,7 @@ nosocket:Nettle: Failed to create socket
 noconn:Nettle: Connection failed - 
 closed:Nettle: Remote has closed the connection
 disconn:Nettle: Disconnected
-twclosed:Nettle: ANSI Task has been closed
+twclosed:Nettle: ANSI task has been closed
 
 socketerror:Nettle: Socket error 
 occurred:occurred
@@ -104,7 +104,7 @@ nocreate:Nettle was unable to save the file:
 CantSaveChoices:Nettle was unable to save its Choices file: 
 CantSaveHotlist:Nettle was unable to save its Hotlist file: 
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.
-NoStartTask:Nettle was unable to create an ANSI Task
+NoStartTask:Nettle was unable to create an ANSI task
 
 HotBlankLabel:Please enter a hotlist label
 HotBlankHost:Please enter a hostname

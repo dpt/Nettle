@@ -12,6 +12,7 @@
 #include "main.h"
 #include "messages.h"
 #include "misc.h"
+#include "mouse.h"
 #include "nettle.h"
 #include "process.h"
 #include "seln.h"
@@ -694,6 +695,9 @@ void reset_terminal(struct session_struct *session)
 
   session->terminal_mode=2;
   session->bit_controls=false;
+
+  session->mouse_terminal_attached=true;
+  session->mouse_mode=MOUSE_MODE_OFF;
 }
 
 bool valid_x(struct session_struct *session, int xpos)

@@ -173,6 +173,9 @@ struct session_struct
   FILE *spool_file_handle;      /* spool file handle */
   bool spool_raw;               /* Whether we're writing raw data to spool or not */
   int spool_time;               /* Time of last spool */
+
+  bool mouse_terminal_attached; /* Whether the mouse is attached to the terminal or not */
+  char mouse_mode;              /* The type of the mouse connection - eg. click, click/release */
 };
 
 extern struct session_struct *sessions;
@@ -189,6 +192,8 @@ extern bool cursor_state;
 extern colour_t zap_palette[16];
 
 extern struct session_struct *terminal_menu_session;
+
+extern struct session_struct *mouse_handling_session;
 
 extern const char terminal_name[NO_OF_TERMINAL_TYPES][12];
 

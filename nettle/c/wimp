@@ -30,6 +30,7 @@
 #include "messages.h"
 #include "main.h"
 #include "misc.h"
+#include "mouse.h"
 #include "nettle.h"
 #include "process.h"
 #include "seln.h"
@@ -333,6 +334,24 @@ void wimp_nullreasoncode(void)
 
   if (selection_in_progress)
     handle_selection_drag();
+
+  if (mouse_handling_session)
+  {
+    struct wimp_getpointerinfo_block block;
+
+    _swi(Wimp_GetPointerInfo, _IN(1), &block);
+
+    if (block.buttons==0 || block.window_handle!=mouse_handling_session->window_handle)
+    {
+      mouse_handle_event(mouse_handling_session,
+                         block.pos.x,
+                         block.pos.y,
+                         0);
+    }
+
+    /* Need to poll regularly until event finished */
+    main_requirenull = true;
+  }
 
   if (cursor_session)
   {
@@ -950,8 +969,6 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
 
 static void session_window_click(int x, int y, int buttons, int icon_handle, struct session_struct *session)
 {
-  int x_pos;
-  int y_pos;
   struct wimp_getcaretposition_block caret;
 
   _swi (Wimp_GetCaretPosition, _IN(1), &caret);
@@ -961,7 +978,15 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
   if (buttons != ClickMenu && buttons != DragMenu && !inkey(-2))
     wimp_claimcaret(session);
 
+
+  if (session->mouse_mode!=MOUSE_MODE_OFF && session->mouse_terminal_attached)
   {
+    mouse_handle_event(session, x, y, buttons);
+  }
+  else
+  {
+    int x_pos;
+    int y_pos;
     struct wimp_getwindowstate_block block;
 
     block.window_handle=session->window_handle;
@@ -970,126 +995,127 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 
     x_pos=block.min.x-block.scroll.x;
     y_pos=block.max.y-block.scroll.y;
-  }
 
-  switch (buttons)
-  {
-    case DragSelect:
-      {
-        int seln_start;
-        int seln_end;
-        int click_point;
-
-        /* check to see if the drag is starting inside the current selection */
-
-        seln_start = MIN(selection_start, selection_end);
-        seln_end   = MAX(selection_start, selection_end);
-
-        click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
-                          * session->terminal_size.x
-                          + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
-
-        if (selection_session == session && click_point >= seln_start && click_point <= seln_end)
+    switch (buttons)
+    {
+      case DragSelect:
         {
-          int dragbox[4];
-          /* drag is inside selection, do a save */
-          dragbox[0] = x - 48 / 2;
-          dragbox[1] = y - 48 / 2;
-          dragbox[2] = x + 48 / 2;
-          dragbox[3] = y + 48 / 2;
-          _swi(DragASprite_Start, _INR(0, 4), 0xC5, 1 /* wimp sprite area */ ,
-               "file_fff", &dragbox, NULL);
-          drag_window_handle = selection_session->window_handle;
+          int seln_start;
+          int seln_end;
+          int click_point;
+
+          /* check to see if the drag is starting inside the current selection */
+
+          seln_start = MIN(selection_start, selection_end);
+          seln_end   = MAX(selection_start, selection_end);
+
+          click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
+                            * session->terminal_size.x
+                            + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
+
+          if (selection_session == session && click_point >= seln_start &&
+              click_point <= seln_end)
+          {
+            int dragbox[4];
+            /* drag is inside selection, do a save */
+            dragbox[0] = x - 48 / 2;
+            dragbox[1] = y - 48 / 2;
+            dragbox[2] = x + 48 / 2;
+            dragbox[3] = y + 48 / 2;
+            _swi(DragASprite_Start, _INR(0, 4), 0xC5, 1 /* wimp sprite area */ ,
+                 "file_fff", &dragbox, NULL);
+            drag_window_handle = selection_session->window_handle;
+          }
+          else
+          {
+            /* if SELECT drag, then clear the selection and work out what where the selection */
+            /* start is */
+            force_redraw_selection();
+
+            selection_session = session;
+            selection_start = click_point;
+
+            if (selection_start > (selection_session->terminal_size.x*
+                                  (selection_session->terminal_size.y+
+                                          selection_session->scrollback)))
+            {
+              selection_start=(selection_session->terminal_size.x*
+                                  (selection_session->terminal_size.y+
+                                          selection_session->scrollback));
+            }
+
+            if (selection_start<0)
+            {
+              selection_start=0;
+            }
+
+            selection_end=selection_start;
+            selection_in_progress=true;
+          }
+        }
+        break;
+
+      case DragAdjust:
+        /* if ADJUST drag, then if there is no selection or if it's not in this */
+        /* window, then start one */
+        if (selection_session != session)
+        {
+  	  force_redraw_selection();
+
+	  selection_session = session;
+          selection_start = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
+                            * session->terminal_size.x
+                            + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
+
+	  if (selection_start>(selection_session->terminal_size.x*
+  			      (selection_session->terminal_size.y+
+				      selection_session->scrollback)))
+	  {
+	    selection_start=(selection_session->terminal_size.x*
+  			      (selection_session->terminal_size.y+
+				      selection_session->scrollback));
+	  }
+
+	  if (selection_start<0)
+	  {
+	    selection_start = 0;
+	  }
+
+	  selection_end=selection_start;
+	  selection_in_progress=true;
+	  selection_adjust_dragging=SELECTION_ADJUST_END;
         }
         else
         {
-          /* if SELECT drag, then clear the selection and work out what where the selection */
-          /* start is */
-          force_redraw_selection();
-
-          selection_session = session;
-          selection_start = click_point;
-
-          if (selection_start > (selection_session->terminal_size.x*
-                                (selection_session->terminal_size.y+
-                                        selection_session->scrollback)))
-          {
-            selection_start=(selection_session->terminal_size.x*
-                                (selection_session->terminal_size.y+
-                                        selection_session->scrollback));
-          }
-
-          if (selection_start<0)
-          {
-            selection_start=0;
-          }
-
-          selection_end=selection_start;
-          selection_in_progress=true;
+	  selection_in_progress=true;
         }
-      }
-      break;
+        break;
 
-    case DragAdjust:
-      /* if ADJUST drag, then if there is no selection or if it's not in this */
-      /* window, then start one */
-      if (selection_session != session)
-      {
-	force_redraw_selection();
+      case DoubleSelect:
+        wimp_launchurl(session, x, y);
+        break;
 
-	selection_session = session;
-        selection_start = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
-                          * session->terminal_size.x
-                          + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
+      case ClickSelect:
+        /* if SELECT click, then clear the selection if the caret is already in the window */
+        if (selection_session &&
+            (caret.window_handle == session->window_handle ||
+             caret.window_handle == session->pane_handle))
+        {
+          selection_click(x,x_pos,y,y_pos);
+        }
+        break;
 
-	if (selection_start>(selection_session->terminal_size.x*
-			    (selection_session->terminal_size.y+
-				    selection_session->scrollback)))
-	{
-	  selection_start=(selection_session->terminal_size.x*
-			    (selection_session->terminal_size.y+
-				    selection_session->scrollback));
-	}
+      case ClickMenu: /* menu click */
+        terminal_menu_session = session;
+        create_terminal_menu();
+        break;
 
-	if (selection_start<0)
-	{
-	  selection_start = 0;
-	}
-
-	selection_end=selection_start;
-	selection_in_progress=true;
-	selection_adjust_dragging=SELECTION_ADJUST_END;
-      }
-      else
-      {
-	selection_in_progress=true;
-      }
-      break;
-
-    case DoubleSelect:
-      wimp_launchurl(session, x, y);
-      break;
-
-    case ClickSelect:
-      /* if SELECT click, then clear the selection if the caret is already in the window */
-      if (selection_session &&
-          (caret.window_handle == session->window_handle ||
-           caret.window_handle == session->pane_handle))
-      {
-        selection_click(x,x_pos,y,y_pos);
-      }
-      break;
-
-    case ClickMenu: /* menu click */
-      terminal_menu_session = session;
-      create_terminal_menu();
-      break;
-
-    case ClickAdjust:
-      /* if ADJUST click, then extend the selection */
-      if (selection_session == session)
-        selection_adjust(x,x_pos,y,y_pos);
-      break;
+      case ClickAdjust:
+        /* if ADJUST click, then extend the selection */
+        if (selection_session == session)
+          selection_adjust(x,x_pos,y,y_pos);
+        break;
+    }
   }
 }
 
