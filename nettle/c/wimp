@@ -1,6 +1,6 @@
 /**
  * Wimp_Poll / Wimp code
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2002
  *
  * $Id$
  */
@@ -651,15 +651,26 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
       int new_x=(block->max.x-block->min.x)/(redraw.r_charw << eig.x);
       int new_y=(block->max.y-block->min.y)/(redraw.r_charh << eig.y);
 
+      if (new_x != session->terminal_size.x ||
+          new_y != session->terminal_size.y)
+      {
+        /* Open the window now, so that when reopen_and_size_window reads the
+         * position, we get the new size
+         */
+        _swi(Wimp_OpenWindow, _IN(1), block);
       resize_terminal(session, new_x, new_y, session->scrollback, true);
 
-      /* Refetch the window state as the Wimp may have changed it if it
-       * didn't fit on the screen etc. */
+        /* Refetch the window state as the Wimp may have changed it if it
+         * didn't fit on the screen etc.
+         */
       _swi(Wimp_GetWindowState, _IN(1), block);
 
+#if 0
       block->max.x = block->min.x+(session->terminal_size.x)*(redraw.r_charw << eig.x);
       block->min.y = block->max.y-(session->terminal_size.y)*(redraw.r_charh << eig.y);
       block->scroll.y =-(session->terminal_size.y+session->scrollback)*(redraw.r_charh << eig.y);
+#endif
+      }
     }
     else
     {
@@ -673,13 +684,14 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
 	   window.max.y - window.min.y != block->max.y - block->min.y))
       {
         block->min.y = block->max.y - maxheight;
-	/* if the v scrollbar was at the bottom and its vpos is unchanged
-	 * force it to the bottom */
-	if (window.scroll.y == block->scroll.y &&
-	    window.scroll.y - window.max.y + window.min.y == window.work_min.y)
-	{
-	  block->scroll.y = window.work_min.y;
-	}
+        /* if the v scrollbar was at the bottom and its vpos is unchanged
+         * force it to the bottom
+         */
+        if (window.scroll.y == block->scroll.y &&
+            window.scroll.y - window.max.y + window.min.y == window.work_min.y)
+        {
+          block->scroll.y = window.work_min.y;
+        }
       }
     }
 
