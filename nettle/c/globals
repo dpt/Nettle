@@ -110,6 +110,8 @@ struct session_struct *terminal_menu_session = NULL;
 
 struct session_struct *mouse_handling_session = NULL;
 
+struct session_struct *options_session = NULL;
+
 const char terminal_name[NO_OF_TERMINAL_TYPES][MESSAGE_MAX_TERMINAL]=
 {
   "vt100",

@@ -974,6 +974,13 @@ void remove_session(struct session_struct *session)
   if (cursor_session == session)
     cursor_session = NULL;
 
+  /* close the terminal options window if there was one for this session */
+  if (options_session == session)
+  {
+    close_window(win_termterm);
+    options_session = NULL;
+  }
+
   free(session);
 
   rehash_blink();

@@ -252,6 +252,8 @@ extern struct session_struct *terminal_menu_session;
 
 extern struct session_struct *mouse_handling_session;
 
+extern struct session_struct *options_session;
+
 extern const char terminal_name[NO_OF_TERMINAL_TYPES][MESSAGE_MAX_TERMINAL];
 
 typedef struct user_message

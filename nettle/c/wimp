@@ -46,7 +46,6 @@ static int menu_data3[96];
 static char indirected[1024];
 
 static struct session_struct *paste_session;
-static struct session_struct *options_session;
 
 static int old_charw;
 static int old_charh;
