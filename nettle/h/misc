@@ -8,7 +8,7 @@
 #ifndef MISC_H
 #define MISC_H
 
-#include <sys/types.h>
+#include <string.h>
 
 char *get_system_variable(char *, const char *, int);
 int binary(const char *);
