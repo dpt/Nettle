@@ -1610,35 +1610,41 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
               if (ekey == 54)
               {
                 scroll_term (session, -1);
+                key_status=true;
               }
               break;
             case 0x18F:           /* Up, sPageUp */
               if (ekey == 33)
               {
                 scroll_term (session, 1);
+                key_status=true;
               }
               break;
             case 0x1A2:          /* Ctrl+F2 - only if session isn't alive */
               if (session->socket_state != NETTLE_SESSION_CONNECTED)
               {
                 remove_session(session);
+                key_status=true;
               }
               break;
           }
 
-          if (session->socket_state==NETTLE_SESSION_CONNECTED)
+          if (key_status==false)
           {
-            if (pass_f12)
+            if (session->socket_state==NETTLE_SESSION_CONNECTED)
             {
-              process_wimp_key(session, key, extra);
-              key_status=true;
-            }
-            else
-            {
-              if (key!=0x1CC && key!=0x1DC && key!=0x1EC && key!=0x1FC)
+              if (pass_f12)
               {
                 process_wimp_key(session, key, extra);
                 key_status=true;
+              }
+              else
+              {
+                if (key!=0x1CC && key!=0x1DC && key!=0x1EC && key!=0x1FC)
+                {
+                  process_wimp_key(session, key, extra);
+                  key_status=true;
+                }
               }
             }
           }
