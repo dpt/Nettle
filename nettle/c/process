@@ -820,8 +820,9 @@ static void restore_cursor_position (struct session_struct *session)
 static void swap_alternate_main(struct session_struct *session)
 {
   int loop;
-  int *main_pos=((int *)session->assigned_area)+(session->scrollback*session->terminal_size.x);
-  int *alt_pos=(int *)session->alternate_area;
+  int *main_pos=((int *)(void *)session->assigned_area)+
+                 (session->scrollback*session->terminal_size.x);
+  int *alt_pos=(int *)(void *)session->alternate_area;
   int copy;
 
   if (!session->alternate_area)
@@ -841,8 +842,9 @@ static void swap_alternate_main(struct session_struct *session)
 static void copy_alternate_main(struct session_struct *session)
 {
   int loop;
-  int *main_pos=((int *)session->assigned_area)+(session->scrollback*session->terminal_size.x);
-  int *alt_pos=(int *)session->alternate_area;
+  int *main_pos=((int *)(void *)session->assigned_area)+
+                 (session->scrollback*session->terminal_size.x);
+  int *alt_pos=(int *)(void *)session->alternate_area;
 
   if (!session->alternate_area)
     return;
@@ -859,8 +861,9 @@ static void copy_alternate_main(struct session_struct *session)
 static void copy_main_alternate(struct session_struct *session)
 {
   int loop;
-  int *main_pos=((int *)session->assigned_area)+(session->scrollback*session->terminal_size.x);
-  int *alt_pos=(int *)session->alternate_area;
+  int *main_pos=((int *)(void *)session->assigned_area)+
+                 (session->scrollback*session->terminal_size.x);
+  int *alt_pos=(int *)(void *)session->alternate_area;
 
   if (!session->alternate_area)
     return;
