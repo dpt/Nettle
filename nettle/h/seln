@@ -1,6 +1,6 @@
-// Selection code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Selection code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #ifndef SELN_H
 #define SELN_H

@@ -1,6 +1,6 @@
-// Processing code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Processing code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #ifndef PROCESS_H
 #define PROCESS_H

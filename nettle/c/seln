@@ -1,6 +1,6 @@
-// Selection code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Selection code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -308,7 +308,7 @@ void handle_selection_drag(void)
   x_pos=block[1]-block[5];
   y_pos=block[4]-block[6];
 
-  // Scroll when selection happening and we're near the edge of the window
+  /* Scroll when selection happening and we're near the edge of the window */
   if (x<(block[1]+32))
   {
     block[5]-=(block[1]+32-x);
@@ -344,7 +344,7 @@ void handle_selection_drag(void)
   switch (buttons)
   {
     case 4:
-      // Drag SELECT - clear the selection, re-work it out, and set it again, then redraw
+      /* Drag SELECT - clear the selection, re-work it out, and set it again, then redraw */
       refresh_selection_clear();
 
       selection_end=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
@@ -374,7 +374,7 @@ void handle_selection_drag(void)
 
       break;
     case 1:
-      // ADJUST dragging - see c.seln
+      /* ADJUST dragging - see c.seln */
       selection_adjust_drag(x,x_pos,y,y_pos);
       break;
   }

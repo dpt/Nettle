@@ -1,6 +1,6 @@
-// Initialisation code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Initialisation code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -15,15 +15,15 @@
 
 int *initialise_messages(void)
 {
-  // Set up the messages we want to get
+  /* Set up the messages we want to get */
   message_list=malloc(6*sizeof(int));
 
-  message_list[0]=2;	   // DataSaveAck
-  message_list[1]=0x400C1; // ModeChange
-  message_list[2]=0x808C1; // TW_Output
-  message_list[3]=0x808C2; // TW_Ego
-  message_list[4]=0x808C3; // TW_Morio
-  message_list[5]=0x0;     // Quit
+  message_list[0]=2;	   /* DataSaveAck */
+  message_list[1]=0x400C1; /* ModeChange */
+  message_list[2]=0x808C1; /* TW_Output */
+  message_list[3]=0x808C2; /* TW_Ego */
+  message_list[4]=0x808C3; /* TW_Morio */
+  message_list[5]=0x0;     /* Quit */
 
   return message_list;
 }
@@ -35,17 +35,17 @@ void load_messages(void)
   FILE *file_handle;
   int size_of_messagetrans_buffer;
 
-  // Get the country - if it has null length, then default to UK
+  /* Get the country - if it has null length, then default to UK */
   if (strlen(get_country(country, 16))==0)
     strcpy(country,"UK");
 
-  // put together filename
+  /* put together filename */
   sprintf(messages_file_name,"<%s$Dir>.Resources.%s.Messages",application_name,country);
 
-  // open the file
+  /* open the file */
   file_handle=fopen(messages_file_name,"r");
 
-  // if we don't open it, then definitely set country to UK
+  /* if we don't open it, then definitely set country to UK */
   if (file_handle==0)
     strcpy(country,"UK");
   else
@@ -53,7 +53,7 @@ void load_messages(void)
 
   sprintf(messages_file_name,"<%s$Dir>.Resources.%s.Messages",application_name,country);
 
-  // Now re-open it
+  /* Now re-open it */
   regs.r[1]=(int) messages_file_name;
   _kernel_swi(MessageTrans_FileInfo, &regs, &regs);
   size_of_messagetrans_buffer=regs.r[2];
@@ -72,7 +72,7 @@ void load_sprites(void)
   char file_name[1024];
   FILE *file_handle;
 
-  // find out what sprites we need to load
+  /* find out what sprites we need to load */
   regs.r[0]=-1;
   regs.r[1]=5;
   _kernel_swi(OS_ReadModeVariable, &regs, &regs);
@@ -80,7 +80,7 @@ void load_sprites(void)
 
   sprintf(file_name,"<%s$Dir>.Resources.Sprites",application_name);
 
-  // if we're in a 2 high pixel mode, append 22
+  /* if we're in a 2 high pixel mode, append 22 */
   if (yeig==2)
     strcat(file_name,"22");
 
@@ -95,25 +95,25 @@ void load_sprites(void)
     int size;
     fclose(file_handle);
 
-    // get the sprite file size
+    /* get the sprite file size */
     regs.r[0]=5;
     regs.r[1]=(int) file_name;
     _kernel_swi(OS_File, &regs, &regs);
     size=regs.r[4]+64;
 
-    // malloc a block big enough for it
+    /* malloc a block big enough for it */
     sprite_area=malloc(size);
 
-    // set up the block
+    /* set up the block */
     sprite_area[0]=size;
     sprite_area[2]=16;
 
-    // initialise area
+    /* initialise area */
     regs.r[0]=256+9;
     regs.r[1]=(int) sprite_area;
     _kernel_swi(OS_SpriteOp, &regs, &regs);
 
-    // load sprites into it
+    /* load sprites into it */
     regs.r[0]=256+10;
     regs.r[1]=(int) sprite_area;
     regs.r[2]=(int) file_name;
@@ -125,10 +125,10 @@ void load_templates(void)
 {
   char info_data[60];
 
-  // open the templates file
+  /* open the templates file */
   open_template();
 
-  // read template definitions
+  /* read template definitions */
   info=load_template(LOAD_TEMPLATE_NO_FONTS,"info",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
   set_icon_data(info,0,lookup("AppName", info_data, 60));
   set_icon_data(info,1,lookup("AppAuthor", info_data, 60));
@@ -145,7 +145,7 @@ void load_templates(void)
 
   save=load_template(LOAD_TEMPLATE_NO_FONTS,"save",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
-  // close the templates file
+  /* close the templates file */
   close_template();
 }
 
@@ -156,7 +156,7 @@ void open_template(void)
   char template_filename[1024];
   FILE *file_handle;
 
-  // Check 3D bit of CMOS RAM
+  /* Check 3D bit of CMOS RAM */
   regs.r[0]=161;
   regs.r[1]=0x8C;
   _kernel_swi(OS_Byte, &regs, &regs);
@@ -164,14 +164,14 @@ void open_template(void)
   if (regs.r[2] & 1)
     use_3d_templates=true;
 
-  // Again, set country to UK if we don't know
+  /* Again, set country to UK if we don't know */
   if (strlen(get_country(country, 16))==0)
     strcpy(country,"UK");
 
-  // Put together filename
+  /* Put together filename */
   sprintf(template_filename,"<%s$Dir>.Resources.%s",application_name,country);
 
-  // append filename according to 3D flag
+  /* append filename according to 3D flag */
   if (use_3d_templates==false)
   {
     strcat(template_filename,".Templates");
@@ -183,7 +183,7 @@ void open_template(void)
 
   file_handle=fopen(template_filename,"r");
 
-  // If we fail to open, change to UK
+  /* If we fail to open, change to UK */
   if (file_handle==0)
   {
     strcpy(country,"UK");
@@ -193,10 +193,10 @@ void open_template(void)
     fclose(file_handle);
   }
 
-  // Put together filename
+  /* Put together filename */
   sprintf(template_filename,"<%s$Dir>.Resources.%s",application_name,country);
 
-  // append correct filename
+  /* append correct filename */
   if (use_3d_templates==false)
   {
     strcat(template_filename,".Templates");
@@ -208,7 +208,7 @@ void open_template(void)
 
   file_handle=fopen(template_filename,"r");
 
-  // this time, if we fail to open, moan about lack of templates and quit
+  /* this time, if we fail to open, moan about lack of templates and quit */
   if (file_handle==0)
   {
     generror("NoTemplates", true);
@@ -231,7 +231,7 @@ int load_template(int *font_array,char *window_name,int *sprite_area)
   int size_of_indirected_data;
   int window_handle;
 
-  // get sizes of template data and indirected_data
+  /* get sizes of template data and indirected_data */
   regs.r[1]=0;
   regs.r[5]=(int) window_name;
   regs.r[6]=0;
@@ -239,11 +239,11 @@ int load_template(int *font_array,char *window_name,int *sprite_area)
   size_of_template_data=regs.r[1];
   size_of_indirected_data=regs.r[2];
 
-  // malloc this amount
+  /* malloc this amount */
   template_data=malloc(size_of_template_data);
   indirected_data=malloc(size_of_indirected_data);
 
-  // load the template
+  /* load the template */
   regs.r[1]=(int) template_data;
   regs.r[2]=(int) indirected_data;
   regs.r[3]=(int) indirected_data+size_of_indirected_data;
@@ -252,14 +252,14 @@ int load_template(int *font_array,char *window_name,int *sprite_area)
   regs.r[6]=0;
   _kernel_swi(Wimp_LoadTemplate, &regs, &regs);
 
-  // set the sprite area pointer
+  /* set the sprite area pointer */
   template_data[16]=(int) sprite_area;
 
   regs.r[1]=(int) template_data;
   _kernel_swi(Wimp_CreateWindow, &regs, &regs);
   window_handle=regs.r[0];
 
-  // free the template data (indirected is still needed)
+  /* free the template data (indirected is still needed) */
   free(template_data);
 
   return window_handle;
@@ -274,11 +274,11 @@ void load_zap_fonts(void)
 {
   redraw.r_workarea=zapredraw_block;
 
-  // load in hires and lores zap fonts
+  /* load in hires and lores zap fonts */
   zap_font_area=load_font(zap_font);
   zap_lowres_font_area=load_font(zap_lowres_font);
 
-  // do mode_change to set things up
+  /* do mode_change to set things up */
   mode_change();
 }
 
@@ -310,7 +310,7 @@ int *load_font(char *zap_font)
 
   strcpy(file_end,zap_font);
 
-  // if string is ZFLK, then this is a redirection font
+  /* if string is ZFLK, then this is a redirection font */
   while (strcmp(string,"ZFLK")==0)
   {
     sprintf(file_name,"%s%s",file_start,file_end);
@@ -318,7 +318,7 @@ int *load_font(char *zap_font)
     regs.r[0]=17;
     regs.r[1]=(int) file_name;
 
-    // if it's there, what sort of object is it
+    /* if it's there, what sort of object is it */
     if (_kernel_swi(OS_File,&regs,&regs)==0)
     {
       object_type=regs.r[0];
@@ -328,7 +328,7 @@ int *load_font(char *zap_font)
           strcpy(string,"");
           break;
         case 2:
-          // If it's a directory, plonk .0 on the end
+          /* If it's a directory, plonk .0 on the end */
           strcat(file_end,".0");
           strcat(file_name,".0");
           break;
@@ -340,13 +340,13 @@ int *load_font(char *zap_font)
       {
         fgets(string,5,file_handle);
 
-        // if it's redirection then
+        /* if it's redirection then */
         if (strcmp(string,"ZFLK")==0)
         {
-          // get the new line character
+          /* get the new line character */
           character=fgetc(file_handle);
 
-          // get the redirection font
+          /* get the redirection font */
           fgets(file_end,256,file_handle);
 
           fclose(file_handle);
@@ -361,14 +361,14 @@ int *load_font(char *zap_font)
 
   if (file_handle==0)
   {
-    // if we didn't find a font, use Nettle's internal one
+    /* if we didn't find a font, use Nettle's internal one */
     strcpy(file_name,"<Nettle$Dir>.Fonts.08x16.Default.0");
     file_handle=fopen(file_name,"r");
   }
 
   fseek(file_handle,8,SEEK_SET);
 
-  // Get font information
+  /* Get font information */
   width=((fgetc(file_handle))<<0)+((fgetc(file_handle))<<8)+((fgetc(file_handle))<<16)+
          ((fgetc(file_handle))<<24);
   height=((fgetc(file_handle))<<0)+((fgetc(file_handle))<<8)+((fgetc(file_handle))<<16)+
@@ -378,7 +378,7 @@ int *load_font(char *zap_font)
   last_char=((fgetc(file_handle))<<0)+((fgetc(file_handle))<<8)+((fgetc(file_handle))<<16)+
              ((fgetc(file_handle))<<24);
 
-  // Set real character size (will be needed to implement graphics characters)
+  /* Set real character size (will be needed to implement graphics characters) */
   if ((width % 8)==0)
   {
     char_size=width*height/8;
@@ -396,7 +396,7 @@ int *load_font(char *zap_font)
   regs.r[3]=0;
   _kernel_swi(OS_File, &regs, &regs);
 
-  // fill in graphics chars
+  /* fill in graphics chars */
   define_zap_chars(zap_load_area+8+(char_size*(0x40-(zap_load_area[4]))),char_size,width,height);
 
   return zap_load_area;
@@ -406,11 +406,11 @@ void create_icon_bar_icon(void)
 {
   int block[9];
 
-  block[0]=-1; // window handle
-  block[1]=0;  // min x
-  block[2]=0;  // min y
-  block[3]=68; // max x
-  block[4]=68; // max y
+  block[0]=-1; /* window handle */
+  block[1]=0;  /* min x */
+  block[2]=0;  /* min y */
+  block[3]=68; /* max x */
+  block[4]=68; /* max y */
   block[5]=binary("10111000000000011000100011010");
   block[6]=(int) application_icon_name;
   block[7]=(int) sprite_area;

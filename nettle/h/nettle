@@ -1,6 +1,6 @@
-// Nettle specific code headers
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Nettle specific code headers */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #ifndef NETTLE_H
 #define NETTLE_H

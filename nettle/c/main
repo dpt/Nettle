@@ -1,6 +1,6 @@
-// Nettle main code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Nettle main code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"

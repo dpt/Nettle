@@ -1,6 +1,6 @@
-// Processing code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Processing code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -47,7 +47,7 @@ void process_data(char byte, int session_handle)
   {
     switch (byte)
     {
-      // VT codes
+      /* VT codes */
       case 0:   byte_null                  (session_handle); break;
       case 5:   byte_enquiry               (session_handle); break;
       case 7:   byte_bell                  (session_handle); break;
@@ -66,7 +66,7 @@ void process_data(char byte, int session_handle)
       case 27:  byte_escape                (session_handle); break;
       case 127: byte_delete                (session_handle); break;
 
-      // VT C1 codes
+      /* VT C1 codes */
       case 132: byte_index		   (session_handle); break;
       case 133: byte_next_line		   (session_handle); break;
       case 136: byte_horizontal_tab_set    (session_handle); break;
@@ -77,10 +77,10 @@ void process_data(char byte, int session_handle)
       case 155: byte_control_sequence_intro(session_handle); break;
       case 156: byte_string_terminator     (session_handle); break;
 
-      // Telnet codes
+      /* Telnet codes */
       case 255: byte_telnet                (session_handle); break;
 
-      // Other codes
+      /* Other codes */
       default:
         if (session[session_handle].escape_state==NETTLE_ESCAPE_NONE)
         {
@@ -98,18 +98,18 @@ bool process_escape(int session_handle)
   switch (session[session_handle].escape_string_length)
   {
     case 0: case 1:
-      // strings of length 0 or 1
+      /* strings of length 0 or 1 */
       done=false;
       break;
     case 2:
-      // strings of length 2
+      /* strings of length 2 */
       done=process_escape_length_2(session_handle);
       break;
     case 3:
-      // strings of length 3
+      /* strings of length 3 */
       done=process_escape_length_3(session_handle);
     default:
-      // strings of length >= 3
+      /* strings of length >= 3 */
       if (!done)
       {
         done=process_escape_length_x(session_handle);
@@ -137,19 +137,19 @@ bool process_escape_length_2(int session_handle)
       switch (session[session_handle].escape_string[1])
       {
         case '=':
-          // Selects application keypad mode
+          /* Selects application keypad mode */
           session[session_handle].other_session_flags=
           		session[session_handle].other_session_flags | NETTLE_OTHER_APPLI_MODE;
           done=true;
           break;
         case '>':
-          // Selects numeric keypad mode
+          /* Selects numeric keypad mode */
           session[session_handle].other_session_flags=
           		session[session_handle].other_session_flags & ~NETTLE_OTHER_APPLI_MODE;
           done=true;
           break;
         case '<':
-          // Enter ANSI mode
+          /* Enter ANSI mode */
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
             session[session_handle].other_session_flags=
@@ -158,12 +158,12 @@ bool process_escape_length_2(int session_handle)
           }
           break;
         case '\\':
-          // End Device Control String (no effect here - this is to allow for variants of
-          // title bar content changing)
+          /* End Device Control String (no effect here - this is to allow for variants of */
+          /* title bar content changing) */
           done=true;
           break;
         case '7':
-          // Save cursor position
+          /* Save cursor position */
           if (!(session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE))
           {
             session[session_handle].old_xpos=session[session_handle].xpos;
@@ -187,7 +187,7 @@ bool process_escape_length_2(int session_handle)
           }
           break;
         case '8':
-          // Restore cursor position
+          /* Restore cursor position */
           if (!(session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE))
           {
             session[session_handle].xpos=session[session_handle].old_xpos;
@@ -212,7 +212,7 @@ bool process_escape_length_2(int session_handle)
           }
           break;
         case 'A':
-          // Cursor up (in VT52 mode)
+          /* Cursor up (in VT52 mode) */
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
             if (session[session_handle].ypos>session[session_handle].scrollback)
@@ -222,7 +222,7 @@ bool process_escape_length_2(int session_handle)
           }
           break;
         case 'B':
-          // Cursor down (in VT52 mode)
+          /* Cursor down (in VT52 mode) */
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
             if (session[session_handle].ypos<session[session_handle].terminal_size_y+
@@ -233,7 +233,7 @@ bool process_escape_length_2(int session_handle)
           }
           break;
        case 'C':
-          // Cursor right (in VT52 mode)
+          /* Cursor right (in VT52 mode) */
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
             if (session[session_handle].xpos<session[session_handle].terminal_size_x-1)
@@ -245,13 +245,13 @@ bool process_escape_length_2(int session_handle)
         case 'D':
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
-            // Move cursor left (in VT52 mode)
+            /* Move cursor left (in VT52 mode) */
             if (session[session_handle].xpos>0)
               session[session_handle].xpos--;
           }
           else
           {
-            // Moves cursor down one line (in non-VT52 mode)
+            /* Moves cursor down one line (in non-VT52 mode) */
             session[session_handle].ypos++;
             reprocess_position_scroll(session_handle);
           }
@@ -260,7 +260,7 @@ bool process_escape_length_2(int session_handle)
         case 'E':
           if (!(session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE))
           {
-            // Carriage return and line feed
+            /* Carriage return and line feed */
             session[session_handle].ypos++;
             session[session_handle].xpos=0;
             reprocess_position(session_handle);
@@ -270,27 +270,27 @@ bool process_escape_length_2(int session_handle)
         case 'F':
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
-            // Enter "graphics" Mode
+            /* Enter "graphics" Mode */
             done=true;
           }
           break;
         case 'G':
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
-            // Exit "graphics" Mode
+            /* Exit "graphics" Mode */
             done=true;
           }
           break;
         case 'H':
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
-            // Cursor to home (VT52 mode)
+            /* Cursor to home (VT52 mode) */
             session[session_handle].xpos=0;
             session[session_handle].ypos=session[session_handle].scrollback;
           }
           else
           {
-            // Set tab (non-VT52 mode)
+            /* Set tab (non-VT52 mode) */
             if (session[session_handle].number_of_tabs<MAX_TAB_NUMBER)
             {
               session[session_handle].tabs[session[session_handle].number_of_tabs]=
@@ -304,7 +304,7 @@ bool process_escape_length_2(int session_handle)
           done=true;
           break;
         case 'I':
-          // Reverse line feed
+          /* Reverse line feed */
           session[session_handle].ypos--;
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
@@ -315,7 +315,7 @@ bool process_escape_length_2(int session_handle)
         case 'J':
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
-            // Erase to end of screen
+            /* Erase to end of screen */
                   clear_screen(session_handle,
 
                        ((session[session_handle].ypos*session[session_handle].terminal_size_x)+
@@ -335,7 +335,7 @@ bool process_escape_length_2(int session_handle)
         case 'K':
           if (session[session_handle].other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
-            // Erase to end of line
+            /* Erase to end of line */
             clear_screen(session_handle,
 
                        ((session[session_handle].ypos*session[session_handle].terminal_size_x)+
@@ -428,10 +428,10 @@ bool process_escape_length_3(int session_handle)
           switch (session[session_handle].escape_string[2])
           {
             case '3': case '4': case '5': case '6':
-              // various font size alterations - not supported
+              /* various font size alterations - not supported */
               break;
             case '8':
-              // Clear screen with E's
+              /* Clear screen with E's */
               clear_screen(session_handle,
 
                            session[session_handle].scrollback*
@@ -452,57 +452,57 @@ bool process_escape_length_3(int session_handle)
       break;
     case 255:
       {
-        // IAC
+        /* IAC */
         int iac_type=session[session_handle].escape_string[1];
 
 
         switch (iac_type)
         {
-          case 251: // WILL
-          case 253: // DO
+          case 251: /* WILL */
+          case 253: /* DO */
 
             done=true;
 
             switch (session[session_handle].escape_string[2])
             {
-              case 1: // ECHO
+              case 1: /* ECHO */
                 {
                   char block[3];
                   session[session_handle].session_flags[1]=true;
-                  block[0]=255; // IAC
+                  block[0]=255; /* IAC */
                   block[1]=status_positive(iac_type);
-                  block[2]=1;   // ECHO
+                  block[2]=1;   /* ECHO */
                   nettle_senddata(session_handle,block,3);
                 }
                 break;
-              case 24: // TERMINAL-TYPE
+              case 24: /* TERMINAL-TYPE */
                 {
                   char block[3];
                   session[session_handle].session_flags[24]=true;
-                  block[0]=255; // IAC
+                  block[0]=255; /* IAC */
                   block[1]=status_positive(iac_type);
-                  block[2]=24;  // TERMINAL-TYPE
+                  block[2]=24;  /* TERMINAL-TYPE */
                   nettle_senddata(session_handle,block,3);
                 }
                 break;
-              case 31: // NAWS
+              case 31: /* NAWS */
                 {
                   char block[9];
                   session[session_handle].session_flags[31]=true;
-                  block[0]=255; // IAC
+                  block[0]=255; /* IAC */
                   block[1]=status_positive(iac_type);
-                  block[2]=31;  // NAWS
+                  block[2]=31;  /* NAWS */
                   nettle_senddata(session_handle,block,3);
 
-                  block[0]=255; // IAC
-                  block[1]=250; // SB
-                  block[2]=31;  // NAWS
+                  block[0]=255; /* IAC */
+                  block[1]=250; /* SB */
+                  block[2]=31;  /* NAWS */
                   block[3]=session[session_handle].terminal_size_x / 256;
                   block[4]=session[session_handle].terminal_size_x % 256;
                   block[5]=session[session_handle].terminal_size_y / 256;
                   block[6]=session[session_handle].terminal_size_y % 256;
-                  block[7]=255; // IAC
-                  block[8]=240; // SE
+                  block[7]=255; /* IAC */
+                  block[8]=240; /* SE */
                   nettle_senddata(session_handle,block,9);
                 }
                 break;
@@ -512,7 +512,7 @@ bool process_escape_length_3(int session_handle)
                   session[session_handle].session_flags[
                                   (unsigned char)session[session_handle].escape_string[2]]=false;
 
-                  block[0]=255; // IAC
+                  block[0]=255; /* IAC */
                   block[1]=status_negative(iac_type);
                   block[2]=session[session_handle].escape_string[2];
                   nettle_senddata(session_handle,block,3);
@@ -520,8 +520,8 @@ bool process_escape_length_3(int session_handle)
                 break;
             }
             break;
-          case 252: // WONT
-          case 254: // DONT
+          case 252: /* WONT */
+          case 254: /* DONT */
             {
               char block[3];
 
@@ -529,7 +529,7 @@ bool process_escape_length_3(int session_handle)
 
               session[session_handle].session_flags[(unsigned char)session[session_handle].escape_string[2]]=
                                                                                            false;
-              block[0]=255; // IAC
+              block[0]=255; /* IAC */
               block[1]=status_negative(iac_type);
               block[2]=session[session_handle].escape_string[3];
               nettle_senddata(session_handle,block,3);
@@ -569,7 +569,7 @@ bool process_escape_length_x(int session_handle)
                                                 session[session_handle].escape_string_length-1])
           {
             case 'A':
-              // Cursor up Pn lines
+              /* Cursor up Pn lines */
               if (session[session_handle].escape_string[2]!='A')
               {
                 int move=atoi(session[session_handle].escape_string+2);
@@ -596,7 +596,7 @@ bool process_escape_length_x(int session_handle)
               done=true;
               break;
             case 'B':
-              // Cursor down Pn lines
+              /* Cursor down Pn lines */
               if (session[session_handle].escape_string[2]!='B')
               {
                 int move=atoi(session[session_handle].escape_string+2);
@@ -623,7 +623,7 @@ bool process_escape_length_x(int session_handle)
               done=true;
               break;
             case 'C':
-              // Cursor right Pn chars
+              /* Cursor right Pn chars */
               if (session[session_handle].escape_string[2]!='C')
               {
                 int move=atoi(session[session_handle].escape_string+2);
@@ -648,7 +648,7 @@ bool process_escape_length_x(int session_handle)
               done=true;
               break;
             case 'D':
-              // Cursor left Pn chars
+              /* Cursor left Pn chars */
               if (session[session_handle].escape_string[2]!='D')
               {
                 int move=atoi(session[session_handle].escape_string+2);
@@ -673,7 +673,7 @@ bool process_escape_length_x(int session_handle)
               done=true;
               break;
             case 'H': case 'f':
-              // Direct cursor addressing
+              /* Direct cursor addressing */
               if (esc_instr(session[session_handle].escape_string,";",
                 				session[session_handle].escape_string_length)>=0)
               {
@@ -715,7 +715,7 @@ bool process_escape_length_x(int session_handle)
               switch (session[session_handle].escape_string[2])
               {
                 case '0': case 'J':
-                  // Clear screen from cursor to end of screen
+                  /* Clear screen from cursor to end of screen */
                   clear_screen(session_handle,
 
                        ((session[session_handle].ypos*session[session_handle].terminal_size_x)+
@@ -732,7 +732,7 @@ bool process_escape_length_x(int session_handle)
 
                   break;
                 case '1':
-                  // Clear screen from beginning of screen to cursor
+                  /* Clear screen from beginning of screen to cursor */
                   clear_screen(session_handle,
 
                        (session[session_handle].scrollback*
@@ -749,7 +749,7 @@ bool process_escape_length_x(int session_handle)
 
                   break;
                 case '2':
-                  // Clear screen
+                  /* Clear screen */
                   clear_screen(session_handle,
 
                        (session[session_handle].scrollback*
@@ -772,7 +772,7 @@ bool process_escape_length_x(int session_handle)
               switch (session[session_handle].escape_string[2])
               {
                 case '0': case 'K':
-                  // Clear line from cursor to end of line
+                  /* Clear line from cursor to end of line */
                   clear_screen(session_handle,
 
                        ((session[session_handle].ypos*session[session_handle].terminal_size_x)+
@@ -788,7 +788,7 @@ bool process_escape_length_x(int session_handle)
 
                   break;
                 case '1':
-                  // Clear from beginning of line to cursor
+                  /* Clear from beginning of line to cursor */
                   clear_screen(session_handle,
 
                        (session[session_handle].ypos*session[session_handle].terminal_size_x)*4,
@@ -803,7 +803,7 @@ bool process_escape_length_x(int session_handle)
 
                   break;
                 case '2':
-                  // Clear entire line
+                  /* Clear entire line */
                   clear_screen(session_handle,
 
                        (session[session_handle].ypos*session[session_handle].terminal_size_x)*4,
@@ -820,7 +820,7 @@ bool process_escape_length_x(int session_handle)
               }
               break;
             case 'X':
-              // Erase character(s)
+              /* Erase character(s) */
               clear_screen(session_handle,
 
               	       ((session[session_handle].ypos*session[session_handle].terminal_size_x)+
@@ -866,7 +866,7 @@ bool process_escape_length_x(int session_handle)
               switch (session[session_handle].escape_string[2])
               {
                 case '0': case 'g':
-                  // Clear tab in current xpos
+                  /* Clear tab in current xpos */
                   {
                     int loop=0;
                     while (loop<session[session_handle].number_of_tabs &&
@@ -888,7 +888,7 @@ bool process_escape_length_x(int session_handle)
                   }
                   break;
                 case '3':
-                  // Clear all tabs
+                  /* Clear all tabs */
                   session[session_handle].number_of_tabs=0;
                   break;
               }
@@ -898,7 +898,7 @@ bool process_escape_length_x(int session_handle)
               switch (session[session_handle].escape_string[2])
               {
                 case '?':
-                  // DIGITAL private modes
+                  /* DIGITAL private modes */
                   {
                     int loop=3;
                     while (loop<session[session_handle].escape_string_length-1)
@@ -916,22 +916,22 @@ bool process_escape_length_x(int session_handle)
                       switch (atoi(string))
                       {
                         case 1:
-                          // Cause the cursor to generate "application" control functions
+                          /* Cause the cursor to generate "application" control functions */
                           break;
                         case 2:
-                          // Selects 132 columns per line
+                          /* Selects 132 columns per line */
                           break;
                         case 4:
-                          // Selects smooth scroll
+                          /* Selects smooth scroll */
                           break;
                         case 5:
-                          // Selects reverse video
+                          /* Selects reverse video */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags |
                          					      NETTLE_OTHER_REVERSE_VIDEO;
                           break;
                         case 6:
-                          // Home position based in scrolling region
+                          /* Home position based in scrolling region */
                           session[session_handle].other_session_flags=
                           session[session_handle].other_session_flags | NETTLE_OTHER_ORIGIN_MODE;
 
@@ -940,12 +940,12 @@ bool process_escape_length_x(int session_handle)
                               			       session[session_handle].scroll_start-1;
                           break;
                         case 7:
-                          // Autowrap
+                          /* Autowrap */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags | NETTLE_OTHER_WRAP_MODE;
                           break;
                         case 25:
-                          // Make cursor visible
+                          /* Make cursor visible */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags | NETTLE_OTHER_CURSOR_VIS;
                           break;
@@ -971,26 +971,26 @@ bool process_escape_length_x(int session_handle)
                       switch (atoi(string))
                       {
                         case 2:
-                          // Turn on keyboard lock
+                          /* Turn on keyboard lock */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags |
                            					       NETTLE_OTHER_KEYLOCK_MODE;
                           break;
                         case 4:
-                          // Turn on insert mode
+                          /* Turn on insert mode */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags |
                            						NETTLE_OTHER_INSERT_MODE;
                           break;
                         case 8:
-                          // Turn on auto repeat
+                          /* Turn on auto repeat */
                           break;
                         case 12:
-                          // Turn off local echo (NB. just using telnet's local echo stuff)
+                          /* Turn off local echo (NB. just using telnet's local echo stuff) */
                           session[session_handle].session_flags[1]=true;
                           break;
                         case 20:
-                          // Make LF,FF,VT move to first column of next line
+                          /* Make LF,FF,VT move to first column of next line */
                           session[session_handle].other_session_flags=
                           session[session_handle].other_session_flags |
                          					 NETTLE_OTHER_LINEFEED_MODE;
@@ -1007,7 +1007,7 @@ bool process_escape_length_x(int session_handle)
               switch (session[session_handle].escape_string[2])
               {
                 case '?':
-                  // DIGITAL private modes
+                  /* DIGITAL private modes */
                   {
                     int loop=3;
                     while (loop<session[session_handle].escape_string_length-1)
@@ -1025,42 +1025,42 @@ bool process_escape_length_x(int session_handle)
                       switch (atoi(string))
                       {
                         case 1:
-                          // Cause the cursor to generate ANSI cursor control sequences
+                          /* Cause the cursor to generate ANSI cursor control sequences */
                           break;
                         case 2:
-                          // Sets the terminal to VT52 mode
+                          /* Sets the terminal to VT52 mode */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags |
                          					      NETTLE_OTHER_VT52_MODE;
                           break;
                         case 3:
-                          // Selects 80 columns per line
+                          /* Selects 80 columns per line */
                           break;
                         case 4:
-                          // Selects jump scroll
+                          /* Selects jump scroll */
                           break;
                         case 5:
-                          // Selects normal video
+                          /* Selects normal video */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags &
                          					     ~NETTLE_OTHER_REVERSE_VIDEO;
                           break;
                         case 6:
-                          // Home position based in top-left of screen
+                          /* Home position based in top-left of screen */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags &
                            					       ~NETTLE_OTHER_ORIGIN_MODE;
                           break;
                         case 7:
-                          // No autowrap
+                          /* No autowrap */
                           session[session_handle].other_session_flags=
                            session[session_handle].other_session_flags & ~NETTLE_OTHER_WRAP_MODE;
                           break;
                         case 8:
-                          // Turn off auto repeat
+                          /* Turn off auto repeat */
                           break;
                         case 25:
-                          // Make cursor invisible
+                          /* Make cursor invisible */
                           session[session_handle].other_session_flags=
                             session[session_handle].other_session_flags &
                             						~NETTLE_OTHER_CURSOR_VIS;
@@ -1087,23 +1087,23 @@ bool process_escape_length_x(int session_handle)
                       switch (atoi(string))
                       {
                         case 2:
-                          // Turn off keyboard lock
+                          /* Turn off keyboard lock */
                           session[session_handle].other_session_flags=
                             session[session_handle].other_session_flags
                             					    & ~NETTLE_OTHER_KEYLOCK_MODE;
                           break;
                         case 4:
-                          // Turn off insert mode
+                          /* Turn off insert mode */
                           session[session_handle].other_session_flags=
                             session[session_handle].other_session_flags
                             					     & ~NETTLE_OTHER_INSERT_MODE;
                           break;
                         case 12:
-                          // Turn on local echo (NB. just using telnet's echo stuff)
+                          /* Turn on local echo (NB. just using telnet's echo stuff) */
                           session[session_handle].session_flags[1]=false;
                           break;
                         case 20:
-                          // Make LF,FF,VT move to next line (normal behaviour)
+                          /* Make LF,FF,VT move to next line (normal behaviour) */
                           session[session_handle].other_session_flags=
                             session[session_handle].other_session_flags &
                          					~NETTLE_OTHER_LINEFEED_MODE;
@@ -1141,24 +1141,24 @@ bool process_escape_length_x(int session_handle)
 	          switch (atoi(string))
 	          {
 	            case 0:
-                      // Clear all attributes
+                      /* Clear all attributes */
                       status=false;
                       session[session_handle].current_fg=7;
                       session[session_handle].current_bg=0;
                       session[session_handle].current_flags=0;
                       break;
                     case 1: case 5:
-                      // Bold, Blink
+                      /* Bold, Blink */
                       session[session_handle].current_fg=session[session_handle].current_fg | 8;
                       status=true;
                       break;
                     case 27:
-                      // Cancel invert
+                      /* Cancel invert */
                       session[session_handle].current_flags=
                       		session[session_handle].current_flags & ~NETTLE_FLAG_INVERTED;
                       break;
                     case 30: case 31: case 32: case 33: case 34: case 35: case 36: case 37:
-                      // Foreground
+                      /* Foreground */
                       session[session_handle].current_fg=atoi(string)-30;
                       if (status)
                       {
@@ -1170,14 +1170,14 @@ bool process_escape_length_x(int session_handle)
                       session[session_handle].current_fg=7;
                       break;
                     case 40: case 41: case 42: case 43: case 44: case 45: case 46: case 47:
-                      // Background
+                      /* Background */
                       session[session_handle].current_bg=atoi(string)-40;
                       break;
                     case 49:
                       session[session_handle].current_bg=0;
                       break;
                     case 7:
-                      // Invert
+                      /* Invert */
                       session[session_handle].current_flags=
                               session[session_handle].current_flags | (NETTLE_FLAG_INVERTED);
                       break;
@@ -1194,7 +1194,7 @@ bool process_escape_length_x(int session_handle)
                     char block[4];
                     block[0]=27;
                     block[1]='[';
-                    block[2]='0'; // terminal OK
+                    block[2]='0'; /* terminal OK */
                     block[3]='n';
                     nettle_senddata(session_handle,block,4);
                   }
@@ -1215,7 +1215,7 @@ bool process_escape_length_x(int session_handle)
                     {
                       char block[6];
 
-                      // There is no printer
+                      /* There is no printer */
                       strcpy(block,"\x1B[?13n");
                       nettle_senddata(session_handle,block,6);
                     }
@@ -1228,13 +1228,13 @@ bool process_escape_length_x(int session_handle)
               switch (session[session_handle].escape_string[2])
               {
                 case '!':
-                  // Soft Reset terminal
+                  /* Soft Reset terminal */
                   reset_terminal(session_handle);
                   break;
               }
               break;
             case 'r':
-              // Specify scrolling region
+              /* Specify scrolling region */
               done=true;
 
               if (esc_instr(session[session_handle].escape_string,";",
@@ -1277,7 +1277,7 @@ bool process_escape_length_x(int session_handle)
             switch (atoi(session[session_handle].escape_string+2))
             {
               case 0:
-                // Change Icon Name and Window Title to Pt
+                /* Change Icon Name and Window Title to Pt */
                 {
                   char string[256];
                   int loop=esc_instr(session[session_handle].escape_string,
@@ -1295,10 +1295,10 @@ bool process_escape_length_x(int session_handle)
                 }
                 break;
               case 1:
-                // Change Icon Name to Pt
+                /* Change Icon Name to Pt */
                 break;
               case 2:
-                // Change Window Title to Pt
+                /* Change Window Title to Pt */
                 {
                   char string[256];
                   int loop=esc_instr(session[session_handle].escape_string,
@@ -1316,10 +1316,10 @@ bool process_escape_length_x(int session_handle)
                 }
                 break;
               case 46:
-                // Change Log File to Pt
+                /* Change Log File to Pt */
                 break;
               case 50:
-                // Set Font to Pt
+                /* Set Font to Pt */
                 break;
             }
 
@@ -1331,7 +1331,7 @@ bool process_escape_length_x(int session_handle)
     case 255:
       switch (session[session_handle].escape_string[1])
       {
-        case 250: // SB
+        case 250: /* SB */
           if (session[session_handle].escape_string[
             				session[session_handle].escape_string_length-2]==255
             				&&
@@ -1340,20 +1340,20 @@ bool process_escape_length_x(int session_handle)
           {
             switch (session[session_handle].escape_string[2])
             {
-              case 24: // TERMINAL-TYPE
+              case 24: /* TERMINAL-TYPE */
                 if (session[session_handle].escape_string[3]==1)
                 {
-                  // SEND
+                  /* SEND */
                   char block[256];
-                  block[0]=255; // IAC
-                  block[1]=250; // SB
-                  block[2]=24;  // TERMINAL-TYPE
-                  block[3]=0;   // IS
+                  block[0]=255; /* IAC */
+                  block[1]=250; /* SB */
+                  block[2]=24;  /* TERMINAL-TYPE */
+                  block[3]=0;   /* IS */
                   strcpy(block+4,terminal_name[session[session_handle].terminal_type]);
                   block[4+strlen(terminal_name[session[session_handle].terminal_type])]
-                  								     =255; // IAC
+                  								     =255; /* IAC */
                   block[5+strlen(terminal_name[session[session_handle].terminal_type])]
-                  								     =240; // SE
+                  								     =240; /* SE */
                   nettle_senddata(session_handle,block,
                                  6+strlen(terminal_name[session[session_handle].terminal_type]));
                   done=true;
@@ -1372,16 +1372,16 @@ int status_positive(int value)
 {
   switch (value)
   {
-    case 251: // receive WILL, return DO
+    case 251: /* receive WILL, return DO */
       return 253;
       break;
-    case 252: // receive WONT, return DONT
+    case 252: /* receive WONT, return DONT */
       return 254;
       break;
-    case 253: // receive DO, return WILL
+    case 253: /* receive DO, return WILL */
       return 251;
       break;
-    case 254: // receive DONT, return WONT
+    case 254: /* receive DONT, return WONT */
       return 252;
       break;
   }
@@ -1399,16 +1399,16 @@ int status_negative(int value)
 {
   switch (value)
   {
-    case 251: // receive WILL, return DONT
+    case 251: /* receive WILL, return DONT */
       return 254;
       break;
-    case 252: // receive WONT, return DONT
+    case 252: /* receive WONT, return DONT */
       return 254;
       break;
-    case 253: // receive DO, return WONT
+    case 253: /* receive DO, return WONT */
       return 252;
       break;
-    case 254: // receive DONT, return WONT
+    case 254: /* receive DONT, return WONT */
       return 252;
       break;
   }
@@ -1427,7 +1427,7 @@ void clear_screen(int session_handle, int calc, int calc2, char fg, char bg, cha
 {
   int loop;
 
-  // clear the specified area withe the specified fg,bg,flags and character
+  /* clear the specified area withe the specified fg,bg,flags and character */
   for (loop=calc; loop<=calc2; loop+=4)
   {
     if (loop<(session[session_handle].terminal_size_x*
@@ -1440,9 +1440,9 @@ void clear_screen(int session_handle, int calc, int calc2, char fg, char bg, cha
 
 void reprocess_position(int session_handle)
 {
-  // this reshuffles everything so that everything is back on screen, this allows the cursor
-  // to sit at  (81,24) without causing a newline (which would break pine and things)
-  // It also shuffles up the selection areas
+  /* this reshuffles everything so that everything is back on screen, this allows the cursor */
+  /* to sit at  (81,24) without causing a newline (which would break pine and things) */
+  /* It also shuffles up the selection areas */
 
   if (session[session_handle].xpos>session[session_handle].terminal_size_x-1)
   {
@@ -1466,7 +1466,7 @@ void reprocess_position_scroll(int session_handle)
 {
   int count,calc;
 
-  // scroll if y>scroll_end
+  /* scroll if y>scroll_end */
 
   while (session[session_handle].ypos>(session[session_handle].scroll_end+
                                         session[session_handle].scrollback-1))
@@ -1489,7 +1489,7 @@ void reprocess_position_scroll(int session_handle)
 
     if (session[session_handle].scroll_start==1)
     {
-      // scroll scrollback as well
+      /* scroll scrollback as well */
       regs.r[1]=(int) session[session_handle].assigned_area+
       						     (session[session_handle].terminal_size_x*4);
 
@@ -1519,7 +1519,7 @@ void reprocess_position_scroll(int session_handle)
       _kernel_swi(ZapRedraw_MoveBytes, &regs, &regs);
     }
 
-    // and clear the new line
+    /* and clear the new line */
     for (count=0; count<session[session_handle].terminal_size_x; count++)
     {
        calc=(((session[session_handle].scroll_end+session[session_handle].scrollback-1)*
@@ -1530,7 +1530,7 @@ void reprocess_position_scroll(int session_handle)
   }
 
 
-  // scroll if Y<scroll_start
+  /* scroll if Y<scroll_start */
 
   while (session[session_handle].ypos<(session[session_handle].scroll_start+
                                         session[session_handle].scrollback-1))
@@ -1575,7 +1575,7 @@ void reprocess_position_scroll(int session_handle)
 
     _kernel_swi(ZapRedraw_MoveBytes, &regs, &regs);
 
-    // and clear the new line
+    /* and clear the new line */
     for (count=0; count<session[session_handle].terminal_size_x; count++)
     {
        calc=(((session[session_handle].scroll_start+session[session_handle].scrollback-1)*
@@ -1596,20 +1596,20 @@ void byte_enquiry(int session_handle)
 
 void byte_bell(int session_handle)
 {
-  // Bell
+  /* Bell */
   _kernel_swi(OS_WriteI + 7, &regs, &regs);
 }
 
 void byte_backspace(int session_handle)
 {
-  // Backspace
+  /* Backspace */
   if (session[session_handle].xpos>0)
     session[session_handle].xpos--;
 }
 
 void byte_horizontal_tabulation(int session_handle)
 {
-  // Tab
+  /* Tab */
   int loop;
   int current_tab=session[session_handle].terminal_size_x;
 
@@ -1630,7 +1630,7 @@ void byte_horizontal_tabulation(int session_handle)
 
 void byte_linefeed(int session_handle)
 {
-  // LF,VT,FF
+  /* LF,VT,FF */
   session[session_handle].ypos++;
 
   if (session[session_handle].other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
@@ -1644,7 +1644,7 @@ void byte_linefeed(int session_handle)
 
 void byte_carriage_return(int session_handle)
 {
-  // CR
+  /* CR */
   session[session_handle].xpos=0;
 }
 
@@ -1688,7 +1688,7 @@ void byte_substitute(int session_handle)
 
 void byte_escape(int session_handle)
 {
-  // ESCAPE
+  /* ESCAPE */
   if (session[session_handle].escape_state==NETTLE_ESCAPE_ESCAPE)
   {
     if (session[session_handle].escape_string_length>=2)
@@ -1716,7 +1716,7 @@ void byte_delete(int session_handle)
 
 void byte_index(int session_handle)
 {
-  // Index
+  /* Index */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string[1]='D';
@@ -1725,7 +1725,7 @@ void byte_index(int session_handle)
 
 void byte_next_line(int session_handle)
 {
-  // Next line
+  /* Next line */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string[1]='E';
@@ -1734,7 +1734,7 @@ void byte_next_line(int session_handle)
 
 void byte_horizontal_tab_set(int session_handle)
 {
-  // Horizontal tab set
+  /* Horizontal tab set */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string[1]='H';
@@ -1743,7 +1743,7 @@ void byte_horizontal_tab_set(int session_handle)
 
 void byte_reverse_index(int session_handle)
 {
-  // Reverse index
+  /* Reverse index */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string[1]='M';
@@ -1752,7 +1752,7 @@ void byte_reverse_index(int session_handle)
 
 void byte_single_shift_g2(int session_handle)
 {
-  // Single shift G2
+  /* Single shift G2 */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string[1]='N';
@@ -1761,7 +1761,7 @@ void byte_single_shift_g2(int session_handle)
 
 void byte_single_shift_g3(int session_handle)
 {
-  // Single shift G3
+  /* Single shift G3 */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string[1]='O';
@@ -1770,7 +1770,7 @@ void byte_single_shift_g3(int session_handle)
 
 void byte_device_control_string(int session_handle)
 {
-  // Device control string
+  /* Device control string */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string[1]='P';
@@ -1779,7 +1779,7 @@ void byte_device_control_string(int session_handle)
 
 void byte_control_sequence_intro(int session_handle)
 {
-  // Control sequence introducer
+  /* Control sequence introducer */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\x1B';
   session[session_handle].escape_string[1]='[';
@@ -1788,7 +1788,7 @@ void byte_control_sequence_intro(int session_handle)
 
 void byte_string_terminator(int session_handle)
 {
-  // String terminator
+  /* String terminator */
   if (session[session_handle].escape_state==NETTLE_ESCAPE_ESCAPE)
   {
     if (session[session_handle].escape_string_length>=2)
@@ -1810,7 +1810,7 @@ void byte_string_terminator(int session_handle)
 }
 void byte_telnet(int session_handle)
 {
-  // Telnet negotiation
+  /* Telnet negotiation */
   session[session_handle].escape_state=NETTLE_ESCAPE_ESCAPE;
   session[session_handle].escape_string[0]='\xFF';
   session[session_handle].escape_string_length=1;
@@ -1825,14 +1825,14 @@ void byte_default(char byte, int session_handle)
   if (session[session_handle].other_session_flags & NETTLE_OTHER_INSERT_MODE)
   {
     int calc, calc2;
-    // If we're inserting a character, then shuffle all the characters along a byte
+    /* If we're inserting a character, then shuffle all the characters along a byte */
     calc=(int) session[session_handle].assigned_area+
            ((session[session_handle].ypos*session[session_handle].terminal_size_x)+
              session[session_handle].xpos)*4;
     calc2=(int) session[session_handle].assigned_area+
             ((session[session_handle].ypos+1)*session[session_handle].terminal_size_x)*4;
 
-    // Maybe... calc2-calc-4 might be wrong
+    /* Maybe... calc2-calc-4 might be wrong */
     regs.r[1]=calc;
     regs.r[2]=calc+4;
     regs.r[3]=calc2-calc-4;
@@ -1841,7 +1841,7 @@ void byte_default(char byte, int session_handle)
   data=((session[session_handle].ypos*session[session_handle].terminal_size_x)+
              session[session_handle].xpos)*4;
 
-  // write out the data
+  /* write out the data */
   write_assigned(session_handle,data,session[session_handle].current_fg,
   				     session[session_handle].current_bg,
   				     session[session_handle].current_flags,
@@ -1870,17 +1870,17 @@ void process_wimp_key(int key, int session_handle)
 
   calc=get_cursor_position(session_handle);
 
-  // get the cursor flags
+  /* get the cursor flags */
   cursor_flags=read_assigned_flags(session_handle,calc) &
                                  		     (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
-  // if the cursor flags don't have cursor set, make it so
+  /* if the cursor flags don't have cursor set, make it so */
   if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
   {
     cursor_flags=(cursor_flags | (NETTLE_FLAG_CURSOR));
   }
 
-  // remove the cursor from the position
+  /* remove the cursor from the position */
   write_assigned_flags(session_handle,calc,read_assigned_flags(session_handle,calc)
 						 & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
 
@@ -1930,7 +1930,7 @@ void process_wimp_key(int key, int session_handle)
                  session[session_handle].xpos)*4;
           }
 
-          // write out the data
+          /* write out the data */
           write_assigned(session_handle,data,session[session_handle].current_fg,
             				     session[session_handle].current_bg,
             				     session[session_handle].current_flags,
@@ -1955,7 +1955,7 @@ void process_wimp_key(int key, int session_handle)
 
   calc=get_cursor_position(session_handle);
 
-  // OR back in the cursor flags
+  /* OR back in the cursor flags */
   if (session[session_handle].other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
     write_assigned_flags(session_handle,calc,read_assigned_flags(session_handle,calc)
@@ -1967,10 +1967,10 @@ void process_wimp_key(int key, int session_handle)
   _kernel_swi(OS_ReadModeVariable,&regs, &regs);
   zap_yeig=regs.r[2];
 
-  // force the selection back on (it may have got overwritten by new data)
+  /* force the selection back on (it may have got overwritten by new data) */
   refresh_selection_set();
 
-  // and redraw the window
+  /* and redraw the window */
   force_redraw(session[session_handle].window_handle,0,
                (-session[session_handle].terminal_size_y-session[session_handle].scrollback)*
                redraw.r_charh*2*zap_yeig,
@@ -2010,17 +2010,17 @@ void process_line_editor(int session_handle)
 
   calc=get_cursor_position(session_handle);
 
-  // get the cursor flags
+  /* get the cursor flags */
   cursor_flags=read_assigned_flags(session_handle,calc) &
                                  		     (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
-  // if the cursor flags don't have cursor set, make it so
+  /* if the cursor flags don't have cursor set, make it so */
   if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
   {
     cursor_flags=(cursor_flags | (NETTLE_FLAG_CURSOR));
   }
 
-  // remove the cursor from the position
+  /* remove the cursor from the position */
   write_assigned_flags(session_handle,calc,read_assigned_flags(session_handle,calc)
 						 & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
 
@@ -2074,7 +2074,7 @@ void process_line_editor(int session_handle)
                    session[session_handle].xpos)*4;
             }
 
-            // write out the data
+            /* write out the data */
               write_assigned(session_handle,data,session[session_handle].current_fg,
               					 session[session_handle].current_bg,
               					 session[session_handle].current_flags,
@@ -2104,7 +2104,7 @@ void process_line_editor(int session_handle)
 
   calc=get_cursor_position(session_handle);
 
-  // OR back in the cursor flags
+  /* OR back in the cursor flags */
   if (session[session_handle].other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
     write_assigned_flags(session_handle,calc,read_assigned_flags(session_handle,calc)
@@ -2116,10 +2116,10 @@ void process_line_editor(int session_handle)
   _kernel_swi(OS_ReadModeVariable, &regs, &regs);
   zap_yeig=regs.r[2];
 
-  // force the selection back on (it may have got overwritten by new data)
+  /* force the selection back on (it may have got overwritten by new data) */
   refresh_selection_set();
 
-  // and redraw the window
+  /* and redraw the window */
   force_redraw(session[session_handle].window_handle,0,
                (-session[session_handle].terminal_size_y-session[session_handle].scrollback)*
                redraw.r_charh*2*zap_yeig,
@@ -2158,7 +2158,7 @@ void process_line_editor(int session_handle)
 
 void snap_cursor_to_terminal(int session_handle)
 {
-  // snaps the cursor inside the terminal
+  /* snaps the cursor inside the terminal */
   if (session[session_handle].xpos<0)
   {
     session[session_handle].xpos=0;
@@ -2198,7 +2198,7 @@ void snap_cursor_to_terminal(int session_handle)
   }
 }
 
-// get the current cursor position
+/* get the current cursor position */
 int get_cursor_position(int session_handle)
 {
   int xpos;
@@ -2230,7 +2230,7 @@ int decode_key(int session_handle, int key, char *block)
   switch (key)
   {
     case 0x00D:
-      // Return
+      /* Return */
       if (session[session_handle].other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
       {
         strcpy(block,"\r\n");
@@ -2243,72 +2243,72 @@ int decode_key(int session_handle, int key, char *block)
       }
       break;
     case 0x01E:
-      // Home
+      /* Home */
       strcpy(block,"\x1B[1~");
       size_of_block=4;
       break;
     case 0x07F:
-      // Delete
+      /* Delete */
       strcpy(block,"\x1B[3~");
       size_of_block=4;
       break;
     case 0x181:
-      // F1
+      /* F1 */
       strcpy(block,"\x1BOP");
       size_of_block=3;
       break;
     case 0x182:
-      // F2
+      /* F2 */
       strcpy(block,"\x1BOQ");
       size_of_block=3;
       break;
     case 0x183:
-      // F3
+      /* F3 */
       strcpy(block,"\x1BOR");
       size_of_block=3;
       break;
     case 0x184:
-      // F4
+      /* F4 */
       strcpy(block,"\x1BOS");
       size_of_block=3;
       break;
     case 0x185:
-      // F5
+      /* F5 */
       strcpy(block,"\x1B[15~");
       size_of_block=5;
       break;
     case 0x186:
-      // F6
+      /* F6 */
       strcpy(block,"\x1B[17~");
       size_of_block=5;
       break;
     case 0x187:
-      // F7
+      /* F7 */
       strcpy(block,"\x1B[18~");
       size_of_block=5;
       break;
     case 0x188:
-      // F8
+      /* F8 */
       strcpy(block,"\x1B[19~");
       size_of_block=5;
       break;
     case 0x189:
-      // F9
+      /* F9 */
       strcpy(block,"\x1B[20~");
       size_of_block=5;
       break;
     case 0x18A:
-      // Tab
+      /* Tab */
       strcpy(block,"\t");
       size_of_block=1;
       break;
     case 0x18B:
-      // Copy
+      /* Copy */
       strcpy(block,"\x1B[4~");
       size_of_block=4;
       break;
     case 0x18C:
-      // Left
+      /* Left */
       if (session[session_handle].other_session_flags & NETTLE_OTHER_APPLI_MODE)
       {
         strcpy(block,"\x1BOD");
@@ -2321,7 +2321,7 @@ int decode_key(int session_handle, int key, char *block)
       }
       break;
     case 0x18D:
-      // Right
+      /* Right */
       if (session[session_handle].other_session_flags & NETTLE_OTHER_APPLI_MODE)
       {
         strcpy(block,"\x1BOC");
@@ -2334,7 +2334,7 @@ int decode_key(int session_handle, int key, char *block)
       }
       break;
     case 0x18E:
-      // Down
+      /* Down */
       if (session[session_handle].other_session_flags & NETTLE_OTHER_APPLI_MODE)
       {
         strcpy(block,"\x1BOB");
@@ -2347,7 +2347,7 @@ int decode_key(int session_handle, int key, char *block)
       }
       break;
     case 0x18F:
-      // Up
+      /* Up */
       if (session[session_handle].other_session_flags & NETTLE_OTHER_APPLI_MODE)
       {
         strcpy(block,"\x1BOA");
@@ -2360,92 +2360,92 @@ int decode_key(int session_handle, int key, char *block)
       }
       break;
     case 0x191:
-      // Shift+F1
+      /* Shift+F1 */
       strcpy(block,"\x1B[23~");
       size_of_block=5;
       break;
     case 0x192:
-      // Shift+F2
+      /* Shift+F2 */
       strcpy(block,"\x1B[24~");
       size_of_block=5;
       break;
     case 0x193:
-      // Shift+F3
+      /* Shift+F3 */
       strcpy(block,"\x1B[25~");
       size_of_block=5;
       break;
     case 0x194:
-      // Shift+F4
+      /* Shift+F4 */
       strcpy(block,"\x1B[26~");
       size_of_block=5;
       break;
     case 0x195:
-      // Shift+F5
+      /* Shift+F5 */
       strcpy(block,"\x1B[28~");
       size_of_block=5;
       break;
     case 0x196:
-      // Shift+F6
+      /* Shift+F6 */
       strcpy(block,"\x1B[29~");
       size_of_block=5;
       break;
     case 0x197:
-      // Shift+F7
+      /* Shift+F7 */
       strcpy(block,"\x1B[31~");
       size_of_block=5;
       break;
     case 0x198:
-      // Shift+F8
+      /* Shift+F8 */
       strcpy(block,"\x1B[32~");
       size_of_block=5;
       break;
     case 0x199:
-      // Shift+F9
+      /* Shift+F9 */
       strcpy(block,"\x1B[33~");
       size_of_block=5;
       break;
     case 0x19E:
-      // Page down
+      /* Page down */
       strcpy(block,"\x1B[6~");
       size_of_block=4;
       break;
     case 0x19F:
-      // Page up
+      /* Page up */
       strcpy(block,"\x1B[5~");
       size_of_block=4;
       break;
     case 0x1CA:
-      // F10
+      /* F10 */
       strcpy(block,"\x1B[21~");
       size_of_block=5;
       break;
     case 0x1CB:
-      // F11
+      /* F11 */
       strcpy(block,"\x1B[23~");
       size_of_block=5;
       break;
     case 0x1CC:
-      // F12
+      /* F12 */
       strcpy(block,"\x1B[24~");
       size_of_block=5;
       break;
     case 0x1CD:
-      // Insert
+      /* Insert */
       strcpy(block,"\x1B[2~");
       size_of_block=4;
       break;
     case 0x1DA:
-      // Shift+F10
+      /* Shift+F10 */
       strcpy(block,"\x1B[34~");
       size_of_block=5;
       break;
     case 0x1DB:
-      // Shift+F11
+      /* Shift+F11 */
       strcpy(block,"\x1B[23~");
       size_of_block=5;
       break;
     case 0x1DC:
-      // Shift+F12
+      /* Shift+F12 */
       strcpy(block,"\x1B[24~");
       size_of_block=5;
       break;

@@ -1,6 +1,6 @@
-// Nettle miscellaneous code headers
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Nettle miscellaneous code headers */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #ifndef MISC_H
 #define MISC_H

@@ -1,6 +1,6 @@
-// Nettle initialisation code headers
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Nettle initialisation code headers */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #ifndef INIT_H
 #define INIT_H

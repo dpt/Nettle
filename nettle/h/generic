@@ -1,6 +1,6 @@
-// Generic useful headers
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Generic useful headers */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #ifndef GENERIC_H
 #define GENERIC_H
@@ -13,14 +13,14 @@ typedef enum {
 } bool;
 
 
-// Standard includes
+/* Standard includes */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
 
-// RISC OS includes
+/* RISC OS includes */
 #include "kernel.h"
 #include "swis.h"
 

@@ -1,6 +1,6 @@
-// Closedown code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Closedown code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -11,7 +11,7 @@
 
 void closedown_application(void)
 {
-  // Quit!
+  /* Quit! */
   int loop;
 
   if (current_session>0)

@@ -1,6 +1,6 @@
-// Line editor code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Line editor code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #ifndef LINEEDIT_H
 #define LINEEDIT_H

@@ -1,6 +1,6 @@
-// Choices code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Choices code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"

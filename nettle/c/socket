@@ -1,6 +1,6 @@
-// Socket library
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Socket library */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -169,7 +169,7 @@ int socket_readdata_flags(int socket_handle, char * buffer, int length, int flag
 
 char *socket_readline(int socket_handle)
 {
-  // Needs finished + other socket functions
+  /* Needs finished + other socket functions */
   return NULL;
 }
 

@@ -1,6 +1,6 @@
-// socket.h Header file
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* socket.h Header file */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #ifndef SOCKET_H
 #define SOCKET_H

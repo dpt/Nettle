@@ -1,6 +1,6 @@
-// Nettle specific code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Nettle specific code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -57,20 +57,20 @@ void start_connection(void)
   int connection_type;
   enum nettle_terminal terminal_type;
 
-  // get the yeig of the mode we're in
+  /* get the yeig of the mode we're in */
   regs.r[0]=-1;
   regs.r[1]=5;
   _kernel_swi(OS_ReadModeVariable, &regs, &regs);
   zap_yeig=regs.r[2];
 
-  // give up if too many sessions
+  /* give up if too many sessions */
   if (current_session == Nettle_MaxSessions)
   {
     generror("TooMany", true);
     return;
   }
 
-  // clear all the session flags
+  /* clear all the session flags */
   for (loop=0; loop<256; loop++)
   {
     session[current_session].session_flags[loop]=false;
@@ -112,13 +112,13 @@ void start_connection(void)
         return;
       }
 
-      // strip off telnet: if it's there
+      /* strip off telnet: if it's there */
       if (strncmp(string,"telnet:",strlen("telnet:"))==0)
       {
         strcpy(string,string+strlen("telnet:")+1);
       }
 
-      // strip out any /s anywhere in the string
+      /* strip out any /s anywhere in the string */
       loop=0;
       while (loop<strlen(string))
       {
@@ -145,7 +145,7 @@ void start_connection(void)
         }
       }
 
-      // look at the string to find a port if any (separated by colon or comma)
+      /* look at the string to find a port if any (separated by colon or comma) */
       if (instr(string,",")>=0)
       {
         strncpy(session[current_session].socket_host,string,instr(string,","));
@@ -167,7 +167,7 @@ void start_connection(void)
         }
       }
 
-      // if the port is <1, then it's either invalid or was too big and got wrapped
+      /* if the port is <1, then it's either invalid or was too big and got wrapped */
       if (session[current_session].socket_port<1)
       {
         generror("InvalidPort", true);
@@ -188,7 +188,7 @@ void start_connection(void)
         return;
       }
 
-      // start the task window
+      /* start the task window */
       {
         char temp_string[1024];
         sprintf(temp_string,"%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X \
@@ -198,7 +198,7 @@ void start_connection(void)
         _kernel_swi(Wimp_StartTask, &regs, &regs);
       }
 
-      // set ECHO bit to true
+      /* set ECHO bit to true */
       session[current_session].session_flags[1]=true;
 
       close_window(open);
@@ -206,7 +206,7 @@ void start_connection(void)
       break;
   }
 
-  // set all the attributes to their defaults
+  /* set all the attributes to their defaults */
   session[current_session].terminal_size_x=80;
   session[current_session].terminal_size_y=24;
   session[current_session].scrollback=96;
@@ -221,7 +221,7 @@ void start_connection(void)
   session[current_session].terminal_type=terminal_type;
   reset_terminal(current_session);
 
-  // clear out the assigned area with black bg, white fg, no flags and ' '
+  /* clear out the assigned area with black bg, white fg, no flags and ' ' */
   {
     int loop_limit=((session[current_session].terminal_size_x)*
                    (session[current_session].terminal_size_y+
@@ -233,7 +233,7 @@ void start_connection(void)
     }
   }
 
-  // create tabs
+  /* create tabs */
   session[current_session].number_of_tabs=0;
   for (loop=0; loop<session[current_session].terminal_size_x; loop+=8)
   {
@@ -241,7 +241,7 @@ void start_connection(void)
     session[current_session].number_of_tabs++;
   }
 
-  // if line editor is turned on, allocate all the lineeditor space
+  /* if line editor is turned on, allocate all the lineeditor space */
   if (line_editor)
   {
     int loop;
@@ -255,7 +255,7 @@ void start_connection(void)
     }
   }
 
-  // make new terminal window
+  /* make new terminal window */
   {
     int block[22];
 
@@ -294,7 +294,7 @@ void start_connection(void)
 
   if (line_editor)
   {
-    // Create new pane window
+    /* Create new pane window */
     int block[22];
 
     block[0]=102;
@@ -348,20 +348,20 @@ void start_connection(void)
       break;
   }
 
-  // make a ZapRedraw area big enough - note: the assembly is quite inefficient, so writes out
-  // the stuff to change the colour every 'character', which means typically each character
-  // takes up 5 bytes, so 6 is a number >5. Basically if you start getting screens full of
-  // graphics characters and stuff, 6 isn't enough. Possibly the draw routine should stop
-  // writing when it falls outside the area, and the number returned at the end - it could
-  // make a larger buffer, but not done yet.
+  /* make a ZapRedraw area big enough - note: the assembly is quite inefficient, so writes out */
+  /* the stuff to change the colour every 'character', which means typically each character */
+  /* takes up 5 bytes, so 6 is a number >5. Basically if you start getting screens full of */
+  /* graphics characters and stuff, 6 isn't enough. Possibly the draw routine should stop */
+  /* writing when it falls outside the area, and the number returned at the end - it could */
+  /* make a larger buffer, but not done yet. */
 
   if (size_of_zapredraw_area<(session[current_session].terminal_size_x*
                               (session[current_session].terminal_size_y+
-                               session[current_session].scrollback)*6)) // 6 is 'some value'
+                               session[current_session].scrollback)*6)) /* 6 is 'some value' */
   {
     size_of_zapredraw_area=(session[current_session].terminal_size_x*
                               (session[current_session].terminal_size_y+
-                               session[current_session].scrollback)*6); // same here
+                               session[current_session].scrollback)*6); /* same here */
 
     zapredraw_area=realloc(zapredraw_area,size_of_zapredraw_area);
 
@@ -385,30 +385,30 @@ void write_out_data(int session_handle, char *data, int length_data)
 
   calc=get_cursor_position(session_handle);
 
-  // get the cursor flags
+  /* get the cursor flags */
   cursor_flags=read_assigned_flags(session_handle, calc) &
   						     (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
-  // if the cursor flags don't have cursor set, make it so
+  /* if the cursor flags don't have cursor set, make it so */
   if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
   {
     cursor_flags=(cursor_flags | (NETTLE_FLAG_CURSOR));
   }
 
-  // remove the cursor from the position
+  /* remove the cursor from the position */
   write_assigned_flags(session_handle, calc, read_assigned_flags(session_handle,calc) &
   					~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
 
   loop=0;
   while (loop<length_data)
   {
-    // log the byte
+    /* log the byte */
     log_byte(data[loop]);
 
-    //fclose(log_file);
-    //log_file=0;
+    /*fclose(log_file); */
+    /*log_file=0; */
 
-    // process the current byte at this position
+    /* process the current byte at this position */
     process_data(data[loop],session_handle);
 
     loop++;
@@ -416,7 +416,7 @@ void write_out_data(int session_handle, char *data, int length_data)
 
   calc=get_cursor_position(session_handle);
 
-  // OR back in the cursor flags
+  /* OR back in the cursor flags */
   if (session[session_handle].other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
     write_assigned_flags(session_handle, calc, read_assigned_flags(session_handle, calc)
@@ -428,10 +428,10 @@ void write_out_data(int session_handle, char *data, int length_data)
   _kernel_swi(OS_ReadModeVariable, &regs, &regs);
   zap_yeig=regs.r[2];
 
-  // force the selection back on (it may have got overwritten by new data)
+  /* force the selection back on (it may have got overwritten by new data) */
   refresh_selection_set();
 
-  // and redraw the window
+  /* and redraw the window */
   force_redraw(session[session_handle].window_handle,0,
                (-session[session_handle].terminal_size_y-session[session_handle].scrollback)*
                redraw.r_charh*2*zap_yeig,
@@ -450,7 +450,7 @@ void remove_session(int session_handle)
         break;
       case NETTLE_TASKWINDOW:
         {
-          // terminate the taskwindow
+          /* terminate the taskwindow */
           int block[5];
           block[0]=20;
           block[3]=0;
@@ -467,7 +467,7 @@ void remove_session(int session_handle)
   }
 
   {
-    // delete the windows
+    /* delete the windows */
     int block[1];
 
     block[0]=session[session_handle].window_handle;
@@ -484,18 +484,18 @@ void remove_session(int session_handle)
     }
   }
 
-  // free lineeditor space
+  /* free lineeditor space */
   if (line_editor)
   {
     free(session[session_handle].line_editor_history);
   }
 
-  // free the assigned area and title
+  /* free the assigned area and title */
   free(session[session_handle].assigned_area);
   free(session[session_handle].title);
 
   {
-    // shuffle down all the other data
+    /* shuffle down all the other data */
     int loop;
     for (loop=session_handle; loop<current_session-1; loop++)
     {
@@ -546,13 +546,13 @@ void remove_session(int session_handle)
     }
   }
 
-  // cancel the selection if there was one in this session
+  /* cancel the selection if there was one in this session */
   if (selection_session==session_handle)
   {
     selection_session=-1;
   }
 
-  // or if it was above this session, shuffle it down
+  /* or if it was above this session, shuffle it down */
   if (selection_session>session_handle)
   {
     selection_session--;
@@ -566,12 +566,12 @@ void nettle_senddata(int session_handle, char *data, int length)
   switch (session[session_handle].connection_type)
   {
     case NETTLE_TELNET:
-      // just use socket_senddata
+      /* just use socket_senddata */
       socket_senddata(session[session_handle].socket_handle,data,length);
       break;
     case NETTLE_TASKWINDOW:
       {
-        // send a WIMP message
+        /* send a WIMP message */
         int loop=0;
         int *block=malloc((27+length) & ~3);
 

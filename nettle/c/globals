@@ -1,6 +1,6 @@
-// Global variables
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Global variables */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -48,7 +48,7 @@ int task_handle;
 int iconbar_handle;
 int menu_open;
 
-// Template windows
+/* Template windows */
 int info;
 int choices;
 int open;

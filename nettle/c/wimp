@@ -1,6 +1,6 @@
-// Wimp_Poll / Wimp code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Wimp_Poll / Wimp code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -14,7 +14,7 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
-// Null code
+/* Null code */
 
 void null_reason_code(void)
 {
@@ -29,7 +29,7 @@ void null_reason_code(void)
                                   &session[current_socket].socket_ip))
         {
           case RESOLVER_INPROGRESS:
-            // not finished yet
+            /* not finished yet */
             break;
           case RESOLVER_FAILED:
             set_title_bar(session[current_socket].window_handle,"nettle (Disconnected)");
@@ -95,7 +95,7 @@ void null_reason_code(void)
 
           if (packet_length>0)
           {
-            // deal with data from socket
+            /* deal with data from socket */
             write_out_data(current_socket,receive_block,packet_length);
           }
           else
@@ -123,7 +123,7 @@ void null_reason_code(void)
     handle_selection_drag();
 }
 
-// Redraw window
+/* Redraw window */
 
 void redraw_window(void)
 {
@@ -168,14 +168,14 @@ void redraw_window(void)
   }
 }
 
-// Open window
+/* Open window */
 
 void open_window(int window_handle, bool poll_flag)
 {
   int block[9];
   int session_handle=0;
 
-  // find out which session this window is
+  /* find out which session this window is */
   while (session_handle<current_session && session[session_handle].window_handle!=window_handle)
   {
     session_handle++;
@@ -188,7 +188,7 @@ void open_window(int window_handle, bool poll_flag)
       {
         if (line_editor)
         {
-          // open the pane window and set the 'behind' word to behind the pane
+          /* open the pane window and set the 'behind' word to behind the pane */
           open_pane_window(session_handle, wimp_block);
           wimp_block[7]=session[session_handle].pane_handle;
         }
@@ -205,7 +205,7 @@ void open_window(int window_handle, bool poll_flag)
       {
         if (line_editor)
         {
-          // open the pane window and set the 'behind' word to behind the pane
+          /* open the pane window and set the 'behind' word to behind the pane */
           open_pane_window(session_handle, block);
           block[7]=session[session_handle].pane_handle;
         }
@@ -213,7 +213,7 @@ void open_window(int window_handle, bool poll_flag)
       break;
   }
 
-  // open the main window
+  /* open the main window */
   switch (poll_flag)
   {
     case true:
@@ -227,7 +227,7 @@ void open_window(int window_handle, bool poll_flag)
   }
 }
 
-// Close window
+/* Close window */
 
 void close_window(int window_handle)
 {
@@ -260,8 +260,8 @@ void close_window(int window_handle)
   }
 }
 
-// Determine if there are any sessions open.  If so, query the user as to whether
-//  to really quit the program.
+/* Determine if there are any sessions open.  If so, query the user as to whether */
+/*  to really quit the program. */
 
 static void close_program(void)
 {
@@ -280,7 +280,7 @@ static void close_program(void)
 }
 
 
-// Mouse click
+/* Mouse click */
 
 void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
 {
@@ -345,7 +345,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
             regs.r[1]=(int) block;
             _kernel_swi(Wimp_GetIconState,&regs, &regs);
 
-            // if selected bit is set, then we save with ANSI colour
+            /* if selected bit is set, then we save with ANSI colour */
             if (block[6] & (1<<21))
             {
               save_selection(save_data, true);
@@ -368,7 +368,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         switch (buttons)
         {
           case 64: case 16:
-            // Drag
+            /* Drag */
             drag_start(save,3);
             break;
         }
@@ -387,7 +387,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
     _kernel_swi(OS_ReadModeVariable, &regs, &regs);
     zap_yeig=regs.r[2];
 
-    // find the session
+    /* find the session */
     while (window_handle!=session[session_handle].window_handle &&
            session_handle<current_session)
     {
@@ -399,10 +399,10 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
       int x_pos;
       int y_pos;
 
-      // if we're not pressing MENU
+      /* if we're not pressing MENU */
       if (buttons!=2 && buttons!=32)
       {
-        // set the caret to be in the window or line editor (depending if lineeditor is on)
+        /* set the caret to be in the window or line editor (depending if lineeditor is on) */
         if (line_editor_active(session_handle))
         {
           int block[6];
@@ -433,8 +433,8 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
       switch (buttons)
       {
         case 64:
-          // if SELECT drag, then clear the selection and work out what where the selection start
-          // is
+          /* if SELECT drag, then clear the selection and work out what where the selection start */
+          /* is */
           refresh_selection_clear();
 
           selection_session=session_handle;
@@ -459,7 +459,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
           selection_in_progress=true;
           break;
         case 16:
-          // if ADJUST drag, then if there is no selection, then start one
+          /* if ADJUST drag, then if there is no selection, then start one */
           if (selection_session==-1 || session[selection_session].window_handle!=window_handle)
           {
             refresh_selection_clear();
@@ -492,7 +492,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
           }
           break;
         case 4:
-          // if SELECT click, then clear the selection
+          /* if SELECT click, then clear the selection */
           if (selection_session!=-1)
           {
             refresh_selection_clear();
@@ -509,7 +509,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
           create_terminal_menu();
           break;
         case 1:
-          // if ADJUST click, then extend the selection
+          /* if ADJUST click, then extend the selection */
           selection_adjust(x,x_pos,y,y_pos);
           break;
       }
@@ -594,7 +594,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
   }
 }
 
-// Drag finished
+/* Drag finished */
 
 void drag_finished(void)
 {
@@ -619,13 +619,13 @@ void drag_finished(void)
     block[6]=block[4];
     block[7]=block[0];
     block[8]=block[1];
-    block[9]=selection_end-selection_start; // Roughly
+    block[9]=selection_end-selection_start; /* Roughly */
     block[10]=0xFFF;
     strcpy(((char *) block)+44, string+loop+1);
 
     block[0]=(48+strlen(string+loop+1)) & ~3;
     block[3]=0;
-    block[4]=1; // DataSave
+    block[4]=1; /* DataSave */
 
     regs.r[0]=17;
     regs.r[1]=(int) block;
@@ -635,7 +635,7 @@ void drag_finished(void)
   }
 }
 
-// Key pressed
+/* Key pressed */
 
 void key_pressed(int window_handle, int icon_handle, int key)
 {
@@ -747,7 +747,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
                 key_status=true;
               }
               break;
-            case 0x18E: // Down arrow
+            case 0x18E: /* Down arrow */
               key_status=true;
               if (session[session_handle].line_editor_position==0)
               {
@@ -776,7 +776,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
               regs.r[5]=get_icon_data_length(session[session_handle].pane_handle,1);
               _kernel_swi(Wimp_SetCaretPosition, &regs, &regs);
               break;
-            case 0x18F: // Up arrow
+            case 0x18F: /* Up arrow */
               key_status=true;
               if (session[session_handle].line_editor_position==
                 				session[session_handle].line_editor_total-1)
@@ -822,7 +822,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
   }
 }
 
-// Menu selection
+/* Menu selection */
 
 void menu_selection()
 {
@@ -834,7 +834,7 @@ void menu_selection()
       switch (wimp_block[0])
       {
         case 2:
-          // Quit
+          /* Quit */
           close_program();
       }
       break;
@@ -846,7 +846,7 @@ void menu_selection()
           {
             case 3:
               {
-                // Clear selection
+                /* Clear selection */
                 int zap_yeig;
 
                 regs.r[0]=-1;
@@ -901,7 +901,7 @@ void menu_selection()
   regs.r[1]=(int) block;
   _kernel_swi(Wimp_GetPointerInfo, &regs, &regs);
 
-  // If ADJUST, then re-open  menu where it was before
+  /* If ADJUST, then re-open  menu where it was before */
   if (block[2]==1)
   {
     switch (menu_open)
@@ -922,7 +922,7 @@ void menu_selection()
   }
 }
 
-// Lose caret
+/* Lose caret */
 
 void lose_caret()
 {
@@ -936,7 +936,7 @@ void lose_caret()
   _kernel_swi(OS_ReadModeVariable,&regs, &regs);
   zap_yeig=regs.r[2];
 
-  // get session
+  /* get session */
   while (wimp_block[0]!=session[session_handle].window_handle && session_handle<current_session)
   {
     session_handle++;
@@ -947,8 +947,8 @@ void lose_caret()
     regs.r[1]=(int) block;
     _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
 
-    // if lineeditor is off, or the caret isn't in the pane, then make the cursor look like
-    // we have no input
+    /* if lineeditor is off, or the caret isn't in the pane, then make the cursor look like */
+    /* we have no input */
     if (!(line_editor_active(session_handle)) || block[0]!=session[session_handle].pane_handle)
     {
       calc=get_cursor_position(session_handle);
@@ -972,7 +972,7 @@ void lose_caret()
 
   if (wimp_block[0]==session[session_handle].pane_handle)
   {
-    // if the caret is being lost from the pane, then deselect the cursor too
+    /* if the caret is being lost from the pane, then deselect the cursor too */
     calc=get_cursor_position(session_handle);
     write_assigned_flags(session_handle, calc,
     			 read_assigned_flags(session_handle, calc) | NETTLE_FLAG_NO_INPUT);
@@ -985,7 +985,7 @@ void lose_caret()
   }
 }
 
-// Gain caret
+/* Gain caret */
 
 void gain_caret()
 {
@@ -1005,7 +1005,7 @@ void gain_caret()
 
   if (wimp_block[0]==session[session_handle].window_handle)
   {
-    // if the handle is the window handle, get input back for the cursor
+    /* if the handle is the window handle, get input back for the cursor */
     calc=get_cursor_position(session_handle);
 
     write_assigned_flags(session_handle, calc,
@@ -1019,7 +1019,7 @@ void gain_caret()
 
     if (line_editor_active(session_handle))
     {
-      // if line editor and doesn't already have caret, then set the caret in pane
+      /* if line editor and doesn't already have caret, then set the caret in pane */
       int block[6];
 
       regs.r[1]=(int) block;
@@ -1045,7 +1045,7 @@ void gain_caret()
   {
     calc=get_cursor_position(session_handle);
 
-    // unset no input flag again
+    /* unset no input flag again */
     write_assigned_flags(session_handle, calc,
     			 read_assigned_flags(session_handle, calc) & ~NETTLE_FLAG_NO_INPUT);
 
@@ -1061,7 +1061,7 @@ void gain_caret()
       regs.r[1]=(int) block;
       _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
 
-      // again, set caret if it's not already in the pane
+      /* again, set caret if it's not already in the pane */
       if (block[0]!=session[session_handle].pane_handle)
       {
         set_caret_position(session[session_handle].pane_handle,1,-1,
@@ -1073,16 +1073,16 @@ void gain_caret()
   }
 }
 
-// Wimp message
+/* Wimp message */
 
 void wimp_message(int message_number, int sender_ref, int my_ref)
 {
   switch (message_number)
   {
-    case 0: // Quit
+    case 0: /* Quit */
       quit_flag=true;
       break;
-    case 2: // DataSave
+    case 2: /* DataSave */
       {
         int block[10];
         char string[1024];
@@ -1121,10 +1121,10 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         _kernel_swi(Wimp_CreateMenu, &regs, &regs);
       }
       break;
-    case 0x400C1: // Mode change
+    case 0x400C1: /* Mode change */
       mode_change();
       break;
-    case 0x808C1: // Task window data
+    case 0x808C1: /* Task window data */
       {
         int session_handle=0;
 
@@ -1149,12 +1149,12 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         _kernel_swi(Wimp_SendMessage,&regs, &regs);
       }
       break;
-    case 0x808C2: // Task window started
+    case 0x808C2: /* Task window started */
       session[wimp_block[5]].socket_state=NETTLE_SESSION_CONNECTED;
       session[wimp_block[5]].socket_handle=wimp_block[1];
       set_title_bar(session[wimp_block[5]].window_handle,"nettle (Open)");
       break;
-    case 0x808C3: // Task window terminated
+    case 0x808C3: /* Task window terminated */
       {
         int session_handle=0;
 
@@ -1194,7 +1194,7 @@ void mode_change(void)
   _kernel_swi(OS_ReadModeVariable,&regs,&regs);
   zap_yeig=regs.r[2];
 
-  // work out which font we should be using
+  /* work out which font we should be using */
   if (zap_yeig==1)
   {
     zap_font_used=zap_font_area;
@@ -1218,7 +1218,7 @@ void mode_change(void)
     case 5:mem_required*=4;break;
   }
 
-  // Reallocate the bitmaps area
+  /* Reallocate the bitmaps area */
   bitmaps_area=realloc(bitmaps_area,mem_required);
 
   redraw.r_flags=0;
@@ -1258,7 +1258,7 @@ void mode_change(void)
   redraw.r_bac=0;
 
   session_handle=0;
-  // Resize all of the terminals to fit the new font size
+  /* Resize all of the terminals to fit the new font size */
   while (session_handle<current_session)
   {
     int block[4];
@@ -1276,9 +1276,9 @@ void mode_change(void)
   }
 }
 
-//
-// Other Wimp related code
-//
+/* */
+/* Other Wimp related code */
+/* */
 
 void generror(const char *string, bool is_message)
 {
@@ -1289,8 +1289,8 @@ void generror(const char *string, bool is_message)
     string = lookup(string, message, 256);
   }
 
-  block[0]=0x52380; // fill in the error number - error numbers aren't allocated the same as
-                    // SWIs, so this number is wrong...
+  block[0]=0x52380; /* fill in the error number - error numbers aren't allocated the same as */
+                    /* SWIs, so this number is wrong... */
   strcpy((char *)block+4,string);
 
   regs.r[0]=(int) block;
@@ -1303,8 +1303,8 @@ bool generror_question(char *string)
 {
   int block[64];
 
-  block[0]=0x52380; // fill in the error number - error numbers aren't allocated the same as
-                    // SWIs, so this number is wrong...
+  block[0]=0x52380; /* fill in the error number - error numbers aren't allocated the same as */
+                    /* SWIs, so this number is wrong... */
   strcpy((char *)block+4,string);
 
   regs.r[0]=(int) block;
@@ -1439,7 +1439,7 @@ int get_icon_data_length(int window_handle, int icon_handle) {
 }
 
 
-// Create menu code
+/* Create menu code */
 
 static int *create_menu(int *menu_data, char *indirected, char *title, char *entries, ... )
 {
@@ -1764,7 +1764,7 @@ void create_terminal_type_menu(void)
   menu_open=MENU_TERMINAL_TYPE;
 }
 
-// Set title bar code
+/* Set title bar code */
 void set_title_bar(int window_handle, char *title)
 {
   int block[23];
@@ -1792,7 +1792,7 @@ void set_title_bar(int window_handle, char *title)
   }
 }
 
-// Force redraw code
+/* Force redraw code */
 void force_redraw(int window_handle, int minx, int miny, int maxx, int maxy)
 {
   regs.r[0]=window_handle;
@@ -1906,7 +1906,7 @@ void open_open_window(bool open_window_flag)
   {
     case NETTLE_TELNET:
       block[0]=open;
-      block[1]=7; // Comnand icon
+      block[1]=7; /* Comnand icon */
       block[2]=1<<22;
       block[3]=1<<22;
 
@@ -1914,7 +1914,7 @@ void open_open_window(bool open_window_flag)
       _kernel_swi(Wimp_SetIconState, &regs, &regs);
 
       block[0]=open;
-      block[1]=0; // Host icon
+      block[1]=0; /* Host icon */
       block[2]=0;
       block[3]=1<<22;
 
@@ -1924,7 +1924,7 @@ void open_open_window(bool open_window_flag)
 
     case NETTLE_SSH:
       block[0]=open;
-      block[1]=7; // Command icon
+      block[1]=7; /* Command icon */
       block[2]=0;
       block[3]=1<<22;
 
@@ -1932,7 +1932,7 @@ void open_open_window(bool open_window_flag)
       _kernel_swi(Wimp_SetIconState, &regs, &regs);
 
       block[0]=open;
-      block[1]=0; // Host icon
+      block[1]=0; /* Host icon */
       block[2]=0;
       block[3]=1<<22;
 
@@ -1942,7 +1942,7 @@ void open_open_window(bool open_window_flag)
 
     case NETTLE_TASKWINDOW:
       block[0]=open;
-      block[1]=7; // Command icon
+      block[1]=7; /* Command icon */
       block[2]=0;
       block[3]=1<<22;
 
@@ -1950,7 +1950,7 @@ void open_open_window(bool open_window_flag)
       _kernel_swi(Wimp_SetIconState, &regs, &regs);
 
       block[0]=open;
-      block[1]=0;     // Host icon
+      block[1]=0;     /* Host icon */
       block[2]=1<<22;
       block[3]=1<<22;
 

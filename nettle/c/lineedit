@@ -1,6 +1,6 @@
-// Line editor code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Line editor code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include "generic.h"
 #include "globals.h"
@@ -24,10 +24,10 @@ void open_pane_window(int session_handle, int *main_block)
   block[0]=session[session_handle].pane_handle;
   block[1]=main_block[1];
 
-  // This is right, but it's the old window outline, so pane is always opened in the wrong place
-  //block[4]=block[2];
+  /* This is right, but it's the old window outline, so pane is always opened in the wrong place */
+  /*block[4]=block[2]; */
 
-  // This is wrong as it assumes a toolsprite height
+  /* This is wrong as it assumes a toolsprite height */
   block[4]=main_block[2]-40;
 
   block[2]=block[4]-48;

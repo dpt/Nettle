@@ -1,6 +1,6 @@
-// Miscellaneous code
-// by A. Macfarlane Smith
-// (C) Archifishal Software 2001
+/* Miscellaneous code */
+/* by A. Macfarlane Smith */
+/* (C) Archifishal Software 2001 */
 
 #include <assert.h>
 
@@ -9,7 +9,7 @@
 
 #include "misc.h"
 
-// Looks up a messagetrans token
+/* Looks up a messagetrans token */
 
 char *lookup(const char *token, char *buffer, int buf_len)
 {
@@ -23,14 +23,14 @@ char *lookup(const char *token, char *buffer, int buf_len)
   return buffer;
 }
 
-// Gets a system variable's contents
+/* Gets a system variable's contents */
 
 char *get_system_variable(char *variable, char *variable_name, int variable_length)
 {
   char *string;
   string=getenv(variable_name);
 
-  // if it exists, copy it into variable
+  /* if it exists, copy it into variable */
   if (string!=0)
   {
     strncpy(variable,string,variable_length);
@@ -43,7 +43,7 @@ char *get_system_variable(char *variable, char *variable_name, int variable_leng
   return variable;
 }
 
-// Converts a string into a binary integer
+/* Converts a string into a binary integer */
 
 int binary(char *string)
 {
@@ -62,13 +62,13 @@ int binary(char *string)
   return value;
 }
 
-// Implementation of BASIC's INSTR command
+/* Implementation of BASIC's INSTR command */
 int instr(char *string, char *test)
 {
   return esc_instr(string,test,strlen(string));
 }
 
-// Implementation of BASIC's INSTR command with the length of the string too
+/* Implementation of BASIC's INSTR command with the length of the string too */
 int esc_instr(char *string, char *test, int length)
 {
   int loop;
@@ -89,7 +89,7 @@ int esc_instr(char *string, char *test, int length)
   return -1;
 }
 
-// read a 'string'
+/* read a 'string' */
 char *read_mem(char *dest, char *source, int max_length)
 {
   int loop = 0;
@@ -108,7 +108,7 @@ char *read_mem(char *dest, char *source, int max_length)
   return dest;
 }
 
-// log a string to the log file
+/* log a string to the log file */
 void log_string(char *string)
 {
   if (!logging) { return; }
@@ -127,7 +127,7 @@ void log_string(char *string)
   log_file_time=regs.r[0];
 }
 
-// log a byte to the log file
+/* log a byte to the log file */
 void log_byte(char character)
 {
   if (!logging) { return; }
@@ -146,7 +146,7 @@ void log_byte(char character)
   log_file_time=regs.r[0];
 }
 
-// close the log file if we haven't used it for 5 seconds
+/* close the log file if we haven't used it for 5 seconds */
 void close_log(void)
 {
   int current_time;
@@ -164,7 +164,7 @@ void close_log(void)
   }
 }
 
-// Get what country we're in
+/* Get what country we're in */
 char *get_country(char *string, int size)
 {
   int country_number;
