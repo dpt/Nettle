@@ -995,8 +995,15 @@ static void win_resize_click(int x, int y, int buttons, int icon_handle)
   switch (icon_handle)
   {
     case icon_resize_cancel:
-      if ((buttons & 1)==0)
+      if (buttons & 1)
+      {
+        set_termsize_icons(win_resize, icon_resize_width, icon_resize_height, icon_resize_scroll,\
+                terminal_menu_session->terminal_size, terminal_menu_session->scrollback);
+      }
+      else
+      {
         _swi(Wimp_CreateMenu, _IN(1), -1);
+      }
 
       break;
 
@@ -1991,6 +1998,10 @@ void wimp_menu_selection(int *selection)
 
 	case MENU_LINEED_TYPE:
 	  create_lineeditor_type_menu(menu_window, menu_icon, menu_icon);
+	  break;
+
+	case MENU_CURSOR_TYPE:
+	  create_cursor_type_menu(menu_window, menu_icon, menu_icon);
 	  break;
 
 	case MENU_ZAPFONTLIST:
