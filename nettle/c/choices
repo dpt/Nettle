@@ -671,6 +671,8 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
         _swi(Wimp_GetWindowState, _IN(1), &block);
 
         open_window((struct wimp_openwindow_block *) &block, win_choices);
+
+        set_caret_position(win_paneterm, icon_paneterm_termwidth, -1, get_icon_data_length(win_paneterm, icon_paneterm_termwidth));
       }
 
       break;
