@@ -5,7 +5,7 @@
 
 AppName:Nettle
 AppPurpose:Arachnid telnet client
-AppAuthor:© Nettle developers, 2000-2001
+AppAuthor:© Nettle developers, 2000-2002
 AppVersion:v0.2019 (28 Jan 2002)
 
 Info:Info>
@@ -54,11 +54,14 @@ ErrorTemplates:An error occurred while loading the template file.
 ErrorSprites:An error occurred while loading the sprites file.
 
 ConnectionOpen:This session is currently open. Are you sure you wish to close it?
+ConnectionOpenButtons:Close,Cancel
 ConnectionMultiOpen:There are sessions currently open. Are you sure you wish to quit?
+ConnectionMultiOpenButtons:Quit,Cancel
 InvalidAddr:The remote address you entered is invalid. Please check and try again.
 InvalidPort:The port you entered was either malformed or too large.
 InvalidComm:You must enter a command to start a Nettle task window.
 BadTermType:The requested terminal type is not recognised as being valid.
+BadCursorType:The requested cursor type is not recognised as being valid.
 BadLineEdType:The requested line editor type is not recognised as being valid.
 BadTermSize:The requested terminal dimensions are either zero or too large. Please check and try again.
 BadLineEdSize:The requested line editor length is either zero or too large. Please check and try again.
@@ -78,6 +81,10 @@ Term5:vt510
 Term6:rxvt
 Term7:xterm
 Term8:xterm-color
+
+CursorType:Cursor type
+Cursor0:Solid
+Cursor1:Underline
 
 SelColour:Select colour
 
@@ -104,6 +111,7 @@ occurred:occurred
 
 # Errors
 DeleteHot:Are you sure you wish to delete this hotlist entry?
+DeleteHotButtons:Delete,Cancel
 BadHotlist:Error in hotlist file. Has it been mis-edited by hand?
 nocreate:Nettle was unable to save the file: 
 CantSaveChoices:Nettle was unable to save its Choices file: 
@@ -114,7 +122,8 @@ CantAlloc:Nettle was unable to claim enough memory for the requested operation.
 CantLoad:Nettle was unable to load the file: 
 ChoicesNotKnown:This version of Nettle cannot load Choices file of version
 ChoicesRevert:- reverting to defaults
-SureFileTypeLoad:Are you sure you wish to load file of type
+SureFileTypeLoad:Are you sure you wish to load file of type &%03X ?
+SureFileTypeLoadButtons:Load,Cancel
 
 HotBlankLabel:Please enter a hotlist label
 HotBlankHost:Please enter a hostname
@@ -126,3 +135,7 @@ HotBadScroll:Bad scrollback size
 SpoolAlreadyOpen:There is already an open spool for this session. (NB this should never happen)
 SpoolFailedToOpen:Failed to open a spool to the filename
 SpoolFailNonPermanent:Cannot open spools to non-permanent locations (ie. other applications)
+
+# Match details for Login
+LoginMatch_User:ogin:
+LoginMatch_Pass:assword:
