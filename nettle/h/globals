@@ -12,8 +12,8 @@
 
 #define MAX_TAB_NUMBER		32
 
-extern const char *application_name;
-extern const char *application_icon_name;
+extern char *application_name;
+extern char *application_icon_name;
 extern bool quit_flag;
 
 extern char zap_font[256];
@@ -129,9 +129,9 @@ extern int drag_window_handle;
 extern int drag_icon_handle;
 
 extern char line_editor_buffer[512];
-extern const char *line_editor_buffer_indirected;
-extern const char *line_editor_icon_text;
-extern const char *line_editor_icon_sprite;
+extern char *line_editor_buffer_indirected;
+extern char *line_editor_icon_text;
+extern char *line_editor_icon_sprite;
 
 extern char terminal_name[8][6];
 

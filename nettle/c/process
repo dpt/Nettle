@@ -1045,8 +1045,7 @@ static bool process_escape_length_x(struct session_struct *session)
             if (session->escape_string_length==4)
             {
               session->xpos=session->escape_string[3]-32;
-              session->ypos=session->escape_string[2]-32+
-              				   session->scrollback;
+              session->ypos=session->escape_string[2]-32+session->scrollback;
               done=true;
             }
           }
@@ -1073,11 +1072,9 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 session->ypos--;
               }
-              if (session->ypos<session->scrollback+
-                			       session->scroll_start)
+              if (session->ypos<session->scrollback+session->scroll_start)
               {
-                session->ypos=session->scrollback+
-                			     session->scroll_start;
+                session->ypos=session->scrollback+session->scroll_start;
               }
               done=true;
               break;
@@ -1100,11 +1097,9 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 session->ypos++;
               }
-              if (session->ypos>session->scrollback+
-                				session->scroll_end-1)
+              if (session->ypos>session->scrollback+session->scroll_end-1)
               {
-                session->ypos=session->scrollback+
-                			     session->scroll_end-1;
+                session->ypos=session->scrollback+session->scroll_end-1;
               }
               done=true;
               break;
@@ -1141,7 +1136,7 @@ static bool process_escape_length_x(struct session_struct *session)
                 switch (move)
                 {
                   case 0:
-                    session->xpos-=1;
+                    session->xpos--;
                     break;
                   default:
                     session->xpos-=move;
@@ -1160,8 +1155,7 @@ static bool process_escape_length_x(struct session_struct *session)
               break;
             case 'H': case 'f':
               /* Direct cursor addressing */
-              if (esc_instr(session->escape_string,";",
-                				session->escape_string_length)>=0)
+              if (esc_instr(session->escape_string,";", session->escape_string_length)>=0)
               {
                 session->xpos=atoi(session->escape_string+
                                                 esc_instr(session->escape_string,
@@ -1176,8 +1170,7 @@ static bool process_escape_length_x(struct session_struct *session)
                 }
                 else
                 {
-                  session->ypos=session->scrollback+
-                                             atoi(session->escape_string+2)-1;
+                  session->ypos=session->scrollback+atoi(session->escape_string+2)-1;
                 }
               }
               else
@@ -1185,8 +1178,7 @@ static bool process_escape_length_x(struct session_struct *session)
                 session->xpos=0;
                 if (session->other_session_flags & NETTLE_OTHER_ORIGIN_MODE)
                 {
-                  session->ypos=session->scrollback+
-                  			       session->scroll_start-1;
+                  session->ypos=session->scrollback+session->scroll_start-1;
                 }
                 else
                 {
@@ -1303,6 +1295,37 @@ static bool process_escape_length_x(struct session_struct *session)
                        32);
 
                   break;
+              }
+              break;
+            case 'P':
+              {
+                /* Delete character(s) */
+                int calc, calc2;
+                int move=atoi(session->escape_string+2);
+
+                calc=(int) session->assigned_area+
+                           ((session->ypos*session->terminal_size_x)+
+                           session->xpos)*4;
+                calc2=(int) session->assigned_area+
+                            ((session->ypos+1)*session->terminal_size_x)*4;
+
+                switch (move)
+                {
+                  case 0:
+                    _swi(ZapRedraw_MoveBytes, _INR(1,3), calc+4, calc, calc2-calc-4);
+
+                    clear_screen(session, calc+4, calc2-4, session->current_fg,
+                                 session->current_bg, 0, 32);
+                    break;
+                  default:
+                    _swi(ZapRedraw_MoveBytes, _INR(1,3), calc+(4*move), calc,
+                                              calc2-calc-(4*move));
+
+                    clear_screen(session, calc+(4*move), calc2-4, session->current_fg,
+                                 session->current_bg, 0, 32);
+                    break;
+                }
+                done=true;
               }
               break;
             case 'X':
