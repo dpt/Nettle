@@ -8,6 +8,7 @@
 #include "generic.h"
 #include "globals.h"
 
+#include <errno.h>
 #include "sys/errno.h"
 #include "sys/socket.h"
 #include "sys/select.h"

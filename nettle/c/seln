@@ -375,25 +375,25 @@ void force_redraw_selection (void)
 {
   int top, bottom;
 
-  if (selection_session != NULL)
-    return;
-
-  if (selection_start <= selection_end)
+  if (selection_session)
   {
-    top = selection_start;
-    bottom = selection_end;
-  }
-  else
-  {
-    top = selection_end;
-    bottom = selection_start;
-  }
+    if (selection_start <= selection_end)
+    {
+      top = selection_start;
+      bottom = selection_end;
+    }
+    else
+    {
+      top = selection_end;
+      bottom = selection_start;
+    }
 
-  top /= selection_session->terminal_size.x;
-  bottom /= selection_session->terminal_size.x;
+    top /= selection_session->terminal_size.x;
+    bottom /= selection_session->terminal_size.x;
 
-  force_redraw (selection_session->window_handle, 0,
-	        (-bottom - 1) * redraw.r_charh << eig.y,
-		selection_session->terminal_size.x * redraw.r_charw << eig.x,
-		-top * redraw.r_charh << eig.y);
+    force_redraw (selection_session->window_handle, 0,
+  	          (-bottom - 1) * redraw.r_charh << eig.y,
+    		  selection_session->terminal_size.x * redraw.r_charw << eig.x,
+		  -top * redraw.r_charh << eig.y);
+  }
 }
