@@ -1,0 +1,21 @@
+#!/bin/sh
+
+rm *.o *.c *.h *.s 2>/dev/null
+
+for i in c h s
+do
+  cd $i
+  for j in *
+  do
+    if [ "$j" != "CVS" ]
+    then
+      cp -a $j ../$j.$i
+    fi
+  done
+  cd -
+done
+
+# Uuugh!
+export INTERNET_PATH=../../nettlebits/netlib
+
+make -f MakeCross
