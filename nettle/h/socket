@@ -18,11 +18,23 @@
 
 extern int socket_connecttoip(int, int);
 extern void socket_close(int);
-extern int socket_connected(int);
 extern int socket_readdata(int,char *,int);
 extern int socket_senddata(int /*socket*/, const char */*buffer*/,
                            int /*length*/);
 extern char *socket_ip_string(int);
+
+
+
+/**
+ * Test whether an inprogress connect is finished yet
+ *
+ * @param socket_handle   Socket to check
+ *
+ * @return -1    => connect still in progress
+ *          0    => connected
+ *         other => failed to connect, return value is socket error
+ */
+int socket_connected(int socket_handle);
 
 
 

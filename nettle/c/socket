@@ -68,42 +68,62 @@ int socket_connecttoip(int ip_address,int port_number)
 }
 
 
+
 void socket_close(int socket_handle)
 {
   socketwatch_deregister(socket_handle);
   close(socket_handle);
 }
 
+
+
 int socket_connected(int socket_handle)
 {
-  fd_set fds;
-  struct timeval timeout = { 0, 0 };
-  int numready;
+  fd_set            fds;
+  struct timeval    timeout;
+  int               numready;
 
+  /* select() on the socket, see if it is ready for writing.
+   * Conversely to what you might expect, a socket that has failed to
+   * connect with be flagged as ready for writing.
+   */
+  timerclear(&timeout); /* no timeout */
   FD_ZERO(&fds);
   FD_SET(socket_handle, &fds);
   numready = select(socket_handle+1, NULL, &fds, NULL, &timeout);
-  fflush(stdout);
+  
   if (numready == -1 || (numready > 0 && FD_ISSET(socket_handle, &fds)))
   {
+    /* either select returned an error (so we look at the socket to
+     * see if it's even valid anymore), or select said the socket is
+     * ready for writing.
+     */
     int result;
-    int size = sizeof(errno);
+    int size = sizeof(result);
 
-    if (getsockopt(socket_handle, SOL_SOCKET, SO_ERROR, (char *) &result, &size) == -1)
+    /* read the pending socket error in 'result' */
+    if (getsockopt(socket_handle, SOL_SOCKET, SO_ERROR,
+                   (char *) &result, &size) == -1)
+    {
+      /* error reading error number from socket - give up */
       return errno;
+    }
 
     if (result == 0)
-      /* connected! */
+    {
+      /* no error => connected! */
       return 0;
+    }
 
-    if (result != 0)
-      /* error occurred */
-      return result;
+    /* otherwise, an error occurred - return the error number */
+    return result;
   }
 
-  /* still connecting */
+  /* select succeeded & socket not ready for writing => still connecting */
   return -1;
 }
+
+
 
 int socket_readdata(int socket_handle, char * buffer, int length)
 {
