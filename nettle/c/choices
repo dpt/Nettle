@@ -213,9 +213,9 @@ void load_choices(void)
 
     /* Check that the cursor type is known */
     {
-      char string[16];
-      sprintf(string,"Cursor%d",cursor_type);
-      if (lookup_inbuffer(string) == NULL)
+      char cstring[16];
+      sprintf(cstring,"Cursor%d",cursor_type);
+      if (lookup_inbuffer(cstring) == NULL)
         cursor_type = cursor_solid; /* Reset to solid, if invalid */
     }
 

@@ -26,7 +26,8 @@
 
 static void allocate_zapredraw_area(int, int, int);
 static void start_connection_int (struct connection_params *params );
-
+static int get_user_pass (char *string, char *tempbuf, struct connection_params *params);
+static void login_sendkeys(struct session_struct *session, const char *ptr);
 
 static void rehash_blink(void)
 {
@@ -56,7 +57,7 @@ static void rehash_blink(void)
                         tempbuf for the user and password
  Returns:      true if we failed, false otherwise
  ******************************************************************/
-int get_user_pass (char *string, char *tempbuf,
+static int get_user_pass (char *string, char *tempbuf,
                    struct connection_params *params)
 {
   char *sptr;
@@ -429,7 +430,7 @@ static void make_new_terminal_window(struct session_struct *session)
                ptr-> the string we want to send
  Returns:      none
  ******************************************************************/
-void login_sendkeys(struct session_struct *session,char *ptr)
+static void login_sendkeys(struct session_struct *session, const char *ptr)
 {
   while (*ptr)
   {
