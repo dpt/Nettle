@@ -8,6 +8,7 @@
 #include "generic.h"
 #include "globals.h"
 
+#include "keyboard.h"
 #include "main.h"
 #include "mouse.h"
 #include "nettle.h"
@@ -88,7 +89,9 @@ void mouse_handle_event(struct session_struct *session, int x, int y, int button
   if (unix_button==-1)
     return;
 
-  /* Calculate unix_button based on SHIFT, ALT, CTRL keys here */
+  if (inkey(KEYBOARD_SHIFT)) unix_button+=4; /* Shift */
+  if (inkey(KEYBOARD_META)) unix_button+=8; /* Meta (Alt) */
+  if (inkey(KEYBOARD_CTRL)) unix_button+=16; /* Ctrl */
 
   switch (session->mouse_mode)
   {
