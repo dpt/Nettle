@@ -265,6 +265,8 @@ static void start_connection_int (struct connection_params *params )
       session->socket_state=NETTLE_SESSION_RESOLVE;
       session->socket_port = params->port;
       strcpy (session->socket_host, params->host);
+      session->dns = dns_gethostbyname(session->socket_host);
+      assert(session->dns != NULL);
       break;
 
     case NETTLE_TASKWINDOW:
@@ -562,6 +564,11 @@ void remove_session(struct session_struct *session)
         }
         break;
     }
+  }
+  if (session->dns != NULL)
+  {
+    dns_dispose(session->dns);
+    session->dns = NULL;
   }
 
   {

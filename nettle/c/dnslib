@@ -1,0 +1,203 @@
+/*
+ * RISC OS resolver abstraction code
+ *
+ * © Joseph Heenan, 2000
+ *
+ * $Id$
+ */
+
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "swis.h"
+
+#include "arpa/inet.h" /* inet_aton */
+#include "netdb.h" /* gethostname */
+#include "sys/errno.h"
+#include "sys/socket.h" /* AF_INET */
+
+#include "dnslib.h"
+
+#define Resolver_GetHost 0x46001
+
+struct dns_s
+{
+  dns_status_t status;
+  char *hostname;
+  struct hostent *hostent;
+  struct hostent ourhostent; /* only used when user enters quad dotted ip */
+  struct in_addr *inaddrs[2];
+  struct in_addr inaddr;
+};
+
+
+
+static char *strdup(const char *s)
+{
+  size_t len;
+  char *t;
+  
+  if (!s)
+    return NULL;
+  
+  len = strlen(s) + 1;
+  
+  t = malloc(len);
+  if (!t)
+    return NULL;
+  
+  memcpy(t, s, len);
+  
+  return t;
+}
+
+
+
+dns_t *dns_gethostbyname(const char *hostname)
+{
+  dns_t *dns;
+  
+  dns = calloc(1, sizeof(struct dns_s));
+  if (!dns)
+    goto failed;
+  
+  dns->status = dns_init;
+  
+  dns->hostname = strdup(hostname);
+  if (!dns->hostname)
+    goto failed;
+  
+  return dns;
+  
+failed:
+  if (dns)
+    free(dns);
+  
+  return NULL;
+}
+
+
+
+void dns_dispose(dns_t *dns)
+{
+  assert(dns);
+
+  if (dns)
+  {
+    if (dns->hostname)
+      free(dns->hostname);
+    free(dns);
+  }
+}
+
+
+
+dns_status_t dns_check(dns_t *dns)
+{
+  _kernel_oserror *e;
+  int status;
+
+  assert(dns);
+  
+  switch (dns->status)
+  {
+    case dns_init:
+    {
+      char swiname[32];
+      
+      if (inet_aton(dns->hostname, &dns->inaddr) == 1)
+      {
+        /* setup a hostent structure containing result */
+        struct hostent host = {
+            NULL, NULL, AF_INET, sizeof(struct in_addr), NULL
+        };
+        dns->hostent = &dns->ourhostent;
+        memcpy(dns->hostent, &host, sizeof host);
+        dns->hostent->h_addr_list = (char **) &dns->inaddrs;
+        dns->hostent->h_addr_list[0] = (char *) &dns->inaddr;
+        dns->hostent->h_addr_list[1] = NULL;
+        /* valid ip address given */
+        dns->status = dns_complete_success;
+        break;
+      }
+      
+      /* check if resolver module is present */
+      if (_swix(OS_SWINumberToString, _INR(0,2), Resolver_GetHost,  swiname,
+                sizeof(swiname)-1) == NULL)
+      {
+        if (strcmp(swiname, "Resolver_GetHost") == 0)
+        {
+          /* Resolver is present and is the one that's got the resolver swi
+           * chunk */
+          dns->status = dns_inprogress;
+        }
+        else
+        {
+          /* Not present, fallback to simple gethostbyname() */
+          dns->status = dns_singletask;
+        }
+      }
+      else
+      {
+        /* swi lookup failed, fallback to simple gethostbyname() */
+        dns->status = dns_singletask;
+      }
+      break;
+    }
+    
+    case dns_inprogress:
+      e = _swix(Resolver_GetHost, _IN(0)|_OUTR(0,1), dns->hostname, &status, &dns->hostent);
+      if (e && e->errnum == 486)
+      {
+        /* Bad SWI, fallback to singletasking lookup */
+        dns->status = dns_singletask;
+      }
+      else if (e)
+      {
+        /* error from swi */
+        dns->status = dns_complete_failure;
+      }
+      else if (status != EINPROGRESS)
+      {
+        /* finished */
+        dns->status = dns_complete_success;
+      }
+      else
+      {
+        /* it's still resolving */
+      }
+      break;
+    
+    case dns_singletask:
+      /* Bad SWI, fallback to singletasking lookup */
+      dns->hostent = gethostbyname(dns->hostname);
+      if (dns->hostent)
+        dns->status = dns_complete_success;
+      else
+        dns->status = dns_complete_failure;
+      break;
+      
+    case dns_complete_failure:
+    case dns_complete_success:
+      /* finished, do nothing */
+      break;
+    
+    default:
+      abort();
+  }
+    
+  return dns->status;
+}
+
+
+
+struct hostent *dns_getanswer(dns_t *dns)
+{
+  assert(dns);
+  
+  if (dns->status != dns_complete_success)
+    return NULL;
+  
+  return dns->hostent;
+}

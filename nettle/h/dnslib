@@ -1,0 +1,32 @@
+/*
+ * RISC OS resolver abstraction code
+ *
+ * © Joseph Heenan, 2000
+ *
+ * $Id$
+ */
+
+#ifndef DNS_H
+#define DNS_H
+
+typedef struct dns_s dns_t;
+
+typedef enum
+{
+  dns_init,
+  dns_inprogress,
+  dns_singletask,
+  dns_complete_success,
+  dns_complete_failure
+}
+dns_status_t;
+
+dns_t *dns_gethostbyname(const char *host);
+
+void dns_dispose(dns_t *query);
+
+dns_status_t dns_check(dns_t *query);
+
+struct hostent *dns_getanswer(dns_t *query);
+
+#endif /* DNS_H */

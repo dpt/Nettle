@@ -35,31 +35,6 @@ extern int close(int /*s*/);
 
 
 
-char socket_resolvehost(const char *host_name, unsigned int *address)
-{
-  int status;
-  struct hostent *hostent;
-
-  if (_swix(Resolver_GetHost, _IN(0)|_OUTR(0,1), host_name, &status, &hostent)==0)
-  {
-    switch (status)
-    {
-      case -1: case -2:
-        return RESOLVER_FAILED;
-        break;
-      case 0:
-        *address=(unsigned int) *((int *)(void *)(*hostent).h_addr);
-        return RESOLVER_SUCCESS;
-        break;
-    }
-  }
-  else
-  {
-    return RESOLVER_FAILED;
-  }
-  return RESOLVER_INPROGRESS;
-}
-
 int socket_connecttoip(int ip_address,int port_number)
 {
   int socket_handle;

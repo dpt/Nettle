@@ -9,6 +9,7 @@
 #define GLOBALS_H
 
 #include "nettle.h"
+#include "dnslib.h"
 
 /**** GLOBAL DEFAULT/OPTIONS ***************/
 
@@ -126,6 +127,7 @@ struct session_struct
   char socket_host[256];	/* hostname */
   int socket_port;		/* port number */
   unsigned int socket_ip;	/* IP */
+  dns_t *dns;                   /* handle for dns lookup */
   char socket_state;		/* state of socket (see nettle.h for states) */
   char current_fg;		/* current foreground colour */
   char current_bg;		/* current background colour */

@@ -27,9 +27,10 @@ ASMFLAGS = -c
 
 TEMPLATES = !Nettle/Resources/UK/Template3D,fec
 
-OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
-       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o \
-       messages.o termlist.o wimputil.o url.o
+OBJS = chardefn.o choices.o dns.o globals.o init.o keyboard.o lineedit.o \
+       main.o misc.o hotlist.o nettle.o process.o socket.o quit.o seln.o \
+       wimp.o zapgen.o fortify.o sockwatch.o messages.o termlist.o \
+       wimputil.o url.o
 
 RUNIMAGE = !Nettle/!RunImage,ff8
 

@@ -21,6 +21,7 @@
 
 #include "sys/select.h"
 #include "sys/time.h"
+#include "netdb.h"
 
 #include "choices.h"
 #include "hotlist.h"
@@ -78,42 +79,63 @@ void open_window_centred (int window_handle)
 }
 
 
+
+/**
+ * start a connection to the remote host
+ *
+ * This is called once the dns lookup has succeeded
+ */
+static void wimp_connectsession(struct session_struct *session)
+{
+   session->socket_handle =
+                  socket_connecttoip(session->socket_ip,
+                                     session->socket_port);
+
+  if (session->socket_handle == -1)
+  {
+    write_out_strings(session, lookup_static("nosocket"),
+                       "\r\n", 0);
+    session->socket_state=NETTLE_SESSION_NONE;
+    return;
+  }
+
+  session->socket_state = NETTLE_SESSION_CONNECT;
+  write_out_strings(session, lookup_static("connecting"),
+                    socket_ip_string(session->socket_ip),
+                    "...\r\n", 0);
+  /* take a null so the state machine gets kicked and wimp_pollconect
+   * starts taking null polls */
+  main_requirenull = true;
+}
+
+
 static void wimp_pollresolve(struct session_struct *session)
 {
-  switch (socket_resolvehost(session->socket_host,
-                             &session->socket_ip))
+  struct hostent *dnsanswer;
+  
+  switch (dns_check(session->dns))
   {
-    case RESOLVER_INPROGRESS:
-      /* resolving not finished yet, continue to take null polls */
+    default:
+      /* still in progress */
       main_requirenull = true;
       break;
-    case RESOLVER_FAILED:
+      
+    case dns_complete_failure:
       set_title_bar(session->window_handle,
                     lookup_static("title_disconnect"));
       write_out_strings(session, lookup_static("noresolv"), "\r\n", 0);
       session->socket_state=NETTLE_SESSION_NONE;
       break;
-    case RESOLVER_SUCCESS:
-      session->socket_handle =
-                      socket_connecttoip(session->socket_ip,
-                                         session->socket_port);
-
-      if (session->socket_handle!=-1)
-      {
-        session->socket_state = NETTLE_SESSION_CONNECT;
-        write_out_strings(session, lookup_static("connecting"),
-                          socket_ip_string(session->socket_ip),
-                          "...\r\n", 0);
-        /* take a null so the state machine gets kicked and wimp_pollconect
-         * starts taking null polls */
-        main_requirenull = true;
-      }
-      else
-      {
-        write_out_strings(session, lookup_static("nosocket"),
-                           "\r\n", 0);
-        session->socket_state=NETTLE_SESSION_NONE;
-      }
+      
+    case dns_complete_success:
+      dnsanswer = dns_getanswer(session->dns);
+      assert(dnsanswer != NULL);
+      session->socket_ip = (unsigned int) *((int *)(void *)(*dnsanswer).h_addr);
+      dns_dispose(session->dns);
+      session->dns = NULL;
+      
+      wimp_connectsession(session);
+      break;
   }
 }
 
