@@ -24,4 +24,4 @@
 #DEFAULT (echo ""; id; echo %s; date; cat) >> $CVSROOT/CVSROOT/commitlog
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
-DEFAULT $CVSROOT/CVSROOT/syncmail %{sVv} nettle-commits@lists.sourceforge.net
+#DEFAULT $CVSROOT/CVSROOT/syncmail %{sVv} nettle-commits@lists.sourceforge.net
