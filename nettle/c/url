@@ -18,13 +18,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "swis.h"
-
 #include "generic.h"
 #include "globals.h"
-#include "wimp.h"
 
 #include "url.h"
+#include "wimp.h"
+#include "wimputil.h"
 
 
 #define Wimp_EUserMessage             17
@@ -58,7 +57,7 @@ static int url_antbroadcast( const char *url )
                 &urlblock, 0);
   if (error != NULL)
     return -1;
-  
+
   return 0;
 }
 
@@ -141,7 +140,7 @@ void url_bounce(user_message *mess)
   }
   strcat(buf, " ");
   strncat(buf, mess->contents.bytes, sizeof(buf) - strlen(buf) - 1 );
-  
+
   _swi(Wimp_StartTask, _IN(0), buf + sizeof("Alias$") - 1);
 }
 
@@ -158,10 +157,10 @@ void url_recvbroadcast(user_message *mess, url_handler_func handler)
 
   if ( mess->message_code == URI_MProcess )
   {
-    uri_processmessage *msg = (uri_processmessage *) mess;
-    int checkonly = msg->flags & 0x01;
+    uri_processmessage *msg_process = (uri_processmessage *) mess;
+    int checkonly = msg_process->flags & 0x01;
 
-    if ( (*handler)(msg->uri, checkonly) )
+    if ( (*handler)(msg_process->uri, checkonly) )
     {
       /* url handled (or can be handled */
       mess->your_ref    = mess->my_ref;

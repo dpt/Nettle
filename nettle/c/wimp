@@ -806,7 +806,7 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
     char_offset++;
 
   /* skip any leading punctuation */
-  while (ispunct (session->assigned_area[char_offset*4+3]))
+  while (ispunct ((int) session->assigned_area[char_offset*4+3]))
     char_offset++;
 
   /* go forward to the end of the form [ie. until we find whitespace] */
@@ -1904,7 +1904,7 @@ void mode_change(void)
 
   _swi(ZapRedraw_ReadVduVars, _IN(1), &redraw);
 
-  mem_required=(zap_font_used[2]+7 & ~7)*zap_font_used[3]*(zap_font_used[5]-zap_font_used[4]);
+  mem_required=((zap_font_used[2]+7) & ~7)*zap_font_used[3]*(zap_font_used[5]-zap_font_used[4]);
 
   switch (redraw.r_bpp)
   {

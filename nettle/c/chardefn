@@ -293,7 +293,7 @@ void define_zap_undef_chars(int *int_area, int first_char, int last_char,
 
       /* undefined character - fill in the definition */
       def[0] = chr;
-      _kernel_osword (10, (int *)def);
+      _swi (OS_Word, _INR(0,1), 10, def);
       if (height == 8)
         memcpy (area + chr * char_size, def + 1, 8);
       else
