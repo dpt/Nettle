@@ -15,23 +15,32 @@ int
 decode_key (struct session_struct *session, int key, int extra, char *block)
 {
 #define SETBLOCK(LEN,STR) { strcpy (block, STR); return LEN; }
+  int ekey = extra >> 16;
 
   switch (key)
   {
-  case 0x00D:			/* Return */
-    if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
-    {
-      SETBLOCK (3, "\r\n\n");
-    }
+  case 0x008:			/* Backspace */
+    if (ekey == 30
+	&& (session->other_session_flags & NETTLE_OTHER_BACKSPACE_MODE))
+      SETBLOCK (1, "\x7F")
     else
-    {
-      SETBLOCK (2, "\r\n");
-    }
+      SETBLOCK (1, "\b")
+  case 0x00D:			/* Return */
+    if (ekey == 103 &&
+	(((session->other_session_flags & NETTLE_OTHER_APPLI_MODE) != 0) ^
+	 ((extra & 0x3) != 0)))
+      SETBLOCK (3, "\x1BOM")	/* Enter */
+    else if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
+      SETBLOCK (3, "\r\n\n")
+    else
+      SETBLOCK (2, "\r\n")
   case 0x01E:			/* Home */
     SETBLOCK (4, "\x1B[1~");
   case 0x07F:			/* Delete */
-    SETBLOCK (1, "\x7F");
-    /*SETBLOCK (4, "\x1B[3~");*/
+    if (session->other_session_flags & NETTLE_OTHER_BACKSPACE_MODE)
+      SETBLOCK (4, "\x1B[3~")
+    else
+      SETBLOCK (1, "\x7F")
 
   case 0x181:			/* F1 */
     SETBLOCK (3, "\x1BOP");
@@ -191,6 +200,68 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
     SETBLOCK (4, "\x1B[2@");
 
   default:
+    if (((session->other_session_flags & NETTLE_OTHER_APPLI_MODE) != 0) ^
+	((extra & 0x3) != 0))
+      /* application keypad *eor* Shift pressed */
+      switch (key)
+      {
+      case '0':		/* keypad 0 */
+	if (ekey == 101)
+	  SETBLOCK (3, "\x1BOp");
+	break;
+      case '1':		/* keypad 1 */
+	if (ekey == 90)
+	  SETBLOCK (3, "\x1BOq");
+	break;
+      case '2':		/* keypad 2 */
+	if (ekey == 91)
+	  SETBLOCK (3, "\x1BOr");
+	break;
+      case '3':		/* keypad 3 */
+	if (ekey == 92)
+	  SETBLOCK (3, "\x1BOs");
+	break;
+      case '4':		/* keypad 4 */
+	if (ekey == 72)
+	  SETBLOCK (3, "\x1BOt");
+	break;
+      case '5':		/* keypad 5 */
+	if (ekey == 73)
+	  SETBLOCK (3, "\x1BOu");
+	break;
+      case '6':		/* keypad 6 */
+	if (ekey == 74)
+	  SETBLOCK (3, "\x1BOv");
+	break;
+      case '7':		/* keypad 7 */
+	if (ekey == 55)
+	  SETBLOCK (3, "\x1BOw");
+	break;
+      case '8':		/* keypad 8 */
+	if (ekey == 56)
+	  SETBLOCK (3, "\x1BOx");
+	break;
+      case '9':		/* keypad 9 */
+	if (ekey == 57)
+	  SETBLOCK (3, "\x1BOy");
+	break;
+      case '+':		/* keypad + */
+	if (ekey == 75)
+	  SETBLOCK (3, "\x1BOl"); /* should be on ','... */
+	break;
+      case '-':		/* keypad - */
+	if (ekey == 58)
+	  SETBLOCK (3, "\x1BOm");
+	break;
+      case '.':		/* keypad . */
+	if (ekey == 102)
+	  SETBLOCK (3, "\x1BOn");
+	break;
+      case 0x0D:		/* Enter */
+	if (ekey == 57)
+	  SETBLOCK (3, "\x1BOM");
+	break;
+      }
     if (key < 0x100)
     {
       sprintf (block, "%c", key);
