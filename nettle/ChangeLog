@@ -1,5 +1,10 @@
 05/09/2001 Peter Naulls <peter@chocky.org>
 
+       * wimp.c: Allow a longer entry in the iconbar entry.
+       * !Nettle.Resourses.UK.Messages: Change "Connect..." to "New session..."
+
+05/09/2001 Peter Naulls <peter@chocky.org>
+
        * sockwatch.c: Change include to unixlib/unix.h following UnixLib
          change.
 

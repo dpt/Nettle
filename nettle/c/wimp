@@ -1826,7 +1826,7 @@ static int wimp_handletelneturl(const char *url)
 }
 
 
-
+#ifdef INSECURE_STUFF
 /**
  * Note - url has already had the 'ansitaskwindow:' removed
  */
@@ -1834,7 +1834,7 @@ static int wimp_handleansiurl(const char *url)
 {
   return nettle_start_taskwindow(url);
 }
-
+#endif
 
 
 int wimp_handleurl(const char *url, int checkonly)
@@ -2237,7 +2237,7 @@ static void create_iconbar_menu(void)
   else
     menu_hotlist = get_grey_menu_item("Hotlist]");
 
-  if (create_menu(menu_data, 0, menu_title,
+  if (create_menu(menu_data, indirected+768, menu_title,
                   menu_info, win_info,
                   menu_choices,
                   menu_connect,
