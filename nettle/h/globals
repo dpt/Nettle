@@ -47,11 +47,11 @@ extern int task_handle;
 extern int iconbar_handle;
 extern int menu_open;
 
-extern int info;
-extern int choices;
-extern int open;
-extern int resize;
-extern int save;
+extern int win_info;
+extern int win_choices;
+extern int win_open;
+extern int win_resize;
+extern int win_save;
 
 extern bool logging;
 extern bool line_editor;

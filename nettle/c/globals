@@ -50,11 +50,11 @@ int iconbar_handle;
 int menu_open;
 
 /* Template windows */
-int info;
-int choices;
-int open;
-int resize;
-int save;
+int win_info;
+int win_choices;
+int win_open;
+int win_resize;
+int win_save;
 
 bool logging=false;
 bool line_editor=false;
