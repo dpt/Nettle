@@ -686,12 +686,12 @@ void reset_terminal(struct session_struct *session)
   session->scroll_start=1;
   session->scroll_end=session->terminal_size.y;
   session->character_set_gl=NETTLE_CHSET_G0;
-  session->character_set_gr=NETTLE_CHSET_G1;
+  session->character_set_gr=NETTLE_CHSET_G3;
 
   session->character_set_g0=NETTLE_CHSET_ASCII;
   session->character_set_g1=NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS;
   session->character_set_g2=NETTLE_CHSET_ASCII;
-  session->character_set_g3=NETTLE_CHSET_ASCII;
+  session->character_set_g3=NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS;
 
   session->terminal_mode=2;
   session->bit_controls=false;
