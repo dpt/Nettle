@@ -317,6 +317,7 @@ static hotlistnode *create_blank(void)
   if (!node)
     return NULL;
 
+  node->next = NULL;
   node->internal_state = 0;
   node->type = ht_telnet;
   node->label = NULL;
@@ -664,7 +665,7 @@ static hotlistnode *hotlist_unlink_selected(void)
   hotlistnode *node = editlisthead;
   hotlistnode *prev = NULL;
 
-  for(;node;prev=node, node=node->next)
+  for(;node;node=node->next)
   {
     if(node->internal_state & 1)
     {
@@ -685,6 +686,7 @@ static hotlistnode *hotlist_unlink_selected(void)
       edititems--;
       return node;
     }
+    prev = node;
   }
   BOGUSERROR("Unlink: no item selected");
   return NULL;
@@ -1060,15 +1062,12 @@ static void hotlist_drawitem(hotlistnode *draw)
 
 void win_hotpane_click(int x, int y, int buttons, int icon_handle)
 {
-  int item, x_pos, y_pos;
+  int item, y_pos;
   hotlistnode *node, *sel;
   struct wimp_getwindowstate_block gwsblock;
 
   gwsblock.window_handle=win_hotpane;
-
   _swi(Wimp_GetWindowState, _IN(1), &gwsblock);
-
-  x_pos=gwsblock.min.x-gwsblock.scroll.x;
   y_pos=gwsblock.max.y-gwsblock.scroll.y;
    
   item = -((y - y_pos) + 4) / ENTRYHEIGHT;
@@ -1113,11 +1112,11 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
 	dragblock.window_handle = win_hotpane;
 	dragblock.drag_type = 5; /* Fixed size box */
 	dragblock.parent_min.x = gwsblock.min.x;
-	dragblock.parent_min.y = gwsblock.min.y;
+	dragblock.parent_min.y = gwsblock.min.y - ENTRYHEIGHT;
 	dragblock.parent_max.x = gwsblock.max.x;
-	dragblock.parent_max.y = gwsblock.max.y;
-	dragblock.min.x = dragblock.parent_min.x ;
-	dragblock.min.y = dragblock.parent_max.y -(item * ENTRYHEIGHT) - 4 - ENTRYHEIGHT - gwsblock.scroll.y;
+	dragblock.parent_max.y = gwsblock.max.y + ENTRYHEIGHT;
+	dragblock.min.x = gwsblock.min.x ;
+	dragblock.min.y = gwsblock.max.y -(item * ENTRYHEIGHT) - 4 - ENTRYHEIGHT - gwsblock.scroll.y;
 	dragblock.max.y = dragblock.min.y + ENTRYHEIGHT;
 	dragblock.max.x = dragblock.min.x + (gwsblock.max.x - gwsblock.min.x );
 	
@@ -1150,9 +1149,34 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
 
 /******************************************************************************/
 
-static void hotlist_movenode(hotlistnode *node, int item, hotlistnode *sel)
-{  
-  if (!node || node==editlisthead)
+void hotlist_dragdone(void)
+{
+  int item, y_pos;
+  struct wimp_getwindowstate_block gwsblock;
+  struct wimp_getpointerinfo_block wgpi;
+  hotlistnode *node,*sel;
+  
+  _swi(Wimp_DragBox, _IN(1), -1); /* Stop dragging */
+  _swix(Wimp_AutoScroll, _IN(0), 0); /* Stop auto scrolling */
+  
+  sel = hotlist_get_selected();
+
+  if (!sel)
+   return; /* shouldn't be possible! */
+
+  gwsblock.window_handle=win_hotpane;
+  _swi(Wimp_GetWindowState, _IN(1), &gwsblock);
+  y_pos=gwsblock.max.y-gwsblock.scroll.y;
+
+  _swi(Wimp_GetPointerInfo, _IN(1), &wgpi);
+  item = -((wgpi.pos.y - y_pos) + 4) / ENTRYHEIGHT;
+
+  node = decode_hotlist_menu(editlisthead, item);
+
+  if (node == sel || edititems<2)
+    return; /* Dropped the thing back on itself, so don't do anything */
+    
+  if (node==NULL || node==editlisthead)
   {
     if (item<=0)
     {
@@ -1177,50 +1201,11 @@ static void hotlist_movenode(hotlistnode *node, int item, hotlistnode *sel)
       return; /* Shouldn't happen */
     sel->next = node->next;
     node->next = sel;
+    if (node==editlisttail)
+      editlisttail = sel;
   }
 
   edititems++;
-}
-
-/******************************************************************************/
-
-void hotlist_dragdone(void)
-{
-  int item, x_pos, y_pos, y;
-  hotlistnode *node,*sel = hotlist_get_selected();
-  struct wimp_getwindowstate_block gwsblock;
-  struct wimp_getpointerinfo_block wgpi;
-  
-  _swi(Wimp_DragBox, _IN(1), -1); /* Stop dragging */
-  _swix(Wimp_AutoScroll, _IN(0), 0); /* Stop auto scrolling */
-  
-  _swi(Wimp_GetPointerInfo, _IN(1), &wgpi);
-  if (wgpi.window_handle != win_hotpane)
-  {
-    _swi(0x107, 0);
-    return;
-  }
-  
-  y = wgpi.pos.y;
-  
-  if (!sel)
-   return; /* shouldn't be possible! */
-
-  gwsblock.window_handle=win_hotpane;
-
-  _swi(Wimp_GetWindowState, _IN(1), &gwsblock);
-
-  x_pos=gwsblock.min.x-gwsblock.scroll.x;
-  y_pos=gwsblock.max.y-gwsblock.scroll.y;
-   
-  item = -((y - y_pos) + 4) / ENTRYHEIGHT;
-
-  node = decode_hotlist_menu(editlisthead, item);
-  
-  if (node == sel || edititems<2)
-    return; /* Dropped the thing back on itself, so don't do anything */
-    
-  hotlist_movenode(node, item, sel);
 
   force_redraw(win_hotpane,0,-(1<<28),1024,0);
 }
