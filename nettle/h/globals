@@ -149,12 +149,9 @@ union wimp_poll_block
   struct
   {
     int window_handle;
-    int minx;
-    int miny;
-    int maxx;
-    int maxy;
-    int scroll_x;
-    int scroll_y;
+    struct coords min;
+    struct coords max;
+    struct coords scroll;
     int handle_behind;
   } open_window;
 
@@ -175,8 +172,7 @@ union wimp_poll_block
 
   struct
   {
-    int x;
-    int y;
+    struct coords pos;
     int buttons;
     int window_handle;
     int icon_handle;
@@ -184,18 +180,15 @@ union wimp_poll_block
 
   struct
   {
-    int minx;
-    int miny;
-    int maxx;
-    int maxy;
+    struct coords min;
+    struct coords max;
   } user_drag_box;
 
   struct
   {
     int window_handle;
     int icon_handle;
-    int x;
-    int y;
+    struct coords pos;
     int height_and_flags;
     int index;
     int code;
@@ -209,23 +202,18 @@ union wimp_poll_block
   struct
   {
     int window_handle;
-    int minx;
-    int miny;
-    int maxx;
-    int maxy;
-    int scroll_x;
-    int scroll_y;
+    struct coords min;
+    struct coords max;
+    struct coords scroll;
     int handle_behind;
-    int scroll_x_dir;
-    int scroll_y_dir;
+    struct coords scroll_dir;
   } scroll_request;
 
   struct
   {
     int window_handle;
     int icon_handle;
-    int x;
-    int y;
+    struct coords pos;
     int height_and_flags;
     int index;
   } caret;
@@ -250,8 +238,7 @@ union wimp_poll_block
       {
         int window_handle;
         int icon_handle;
-        int x;
-        int y;
+        struct coords pos;
         int size;
         int filetype;
         char file_name[212];
@@ -261,8 +248,7 @@ union wimp_poll_block
       {
         int window_handle;
         int icon_handle;
-        int x;
-        int y;
+        struct coords pos;
         int size;
         int filetype;
         char file_name[212];

@@ -76,8 +76,8 @@ int main(void)
         break;
       case 6:
         /* mouse click request, call with x, y, buttons, window handle and icon_handle */
-        mouse_click(wimp_block.mouse_click.x,
-                    wimp_block.mouse_click.y,
+        mouse_click(wimp_block.mouse_click.pos.x,
+                    wimp_block.mouse_click.pos.y,
                     wimp_block.mouse_click.buttons,
                     wimp_block.mouse_click.window_handle,
                     wimp_block.mouse_click.icon_handle);

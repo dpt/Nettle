@@ -1134,9 +1134,9 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 session->pos.y--;
               }
-              if (session->pos.y<session->scrollback+session->scroll_start)
+              if (session->pos.y<session->scrollback+session->scroll_start-1)
               {
-                session->pos.y=session->scrollback+session->scroll_start;
+                session->pos.y=session->scrollback+session->scroll_start-1;
               }
               done=true;
               break;

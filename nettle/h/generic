@@ -84,22 +84,17 @@ union icon_data
 struct wimp_createicon_block
 {
   int window_handle;
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
+  struct coords min;
+  struct coords max;
   int icon_flags;
   union icon_data contents;
 };
 
 struct wimp_createwindow_block
 {
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
-  int scroll_x;
-  int scroll_y;
+  struct coords min;
+  struct coords max;
+  struct coords scroll;
   int handle_behind;
   int window_flags;
   unsigned char title_fg;
@@ -110,10 +105,8 @@ struct wimp_createwindow_block
   unsigned char scroll_inner_colour;
   unsigned char title_focus_colour;
   unsigned char flags;
-  int work_minx;
-  int work_miny;
-  int work_maxx;
-  int work_maxy;
+  struct coords work_min;
+  struct coords work_max;
   int icon_flags;
   int workarea_flags;
   struct os_spriteop_area *sprite_area;
@@ -139,14 +132,10 @@ struct wimp_dragbox_block
 {
   int window_handle;
   int drag_type;
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
-  int parent_minx;
-  int parent_miny;
-  int parent_maxx;
-  int parent_maxy;
+  struct coords min;
+  struct coords max;
+  struct coords parent_min;
+  struct coords parent_max;
   int r12_value;
 
   /* Maybe... */
@@ -159,8 +148,7 @@ struct wimp_getcaretposition_block
 {
   int window_handle;
   int icon_handle;
-  int x;
-  int y;
+  struct coords pos;
   int height_and_flags;
   int index;
 };
@@ -169,18 +157,15 @@ struct wimp_geticonstate_block
 {
   int window_handle;
   int icon_handle;
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
+  struct coords min;
+  struct coords max;
   int icon_flags;
   union icon_data contents;
 };
 
 struct wimp_getpointerinfo_block
 {
-  int x;
-  int y;
+  struct coords pos;
   int buttons;
   int window_handle;
   int icon_handle;
@@ -189,12 +174,9 @@ struct wimp_getpointerinfo_block
 struct wimp_getwindowinfo_block
 {
   int window_handle;
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
-  int scroll_x;
-  int scroll_y;
+  struct coords min;
+  struct coords max;
+  struct coords scroll;
   int handle_behind;
   int window_flags;
   unsigned char title_fg;
@@ -205,10 +187,8 @@ struct wimp_getwindowinfo_block
   unsigned char scroll_inner_colour;
   unsigned char title_focus_colour;
   unsigned char flags;
-  int work_minx;
-  int work_miny;
-  int work_maxx;
-  int work_maxy;
+  struct coords work_min;
+  struct coords work_max;
   int icon_flags;
   int workarea_flags;
   struct os_spriteop_area *sprite_area;
@@ -222,21 +202,16 @@ struct wimp_getwindowinfo_block
 struct wimp_getwindowoutline_block
 {
   int window_handle;
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
+  struct coords min;
+  struct coords max;
 };
 
 struct wimp_getwindowstate_block
 {
   int window_handle;
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
-  int scroll_x;
-  int scroll_y;
+  struct coords min;
+  struct coords max;
+  struct coords scroll;
   int handle_behind;
   int window_flags;
 };
@@ -244,12 +219,9 @@ struct wimp_getwindowstate_block
 struct wimp_openwindow_block
 {
   int window_handle;
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
-  int scroll_x;
-  int scroll_y;
+  struct coords min;
+  struct coords max;
+  struct coords scroll;
   int handle_behind;
 };
 
@@ -261,10 +233,8 @@ struct wimp_reporterror_block
 
 struct wimp_setextent_block
 {
-  int minx;
-  int miny;
-  int maxx;
-  int maxy;
+  struct coords min;
+  struct coords max;
 };
 
 struct wimp_seticonstate_block

@@ -271,8 +271,8 @@ void handle_selection_drag(void)
 
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    x            =block.x;
-    y            =block.y;
+    x            =block.pos.x;
+    y            =block.pos.y;
     buttons      =block.buttons;
     window_handle=block.window_handle;
     icon_handle  =block.icon_handle;
@@ -295,33 +295,33 @@ void handle_selection_drag(void)
 
     _swi(Wimp_GetWindowInfo, _IN(1), ((int) &block)+1);
 
-    x_pos=block.minx-block.scroll_x;
-    y_pos=block.maxy-block.scroll_y;
+    x_pos=block.min.x-block.scroll.x;
+    y_pos=block.max.y-block.scroll.y;
 
     /* Scroll when selection happening and we're near the edge of the window */
     do_scroll = false;
 
-    if (x<(block.minx+32))
+    if (x<(block.min.x+32))
     {
-      block.scroll_x-=(block.minx+32-x);
+      block.scroll.x-=(block.min.x+32-x);
       do_scroll = true;
     }
 
-    if (x>(block.maxx-32))
+    if (x>(block.max.x-32))
     {
-      block.scroll_x+=(x-block.maxx+32);
+      block.scroll.x+=(x-block.max.x+32);
       do_scroll = true;
     }
 
-    if (y<(block.miny+32))
+    if (y<(block.min.y+32))
     {
-      block.scroll_y-=(block.miny+32-y);
+      block.scroll.y-=(block.min.y+32-y);
       do_scroll = true;
     }
 
-    if (y>(block.maxy-32))
+    if (y>(block.max.y-32))
     {
-      block.scroll_y+=(y-block.maxy+32);
+      block.scroll.y+=(y-block.max.y+32);
       do_scroll = true;
     }
 

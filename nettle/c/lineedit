@@ -55,7 +55,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     }
     else
     {
-      old_width=block.maxx;
+      old_width=block.max.x;
 
       if (width==old_width)
         return;
@@ -81,10 +81,10 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     struct wimp_createicon_block block;
 
     block.window_handle=session->pane_handle;
-    block.minx         =width-48;
-    block.miny         =-48;
-    block.maxx         =width;
-    block.maxy         =0;
+    block.min.x         =width-48;
+    block.min.y         =-48;
+    block.max.x         =width;
+    block.max.y         =0;
     block.icon_flags   =WIMP_ICON_BGCOL(1) | WIMP_ICON_TYPE(11) | WIMP_ICON_INDIRECTED_BIT | \
                         WIMP_ICON_VCENT_BIT | WIMP_ICON_TEXT_BIT | WIMP_ICON_SPRITE_BIT;
     if (selected)
@@ -98,10 +98,10 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     _swi(Wimp_CreateIcon, _IN(1), &block);
 
     block.window_handle=session->pane_handle;
-    block.minx         =-4;
-    block.miny         =-52;
-    block.maxx         =width-54;
-    block.maxy         =4;
+    block.min.x         =-4;
+    block.min.y         =-52;
+    block.max.x         =width-54;
+    block.max.y         =4;
     block.icon_flags   =WIMP_ICON_FGCOL(7) | WIMP_ICON_TYPE(15) | \
                         WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_FILLED_BIT | \
 		        WIMP_ICON_VCENT_BIT | WIMP_ICON_BORDER_BIT | WIMP_ICON_TEXT_BIT;
@@ -134,26 +134,26 @@ void open_pane_window(struct session_struct *session, struct wimp_openwindow_blo
   struct wimp_getwindowoutline_block gwo_block;
   struct wimp_openwindow_block block;
   int width;
-  
+
   assert(line_editor);
 
-  width=main_block->maxx;
+  width=main_block->max.x;
 
   gwo_block.window_handle=session->window_handle;
   _swi(Wimp_GetWindowOutline, _IN(1), &gwo_block);
 
   block.window_handle=session->pane_handle;
-  block.minx=main_block->minx;
-  block.miny=(main_block->miny)-40-48;
-  block.maxx=width;
+  block.min.x=main_block->min.x;
+  block.min.y=(main_block->min.y)-40-48;
+  block.max.x=width;
 
   /* This is wrong as it assumes a toolsprite height */
-  block.maxy=(main_block->miny)-40;
-  block.scroll_x=0;
-  block.scroll_y=0;
+  block.max.y=(main_block->min.y)-40;
+  block.scroll.x=0;
+  block.scroll.y=0;
   block.handle_behind=main_block->handle_behind;
 
-  create_line_editor_icons(session, block.maxx-block.minx);
+  create_line_editor_icons(session, block.max.x-block.min.x);
 
   _swi(Wimp_OpenWindow, _IN(1), &block);
 }
