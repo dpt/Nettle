@@ -74,7 +74,7 @@ SelColour:Select colour
 # Title bar
 title_conn:Nettle (Connecting)
 title_disconnect:Nettle (Disconnected)
-title_noconn:Nettle (Connection refused)
+title_noconn:Nettle (Connection failed)
 title_closed:Nettle (Closed)
 
 # Session messages
@@ -84,7 +84,7 @@ connected:Nettle: Connected to
 lookup:Nettle: Looking up host 
 noresolv:Nettle: Failed to resolve remote host
 nosocket:Nettle: Failed to create socket
-noconn:Nettle: Connection refused
+noconn:Nettle: Connection failed - 
 closed:Nettle: Remote has closed the connection
 disconn:Nettle: Disconnected
 twclosed:Nettle: Task window has been closed
