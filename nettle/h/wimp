@@ -42,7 +42,6 @@ extern void wimp_message(union wimp_poll_block *);
 extern void wimp_message_ack(union wimp_poll_block *);
 extern void mode_change(void);
 
-extern void lose_bitmaps(void);
 extern void set_caret_position(int, int, int, int);
 extern void check_set_caret_position(int, int);
 
