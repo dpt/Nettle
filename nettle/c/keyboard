@@ -66,7 +66,7 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
       /* now IMO - leave it til post 1st Sep */
     else if (session->connection_type == NETTLE_TASKWINDOW)
     {
-      SETBLOCK (1, "\n");
+      SETBLOCK (1, "\r");
     }
     else if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
     {
