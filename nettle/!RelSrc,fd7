@@ -1,0 +1,49 @@
+
+Set RelVer 0-2000r
+
+Echo Releasing Nettle <RelVer> *SOURCE CODE* ...
+
+Set This$Dir <Obey$Dir>
+
+%CDir <This$Dir>.Release
+%CDir <This$Dir>.Release.<RelVer>.Source
+%CDir <This$Dir>.Release.<RelVer>.Source.c
+%CDir <This$Dir>.Release.<RelVer>.Source.h
+%CDir <This$Dir>.Release.<RelVer>.Source.s
+
+Set DestApp <This$Dir>.Release.<RelVer>.Source.!Nettle
+
+%Copy <This$Dir>.!Nettle  <DestApp>  A~C~DF~L~N~PQR~S~T~V
+%Copy <This$Dir>.License  <DestApp>.^.License A~C~DF~L~N~PQR~S~T~V
+%Copy <This$Dir>.TODO     <DestApp>.^.TODO A~C~DF~L~N~PQR~S~T~V
+%Copy <This$Dir>.c        <DestApp>.^.c A~C~DF~L~N~PQR~S~T~V
+%Copy <This$Dir>.h        <DestApp>.^.h A~C~DF~L~N~PQR~S~T~V
+%Copy <This$Dir>.s        <DestApp>.^.s A~C~DF~L~N~PQR~S~T~V
+%Copy <This$Dir>.!Make    <DestApp>.^.!Make A~C~DF~L~N~PQR~S~T~V
+%Copy <This$Dir>.Makefile <DestApp>.^.Makefile A~C~DF~L~N~PQR~S~T~V
+
+X Delete <DestApp>.stderr
+X Delete <DestApp>.stdout
+X Delete <DestApp>.Log
+
+| I dont have a port of GNU find (yet) so this'll do for now...
+Set Alias$NukeCvs X Wipe <DestApp>.%%0.CVS ~CFR~V
+
+NukeCvs ^.!Nettle
+NukeCvs Choices
+NukeCvs Fonts
+NukeCvs Fonts.08x08
+NukeCvs Fonts.08x16
+NukeCvs Resources
+NukeCvs Resources.UK
+
+X Wipe <DestApp>.!RunImage ~CFR~V
+X Wipe <DestApp>.Fonts.08x16.Default ~CFR~V
+X Wipe <DestApp>.Fonts.08x08.System  ~CFR~V
+X Wipe <DestApp>./cvsignore ~CF~R~V
+
+Unset Alias$NukeCvs
+Unset DestApp
+Unset RelVer
+
+Echo Done
