@@ -981,7 +981,7 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
         block.user_message.length                         =(28+copy) & ~3;
         block.user_message.my_ref                         =0;
         block.user_message.message_code                   =WIMP_MESSAGE_TASKWINDOW_INPUT;
-        block.user_message.contents.task_window_input.size=length;
+        block.user_message.contents.task_window_input.size=copy;
 
         _swi(Wimp_SendMessage, _INR(0,2), 17, &block, session->socket_handle);
 
