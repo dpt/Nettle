@@ -44,7 +44,10 @@ const colour_t default_palette[16]=
 0xFF404000, 0xFF40FF00, 0xFFFF0000, 0xFFFFFF00
 };
 
-struct coords eig;
+struct coords eig, screensize;
+int toolheight;
+/* This would be 'nice' to fill-out, but really annoying to do for OS < 3.8 */
+/* struct wimp_gadgetsizes gadgetsizes; */
 
 int task_handle;
 int wimp_version;
@@ -67,6 +70,7 @@ int win_resize;
 int win_save;
 int win_spoolsave;
 int win_sizebar;
+int win_furniture;
 
 int menu_open=0;
 int resize_handle=0;

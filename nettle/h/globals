@@ -79,7 +79,10 @@ extern const colour_t default_palette[16];
 
 extern struct os_spriteop_area *sprite_area;
 
-extern struct coords eig;
+extern struct coords eig, screensize;
+extern int toolheight;
+/* This would be 'nice' to fill-out, but really annoying to do for OS < 3.8 */
+/* extern struct wimp_gadgetsizes gadgetsizes; */
 
 extern int task_handle;
 extern int wimp_version;
@@ -101,6 +104,7 @@ extern int win_resize;
 extern int win_save;
 extern int win_spoolsave;
 extern int win_sizebar;
+extern int win_furniture;
 
 extern int menu_open;
 extern int resize_handle;
