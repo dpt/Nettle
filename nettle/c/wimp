@@ -1004,7 +1004,9 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   /* NOTE! We deliberately do not wrap-backwards over lines */
   while ( x > 0 && !isspace( ICHR(x,y) ))
     x--;
-  if (!isalpha( ICHR(x,y) ))
+  
+  /* skip any initial space or colon or anything */
+  if (!isalnum( ICHR(x,y) ))
     x++;
 
   /* skip any leading punctuation */
