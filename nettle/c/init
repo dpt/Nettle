@@ -126,10 +126,10 @@ static int load_template(int *font_array, const char *window_name, struct os_spr
 
   /* alloc this amount, indirected first to be heap friendly */
   indirected_data=malloc(size_of_indirected_data);
-  assert(indirected_data != NULL);
+  assert(size_of_indirected_data == 0 || indirected_data != NULL);
 
   template_data=malloc(size_of_template_data);
-  assert(template_data != NULL);
+  assert(size_of_template_data == 0 || template_data != NULL);
 
   indirected[maxindirected++]=indirected_data;
 
