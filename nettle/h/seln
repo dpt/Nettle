@@ -12,7 +12,6 @@
 extern void refresh_selection_set(void);
 extern void refresh_selection_clear(void);
 extern void selection_adjust(int, int, int, int);
-extern void selection_adjust_drag(int,int,int,int);
 extern void save_selection(char *, bool);
 extern void handle_selection_drag(void);
 

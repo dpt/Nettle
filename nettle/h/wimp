@@ -26,22 +26,11 @@ extern void wimp_message(int, int, int);
 extern void mode_change(void);
 
 extern void generror(const char *, bool);
-extern bool generror_question(char *);
 extern void set_caret_position(int, int, int, int);
 extern void set_icon_data(int, int, char *);
-extern void set_icon_validation(int, int, char *);
 extern char *read_icon_data(int, int, char *, int);
-extern int get_icon_data_length(int, int);
-
-extern void create_iconbar_menu(void);
-extern void create_terminal_menu(void);
-extern void create_connection_menu(void);
-extern void create_terminal_type_menu(void);
 
 extern void set_title_bar(int, char *);
 extern void force_redraw(int,int,int,int,int);
-
-extern void drag_start(int,int);
-extern void open_open_window(bool);
 
 #endif

@@ -126,7 +126,7 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
   }
 }
 
-void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
+static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 {
   int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 

@@ -17,6 +17,19 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
+
+
+static bool generror_question(char *string);
+static void create_iconbar_menu(void);
+static void open_open_window(bool open_window_flag);
+static int get_icon_data_length(int window_handle, int icon_handle);
+static void create_terminal_menu(void);
+static void create_connection_menu(void);
+static void create_terminal_type_menu(void);
+static void drag_start(int,int);
+
+
+
 /* Null code */
 
 void null_reason_code(void)
@@ -133,6 +146,8 @@ void null_reason_code(void)
     handle_selection_drag();
 }
 
+
+
 /* Redraw window */
 
 void redraw_window(int window_handle)
@@ -165,6 +180,8 @@ void redraw_window(int window_handle)
       more = _swi(Wimp_GetRectangle, _IN(1)|_RETURN(0), &wimp_block);
   }
 }
+
+
 
 /* Open window */
 
@@ -218,6 +235,8 @@ void open_window(int window_handle, bool poll_flag)
       _swi(Wimp_OpenWindow, _IN(1), &block);
 }
 
+
+
 /* Close window */
 
 void close_window(int window_handle)
@@ -250,6 +269,8 @@ void close_window(int window_handle)
   }
 }
 
+
+
 /* Determine if there are any sessions open.  If so, query the user as to whether */
 /*  to really quit the program. */
 
@@ -270,6 +291,7 @@ static void close_program(void)
   }
   quit_flag = true;
 }
+
 
 
 /* Mouse click */
@@ -592,6 +614,8 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
   }
 }
 
+
+
 /* Drag finished */
 
 void drag_finished(void)
@@ -632,6 +656,8 @@ void drag_finished(void)
                            block.user_message.contents.data_save.icon_handle);
   }
 }
+
+
 
 /* Key pressed */
 
@@ -811,6 +837,8 @@ void key_pressed(int window_handle, int icon_handle, int key)
   }
 }
 
+
+
 /* Menu selection */
 
 void menu_selection()
@@ -907,6 +935,8 @@ void menu_selection()
   }
 }
 
+
+
 /* Lose caret */
 
 void lose_caret()
@@ -965,6 +995,8 @@ void lose_caret()
 		 (-session->ypos)*redraw.r_charh*2*zap_yeig);
   }
 }
+
+
 
 /* Gain caret */
 
@@ -1045,6 +1077,8 @@ void gain_caret()
     }
   }
 }
+
+
 
 /* Wimp message */
 
@@ -1162,6 +1196,8 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
   }
 }
 
+
+
 void mode_change(void)
 {
   int *zap_font_used;
@@ -1236,6 +1272,8 @@ void mode_change(void)
   }
 }
 
+
+
 /* */
 /* Other Wimp related code */
 /* */
@@ -1256,7 +1294,9 @@ void generror(const char *string, bool is_message)
   _swi(Wimp_ReportError, _INR(0,2), block, 0, application_name);
 }
 
-bool generror_question(char *string)
+
+
+static bool generror_question(char *string)
 {
   int block[64];
 
@@ -1268,11 +1308,15 @@ bool generror_question(char *string)
                                         (1<<1)+(1<<0),application_name) == 1);
 }
 
+
+
 void set_caret_position(int window_handle, int icon_handle, int flags, int index)
 {
   _swi(Wimp_SetCaretPosition, _INR(0,5),
                               window_handle, icon_handle, -1, -1, flags, index);
 }
+
+
 
 void set_icon_data(int window_handle, int icon_handle, char *contents)
 {
@@ -1302,33 +1346,7 @@ void set_icon_data(int window_handle, int icon_handle, char *contents)
   }
 }
 
-void set_icon_validation(int window_handle, int icon_handle, char *contents)
-{
-  int block[10];
 
-  block[0]=window_handle;
-  block[1]=icon_handle;
-
-  _swi(Wimp_GetIconState, _IN(1), block);
-
-  if (block[6] & (1<<8))
-  {
-    if (strcmp((char *)block[8],contents))
-    {
-      strcpy((char *)block[8],contents);
-      block[2]=0;
-      block[3]=0;
-
-      _swi(Wimp_SetIconState, _IN(1), block);
-    }
-  }
-  else
-  {
-    char string[1024];
-    sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
-    generror(string, false);
-  }
-}
 
 char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_len)
 {
@@ -1353,7 +1371,8 @@ char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_l
 }
 
 
-int get_icon_data_length(int window_handle, int icon_handle)
+
+static int get_icon_data_length(int window_handle, int icon_handle)
 {
   int block[11];
   int length = 0;
@@ -1380,6 +1399,7 @@ int get_icon_data_length(int window_handle, int icon_handle)
   }
   return length;
 }
+
 
 
 /* Create menu code */
@@ -1523,6 +1543,8 @@ static int *create_menu(int *menu_data, char *indirected, char *title, char *ent
   return menu_data;
 }
 
+
+
 static char *get_menu_item(char *name)
 {
   char contents[MESSAGE_MAX_MENU];
@@ -1531,6 +1553,8 @@ static char *get_menu_item(char *name)
 
   return strcpy(item, value);
 }
+
+
 
 static char *get_last_menu_item(char *name)
 {
@@ -1542,6 +1566,8 @@ static char *get_last_menu_item(char *name)
   return strcat(item, "\\");
 }
 
+
+
 static char *get_grey_menu_item(char *name)
 {
   char contents[MESSAGE_MAX_MENU];
@@ -1552,6 +1578,8 @@ static char *get_grey_menu_item(char *name)
   item[1] = '\0';
   return strcat(item, value);
 }
+
+
 
 static char *get_grey_last_menu_item(char *name)
 {
@@ -1565,7 +1593,9 @@ static char *get_grey_last_menu_item(char *name)
   return item;
 }
 
-void create_iconbar_menu(void)
+
+
+static void create_iconbar_menu(void)
 {
   int block[5];
 
@@ -1589,7 +1619,9 @@ void create_iconbar_menu(void)
   menu_open=MENU_ICONBAR;
 }
 
-void create_terminal_menu(void)
+
+
+static void create_terminal_menu(void)
 {
   int block[5];
 
@@ -1637,7 +1669,9 @@ void create_terminal_menu(void)
   menu_open=MENU_TERMINAL;
 }
 
-void create_connection_menu(void)
+
+
+static void create_connection_menu(void)
 {
   int block[5];
 
@@ -1656,7 +1690,9 @@ void create_connection_menu(void)
   menu_open=MENU_CONNECTION;
 }
 
-void create_terminal_type_menu(void)
+
+
+static void create_terminal_type_menu(void)
 {
   int block[5];
 
@@ -1691,6 +1727,8 @@ void create_terminal_type_menu(void)
   menu_open=MENU_TERMINAL_TYPE;
 }
 
+
+
 /* Set title bar code */
 void set_title_bar(int window_handle, char *title)
 {
@@ -1715,6 +1753,8 @@ void set_title_bar(int window_handle, char *title)
   }
 }
 
+
+
 /* Force redraw code */
 void force_redraw(int window_handle, int minx, int miny, int maxx, int maxy)
 {
@@ -1723,7 +1763,8 @@ void force_redraw(int window_handle, int minx, int miny, int maxx, int maxy)
 }
 
 
-void drag_start(int window_handle, int icon_handle)
+
+static void drag_start(int window_handle, int icon_handle)
 {
   int xstart,ystart,xeig,yeig,xsize,ysize;
   int block[10];
@@ -1775,7 +1816,9 @@ void drag_start(int window_handle, int icon_handle)
   }
 }
 
-void open_open_window(bool open_window_flag)
+
+
+static void open_open_window(bool open_window_flag)
 {
   char string[11];
   int connection_type;
@@ -1798,7 +1841,7 @@ void open_open_window(bool open_window_flag)
   {
     case NETTLE_TELNET:
       block[0]=open;
-      block[1]=7; /* Comnand icon */
+      block[1]=7; /* Command icon */
       block[2]=1<<22;
       block[3]=1<<22;
       _swi(Wimp_SetIconState, _IN(1), block);
