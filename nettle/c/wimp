@@ -1258,8 +1258,13 @@ void mode_change(void)
   int mem_required;
   int a;
   int b;
+  int old_charw;
+  int old_charh;
   struct session_struct *session = sessions;
   int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
+
+  old_charw=redraw.r_charw;
+  old_charh=redraw.r_charh;
 
   /* work out which font we should be using */
   if (zap_yeig==1)
@@ -1329,8 +1334,7 @@ void mode_change(void)
 
   redraw.r_palette=zap_palette;
 
-  _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette,
-                                zap_palette, 16);
+  _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette, zap_palette, 16);
 
   redraw.r_for=7;
   redraw.r_bac=0;
@@ -1338,15 +1342,8 @@ void mode_change(void)
   /* Resize all of the terminals to fit the new font size */
   while (session)
   {
-    struct wimp_setextent_block block;
-
-    block.minx=0;
-    block.miny=-((session->terminal_size_y+session->scrollback)*
-                 redraw.r_charh*2*zap_yeig);
-    block.maxx=session->terminal_size_x*redraw.r_charw*2;
-    block.maxy=0;
-
-    _swi(Wimp_SetExtent, _INR(0,1), session->window_handle, &block);
+    reopen_and_size_window(session, session->terminal_size_x, session->terminal_size_y,
+                           old_charw, old_charh);
 
     session = session->next;
   }

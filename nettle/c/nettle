@@ -8,6 +8,7 @@
 #include "generic.h"
 #include "globals.h"
 
+#include "lineedit.h"
 #include "misc.h"
 #include "nettle.h"
 #include "process.h"
@@ -297,7 +298,7 @@ void start_connection(void)
                            session->scrollback)
                           *(redraw.r_charh*2*zap_yeig));
     block.handle_behind=-1;
-    block.window_flags =0xff080142;
+    block.window_flags =0xff080182;
     block.title_fg     =7;
     block.title_bg     =2;
     block.work_fg      =7;
@@ -729,8 +730,6 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   int old_terminal_size_y=session->terminal_size_y;
   int old_scrollback     =session->scrollback;
 
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
-
   session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
   session->terminal_size_x=terminal_size_x;
   session->terminal_size_y=terminal_size_y;
@@ -763,6 +762,35 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     zapredraw_area=realloc(zapredraw_area,size_of_zapredraw_area);
   }
 
+  reopen_and_size_window(session, old_terminal_size_x, old_terminal_size_y,
+                         redraw.r_charw, redraw.r_charh);
+
+  if (use_naws)
+  {
+    if (session->session_flags[31])
+    {
+      /* NAWS is on */
+      char block[9];
+
+      block[0]=255; /* IAC */
+      block[1]=250; /* SB */
+      block[2]=31;  /* NAWS */
+      block[3]=session->terminal_size_x / 256;
+      block[4]=session->terminal_size_x % 256;
+      block[5]=session->terminal_size_y / 256;
+      block[6]=session->terminal_size_y % 256;
+      block[7]=255; /* IAC */
+      block[8]=240; /* SE */
+      nettle_senddata(session, block, 9);
+    }
+  }
+}
+
+void reopen_and_size_window(struct session_struct *session, int old_terminal_size_x,
+                            int old_terminal_size_y, int old_charw, int old_charh)
+{
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+
   {
     struct wimp_setextent_block block;
 
@@ -784,23 +812,31 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     }
   }
 
-  if (use_naws)
   {
-    if (session->session_flags[31])
-    {
-      /* NAWS is on */
-      char block[9];
+    struct wimp_getwindowstate_block block;
 
-      block[0]=255; /* IAC */
-      block[1]=250; /* SB */
-      block[2]=31;  /* NAWS */
-      block[3]=session->terminal_size_x / 256;
-      block[4]=session->terminal_size_x % 256;
-      block[5]=session->terminal_size_y / 256;
-      block[6]=session->terminal_size_y % 256;
-      block[7]=255; /* IAC */
-      block[8]=240; /* SE */
-      nettle_senddata(session, block, 9);
+    block.window_handle=session->window_handle;
+
+    _swi(Wimp_GetWindowState, _IN(1), &block);
+
+    /* If terminal at fullsize, then reopen window at fullsize, otherwise leave it */
+    if (block.maxx-block.minx==(old_terminal_size_x*old_charw*2))
+    {
+      block.maxx=block.minx+(session->terminal_size_x*redraw.r_charw*2);
     }
+    if (block.maxy-block.miny==(old_terminal_size_y*old_charh*2*zap_yeig))
+    {
+      block.miny=block.maxy-(session->terminal_size_y*redraw.r_charh*2*zap_yeig);
+    }
+
+    /* wimp_openwindow_block is essentially the same as wimp_getwindowstate_block */
+    _swi(Wimp_OpenWindow, _IN(1), &block);
+
+    force_redraw(session->window_handle,0,
+                 (-session->terminal_size_y-session->scrollback)*
+                 redraw.r_charh*2*zap_yeig,
+                        session->terminal_size_x*redraw.r_charw*2,0);
+
+    open_pane_window(session, (struct wimp_openwindow_block *) &block);
   }
 }
