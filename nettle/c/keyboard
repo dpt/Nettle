@@ -214,9 +214,9 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
   case 0x1AB:			/* cCopy */
     SETBLOCK (4, "\x1B[4^");
   case 0x1AC:			/* cLeft */
-    SETBLOCK (3, APPLI ("\x1BOd", "\x1B[d"));
+    SETBLOCK (3, APPLI ("\x1B[d", "\x1BOd"));
   case 0x1AD:			/* cRight */
-    SETBLOCK (3, APPLI ("\x1BOc", "\x1B[c"));
+    SETBLOCK (3, APPLI ("\x1B[c", "\x1BOc"));
   case 0x1AE:			/* scPgDown, cDown */
     if (ekey == 99)
     {

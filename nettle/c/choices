@@ -373,8 +373,8 @@ bool win_choices_read(int save)
     }
   }
 
-  if (!read_termsize_icons (win_paneterm, icon_paneterm_termwidth, icon_paneterm_termheight, icon_paneterm_scrollback,
-			    &new_termsize, &new_scrollback))
+  if (!read_termsize_icons (win_paneterm, icon_paneterm_termwidth, icon_paneterm_termheight,
+                            icon_paneterm_scrollback, &new_termsize, &new_scrollback))
     return false;
 
   new_line_editor_size = atoi (read_icon_data (win_paneterm, icon_paneterm_lineeditor, string, sizeof (string)));

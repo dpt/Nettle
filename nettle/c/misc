@@ -170,6 +170,8 @@ void logf(const char *format, ...)
     va_start(ap, format);
     vfprintf(log_file, format, ap);
     va_end(ap);
+
+    log_file_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
   }
 }
 
@@ -178,21 +180,12 @@ void logf(const char *format, ...)
 /* log a byte to the log file */
 void log_byte(char character)
 {
-  if (!logging)
-    return;
+  if (log_checkopen())
+  {
+    fputc(character,log_file);
 
-  if (log_file == NULL)
-    log_file=fopen("<Nettle$Dir>.Log", "a");
-
-  if (log_file == NULL)
-    log_file=fopen("<Nettle$Dir>.Log", "w");
-
-  if (log_file == NULL)
-    return;
-
-  fputc(character,log_file);
-
-  log_file_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
+    log_file_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
+  }
 }
 
 
