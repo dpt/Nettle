@@ -227,7 +227,7 @@ struct wimp_openwindow_block
 
 struct wimp_reporterror_block
 {
-  int errno;
+  int errnum;
   char errmess[252];
 };
 

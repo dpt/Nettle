@@ -1494,7 +1494,7 @@ void generror(const char *string, bool is_message)
   if (is_message)
     string = lookup(string, message, sizeof(message));
 
-  block.errno=255;
+  block.errnum=255;
 
   strcpy(block.errmess, string);
 
@@ -1507,7 +1507,7 @@ static bool generror_question(char *string)
 {
   struct wimp_reporterror_block block;
 
-  block.errno=255;
+  block.errnum=255;
 
   strcpy(block.errmess, string);
 
