@@ -10,11 +10,11 @@ endif
 
 
 CC = $(GCCDIR)/cross/bin/gcc
-CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -DFORTIFY $(LIBFLAGS)
+CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -DFORTIFY $(LIBFLAGS) -O2
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = $(CC)
-LINKFLAGS = -debug $(LIBFLAGS) $(EXTRALIBS)
+LINKFLAGS = -debug $(LIBFLAGS) $(EXTRALIBS) -v
 
 WIPE = rm
 WIPEFLAGS = -rf
