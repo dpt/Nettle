@@ -17,6 +17,7 @@ typedef enum
 } bool;
 
 #define NOT(x) ((x)?false:true)
+#define BOOL(x) ((x)?true:false)
 
 typedef unsigned long colour_t;
 
