@@ -17,7 +17,7 @@ CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -Wshadow -Wundef \
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = $(CC)
-LINKFLAGS = -debug $(LIBFLAGS) $(EXTRALIBS) -v
+LINKFLAGS = -debug $(LIBFLAGS) $(EXTRALIBS)
 
 WIPE = rm
 WIPEFLAGS = -rf
@@ -33,7 +33,8 @@ RUNIMAGE = !Nettle/!RunImage,ff8
 all: $(RUNIMAGE)
 
 $(RUNIMAGE): $(OBJS)
-	$(LINK) $(LINKFLAGS) $(OBJS) -o $(RUNIMAGE)
+	@echo "### Linking $@..."
+	@$(LINK) $(LINKFLAGS) $(OBJS) -o $@
 
 clean:
 	$(WIPE) $(WIPEFLAGS) *.o 
@@ -41,10 +42,12 @@ clean:
 .SUFFIXES: .o .s .c
 
 .s.o:
-	$(OBJASM) $(OBJASMFLAGS) $< -o $@
+	@echo "### Assembling $<..."
+	@$(OBJASM) $(OBJASMFLAGS) $< -o $@
 
 .c.o:
-	$(CC) $(CFLAGS) -o $@ $<
+	@echo "### Compiling $<..."
+	@$(CC) $(CFLAGS) -o $@ $<
 
 
 chardefn.o:	chardefn.c generic.h globals.h chardefn.h misc.h
