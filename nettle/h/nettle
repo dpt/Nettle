@@ -56,6 +56,16 @@ enum nettle_terminal {
 #define NETTLE_CHSET_UK		65
 #define NETTLE_CHSET_US		66
 
+/* Maximum length for connection type - telnet, ssh, etc */
+#define MESSAGE_MAX_CONNECTION  20
+
+/* Maximum length for terminal type - vt100, vt102, etc */
+#define MESSAGE_MAX_TERMINAL    10
+
+/* Maximum length of menu entries */
+#define MESSAGE_MAX_MENU        20
+
+
 extern void start_connection(void);
 extern void write_out_string(int, char *);
 extern void write_out_data(int, char *, int);

@@ -79,11 +79,11 @@ void start_connection(void)
   read_icon_data(open, 4, string, 1024);
 
   {
-    char connection[20];
+    char connection[MESSAGE_MAX_CONNECTION];
 
-    if (strcmp(string,lookup("SSH", connection, 20))==0)
+    if (strcmp(string, lookup("SSH", connection, MESSAGE_MAX_CONNECTION))==0)
       connection_type=NETTLE_SSH;
-    else if (strcmp(string,lookup("Taskwindow", connection, 20))==0)
+    else if (strcmp(string, lookup("Taskwindow", connection, MESSAGE_MAX_CONNECTION))==0)
       connection_type=NETTLE_TASKWINDOW;
     else
       connection_type=NETTLE_TELNET;
@@ -94,10 +94,10 @@ void start_connection(void)
   terminal_type = NETTLE_TERMINAL_VT100;
   for (loop=0; loop<8; loop++)
   {
-    char type[20];
+    char type[MESSAGE_MAX_TERMINAL];
     char term[7];
     sprintf(term,"Term%d",loop);
-    if (strcmp(string,lookup(term, type, 20))==0)
+    if (strcmp(string,lookup(term, type, MESSAGE_MAX_TERMINAL))==0)
       terminal_type = (enum nettle_terminal)loop;
   }
 

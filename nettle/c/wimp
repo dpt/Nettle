@@ -631,7 +631,7 @@ void drag_finished(void)
 void key_pressed(int window_handle, int icon_handle, int key)
 {
   bool key_status=false;
-  char message[20];
+  char message[MESSAGE_MAX_CONNECTION];
 
   if (window_handle==open)
   {
@@ -640,9 +640,9 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
     read_icon_data(open, 4, string, 11);
 
-    if (strcmp(string, lookup("SSH", message, 20))==0)
+    if (strcmp(string, lookup("SSH", message, MESSAGE_MAX_CONNECTION))==0)
       connection_type=NETTLE_SSH;
-    else if (strcmp(string,lookup("Taskwindow", message, 20))==0)
+    else if (strcmp(string,lookup("Taskwindow", message, MESSAGE_MAX_CONNECTION))==0)
       connection_type=NETTLE_TASKWINDOW;
     else
       connection_type=NETTLE_TELNET;
@@ -861,18 +861,18 @@ void menu_selection()
       break;
     case MENU_CONNECTION:
       {
-        char connection[20];
+        char connection[MESSAGE_MAX_CONNECTION];
 
         switch (wimp_block[0])
         {
           case 0:
-            set_icon_data(open, 4, lookup("Telnet", connection, 20));
+            set_icon_data(open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
             break;
           case 1:
-            set_icon_data(open, 4, lookup("SSH",  connection, 20));
+            set_icon_data(open, 4, lookup("SSH",  connection, MESSAGE_MAX_CONNECTION));
             break;
           case 2:
-            set_icon_data(open, 4, lookup("Taskwindow", connection, 20));
+            set_icon_data(open, 4, lookup("Taskwindow", connection, MESSAGE_MAX_CONNECTION));
             break;
         }
         open_open_window(false);
@@ -880,11 +880,11 @@ void menu_selection()
       break;
     case MENU_TERMINAL_TYPE:
       {
-        char terminal[12];
+        char terminal[MESSAGE_MAX_TERMINAL];
         char string[6];
         sprintf(string, "Term%d", wimp_block[0]);
 
-        set_icon_data(open,9, lookup(string, terminal, 12));
+        set_icon_data(open,9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
       }
       break;
   }
@@ -1573,8 +1573,8 @@ static int *create_menu(int *menu_data, char *indirected, char *title, char *ent
 
 static char *get_menu_item(char *name)
 {
-  char contents[20];
-  char *value = lookup(name, contents, 20);
+  char contents[MESSAGE_MAX_MENU];
+  char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 1);
 
   return strcpy(item, value);
@@ -1582,8 +1582,8 @@ static char *get_menu_item(char *name)
 
 static char *get_last_menu_item(char *name)
 {
-  char contents[20];
-  char *value = lookup(name, contents, 20);
+  char contents[MESSAGE_MAX_MENU];
+  char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 2);
 
   strcpy(item, value);
@@ -1592,8 +1592,8 @@ static char *get_last_menu_item(char *name)
 
 static char *get_grey_menu_item(char *name)
 {
-  char contents[20];
-  char *value = lookup(name, contents, 20);
+  char contents[MESSAGE_MAX_MENU];
+  char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 2);
 
   item[0] = '#';
@@ -1603,7 +1603,7 @@ static char *get_grey_menu_item(char *name)
 
 static char *get_grey_last_menu_item(char *name)
 {
-  char contents[20];
+  char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, 20);
   char *item = malloc(strlen(value) + 3);
 
