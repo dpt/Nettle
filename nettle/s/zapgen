@@ -30,7 +30,7 @@ zapgen_code
 ; On exit
 ;    R0 = last address in R0 written to
 ;
-;    Can corrupt R1-R3, R12, R14
+;    Can corrupt R1-R3, R12, (R14)
 ;    Must preserve R4-R11
 
 	STMFD   R13!,{R4-R10}
@@ -61,68 +61,35 @@ code_x_loop
 
 	TST	R10,#16 ; selected bit
 	BNE	code_selected ; branch if this char is selected
-
-	TST     R12,#128 ; test reverse video
-	BNE     code_reverse_video
-	BEQ     code_not_reverse_video
-
-code_reverse_video
-	TST     R10,#4 ; invert bit
-	BNE     code_inverted
-	BEQ     code_not_inverted
-
-code_not_reverse_video
-	TST     R10,#4 ; invert bit
-        BNE     code_not_inverted
-        BEQ	code_inverted
-
-code_not_inverted
+	
+	TST	R10,#4			; invert bit
+	MOV	R8,R12
+	EORNE	R8,R8,#128
+	TST     R8,#128 		; test reverse video
 	LDRB    R8,[R7],#1
-	STRB    R8,[R9],#1   ; foreground
+	STRNEB  R8,[R9,#1]   		; foreground
+	STREQB  R8,[R9],#1   		; foreground inverted
 	LDRB    R8,[R7],#1
-	STRB    R8,[R9],#1   ; background
-	B       code_after_inverted
-
-code_inverted
-	LDRB    R8,[R7],#1
-	STRB    R8,[R9,#1]   ; foreground
-	LDRB    R8,[R7],#1
-	STRB    R8,[R9],#2   ; background
-
-code_after_inverted
+	STRNEB  R8,[R9],#2   		; background
+	STREQB  R8,[R9],#1   		; background inverted
 
 	B	code_skip_selected
 
 code_selected
-
-	TST     R12,#128 ; test reverse video
-	BNE     code_selected_reverse_video
-	BEQ     code_selected_not_reverse_video
-
-code_selected_reverse_video
-	TST     R10,#4 ; invert bit
-	BEQ     code_selected_inverted
-	BNE     code_selected_not_inverted
-
-code_selected_not_reverse_video
-	TST     R10,#4 ; invert bit
-        BEQ     code_selected_not_inverted
-        BNE	code_selected_inverted
-
-code_selected_not_inverted
+	
+	TST	R10,#4			; invert bit
+	MOV	R8,R12
+	EORNE	R8,R8,#128
+	TST     R8,#128 		; test reverse video
 	LDRB    R8,[R7],#1
-	STRB    R8,[R9,#1]   ; foreground
+	STREQB  R8,[R9,#1]   		; foreground
+	STRNEB  R8,[R9],#1   		; foreground inverted
 	LDRB    R8,[R7],#1
-	STRB    R8,[R9],#2   ; background
-	B       code_skip_selected
-
-code_selected_inverted
-	LDRB    R8,[R7],#1
-	STRB    R8,[R9],#1   ; foreground
-	LDRB    R8,[R7],#1
-	STRB    R8,[R9],#1   ; background
+	STREQB  R8,[R9],#2   		; background
+	STRNEB  R8,[R9],#1   		; background inverted
 
 code_skip_selected
+
 	LDRB    R8,[R7],#1   ; flags (dealt with elsewhere)
 
 	TST     R10,#8       ; set if +&100
