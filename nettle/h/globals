@@ -38,7 +38,7 @@
 #define LOGGING                 false
 #define LINE_EDITOR             0
 #define PASS_F12                false
-#define BLINKING                false
+#define BLINKING                true
 
 #define CURSOR_BLINK            false
 #define CURSOR_BLINK_DELAY      50
@@ -104,6 +104,7 @@ extern char line_editor;
 extern bool pass_f12;
 extern bool cursor_blink;
 extern bool blinking;
+extern bool want_blink;
 
 extern int line_editor_size;
 extern enum nettle_terminal default_terminal;
@@ -151,6 +152,7 @@ struct session_struct
   int scroll_end;		/* end of scroll area */
   int other_session_flags;	/* other session flags (see nettle.h) */
   char connection_type;		/* connection type: telnet, ssh, etc. */
+  bool want_blink;              /* Do we want to be redrawn every 50cs? */
 
   struct coords old_pos;	/* old position */
   char old_current_fg;		/* old fg colour */

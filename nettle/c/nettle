@@ -28,6 +28,20 @@ static void allocate_zapredraw_area(int, int, int);
 static void start_connection_int (struct connection_params *params );
 
 
+static void rehash_blink(void)
+{
+  struct session_struct *session = sessions;
+  want_blink = false;
+  
+  for(;session;session=session->next)
+  {
+    if (session->want_blink)
+    {
+      want_blink = true;
+      return;
+    }
+  }
+}
 
 int get_host_port (char *string, int *port)
 /* modifies string, returns true on error */
@@ -273,6 +287,7 @@ static void start_connection_int (struct connection_params *params )
     session->session_flags[loop]=false;
   }
   session->local_echo = true;
+  session->want_blink = false;
 
   session->dns = NULL; /* Should be null for non telnet/ssh sessions */
 
@@ -294,7 +309,8 @@ static void start_connection_int (struct connection_params *params )
         char temp_string[1024];
 
         sprintf(temp_string, "%d", params->height);
-        _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string), 0, 4);
+        _swi(OS_SetVarVal, _INR(0,4), "LINES", temp_string, strlen(temp_string), 0, 4);
+        _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string), 0, 4); /* for old unixlib progs */
         sprintf(temp_string, "%d", params->width);
         _swi(OS_SetVarVal, _INR(0,4), "COLUMNS", temp_string, strlen(temp_string), 0, 4);
 
@@ -657,6 +673,8 @@ void remove_session(struct session_struct *session)
     cursor_session = NULL;
 
   free(session);
+  
+  rehash_blink();
 }
 
 int nettle_senddata(struct session_struct *session, const char *data, int length)
@@ -714,6 +732,8 @@ void reset_terminal(struct session_struct *session)
 
   session->terminal_mode=2;
   session->bit_controls=false;
+  session->want_blink = false;
+  rehash_blink();
 
   session->mouse_terminal_attached=true;
   session->mouse_mode=MOUSE_MODE_OFF;
@@ -939,7 +959,8 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     if (session->connection_type == NETTLE_TASKWINDOW)
     {
       sprintf(temp_string, "%d", terminal_size_y);
-      _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string), 0, 4);
+      _swi(OS_SetVarVal, _INR(0,4), "LINES", temp_string, strlen(temp_string), 0, 4);
+      _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string), 0, 4); /* for old unixlib progs */
       sprintf(temp_string, "%d", terminal_size_x);
       _swi(OS_SetVarVal, _INR(0,4), "COLUMNS", temp_string, strlen(temp_string), 0, 4);
     }

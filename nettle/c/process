@@ -2364,6 +2364,8 @@ static bool process_escape_length_x(struct session_struct *session)
                     case 5:
                       /* Blink */
                       session->current_flags |= NETTLE_FLAG_BLINK;
+		      session->want_blink = true;
+		      want_blink = true; /* Don't need to call rehash_blink() here */
                       break;
                     case 25:
                       /* Cancel blink */

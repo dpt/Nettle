@@ -142,6 +142,7 @@ void load_choices(void)
     read_character_choice(&line_editor, string, "LineEditor:");
     read_boolean_choice(&pass_f12, string, "PassF12:");
     read_boolean_choice(&cursor_blink, string, "CursorBlink:");
+    read_boolean_choice(&blinking, string, "Blinking:");
 
     read_terminal_choice(&new_default_terminal, string, "TerminalType:");
     read_integer_choice(&new_termsize.x, string, "TerminalWidth:");
@@ -235,6 +236,7 @@ bool save_choices(void)
       fprintf(file_handle, "Logging:%d\n", (logging==true) ? 1 : 0);
       fprintf(file_handle, "PassF12:%d\n", (pass_f12==true) ? 1 : 0);
       fprintf(file_handle, "CursorBlink:%d\n", (cursor_blink==true) ? 1 : 0);
+      fprintf(file_handle, "Blinking:%d\n", (blinking==true) ? 1 : 0);
 
       fprintf(file_handle, "TerminalType:%d\n", default_terminal);
       fprintf(file_handle, "TerminalWidth:%d\n", defaultsize.x);

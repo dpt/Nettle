@@ -390,7 +390,7 @@ void wimp_nullreasoncode(void)
     main_requirenull = true;
   }
 
-  if (cursor_session || blinking)
+  if (cursor_session || (blinking && want_blink) )
   {
     int now = _swi (OS_ReadMonotonicTime, 0);
     if (now - nextcursortime >= 0)
@@ -407,19 +407,20 @@ void wimp_nullreasoncode(void)
                        -cursor_session->pos.y * redraw.r_charh << eig.y);
       }
 
-      if (blinking)
+      if (blinking && want_blink)
       {
         struct session_struct *session = sessions;
 
-        while (session)
+        for(;session;session=session->next)
         {
-          force_redraw (session->window_handle,
+	  if (session->want_blink)
+	  {
+            force_redraw (session->window_handle,
                         0,
                         (-session->terminal_size.y-session->scrollback) * redraw.r_charh <<eig.y,
                         session->terminal_size.x * redraw.r_charw << eig.x,
                          -session->scrollback * redraw.r_charh << eig.y);
-
-          session=session->next;
+          }
         }
       }
     }

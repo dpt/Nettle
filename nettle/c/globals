@@ -75,6 +75,7 @@ int defaultscroll                    =SCROLLBACK_LINES;
 struct session_struct *sessions       =NULL;
 struct session_struct *current_session=NULL;
 
+bool want_blink                         =false;
 bool selection_in_progress              =false;
 struct session_struct *selection_session=NULL;
 int selection_start                     =0;
