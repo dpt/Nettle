@@ -63,7 +63,7 @@ static char *find_validation_name(char *validation)
 
   int want=1;
 
-  while (*validation > ' ')  /* Got to end of string? */
+  while (*validation >= ' ')  /* Got to end of string? */
   {
     if (want==1) /* Are we at the start of a term? */
     {
@@ -71,8 +71,12 @@ static char *find_validation_name(char *validation)
       {
         int i=0;
         validation++;
-        for (;*validation > ' ' && *validation!=';';)  /* copy the name */
+        for (;*validation >= ' ' && *validation!=';';)  /* copy the name */
+        {
+          if (*validation=='\\')
+            validation++;
           buf[i++]=*validation++;
+        }
 
         buf[i]='\0';
         return &buf[0];
