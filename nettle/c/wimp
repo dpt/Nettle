@@ -1514,7 +1514,9 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
             switch (connection_type)
             {
               case NETTLE_TELNET:
-                start_connection();
+                if (start_connection())
+                  close_window(win_open);
+
                 break;
               case NETTLE_SSH:
                 set_caret_position(win_open,icon_open_command,-1, get_icon_data_length(win_open, icon_open_command));
@@ -1527,7 +1529,9 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
             switch (connection_type)
             {
               case NETTLE_SSH: case NETTLE_TASKWINDOW:
-                start_connection();
+                if (start_connection())
+                  close_window(win_open);
+
                 break;
             }
             key_status=true;
@@ -2274,7 +2278,7 @@ void mode_change(void)
   }
   else
   {
-      bitmaps_area=realloc(bitmaps_area, mem_required); /* FIXME: Dangerous use of realloc() */
+    bitmaps_area=realloc(bitmaps_area, mem_required); /* FIXME: Dangerous use of realloc() */
   }
 
   redraw.r_flags=0;
@@ -2904,7 +2908,7 @@ static void create_lineeditor_type_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    create_menu_by_icon (menu_data, win_paneterm, 17);
+    create_menu_by_icon (menu_data, win_paneterm, icon_paneterm_lineeditbut);
   }
 
   free (menu_title);
@@ -3169,6 +3173,7 @@ static bool win_choices_read(int save)
   enum nettle_terminal new_default_terminal;
   char new_zap_font[256];
   char new_zap_lowres_font[256];
+  int new_line_editor;
   char string[32];
 
   /* Read paneterm type options */
@@ -3211,6 +3216,27 @@ static bool win_choices_read(int save)
   strcpy(new_zap_font, read_icon_data(win_paneterm, icon_paneterm_hifont, string, sizeof(string)));
   strcpy(new_zap_lowres_font, read_icon_data(win_paneterm, icon_paneterm_lofont, string, sizeof(string)));
 
+  new_line_editor=LINEEDIT_NONE;
+  {
+    char string_lineedit[32];
+    int loop=0;
+
+    read_icon_data(win_paneterm, icon_paneterm_lineedittype, string_lineedit, sizeof(string_lineedit));
+
+    while (loop<LINEEDIT_NUM_TYPES)
+    {
+      char string[256];
+
+      sprintf(string,"LineEd%d",loop);
+
+      if (strcmp(string_lineedit, lookup_static(string))==0)
+        new_line_editor=loop;
+
+      loop++;
+    }
+  }
+
+  line_editor=new_line_editor;
 
   /* Read panecols type options */
   {
