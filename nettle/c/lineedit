@@ -164,7 +164,10 @@ void open_pane_window(struct session_struct *session, struct wimp_openwindow_blo
   struct wimp_openwindow_block block;
   int width;
 
-  width=main_block->max.x;
+  width=main_block->max.x-main_block->min.x;
+
+  if (width>session->terminal_size.x*redraw.r_charw << eig.x)
+    width=session->terminal_size.x*redraw.r_charw << eig.x;
 
   gwo_block.window_handle=session->window_handle;
   _swi(Wimp_GetWindowOutline, _IN(1), &gwo_block);
@@ -172,7 +175,7 @@ void open_pane_window(struct session_struct *session, struct wimp_openwindow_blo
   block.window_handle=session->pane_handle;
   block.min.x=main_block->min.x;
   block.min.y=(main_block->min.y)-40-48;
-  block.max.x=width;
+  block.max.x=block.min.x+width;
 
   /* This is wrong as it assumes a toolsprite height */
   block.max.y=(main_block->min.y)-40;
@@ -180,7 +183,7 @@ void open_pane_window(struct session_struct *session, struct wimp_openwindow_blo
   block.scroll.y=0;
   block.handle_behind=main_block->handle_behind;
 
-  create_line_editor_icons(session, block.max.x-block.min.x);
+  create_line_editor_icons(session, width);
 
   _swi(Wimp_OpenWindow, _IN(1), &block);
 }

@@ -147,6 +147,7 @@ void load_choices(void)
     read_boolean_choice(&pass_f12, string, "PassF12:");
     read_boolean_choice(&cursor_blink, string, "CursorBlink:");
     read_boolean_choice(&blinking, string, "Blinking:");
+    read_boolean_choice(&dont_require_ctrl, string, "DontRequireCtrl:");
 
     read_terminal_choice(&new_default_terminal, string, "TerminalType:");
     read_integer_choice(&new_termsize.x, string, "TerminalWidth:");
@@ -262,6 +263,7 @@ bool save_choices(void)
       fprintf(file_handle, "PassF12:%d\n", (pass_f12==true) ? 1 : 0);
       fprintf(file_handle, "CursorBlink:%d\n", (cursor_blink==true) ? 1 : 0);
       fprintf(file_handle, "Blinking:%d\n", (blinking==true) ? 1 : 0);
+      fprintf(file_handle, "DontRequireCtrl:%d\n", (dont_require_ctrl==true) ? 1 : 0);
 
       fprintf(file_handle, "TerminalType:%d\n", default_terminal);
       fprintf(file_handle, "TerminalWidth:%d\n", defaultsize.x);
@@ -355,6 +357,8 @@ void open_choices_window(void)
   set_icon_state(win_panemisc, icon_panemisc_passf12, (pass_f12==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
   set_icon_state(win_panemisc, icon_panemisc_blinking, (blinking==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
   set_icon_state(win_panemisc, icon_panemisc_cursorblink, (cursor_blink==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_panemisc, icon_panemisc_dontrequirectrl, (dont_require_ctrl==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
+
 
   if (win_is_open(win_choices))
     open_window(NULL, win_choices);
@@ -457,6 +461,11 @@ bool win_choices_read(int save)
     cursor_blink=true;
   else
     cursor_blink=false;
+
+  if (read_icon_ticked(win_panemisc, icon_panemisc_dontrequirectrl))
+    dont_require_ctrl=true;
+  else
+    dont_require_ctrl=false;
 
   /* make the choices in the new_* variables permanent */
   default_terminal = new_default_terminal;

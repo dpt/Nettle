@@ -645,13 +645,17 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     window.window_handle = block->window_handle;
     _swi (Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
-    if (inkey (KEYBOARD_CTRL))
+    if (inkey (KEYBOARD_CTRL) || dont_require_ctrl)
     {
-      /* Ctrl pressed - allow dynamic resizing */
+      /* Ctrl pressed (or not) - allow dynamic resizing */
       int new_x=(block->max.x-block->min.x)/(redraw.r_charw << eig.x);
       int new_y=(block->max.y-block->min.y)/(redraw.r_charh << eig.y);
 
       resize_terminal(session, new_x, new_y, session->scrollback, true);
+
+      /* Refetch the window state as the Wimp may have changed it if it
+       * didn't fit on the screen etc. */
+      _swi(Wimp_GetWindowState, _IN(1), block);
 
       block->max.x = block->min.x+(session->terminal_size.x)*(redraw.r_charw << eig.x);
       block->min.y = block->max.y-(session->terminal_size.y)*(redraw.r_charh << eig.y);
@@ -740,7 +744,7 @@ static void close_program(void)
 {
   struct session_struct *session = sessions;
   bool connections_open=false;
-  char message[200];
+  char buffer[200];
 
   while (session)
   {
@@ -753,7 +757,7 @@ static void close_program(void)
   quit_flag=true;
 
   if (connections_open)
-    quit_flag = generror_question(lookup("ConnectionMultiOpen", message, sizeof(message)));
+    quit_flag = generror_question(lookup("ConnectionMultiOpen", buffer, sizeof(buffer)));
 
   if (quit_flag && shutdown_flag==0)
   {
@@ -761,7 +765,7 @@ static void close_program(void)
 
     /* start of key press message is same as block returned by get caret position */
     _swi(Wimp_GetCaretPosition, _IN(1), &message);
-    
+
     message.key_pressed.code = 0x1fc; /* scF12 */
     message.key_pressed.extra = 0;
     _swi(Wimp_SendMessage, _INR(0,3), 8, &message, taskmanager_taskhandle, 0);
@@ -913,6 +917,29 @@ static void win_spoolsave_click(int x, int y, int buttons, int icon_handle)
   }
 }
 
+/* Function:    win_resize_set
+ * Description: Perform the 'set' action on the resize dialogue,
+ *              with NO closing of the dialogue
+ * Parameters:  none
+ * Returns:     none
+ * Note:        Assumes that terminal_menu_session is set to the
+ *              correct terminal window, as it should be whilst
+ *              the menu is active
+ */
+
+static void win_resize_set(void)
+{
+  struct coords new_size;
+  int new_scrollback;
+  if (read_termsize_icons (win_resize,
+                           icon_resize_width, icon_resize_height,
+                           icon_resize_scroll,
+                           &new_size, &new_scrollback))
+  {
+    resize_terminal(terminal_menu_session, new_size.x, new_size.y, new_scrollback, true);
+  }
+}
+
 
 static void win_resize_click(int x, int y, int buttons, int icon_handle)
 {
@@ -925,21 +952,9 @@ static void win_resize_click(int x, int y, int buttons, int icon_handle)
       break;
 
     case icon_resize_set:
-      {
-        struct coords new_size;
-        int new_scrollback;
-
-        if (read_termsize_icons (win_resize,\
-          icon_resize_width, icon_resize_height, icon_resize_scroll, \
-          &new_size, &new_scrollback))
-	{
-	  resize_terminal(terminal_menu_session, new_size.x, new_size.y, new_scrollback, true);
-	  if ((buttons & 1)==0)
-	  {
-	    _swi(Wimp_CreateMenu, _IN(1), -1);
-	  }
-	}
-      }
+      win_resize_set();
+      if ((buttons & 1)==0)
+        _swi(Wimp_CreateMenu, _IN(1), -1);
       break;
   }
 }
@@ -1497,21 +1512,13 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
   {
     switch (icon_handle)
     {
-      case icon_open_contype:
+      case icon_resize_scroll: /* The final icon in the window - scrollback */
         switch (key)
         {
           case 13:
-            {
-              struct coords new_size;
-              int new_scrollback;
-
-              if (read_termsize_icons(win_resize, icon_resize_width, icon_resize_height, icon_resize_scroll,\
-                &new_size, &new_scrollback))
-                resize_terminal(terminal_menu_session, new_size.x, new_size.y,
-                                new_scrollback, true);
-
-              _swi(Wimp_CreateMenu, _IN(1), -1);
-            }
+            win_resize_set();
+            /* We close the menu ourselves */
+            _swi(Wimp_CreateMenu, _IN(1), -1);
             key_status=true;
         }
         break;
@@ -1732,15 +1739,21 @@ void wimp_menu_selection(int *selection)
                 int i;
                 int start=(selection_start<selection_end) ? selection_start : selection_end;
                 int end=(selection_start<selection_end) ? selection_end : selection_start;
+                int url_pos=0;
 
                 /* Limit the URL to 1023 chars */
                 if (end>start+1023)
                   end=start+1023;
 
                 for (i=start; i<end; i++)
-                  url[i-start]=read_assigned_character(selection_session, i % selection_session->terminal_size.x, i / selection_session->terminal_size.x);
+                {
+                  char byte=read_assigned_character(selection_session, i % selection_session->terminal_size.x, i / selection_session->terminal_size.x);
 
-                url[end-start]='\0';
+                  if (byte!=32)
+                    url[url_pos++]=byte;
+                }
+
+                url[url_pos]='\0';
 
                 url_launch(url);
               }
@@ -2130,6 +2143,24 @@ int wimp_handleurl(const char *url, int checkonly)
   return handler(url);
 }
 
+/**
+ * Find session that matches given window handle
+ *
+ * @return appropriate session, or NULL if session was found that relates
+ * to the window */
+static struct session_struct *get_session_from_winhan(int window)
+{
+  struct session_struct *session = sessions;
+
+  while (session != NULL &&
+         session->window_handle != window &&
+         session->pane_handle != window)
+  {
+    session = session->next;
+  }
+
+  return session;
+}
 
 
 /* Wimp message */
@@ -2250,56 +2281,95 @@ void wimp_message(union wimp_poll_block *wimp_block)
       break;
 
     case WIMP_MESSAGE_DATALOAD:
+    {
+      struct session_struct *session;
+      int window_handle;
+
       if (msg_ref && your_ref != msg_ref && my_ref != msg_ref)
         break;
 
       msg_ref = 0;
+      window_handle = wimp_block->user_message.contents.data_load.window_handle;
+      session = get_session_from_winhan(window_handle);
 
-      switch (wimp_block->user_message.contents.data_save.filetype)
+      if (inkey(KEYBOARD_SHIFT))
       {
-        case 0xB28:
-          if (parse_ant_url (wimp_block))
-            reply_to_dataload (wimp_block);
-          break;
-        case 0xF91:
-          if (parse_acorn_uri (wimp_block))
-            reply_to_dataload (wimp_block);
-          break;
-        case 0xFAF: /* html */
-        case 0xFFF: /* text */
-          if (paste_text_file (wimp_block))
-            reply_to_dataload (wimp_block);
-          break;
-        default:
+        /* Don't acknowledge as we just want the filename */
+
+        if (session)
         {
-          char string[MESSAGE_MAX_CONNECTION];
-          char type[MESSAGE_MAX_CONNECTION];
+          char *text=wimp_block->user_message.contents.data_load.file_name;
 
-          read_icon_data(win_open, icon_open_contype, string, MESSAGE_MAX_CONNECTION);
-
-          if (strcmp(string, lookup("Taskwindow", type, MESSAGE_MAX_CONNECTION)) == 0)
-          {
-            if (wimp_block->user_message.contents.data_save.window_handle==win_open &&
-                wimp_block->user_message.contents.data_save.icon_handle==icon_open_command)
+          process_data_transmission (session,text, strlen(text));
+        }
+      }
+      else
+      {
+        switch (wimp_block->user_message.contents.data_save.filetype)
+        {
+          case 0xB28: /* ANT url */
+            if (parse_ant_url (wimp_block))
+              reply_to_dataload (wimp_block);
+            break;
+          case 0xF91: /* Acorn uri */
+            if (parse_acorn_uri (wimp_block))
+              reply_to_dataload (wimp_block);
+            break;
+          case 0xFAF: /* html */
+          case 0xFFF: /* text */
+            if (paste_text_file (wimp_block))
+              reply_to_dataload (wimp_block);
+            break;
+          default:
+            if (session)
             {
-              struct wimp_getcaretposition_block block;
+              /* Prompt the user if they try to paste something other than those above */
+              /* Is there a nice way to read the proper name for a filetype other than */
+              /* OS_ReadVarVal? I thought there was, but couldn't find it, so have */
+              /* just left it as the base type */
+              char buffer[1024];
 
-              _swi(Wimp_GetCaretPosition, _IN(1), &block);
+              sprintf(buffer, "%s &%X ?", lookup_static("SureFileTypeLoad"),
+                      wimp_block->user_message.contents.data_save.filetype);
 
-              set_icon_data(win_open, icon_open_command,
-                            wimp_block->user_message.contents.data_save.file_name);
-
-              if (block.window_handle==win_open && block.icon_handle==icon_open_command)
+              if (generror_question(buffer))
               {
-                set_caret_position(win_open, icon_open_command, -1,
-                                   get_icon_data_length(win_open, icon_open_command));
+                if (paste_text_file (wimp_block))
+                  reply_to_dataload (wimp_block);
               }
             }
-          }
-          break;
+            else
+            {
+              if (wimp_block->user_message.contents.data_save.window_handle==win_open &&
+                  wimp_block->user_message.contents.data_save.icon_handle==icon_open_command)
+              {
+                char string[MESSAGE_MAX_CONNECTION];
+                char type[MESSAGE_MAX_CONNECTION];
+
+                read_icon_data(win_open, icon_open_contype, string, MESSAGE_MAX_CONNECTION);
+
+                if (strcmp(string, lookup("Taskwindow", type, MESSAGE_MAX_CONNECTION)) == 0)
+                {
+                  struct wimp_getcaretposition_block block;
+
+                  _swi(Wimp_GetCaretPosition, _IN(1), &block);
+
+                  set_icon_data(win_open, icon_open_command,
+                                wimp_block->user_message.contents.data_save.file_name);
+
+                  if (block.window_handle==win_open && block.icon_handle==icon_open_command)
+                  {
+                    set_caret_position(win_open, icon_open_command, -1,
+                                       get_icon_data_length(win_open, icon_open_command));
+                  }
+                }
+              }
+            }
+            break;
         }
       }
       break;
+    }
 
     case WIMP_MESSAGE_DATALOADACK:
       msg_ref = 0;
@@ -2325,7 +2395,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
             shutdown_flag=0;
           else
             shutdown_flag=wimp_block->user_message.contents.prequit.shutdown_flag;
-          
+
           taskmanager_taskhandle = wimp_block->user_message.sender_ref;
           wimp_block->user_message.your_ref    =my_ref;
           _swi(Wimp_SendMessage, _INR(0,2), 19, wimp_block, sender_ref);
@@ -3230,27 +3300,6 @@ static char *load_file (const char *name, int *size)
 
 
 /**
- * Find session that matches given window handle
- *
- * @return appropriate session, or NULL if session was found that relates
- * to the window */
-static struct session_struct *get_session_from_winhan(int window)
-{
-  struct session_struct *session = sessions;
-
-  while (session != NULL &&
-         session->window_handle != window &&
-         session->pane_handle != window)
-  {
-    session = session->next;
-  }
-
-  return session;
-}
-
-
-
-/**
  * 'type' in an ant url file
  *
  * @return true if url could not be sent
@@ -3353,6 +3402,7 @@ static bool paste_text_file (union wimp_poll_block *block)
   if (text)
   {
     /* Only translate if file is 0xFFF (text) */
+    /* Is there a reason this is restricted to 0xFFF ? I can't remember... */
     if (block->user_message.contents.data_load.filetype==0xFFF)
     {
       int loop;

@@ -1003,7 +1003,7 @@ static void resize_terminal_dimensions(struct session_struct *session,
       {
         new_area[loop] = malloc(terminal_size.x * sizeof(struct term_char));
         assert(new_area[loop]);
-  
+
         if (area == 0)
         {
           clear_screen(session, loop * terminal_size.x,
@@ -1059,10 +1059,8 @@ static void resize_terminal_dimensions(struct session_struct *session,
       {
         /* Note this is slightly bad as we're not using our nice interface */
         /* to the area */
-        new_area[loop][loop2].fg    = old_area[old_loop][loop2].fg;
-        new_area[loop][loop2].bg    = old_area[old_loop][loop2].bg;
-        new_area[loop][loop2].flags = old_area[old_loop][loop2].flags;
-        new_area[loop][loop2].chr   = old_area[old_loop][loop2].chr;
+
+        new_area[loop][loop2]=old_area[old_loop][loop2];
       }
 
       /* Clear the rest of the line */

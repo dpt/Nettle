@@ -39,6 +39,7 @@
 #define LINE_EDITOR             0
 #define PASS_F12                false
 #define BLINKING                true
+#define DONT_REQUIRE_CTRL       false
 
 #define CURSOR_BLINK            false
 #define CURSOR_BLINK_DELAY      50
@@ -108,6 +109,7 @@ extern bool pass_f12;
 extern bool cursor_blink;
 extern bool blinking;
 extern bool want_blink;
+extern bool dont_require_ctrl;
 
 extern int line_editor_size;
 extern enum nettle_terminal default_terminal;

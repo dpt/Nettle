@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.2019 (04 Jan 2002)
+AppVersion:v0.2019 (28 Jan 2002)
 
 Info:Info>
 Choices:Choices...
@@ -114,6 +114,7 @@ CantAlloc:Nettle was unable to claim enough memory for the requested operation.
 CantLoad:Nettle was unable to load the file: 
 ChoicesNotKnown:This version of Nettle cannot load Choices file of version
 ChoicesRevert:- reverting to defaults
+SureFileTypeLoad:Are you sure you wish to load file of type
 
 HotBlankLabel:Please enter a hotlist label
 HotBlankHost:Please enter a hostname
