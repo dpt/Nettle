@@ -52,7 +52,7 @@ zapgen_code (int *output_buffer, const char *input_buffer,
 {
   int *line_offsets = output_buffer;
   char *write = (char *)(line_offsets + last_line + 1);
-  const struct term_char *input = (struct term_char *) input_buffer;
+  const struct term_char *input = (const struct term_char *)(const void *) input_buffer;
   int line_number = 0;
 
   /* line_offsets -> list of offsets of lines (in the data block) */
@@ -356,14 +356,13 @@ done:
 }
 
 
-bool
-create_zap_font_menu (int window_handle, int icon_handle)
+bool create_zap_font_menu(int window_handle, int icon_handle)
 {
-  get_system_variable ("ZapFonts$Path", font_path, sizeof (font_path));
-  strcpy (font_path, font_path ? "ZapFonts:" : "<Nettle$Dir>.Fonts ");
+  get_system_variable(font_path, "ZapFonts$Path", sizeof (font_path));
+  strcpy(font_path, *font_path ? "ZapFonts:" : "<Nettle$Dir>.Fonts ");
   font_path_base = strlen (font_path);
 
-  if (create_zap_font_menu_internal (zapfont_menu, zapfont_menu_entries, true))
+  if(create_zap_font_menu_internal (zapfont_menu, zapfont_menu_entries, true))
   {
     zapfont_depth = 1;
     create_menu_by_icon (zapfont_menu[0], window_handle, icon_handle);
