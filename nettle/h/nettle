@@ -36,6 +36,7 @@
 #define NETTLE_OTHER_APPLI_MODE	    (1<<8)
 #define NETTLE_OTHER_BACKSPACE_MODE (1<<9)
 #define NETTLE_OTHER_SCREEN_MODE    (1<<10)
+#define NETTLE_OTHER_COLUMN_MODE    (1<<11)
 
 enum nettle_terminal {
   NETTLE_TERMINAL_VT100,

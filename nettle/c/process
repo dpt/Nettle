@@ -1997,10 +1997,14 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 3:
                           /* Selects 132 columns per line */
-                          resize_terminal(session, 132,
-                                                   session->terminal_size.y,
-                                                   session->scrollback,
-                                                   false);
+                          if (!(session->other_session_flags & NETTLE_OTHER_COLUMN_MODE))
+                          {
+                            resize_terminal(session, 132,
+                                                     session->terminal_size.y,
+                                                     session->scrollback,
+                                                     false);
+                            session->other_session_flags |= NETTLE_OTHER_COLUMN_MODE;
+                          }
                           break;
                         case 4:
                           /* Selects smooth scroll */
@@ -2136,10 +2140,14 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 3:
                           /* Selects 80 columns per line */
-                          resize_terminal(session, 80,
-                                                   session->terminal_size.y,
-                                                   session->scrollback,
-                                                   false);
+                          if (session->other_session_flags & NETTLE_OTHER_COLUMN_MODE)
+                          {
+                            resize_terminal(session, 80,
+                                                     session->terminal_size.y,
+                                                     session->scrollback,
+                                                     false);
+                            session->other_session_flags &= ~NETTLE_OTHER_COLUMN_MODE;
+                          }
                           break;
                         case 4:
                           /* Selects jump scroll */
