@@ -777,7 +777,7 @@ void recache_bitmaps(void)
   int b;
 
   /* work out which font we should be using */
-  zap_font_used = (eig.y == 1) ? zap_font_area : zap_lowres_font_area;
+  zap_font_used = (eig.y <= 1) ? zap_font_area : zap_lowres_font_area;
 
   _swi(ZapRedraw_ReadVduVars, _IN(1), &redraw);
 
