@@ -235,7 +235,11 @@ static void load_templates(void)
 
   win_choices=load_template(LOAD_TEMPLATE_NO_FONTS,"choices",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
-  win_colours=load_template(LOAD_TEMPLATE_NO_FONTS,"colourpick",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+  win_paneterm=load_template(LOAD_TEMPLATE_NO_FONTS,"paneterm",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+
+  win_panefonts=load_template(LOAD_TEMPLATE_NO_FONTS,"panefonts",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+
+  win_panehot=load_template(LOAD_TEMPLATE_NO_FONTS,"panehot",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   win_open=load_template(LOAD_TEMPLATE_NO_FONTS,"open",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
   set_icon_data(win_open,4,lookup("Telnet", info_data, sizeof(info_data)));

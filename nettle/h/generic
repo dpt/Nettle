@@ -251,6 +251,11 @@ struct wimp_seticonstate_block
   int clear;
 };
 
+struct wimp_whichicon_block
+{
+  int icons[64];
+};
+
 struct colourpicker_block
 {
   int flags;

@@ -77,7 +77,9 @@ extern int iconbar_handle;
 
 extern int win_info;
 extern int win_choices;
-extern int win_colours;
+extern int win_paneterm;
+extern int win_panefonts;
+extern int win_panehot;
 extern int win_open;
 extern int win_resize;
 extern int win_save;

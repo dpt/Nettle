@@ -62,6 +62,18 @@ static void create_terminal_type_menu(void);
 static void drag_start(int, int);
 static bool win_choices_read(int save);
 
+static bool win_is_open(int window_handle)
+{
+  struct wimp_getwindowstate_block window;
+
+  window.window_handle=window_handle;
+  _swi(Wimp_GetWindowState, _IN(1), &window);
+
+  if (window.window_flags & (1<<16))
+    return true;
+
+  return false;
+}
 
 void closedown_wimp(void)
 {
@@ -90,7 +102,7 @@ void open_window_centred (int window_handle)
   block.max.y += block.min.y;
   block.handle_behind = -1;	/* open on top of stack */
 
-  open_window(&block, NULL);
+  open_window(&block, window_handle);
 }
 
 static void wimp_pollresolve(struct session_struct *session)
@@ -151,7 +163,7 @@ static void wimp_pollconnect(struct session_struct *session)
       {
         char string[1024];
 
-        sprintf(string,"nettle/%s (%s,%d)",
+        sprintf(string,"Nettle/%s (%s,%d)",
                 terminal_name[session->terminal_type],
                 session->socket_host,
                 session->socket_port);
@@ -380,7 +392,68 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     block->handle_behind = -1;  /* Open on top of stack */
   }
 
-  if (session)
+  if (window_handle==win_choices)
+  {
+    /* Find out which pane we should be opening */
+    struct wimp_whichicon_block whichicon_block;
+    int window_id_to_open=0;
+    int counter=0;
+
+    _swi(Wimp_WhichIcon, _INR(0,3), window_handle, &whichicon_block, WIMP_ICON_SELECTED_BIT,
+                                                                     WIMP_ICON_SELECTED_BIT);
+
+    while (whichicon_block.icons[counter]!=-1)
+    {
+      switch (whichicon_block.icons[counter])
+      {
+        case 4:
+          /* terminal selected */
+          if (window_id_to_open==0)
+            window_id_to_open=win_paneterm;
+          else
+            generror("More than one 'window' icon set in choices.", false);
+          break;
+        case 5:
+          /* fonts selected */
+          if (window_id_to_open==0)
+            window_id_to_open=win_panefonts;
+          else
+            generror("More than one 'window' icon set in choices.", false);
+          break;
+        case 6:
+          /* hotlist selected */
+          if (window_id_to_open==0)
+            window_id_to_open=win_panehot;
+          else
+            generror("More than one 'window' icon set in choices.", false);
+          break;
+      }
+      counter++;
+    }
+
+    if (window_id_to_open!=0)
+    {
+      struct wimp_getwindowinfo_block window;
+      window.window_handle=window_id_to_open;
+
+      _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
+
+      window.min.x=block->min.x;
+      window.min.y=block->min.y;
+      window.max.x=block->min.x+640;
+      window.max.y=block->max.y;
+      window.handle_behind=block->handle_behind;
+
+      _swi(Wimp_OpenWindow, _IN(1), &window);
+
+      block->handle_behind=window_id_to_open;
+    }
+    else
+    {
+      generror("No 'window' selected in choices.", false);
+    }
+  }
+  else if (session)
   {
     /* This is a main "session" window, so handle the pane, if any */
     struct wimp_getwindowinfo_block window;
@@ -618,23 +691,93 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
 {
   switch (icon_handle)
   {
-    case 0: /* save */
+    case 4: /* terminal */
+      if (win_is_open(win_panefonts))
+        close_window(win_panefonts);
+
+      if (win_is_open(win_panehot))
+        close_window(win_panehot);
+
+      set_icon_state(win_choices, 4, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, 5, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, 6, 0, WIMP_ICON_SELECTED_BIT);
+
+      {
+        struct wimp_openwindow_block block;
+
+        block.window_handle=win_choices;
+        _swi(Wimp_GetWindowState, _IN(1), &block);
+
+        open_window(&block, win_choices);
+      }
+
+      break;
+    case 5: /* fonts */
+      if (win_is_open(win_paneterm))
+        close_window(win_paneterm);
+
+      if (win_is_open(win_panehot))
+        close_window(win_panehot);
+
+      set_icon_state(win_choices, 4, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, 5, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, 6, 0, WIMP_ICON_SELECTED_BIT);
+
+      {
+        struct wimp_openwindow_block block;
+
+        block.window_handle=win_choices;
+        _swi(Wimp_GetWindowState, _IN(1), &block);
+
+        open_window(&block, win_choices);
+      }
+
+      break;
+    case 6: /* hotlist */
+      if (win_is_open(win_paneterm))
+        close_window(win_paneterm);
+
+      if (win_is_open(win_panefonts))
+        close_window(win_panefonts);
+
+      set_icon_state(win_choices, 4, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, 5, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, 6, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+
+      {
+        struct wimp_openwindow_block block;
+
+        block.window_handle=win_choices;
+        _swi(Wimp_GetWindowState, _IN(1), &block);
+
+        open_window(&block, win_choices);
+      }
+
+      break;
+    case 3: /* save */
       if (win_choices_read(true) && save_choices() && (buttons & 1) == 0)
         close_window(win_choices);
       break;
     case 1: /* cancel */
       if ((buttons & 1) == 0)
+      {
+        if (win_is_open(win_paneterm))
+          close_window(win_paneterm);
+
+        if (win_is_open(win_panefonts))
+          close_window(win_panefonts);
+
+        if (win_is_open(win_panehot))
+          close_window(win_panehot);
+
         close_window(win_choices);
+      }
       else
         open_choices_window();
       break;
-    case 2: /* ok */
+    case 2: /* set */
       if (win_choices_read(false) && (buttons & 1) == 0)
         close_window(win_choices);
-      break;
-    case 9: /* colours editor window */
-      break;
-    case 20: /* hotlist editor window */
       break;
   }
 }
@@ -2521,16 +2664,32 @@ static void open_open_window(bool open_window_flag)
 
 static void open_choices_window(void)
 {
-  char string[8];
+  char string[32];
 
-  set_icon_data(win_choices, 6, zap_font);
-  set_icon_data(win_choices, 8, zap_lowres_font);
-  set_termsize_icons(win_choices, 15, 16, 17, defaultsize, defaultscroll);
+  /* Select paneterm */
+  set_icon_state(win_choices, 4, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_choices, 5, 0, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_choices, 6, 0, WIMP_ICON_SELECTED_BIT);
+
+  /* Set paneterm type options */
+
+  /* Set terminal type */
+  set_termsize_icons(win_paneterm, 2, 3, 6, defaultsize, defaultscroll);
   sprintf(string, "%d", line_editor_size);
-  set_icon_data(win_choices, 19, string);
+  set_icon_data(win_paneterm, 13, string);
+
+  {
+    char string_lineedit[32];
+
+    sprintf(string_lineedit,"LineEd%d",line_editor);
+    set_icon_data(win_paneterm, 16, lookup(string_lineedit, string, sizeof(string)));
+  }
+
+  set_icon_data(win_panefonts, 2, zap_font);
+  set_icon_data(win_panefonts, 5, zap_lowres_font);
 
   open_window_centred(win_choices);
-  set_caret_position(win_choices, 15, -1, get_icon_data_length(win_choices, 15));
+  /*set_caret_position(win_paneterm, 2, -1, get_icon_data_length(win_choices, 2));*/
 }
 
 static bool win_choices_read(int save)

@@ -45,7 +45,9 @@ int iconbar_handle;
 /* Template windows */
 int win_info;
 int win_choices;
-int win_colours;
+int win_paneterm;
+int win_panefonts;
+int win_panehot;
 int win_open;
 int win_resize;
 int win_save;

@@ -59,7 +59,7 @@ int main(void)
 
     /* Provide a suitable default in case DeepKeys isn't available */
     wimp_block.key_pressed.extra = 0;
-    
+
     event = _swi(Wimp_PollIdle, _INR(0,3) | _RETURN(0),
                  mask, &wimp_block, nextpolltime, socketwatch_pollword);
 
@@ -85,7 +85,6 @@ int main(void)
         break;
       case 6:
         /* mouse click request, call with x, y, buttons, window handle and icon_handle */
-        logf("buttons = %d\n", wimp_block.mouse_click.buttons);
         wimp_mouseclick(wimp_block.mouse_click.pos.x,
                         wimp_block.mouse_click.pos.y,
                         wimp_block.mouse_click.buttons,
