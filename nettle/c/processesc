@@ -158,7 +158,7 @@ bool process_escape_length_2(struct session_struct *session)
             /* Carriage return and line feed */
             session->pos.y++;
             session->pos.x=0;
-            reprocess_position(session);
+            reprocess_position_scroll(session);
             done=true;
           }
           break;
