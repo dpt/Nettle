@@ -187,7 +187,7 @@ static void open_template(void)
 }
 
 
-static int load_template(int *font_array,char *window_name,struct os_spriteop_area *templ_sprite)
+static int load_template(int *font_array, const char *window_name, struct os_spriteop_area *templ_sprite)
 {
   char window_name_copy[12];
   struct wimp_createwindow_block *template_data;
@@ -397,12 +397,9 @@ void create_icon_bar_icon(void)
   block.miny         =0;  /* min y */
   block.maxx         =68; /* max x */
   block.maxy         =68; /* max y */
-  block.icon_flags   =0x1700311a;
+  block.icon_flags   =0x1700301a;
 
-  /* FIXME: this is an indirect sprite, doesn't need to be */
-  block.contents.is.sprite     =application_icon_name;
-  block.contents.is.sprite_area=sprite_area;
-  block.contents.is.sprite_len =strlen(application_icon_name);
+  strcpy(block.contents.t.text, application_icon_name);
 
   iconbar_handle=_swi(Wimp_CreateIcon, _IN(1)|_RETURN(0), &block);
 }
