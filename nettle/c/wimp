@@ -10,8 +10,9 @@
 
 #include <errno.h>
 #include "sys/errno.h"
-#include "socklib.h"
+#include "sys/socket.h"
 #include "sys/select.h"
+#include "sys/time.h"
 
 #include "lineedit.h"
 #include "misc.h"
