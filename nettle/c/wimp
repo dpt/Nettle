@@ -612,6 +612,16 @@ static void iconbar_click(int x, int y, int buttons, int icon_handle)
   }
 }
 
+static void win_info_click(int x, int y, int buttons, int icon_handle)
+{
+  switch (icon_handle)
+  {
+    case icon_info_website:
+      url_launch(NETTLE_HOME_PAGE);
+      break;
+  }
+}
+
 static void win_open_click(int x, int y, int buttons, int icon_handle)
 {
   switch (icon_handle)
@@ -1050,6 +1060,7 @@ void wimp_mouse_click(int x, int y, int buttons, int window_handle, int icon_han
   static const struct { int *window; void (*handler)(int,int,int,int); } mousehandlers[] =
   {
     {&win_iconbar, iconbar_click     },
+    {&win_info,    win_info_click    },
     {&win_open,    win_open_click    },
     {&win_save,    win_save_click    },
     {&win_resize,  win_resize_click  },
@@ -2321,11 +2332,13 @@ static void open_open_window(bool open_window_flag)
   {
     case NETTLE_TELNET:
     case NETTLE_SSH:
-      set_caret_position(win_open, icon_open_host, -1, get_icon_data_length(win_open, 0));
+      set_caret_position(win_open, icon_open_host, -1,
+                         get_icon_data_length(win_open, icon_open_host));
       break;
 
     case NETTLE_TASKWINDOW:
-      set_caret_position(win_open, icon_open_command, -1, get_icon_data_length(win_open, 7));
+      set_caret_position(win_open, icon_open_command, -1,
+                         get_icon_data_length(win_open, icon_open_command));
       break;
   }
 }

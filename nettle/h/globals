@@ -41,6 +41,8 @@
 
 /*******************************************/
 
+#define NETTLE_HOME_PAGE        "http://nettle.sourceforge.net/"
+
 #define MAX_TAB_NUMBER		32
 
 #define min(x,y) ((x)<(y)?(x):(y))
