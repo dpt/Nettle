@@ -1604,6 +1604,28 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
 
         if (session)
         {
+          switch (key)
+          {
+            case 0x18E:           /* Down, sPageDown */
+              if (ekey == 54)
+              {
+                scroll_term (session, -1);
+              }
+              break;
+            case 0x18F:           /* Up, sPageUp */
+              if (ekey == 33)
+              {
+                scroll_term (session, 1);
+              }
+              break;
+            case 0x1A2:          /* Ctrl+F2 - only if session isn't alive */
+              if (session->socket_state != NETTLE_SESSION_CONNECTED)
+              {
+                remove_session(session);
+              }
+              break;
+          }
+
           if (session->socket_state==NETTLE_SESSION_CONNECTED)
           {
             if (pass_f12)
@@ -1711,6 +1733,22 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
                              get_icon_data_length(session->pane_handle, line_editor_icon));
 
           break;
+        case 0x1A2:          /* Ctrl+F2 */
+        {
+          bool status=true;
+
+          if (session->socket_state == NETTLE_SESSION_CONNECTED)
+          {
+            status = generror_question("ConnectionOpenButtons","ConnectionOpen",0);
+          }
+
+          if (status)
+          {
+            remove_session(session);
+          }
+
+          break;
+        }
       }
     }
   }
@@ -1836,6 +1874,8 @@ void wimp_menu_selection(int *selection)
               break;
           }
           break;
+        case 5: /* reconnect */
+          nettle_reconnect(terminal_menu_session);
       }
       break;
 
@@ -2889,7 +2929,8 @@ static void create_terminal_menu(void)
   char *menu_resize         =get_menu_item("Resize");
   char *menu_paste_clipboard=get_menu_item("PasteClip");
   char *menu_options        =get_grey_menu_item("Options");
-  char *menu_spool          =get_last_menu_item("Spool>");
+  char *menu_spool          =get_menu_item("Spool>");
+  char *menu_reconnect      =get_last_menu_item("Reconnect");
 
   char *menu_selection_title=get_menu_item("Selection");
   char *menu_save           =get_menu_item("Save");
@@ -2931,7 +2972,8 @@ static void create_terminal_menu(void)
                   menu_resize, win_resize,
                   menu_paste_clipboard,
                   menu_options,
-                  menu_spool, menu_data3))
+                  menu_spool, menu_data3,
+                  menu_reconnect))
   {
     if (create_menu(menu_data2, indirected+256,
                     menu_selection_title,
@@ -2959,6 +3001,7 @@ static void create_terminal_menu(void)
   free(menu_paste_clipboard);
   free(menu_options);
   free(menu_spool);
+  free(menu_reconnect);
 
   free(menu_selection_title);
   free(menu_save);
@@ -3150,7 +3193,7 @@ static void open_open_window(bool open_window_flag)
        /* unshade the host and command icons */
        set_icon_state (win_open, icon_open_host, 0, WIMP_ICON_SHADED_BIT);
        /*set_icon_state (win_open, icon_open_hostbut, 0, WIMP_ICON_SHADED_BIT);*/
-       set_icon_state (win_open, icon_open_command, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_command, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
        /*set_icon_state (win_open, icon_open_commandbut, 0, WIMP_ICON_SHADED_BIT);*/
        break;
 

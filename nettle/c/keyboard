@@ -133,19 +133,15 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
   case 0x18D:			/* Right */
     SETBLOCK (3, APPLI ("\x1BOC", "\x1B[C"));
   case 0x18E:			/* Down, sPageDown */
-    if (ekey == 54)
+    if (ekey != 54)
     {
-      scroll_term (session, -1);
-      break;
+      SETBLOCK (3, APPLI ("\x1BOB", "\x1B[B"));
     }
-    SETBLOCK (3, APPLI ("\x1BOB", "\x1B[B"));
   case 0x18F:			/* Up, sPageUp */
-    if (ekey == 33)
+    if (ekey != 33)
     {
-      scroll_term (session, 1);
-      break;
+      SETBLOCK (3, APPLI ("\x1BOA", "\x1B[A"));
     }
-    SETBLOCK (3, APPLI ("\x1BOA", "\x1B[A"));
   case 0x191:			/* sF1 */
     SETBLOCK (5, "\x1B[23~");
   case 0x192:			/* sF2 */
