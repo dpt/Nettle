@@ -14,6 +14,7 @@ CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -Wshadow -Wundef \
    -Wpointer-arith -Wcast-align -Wwrite-strings -Wstrict-prototypes \
    -Wmissing-prototypes -Wmissing-declarations -Wnested-externs \
    -Wcast-qual -mpoke-function-name $(LIBFLAGS) -O3 # -DFORTIFY
+   -DBETA_VERSION
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = $(CC)

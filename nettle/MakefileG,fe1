@@ -13,7 +13,7 @@ CC = gcc
 CFLAGS = -c $(SCINC) $(SCLIB) -mthrowback -O2 -Wall -Wno-unknown-pragmas \
    -Wshadow -Wundef -Wpointer-arith -Wcast-align -Wwrite-strings \
    -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations \
-   -Wnested-externs -Wcast-qual #-DFORTIFY
+   -Wnested-externs -Wcast-qual -DBETA_VERSION #-DFORTIFY
 
 LINK = gcc
 LINKFLAGS = $(SCLIB)
