@@ -1,3 +1,4 @@
 RMEnsure DDEUtils 0.00 RMLoad System:Modules.DDEUtils
 Prefix <Obey$Dir>
+MkDir <Obey$Dir>.o
 amu
