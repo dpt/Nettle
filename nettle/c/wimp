@@ -1840,11 +1840,13 @@ int wimp_handleurl(const char *url, int checkonly)
     url += strlen("telnet:");
     handler = wimp_handletelneturl;
   }
+#ifdef INSECURE_STUFF
   else if (strncmp(url, "ansitaskwindow:", strlen("ansitaskwindow:")) == 0)
   {
     url += strlen("ansitaskwindow:");
     handler = wimp_handleansiurl;
   }
+#endif /* INSECURE_STUFF */
   else
   {
     handler = NULL;
