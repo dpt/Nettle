@@ -168,10 +168,10 @@ int *load_font(char *font)
   char file_name[1024];
   int object_type;
 
-  get_system_variable(file_name,"ZapFontsSource$Path",sizeof(file_name));
+  get_system_variable(file_name,"ZapFonts$Path",sizeof(file_name));
   if (strlen(file_name)!=0)
   {
-    strcpy(file_start,"ZapFontsSource:");
+    strcpy(file_start,"ZapFonts:");
   }
   else
   {
