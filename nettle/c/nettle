@@ -19,7 +19,7 @@ void start_connection(void)
   int loop;
   int zap_yeig;
   int connection_type;
-  int terminal_type;
+  enum nettle_terminal terminal_type;
 
   // get the yeig of the mode we're in
   regs.r[0]=-1;
@@ -51,13 +51,13 @@ void start_connection(void)
 
   strcpy(string,read_icon_data(open,9));
 
-  terminal_type = 0;
+  terminal_type = NETTLE_TERMINAL_VT100;
   for (loop=0; loop<8; loop++)
   {
     char term[7];
     sprintf(term,"Term%d",loop);
     if (strcmp(string,lookup(term))==0)
-      terminal_type=loop;
+      terminal_type = (enum nettle_terminal)loop;
   }
 
   switch (connection_type)
