@@ -720,7 +720,7 @@ void clear_screen(struct session_struct *session, int calc, int calc2, char fg, 
   }
 }
 
-static void clear_alt_screen(struct session_struct *session, int calc, int calc2, char fg,
+void clear_alt_screen(struct session_struct *session, int calc, int calc2, char fg,
                              char bg,char flags, char character)
 {
   int loop;

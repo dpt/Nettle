@@ -423,7 +423,7 @@ static void start_connection_int (struct connection_params *params )
                            session->scrollback)
                           *(redraw.r_charh << eig.y));
     block.handle_behind =-1;
-    block.window_flags  =0xff000002;
+    block.window_flags  =0xff00c002;
     block.title_fg      =7;
     block.title_bg      =2;
     block.work_fg       =7;
@@ -927,6 +927,9 @@ void create_terminal(struct session_struct *session, struct coords terminal_size
       assert(session->alternate_area[loop]);
     }
   }
+
+  session->terminal_size=terminal_size;
+  session->scrollback=scrollback;
 }
 
 void delete_terminal(struct session_struct *session)
@@ -948,6 +951,231 @@ void delete_terminal(struct session_struct *session)
     }
 
     free(session->alternate_area);
+  }
+}
+
+void resize_terminal_dimensions(struct session_struct *session,
+                                struct coords terminal_size, int scrollback)
+{
+  struct term_char **old_assigned_area=session->assigned_area;
+  struct term_char **old_alternate_area=session->alternate_area;
+  struct coords old_terminal_size=session->terminal_size;
+  int total_old_y=old_terminal_size.y+session->scrollback;
+  int total_new_y=terminal_size.y+scrollback;
+
+  session->assigned_area=malloc((terminal_size.y+scrollback)*sizeof (int *));
+  assert(session->assigned_area);
+
+  session->terminal_size=terminal_size;
+  session->scrollback=scrollback;
+
+  if (total_new_y>=total_old_y)
+  {
+    /* New terminal Y is bigger than old terminal Y */
+    int loop;
+
+    /* Create first 0-(total_new_y-total_old_y) lines */
+    for (loop=0; loop<total_new_y-total_old_y; loop++)
+    {
+      session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
+      assert(session->assigned_area[loop]);
+
+      clear_screen(session, loop*terminal_size.x, (loop+1)*terminal_size.x,
+                   NETTLE_COLOUR_NORMAL_WHITE,
+                   NETTLE_COLOUR_NORMAL_BLACK,
+                   0,
+                   ' ');
+    }
+
+    /* Copy (total_old_y) lines */
+    for (loop=total_new_y-total_old_y; loop<total_new_y; loop++)
+    {
+      int loop2;
+      int limit;
+      int old_loop=loop-(total_new_y-total_old_y);
+
+      if (terminal_size.x>old_terminal_size.x)
+        limit=old_terminal_size.x;
+      else
+        limit=terminal_size.x;
+
+      session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
+      assert(session->assigned_area[loop]);
+
+      for (loop2=0; loop2<limit; loop2++)
+      {
+        /* Note this is slightly bad as we're not using our nice interface */
+        /* to the area */
+        session->assigned_area[loop][loop2].fg=old_assigned_area[old_loop][loop2].fg;
+        session->assigned_area[loop][loop2].bg=old_assigned_area[old_loop][loop2].bg;
+        session->assigned_area[loop][loop2].flags=old_assigned_area[old_loop][loop2].flags;
+        session->assigned_area[loop][loop2].chr=old_assigned_area[old_loop][loop2].chr;
+      }
+
+      /* Clear the rest of the line */
+      for (loop2=limit; loop2<terminal_size.x; loop2++)
+      {
+        session->assigned_area[loop][loop2].fg=NETTLE_COLOUR_NORMAL_WHITE;
+        session->assigned_area[loop][loop2].bg=NETTLE_COLOUR_NORMAL_BLACK;
+        session->assigned_area[loop][loop2].flags=0;
+        session->assigned_area[loop][loop2].chr=' ';
+      }
+
+      free(old_assigned_area[old_loop]);
+    }
+
+    free(old_assigned_area);
+  }
+  else
+  {
+    int loop;
+
+    /* Copy (total_new_y) lines */
+    for (loop=0; loop<total_new_y; loop++)
+    {
+      int loop2;
+      int limit;
+      int old_loop=loop+(total_old_y-total_new_y);
+
+      if (terminal_size.x>old_terminal_size.x)
+        limit=old_terminal_size.x;
+      else
+        limit=terminal_size.x;
+
+      session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
+      assert(session->assigned_area[loop]);
+
+      for (loop2=0; loop2<limit; loop2++)
+      {
+        /* Note this is slightly bad as we're not using our nice interface */
+        /* to the area */
+        session->assigned_area[loop][loop2].fg=old_assigned_area[old_loop][loop2].fg;
+        session->assigned_area[loop][loop2].bg=old_assigned_area[old_loop][loop2].bg;
+        session->assigned_area[loop][loop2].flags=old_assigned_area[old_loop][loop2].flags;
+        session->assigned_area[loop][loop2].chr=old_assigned_area[old_loop][loop2].chr;
+      }
+
+      /* Clear the rest of the line */
+      for (loop2=limit; loop2<terminal_size.x; loop2++)
+      {
+        session->assigned_area[loop][loop2].fg=NETTLE_COLOUR_NORMAL_WHITE;
+        session->assigned_area[loop][loop2].bg=NETTLE_COLOUR_NORMAL_BLACK;
+        session->assigned_area[loop][loop2].flags=0;
+        session->assigned_area[loop][loop2].chr=' ';
+      }
+
+      free(old_assigned_area[old_loop]);
+    }
+
+    free(old_assigned_area);
+  }
+
+  if (session->alternate_area)
+  {
+    session->alternate_area=malloc((terminal_size.y)*sizeof (int *));
+    assert(session->alternate_area);
+
+    /* Copy the alternate area across too */
+    if (terminal_size.y>=old_terminal_size.y)
+    {
+      /* New terminal Y is bigger than old terminal Y */
+      int loop;
+
+      /* Create first 0-(terminal_size.y-old_terminal_size.y) lines */
+      for (loop=0; loop<terminal_size.y-old_terminal_size.y; loop++)
+      {
+        session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
+        assert(session->alternate_area[loop]);
+
+        clear_alt_screen(session, loop*terminal_size.x, (loop+1)*terminal_size.x,
+                         NETTLE_COLOUR_NORMAL_WHITE,
+                         NETTLE_COLOUR_NORMAL_BLACK,
+                         0,
+                         ' ');
+      }
+
+      /* Copy (old_terminal_size.y) lines */
+      for (loop=terminal_size.y-old_terminal_size.y; loop<terminal_size.y; loop++)
+      {
+        int loop2;
+        int limit;
+        int old_loop=loop-(terminal_size.y-old_terminal_size.y);
+
+        if (terminal_size.x>old_terminal_size.x)
+          limit=old_terminal_size.x;
+        else
+          limit=terminal_size.x;
+
+        session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
+        assert(session->alternate_area[loop]);
+
+        for (loop2=0; loop2<limit; loop2++)
+        {
+          /* Note this is slightly bad as we're not using our nice interface */
+          /* to the area */
+          session->alternate_area[loop][loop2].fg=old_alternate_area[old_loop][loop2].fg;
+          session->alternate_area[loop][loop2].bg=old_alternate_area[old_loop][loop2].bg;
+          session->alternate_area[loop][loop2].flags=old_alternate_area[old_loop][loop2].flags;
+          session->alternate_area[loop][loop2].chr=old_alternate_area[old_loop][loop2].chr;
+        }
+
+        /* Clear the rest of the line */
+        for (loop2=limit; loop2<terminal_size.x; loop2++)
+        {
+          session->alternate_area[loop][loop2].fg=NETTLE_COLOUR_NORMAL_WHITE;
+          session->alternate_area[loop][loop2].bg=NETTLE_COLOUR_NORMAL_BLACK;
+          session->alternate_area[loop][loop2].flags=0;
+          session->alternate_area[loop][loop2].chr=' ';
+        }
+
+        free(old_alternate_area[old_loop]);
+      }
+
+      free(old_alternate_area);
+    }
+    else
+    {
+      int loop;
+
+      /* Copy (terminal_size.y) lines */
+      for (loop=0; loop<terminal_size.y; loop++)
+      {
+        int loop2;
+        int limit;
+        int old_loop=loop+(old_terminal_size.y-terminal_size.y);
+
+        if (terminal_size.x>old_terminal_size.x)
+          limit=old_terminal_size.x;
+        else
+          limit=terminal_size.x;
+
+        session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
+        assert(session->alternate_area[loop]);
+
+        for (loop2=0; loop2<limit; loop2++)
+        {
+          /* Note this is slightly bad as we're not using our nice interface */
+          /* to the area */
+          session->alternate_area[loop][loop2].fg=old_alternate_area[old_loop][loop2].fg;
+          session->alternate_area[loop][loop2].bg=old_alternate_area[old_loop][loop2].bg;
+          session->alternate_area[loop][loop2].flags=old_alternate_area[old_loop][loop2].flags;
+          session->alternate_area[loop][loop2].chr=old_alternate_area[old_loop][loop2].chr;
+        }
+
+        /* Clear the rest of the line */
+        for (loop2=limit; loop2<terminal_size.x; loop2++)
+        {
+          session->alternate_area[loop][loop2].fg=NETTLE_COLOUR_NORMAL_WHITE;
+          session->alternate_area[loop][loop2].bg=NETTLE_COLOUR_NORMAL_BLACK;
+          session->alternate_area[loop][loop2].flags=0;
+          session->alternate_area[loop][loop2].chr=' ';
+        }
+
+        free(old_alternate_area[old_loop]);
+      }
+
+      free(old_alternate_area);
+    }
   }
 }
 
@@ -979,32 +1207,20 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
       _swi(OS_SetVarVal, _INR(0,4), "COLUMNS", temp_string, strlen(temp_string), 0, 4);
     }
 
-    /* NB - this need fixed in order to allow copying of data from old to new */
-    delete_terminal(session);
-    create_terminal(session, terminal_size, scrollback);
+    resize_terminal_dimensions(session, terminal_size, scrollback);
 
     session->scroll_start   = 1;
     session->scroll_end     = terminal_size_y;
-    session->terminal_size.x=terminal_size_x;
-    session->terminal_size.y=terminal_size_y;
-    session->scrollback     =scrollback;
 
-    /* clear out the assigned area with black bg, white fg, no flags and ' ' */
-    clear_screen(session,
-                 0,
-                 session->terminal_size.x*(session->terminal_size.y+session->scrollback),
-                 NETTLE_COLOUR_NORMAL_WHITE,
-                 NETTLE_COLOUR_NORMAL_BLACK,
-                 0,
-                 ' ');
-
-    copy_main_alternate(session);
+    /* Shouldn't be necessary now */
+    /*copy_main_alternate(session);*/
 
     allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
   }
 
   /* This should put the cursor back in the right place... */
-  session->pos.y=session->pos.y-old_scrollback+scrollback;
+  session->pos.y=session->pos.y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
+  session->old_pos.y=session->old_pos.y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
 
   reopen_and_size_window(session, old_terminal_size.x, old_terminal_size.y, old_scrollback,
                          redraw.r_charw, redraw.r_charh);
@@ -1125,15 +1341,6 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
 
 static void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrollback)
 {
-    /* make a ZapRedraw area big enough - note: the assembly is quite
-   * inefficient, so writes out the stuff to change the colour every
-   * 'character', which means typically each character takes up 5 bytes, so 6
-   * is a number >5. Basically if you start getting screens full of graphics
-   * characters and stuff, 6 isn't enough. Possibly the draw routine should
-   * stop writing when it falls outside the area, and the number returned at
-   * the end - it could  make a larger buffer, but not done yet.
-   */
-
   if (size_of_zapredraw_area < terminal_size_x * (terminal_size_y + scrollback) * 8)
   {
     int *new_zapredraw_area;

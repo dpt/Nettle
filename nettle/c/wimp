@@ -1718,6 +1718,24 @@ void wimp_menu_selection(int *selection)
               break;
 
             case 1: /* launch url */
+              if (selection_session!=NULL)
+              {
+                char url[1024];
+                int i;
+                int start=(selection_start<selection_end) ? selection_start : selection_end;
+                int end=(selection_start<selection_end) ? selection_end : selection_start;
+
+                /* Limit the URL to 1023 chars */
+                if (end>start+1023)
+                  end=start+1023;
+
+                for (i=start; i<end; i++)
+                  url[i-start]=read_assigned_character(selection_session, i % selection_session->terminal_size.x, i / selection_session->terminal_size.x);
+
+                url[end-start]='\0';
+
+                url_launch(url);
+              }
               break;
 
             case 2: /* send */
@@ -2760,7 +2778,7 @@ static void create_terminal_menu(void)
 
   char *menu_selection_title=get_menu_item("Selection");
   char *menu_save	    =get_menu_item("Save");
-  char *menu_launch_url     =get_grey_menu_item("LaunchURL");
+  char *menu_launch_url     =get_menu_item("LaunchURL");
   char *menu_send           =get_menu_item("Send");
   char *menu_copy_clipboard =get_menu_item("CopyClip");
   char *menu_clear          =get_last_menu_item("Clear");
