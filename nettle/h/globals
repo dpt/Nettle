@@ -16,8 +16,8 @@
 #define APPLICATION_NAME        "Nettle"
 #define APPLICATION_ICON_NAME   "!nettle"
 
-#define ZAP_FONT                "07x14"
-#define ZAP_LOWRES_FONT         "08x08.0"
+#define ZAP_FONT                "08x16"
+#define ZAP_LOWRES_FONT         "08x08"
 
 #define LINE_EDITOR_SIZE        32
 #define TERMINAL_WIDTH          80
@@ -43,6 +43,7 @@
 #define CURSOR_BLINK            false
 #define CURSOR_BLINK_DELAY      50
 
+#define CHOICES_VERSION_KNOWN   1
 /*******************************************/
 
 #define NETTLE_HOME_PAGE        "http://nettle.sourceforge.net/"
@@ -92,6 +93,7 @@ extern int win_panecols;
 extern int win_panehot;
 extern int win_hotpane;
 extern int win_hotedit;
+extern int win_panemisc;
 extern int win_open;
 extern int win_resize;
 extern int win_save;
@@ -99,6 +101,7 @@ extern int win_spoolsave;
 
 extern int menu_open;
 
+extern int choices_file_version_number;
 extern bool logging;
 extern char line_editor;
 extern bool pass_f12;
@@ -220,7 +223,6 @@ extern struct session_struct *terminal_menu_session;
 extern struct session_struct *mouse_handling_session;
 
 extern const char terminal_name[NO_OF_TERMINAL_TYPES][12];
-
 
 typedef struct user_message
 {

@@ -8,11 +8,12 @@
 #ifndef LINEEDIT_H
 #define LINEEDIT_H
 
-#define LINEEDIT_NONE       0
-#define LINEEDIT_CHECKBOX   1
-#define LINEEDIT_ANTTERM    2
+#define LINEEDIT_NONE         0
+#define LINEEDIT_CHECKBOX_OFF 1
+#define LINEEDIT_CHECKBOX_ON  2
+#define LINEEDIT_ANTTERM      3
 
-#define LINEEDIT_NUM_TYPES  3
+#define LINEEDIT_NUM_TYPES    4
 
 void open_pane_window(struct session_struct *, struct wimp_openwindow_block *);
 bool line_editor_active(struct session_struct *);

@@ -29,7 +29,7 @@ char *strdup(const char *s);
 
 
 /**
- * Make copy given number of characters from start of string 
+ * Make copy given number of characters from start of string
  *
  * @param s    String to copy characters from
  * @param len  Number of characters to copy
@@ -49,5 +49,26 @@ char *strndup(const char *s, size_t len);
  * @param ...     parameters matching format string
  */
 void logf(const char */*format*/, ...);
+
+
+
+/**
+ * misc_string_lower takes a string and lower-cases it
+ *
+ * @param s     string to be converted
+ *
+ * @return converted string
+ */
+char *misc_string_lower(char */*string*/);
+
+
+/**
+ * misc_string_upper takes a string and upper-cases it
+ *
+ * @param s     string to be converted
+ *
+ * @return converted string
+ */
+char *misc_string_upper(char */*string*/);
 
 #endif /* MISC_H */

@@ -8,6 +8,10 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+#define KEYBOARD_SHIFT -1
+#define KEYBOARD_CTRL  -2
+#define KEYBOARD_META  -3
+
 bool inkey (int key);
 int decode_key (struct session_struct *, int key, int extra, char *block);
 

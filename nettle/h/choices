@@ -17,6 +17,7 @@ extern bool win_choices_read(int save);
 extern void win_choices_click (int x, int y, int buttons, int icon_handle);
 extern void win_paneterm_click(int x, int y, int buttons, int icon_handle);
 extern void win_panecols_click(int x, int y, int buttons, int icon_handle);
+extern void win_panemisc_click(int x, int y, int buttons, int icon_handle);
 extern void set_colour_icon(int colour_handle, colour_t colour, bool is_an_icon);
 
 #endif /* CHOICES_H */
