@@ -135,57 +135,53 @@ void refresh_selection_clear(void)
 
 void selection_adjust(int x,int x_pos, int y, int y_pos)
 {
-  if (selection_session)
+  int click_point;
+  int selection_middle;
+  
+  if (selection_session == NULL)
+    return;
+  
+  click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
+                * selection_session->terminal_size.x
+                + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
+
+  click_point = MAX(click_point, 0);
+  click_point = MIN(click_point, 
+                      selection_session->terminal_size.x*
+                      (selection_session->terminal_size.y+
+                                 selection_session->scrollback));
+
+  selection_changedbox_init();
+  refresh_selection_clear();
+
+  selection_middle = (selection_start + selection_end) / 2;
+  if (click_point < selection_middle)
   {
-    int click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
-                      * selection_session->terminal_size.x
-                      + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
-
-    if (click_point<0)
-    {
-      click_point=0;
-    }
-    if (click_point>(selection_session->terminal_size.x*
-				(selection_session->terminal_size.y+
-					selection_session->scrollback)))
-    {
-      click_point=(selection_session->terminal_size.x*
-				(selection_session->terminal_size.y+
-					selection_session->scrollback));
-    }
-
-    selection_changedbox_init();
-    refresh_selection_clear();
-
-    if (click_point<selection_start)
-    {
-      if (click_point<selection_end && selection_start<selection_end)
-      {
-	selection_start=click_point;
-	selection_adjust_dragging=SELECTION_ADJUST_START;
-      }
-      else
-      {
-	selection_end=click_point;
-	selection_adjust_dragging=SELECTION_ADJUST_END;
-      }
-    }
+    /* the click is either before the selection, or inside the first half
+     * of it, so we move the start [or, rather, whichever is actually earlier
+     * of the start/end] */
+    if (selection_start < selection_end)
+      selection_adjust_dragging = SELECTION_ADJUST_START;
     else
-    {
-      if (click_point>selection_end && selection_start>selection_end)
-      {
-	selection_start=click_point;
-	selection_adjust_dragging=SELECTION_ADJUST_START;
-      }
-      else
-      {
-	selection_end=click_point;
-	selection_adjust_dragging=SELECTION_ADJUST_END;
-      }
-    }
-    refresh_selection_set();
-    selection_changedbox_draw();
+      selection_adjust_dragging = SELECTION_ADJUST_END;
   }
+  else
+  {
+    /* need to drag end of selection */
+    if (selection_start > selection_end)
+      /* selection_start is actually the 'end' of selection */
+      selection_adjust_dragging=SELECTION_ADJUST_START;
+    else
+      selection_adjust_dragging=SELECTION_ADJUST_END;
+  }
+  
+  if (selection_adjust_dragging == SELECTION_ADJUST_START)
+    selection_start = click_point;
+  else
+    selection_end = click_point;
+  
+  refresh_selection_set();
+  selection_changedbox_draw();
 }
 
 static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
