@@ -3,8 +3,6 @@
 
 This file needs some structure... ;-)
 
-Drag binary to ANSI Task open dialog command line
-
 Dmenu widths
  
 RO 3.1 bits (C icons, titlebar redraw...)
@@ -12,9 +10,7 @@ RO 3.1 bits (C icons, titlebar redraw...)
 Wimp slot size settable for new tasks?
 
 * Reordering of hotlist items within hotlist editor
-* More choices: F12 handling, blinking cursor...
 * ANSI commandline task shell for ANSI task window (ROSH)
-* Dynamic resize of terminal
 * Scroll to bottom on keypress
 * VT 320/420/510
 * SSH
@@ -31,5 +27,4 @@ Bugs:
 * ANSI task cannot be used as a "regular" taskwindow.
   - It never will, because it interprets codes as ANSI - that's its
     whole point in life.  This will be improved by "ROSH"
-* Doesn't abort desktop shutdown when connections are active
 
