@@ -1733,6 +1733,16 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
                   key_status=true;
                 }
               }
+
+              if ( key_status && scroll_on_keypress )
+              {
+                struct wimp_getwindowstate_block block;
+
+                block.window_handle = session->window_handle;
+                _swi (Wimp_GetWindowState, _IN(1), &block);
+                block.scroll.y = -1<<30;
+                open_window((struct wimp_openwindow_block *) &block, session->window_handle);
+              }
             }
           }
         }

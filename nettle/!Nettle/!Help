@@ -353,8 +353,8 @@ Release History
       Added "Reconnect" menu item to reconnect dead sessions
       Sprites11 highres icons added
       Local terminal Options setting (on terminal menu)
-TBI   Scroll to bottom of terminal on keypress option
-TBI   Utilise RISC OS Select socket pollwords (unrequire Sockwatch)
+      Scroll to bottom of terminal on keypress option
+      Utilise RISC OS Select socket pollwords (unrequire Sockwatch)
 
     Changes/Improvements:
       Moved to StubsG for everything.  One sane build environment
@@ -379,7 +379,6 @@ TBI   Utilise RISC OS Select socket pollwords (unrequire Sockwatch)
       Keep cursor-type menu open when choosing with Adjust
       Correctly reset resize window on Adjust-Cancel
       Correctly reset hotlist editor window on Adjust-Cancel
-      Cope with latest Castle C compiler
       Cope with long URLs
       Correctly implemented reverse tabulation command
 

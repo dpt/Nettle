@@ -82,6 +82,7 @@ bool pass_f12                        =PASS_F12;
 bool cursor_blink                    =CURSOR_BLINK;
 bool blinking                        =BLINKING;
 bool dont_require_ctrl               =DONT_REQUIRE_CTRL;
+bool scroll_on_keypress              =SCROLL_ON_KEYPRESS;
 cursor_t cursor_type                 =cursor_solid;
 
 int line_editor_size                 =LINE_EDITOR_SIZE;

@@ -1,6 +1,6 @@
 /**
  * Nettle Choices code
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2003
  *
  * $Id$
  */
@@ -148,6 +148,7 @@ void load_choices(void)
     read_boolean_choice(&cursor_blink, string, "CursorBlink:");
     read_boolean_choice(&blinking, string, "Blinking:");
     read_boolean_choice(&dont_require_ctrl, string, "DontRequireCtrl:");
+    read_boolean_choice(&scroll_on_keypress, string, "ScrollOnKeypress:");
     read_integer_choice((int*)&cursor_type, string, "CursorType:");
 
     read_terminal_choice(&new_default_terminal, string, "TerminalType:");
@@ -273,6 +274,7 @@ bool save_choices(void)
       fprintf(file_handle, "CursorBlink:%d\n", (cursor_blink==true) ? 1 : 0);
       fprintf(file_handle, "Blinking:%d\n", (blinking==true) ? 1 : 0);
       fprintf(file_handle, "DontRequireCtrl:%d\n", (dont_require_ctrl==true) ? 1 : 0);
+      fprintf(file_handle, "ScrollOnKeypress:%d\n", (scroll_on_keypress==true) ? 1 : 0);
       fprintf(file_handle, "CursorType:%d\n", cursor_type);
 
       fprintf(file_handle, "TerminalType:%d\n", default_terminal);
@@ -375,7 +377,7 @@ void open_choices_window(void)
   set_icon_state(win_panemisc, icon_panemisc_blinking, (blinking==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
   set_icon_state(win_panemisc, icon_panemisc_cursorblink, (cursor_blink==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
   set_icon_state(win_panemisc, icon_panemisc_dontrequirectrl, (dont_require_ctrl==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
-
+  set_icon_state(win_panemisc, icon_panemisc_scrollonkey, (scroll_on_keypress==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
 
   if (win_is_open(win_choices))
     open_window(NULL, win_choices);
@@ -485,6 +487,11 @@ bool win_choices_read(int save)
     dont_require_ctrl=true;
   else
     dont_require_ctrl=false;
+
+  if (read_icon_ticked(win_panemisc, icon_panemisc_scrollonkey))
+    scroll_on_keypress=true;
+  else
+    scroll_on_keypress=false;
 
   /* Read the cursor type in use */
   {
