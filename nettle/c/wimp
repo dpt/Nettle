@@ -1019,8 +1019,8 @@ static void wimp_claimcaret(struct session_struct *session)
     {
       if (block.window_handle!=session->pane_handle)
       {
-        set_caret_position(session->pane_handle, 1, -1,
-          get_icon_data_length(session->pane_handle, 1));
+        set_caret_position(session->pane_handle, 0, -1,
+          get_icon_data_length(session->pane_handle, 0));
       }
     }
     else
@@ -1290,58 +1290,55 @@ static void session_pane_click(int x, int y, int buttons, int icon_handle, struc
 {
   switch (icon_handle)
   {
-    case 0:
+    case 1:
+    {
+      struct wimp_geticonstate_block block;
+
+      block.window_handle=session->pane_handle;
+      block.icon_handle  =icon_handle;
+
+      _swi(Wimp_GetIconState, _IN(1), &block);
+
+      if (block.icon_flags & WIMP_ICON_SELECTED_BIT)
       {
-	struct wimp_geticonstate_block block;
+        set_icon_state(session->pane_handle, 0, 0, WIMP_ICON_DELETED_BIT);
+        check_set_caret_position(session->pane_handle, 0);
 
-	block.window_handle=session->pane_handle;
-	block.icon_handle  =icon_handle;
+        {
+          struct wimp_getcaretposition_block caret_pos;
 
-	_swi(Wimp_GetIconState, _IN(1), &block);
+          _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
 
-	if (block.icon_flags & (1<<21))
-	{
-	  set_icon_state(session->pane_handle, 1, 0, 1<<23);
-	  check_set_caret_position(session->pane_handle, 1);
-
-	  {
-	    struct wimp_getcaretposition_block caret_pos;
-
-	    _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
-
-	    if (caret_pos.window_handle==session->window_handle)
-	    {
-	      set_caret_position(session->pane_handle, 1, -1,
-		   get_icon_data_length(session->pane_handle, 1));
-	    }
-	  }
-	}
-	else
-	{
-	  set_icon_state(session->pane_handle, 1, 1<<23, 1<<23);
-
-	  {
-	    block.window_handle=session->pane_handle;
-	    block.icon_handle  =1;
-
-	    _swi(Wimp_GetIconState, _IN(1), &block);
-
-	    force_redraw(session->pane_handle, block.min.x, block.min.y,
-					       block.max.x, block.max.y);
-	  }
-
-	  {
-	    struct wimp_getcaretposition_block caret_pos;
-
-	    _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
-
-	    if (caret_pos.window_handle==session->pane_handle)
-	    {
-	      set_caret_position(session->window_handle,-1,-1,-1);
-	    }
-	  }
-	}
+          if (caret_pos.window_handle==session->window_handle)
+          {
+            set_caret_position(session->pane_handle, 0, -1,
+                               get_icon_data_length(session->pane_handle, 0));
+          }
+        }
       }
+      else
+      {
+        struct wimp_getcaretposition_block caret_pos;
+
+        _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
+
+        if (caret_pos.window_handle==session->pane_handle)
+        {
+          set_caret_position(session->window_handle,-1,-1,-1);
+        }
+        
+        set_icon_state(session->pane_handle, 0, WIMP_ICON_DELETED_BIT, WIMP_ICON_DELETED_BIT);
+      }
+
+      block.window_handle=session->pane_handle;
+      block.icon_handle  =0;
+
+      _swi(Wimp_GetIconState, _IN(1), &block);
+
+      force_redraw(session->pane_handle, block.min.x, block.min.y,
+                   block.max.x, block.max.y);
+
+    }
   }
 }
 
@@ -1625,7 +1622,6 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
   if (key_status==false)
   {
     struct session_struct *session = sessions;
-    int line_editor_icon;
 
     while (session && window_handle != session->pane_handle)
     {
@@ -1634,7 +1630,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
 
     if (session && session->line_editor_type!=LINEEDIT_NONE)
     {
-      line_editor_icon=((session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON) ? 1 : 0);
+      int line_editor_icon = 0;
 
       switch (key)
       {
@@ -2038,13 +2034,13 @@ void gain_caret(int window_handle)
     pos=get_cursor_position(session);
 
     write_assigned_flags(session, pos.x, pos.y,
-    			 read_assigned_flags(session, pos.x, pos.y) & ~NETTLE_FLAG_NO_INPUT);
+                         read_assigned_flags(session, pos.x, pos.y) & ~NETTLE_FLAG_NO_INPUT);
 
     force_redraw(session->window_handle,
-    		 pos.x*redraw.r_charw << eig.x,
-		 (-pos.y-1)*redraw.r_charh << eig.y,
-		 (pos.x+1)*redraw.r_charw << eig.x,
-	         (-pos.y)*redraw.r_charh << eig.y);
+                 pos.x*redraw.r_charw << eig.x,
+                 (-pos.y-1)*redraw.r_charh << eig.y,
+                 (pos.x+1)*redraw.r_charw << eig.x,
+                 (-pos.y)*redraw.r_charh << eig.y);
 
     if (line_editor_active(session) && (session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON))
     {
@@ -2056,10 +2052,10 @@ void gain_caret(int window_handle)
       if (block.window_handle!=session->pane_handle &&
           (session->line_editor_type==LINEEDIT_CHECKBOX_OFF ||
            session->line_editor_type==LINEEDIT_CHECKBOX_ON) &&
-          block.index!=get_icon_data_length(session->pane_handle,1))
+          block.index!=get_icon_data_length(session->pane_handle,0))
       {
-        set_caret_position(session->pane_handle,1,-1,
-               		   get_icon_data_length(session->pane_handle,1));
+        set_caret_position(session->pane_handle,0,-1,
+               		   get_icon_data_length(session->pane_handle,0));
       }
     }
 
@@ -2097,10 +2093,10 @@ void gain_caret(int window_handle)
       if (block.window_handle!=session->pane_handle &&
           (session->line_editor_type==LINEEDIT_CHECKBOX_OFF ||
            session->line_editor_type==LINEEDIT_CHECKBOX_ON) &&
-          block.index!=get_icon_data_length(session->pane_handle,1))
+          block.index!=get_icon_data_length(session->pane_handle,0))
       {
-        set_caret_position(session->pane_handle, 1, -1,
-           		   get_icon_data_length(session->pane_handle,1));
+        set_caret_position(session->pane_handle, 0, -1,
+           		   get_icon_data_length(session->pane_handle,0));
       }
     }
   }
