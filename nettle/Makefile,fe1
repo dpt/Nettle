@@ -5,7 +5,7 @@
 # $Id$
 
 CC = cc
-CFLAGS = -c -strict -IC: -ITCPIPLibs: -fa -apcs 3/32/fpe2/swst/fp/nofpr -throwback -depend !Depend
+CFLAGS = -c -strict -IC: -DCOMPAT_INET4 -ITCPIPLibs: -fa -apcs 3/32/fpe2/swst/fp/nofpr -throwback -depend !Depend
 DBGFLAGS = #-DBETA_VERSION #-g #-DFORTIFY
 
 LIBS = C:o.stubsg TCPIPLibs:o.socklib-32 TCPIPLibs:o.inetlib-32
