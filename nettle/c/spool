@@ -34,7 +34,7 @@ bool spool_open(struct session_struct *session, char *file_name, bool raw_bit)
     return false;
   }
 
-  session->spool_file_name=malloc(strlen(file_name));
+  session->spool_file_name=malloc(strlen(file_name)+1);
   strcpy(session->spool_file_name, file_name);
 
   fclose(session->spool_file_handle);
@@ -88,7 +88,7 @@ bool spool_save_event(void)
     _swi(Wimp_GetIconState, _IN(1), &block);
 
     /* if selected bit is set, then we save with raw data */
-    if (block.icon_flags & (1<<21))
+    if (block.icon_flags & WIMP_ICON_SELECTED_BIT)
     {
       return spool_open(terminal_menu_session, save_data, true);
     }
