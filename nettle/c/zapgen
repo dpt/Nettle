@@ -405,16 +405,19 @@ create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
     if (count && (dir_entry.object_type & (root_menu ? 2 : 3)))
     {
       /* got a directory entry - buffer it */
-      if (entry_offset + strlen (dir_entry.name) + 2 >= allocated)
+      if (strcmp("CVS", dir_entry.name) != 0)
       {
-        menu_entries = realloc (menu_entries, allocated += 1024);
-        if (!menu_entries)
-          goto done;
+        if ( entry_offset + strlen (dir_entry.name) + 2 >= allocated)
+        {
+          menu_entries = realloc (menu_entries, allocated += 1024);
+          if (!menu_entries)
+            goto done;
+        }
+        menu_entries[entry_offset++] = (char) dir_entry.object_type;
+        strcpy (menu_entries + entry_offset, dir_entry.name);
+        entry_offset += strlen (menu_entries + entry_offset) + 1;
+        items++;
       }
-      menu_entries[entry_offset++] = (char) dir_entry.object_type;
-      strcpy (menu_entries + entry_offset, dir_entry.name);
-      entry_offset += strlen (menu_entries + entry_offset) + 1;
-      items++;
     }
   } while (dir_offset != -1);
 
