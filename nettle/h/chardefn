@@ -8,6 +8,10 @@
 #ifndef CHARDEFN_H
 #define CHARDEFN_H
 
+/* Number of additional characters we are going to define at 0x100 in
+   chardefn.c */
+#define EXTRA_ZAP_CHARS (0x1e)
+
 extern void define_zap_chars(int *, int, int, int);
 extern void define_zap_undef_chars(int *, int, int, int, int, int);
 
