@@ -121,7 +121,6 @@ static void wimp_pollresolve(struct session_struct *session)
       break;
 
     case dns_complete_failure:
-dnsgoof:
       set_title_bar(session->window_handle,
                     lookup_static("title_disconnect"));
       write_out_strings(session, lookup_static("noresolv"), "\r\n", 0);
@@ -130,9 +129,7 @@ dnsgoof:
 
     case dns_complete_success:
       dnsanswer = dns_getanswer(session->dns);
-      /* assert(dnsanswer != NULL);
-   Uhoh. Bad stuff going on here.  Quick fix for release 0.2000r required! */
-  if (dnsanswer == NULL) goto dnsgoof;
+      assert(dnsanswer != NULL);
       session->socket_ip = (unsigned int) *((int *)(void *)(*dnsanswer).h_addr);
       dns_dispose(session->dns);
       session->dns = NULL;

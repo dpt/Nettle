@@ -142,7 +142,10 @@ dns_status_t dns_check(dns_t *dns)
       else if (status != EINPROGRESS)
       {
         /* finished */
-        dns->status = dns_complete_success;
+        if (dns->hostent)
+          dns->status = dns_complete_success;
+        else
+          dns->status = dns_complete_failure;
       }
       else
       {
