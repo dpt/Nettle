@@ -234,9 +234,9 @@ int *load_font(char *font)
     /* now) */
 
     if (eig.y >1)
-      strcpy(file_name,"<Nettle$Dir>.Fonts.08x08.System.0");
+      strcpy(file_name,"<Nettle$Dir>.Fonts.08x08.0");
     else
-      strcpy(file_name,"<Nettle$Dir>.Fonts.08x16.Default.0");
+      strcpy(file_name,"<Nettle$Dir>.Fonts.08x16.0");
     file_handle=fopen(file_name,"rb");
   }
 

@@ -18,6 +18,8 @@
 #include "sys/errno.h"
 #include "sys/socket.h" /* AF_INET */
 
+#include "generic.h"
+#include "misc.h"
 #include "dnslib.h"
 
 #define Resolver_GetHost 0x46001
@@ -32,29 +34,6 @@ struct dns_s
   struct in_addr inaddr;
 };
 
-
-#ifndef __UNIXLIB_TYPES_H
-
-static char *strdup(const char *s)
-{
-  size_t len;
-  char *t;
-
-  if (!s)
-    return NULL;
-
-  len = strlen(s) + 1;
-
-  t = malloc(len);
-  if (!t)
-    return NULL;
-
-  memcpy(t, s, len);
-
-  return t;
-}
-
-#endif
 
 
 dns_t *dns_gethostbyname(const char *hostname)
@@ -79,7 +58,6 @@ failed:
 
   return NULL;
 }
-
 
 
 void dns_dispose(dns_t *dns)

@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.1903b (30-Aug-2001)
+AppVersion:v0.1904b (31-Aug-2001)
 
 Info:Info>
 Choices:Choices...
@@ -100,3 +100,10 @@ CantSaveChoices:Nettle was unable to save its Choices file:
 CantSaveHotlist:Nettle was unable to save its Hotlist file: 
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.
 NoStartTask:Nettle was unable to create an ANSI Task
+
+HotBlankLabel:Please enter a hotlist label
+HotBlankHost:Please enter a hostname
+HotBlankCommand:Please enter a command
+HotBadWidth:Bad terminal width
+HotBadHeight:Bad terminal height
+HotBadScroll:Bad scrollback size

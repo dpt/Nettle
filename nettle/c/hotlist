@@ -15,6 +15,7 @@
 #include "templ.h"
 #include "wimputil.h"
 #include "nettle.h"
+#include <string.h>
 #include <time.h>
 #include <ctype.h>
 
@@ -45,6 +46,7 @@ static hotlistnode *editlisthead = NULL;
 static hotlistnode *editlisttail = NULL;
 static hotlistnode *hotlisthead = NULL;
 static hotlistnode *hotlisttail = NULL;
+static hotlistnode *selectednode = NULL;
 static int edititems = 0;
 static int items = 0;
 static int *menublock = NULL;
@@ -54,6 +56,13 @@ static void addnodetolist(hotlistnode **head, hotlistnode **tail, hotlistnode *n
 static hotlistnode *hotlist_createnew(void);
 static int hotlist_populate_selected(void);
 static void hotlist_clear_states(void);
+
+static char *get_icon_data(int window, int icon)
+{
+  static char buf[256];
+  
+  return read_icon_data(window, icon, buf, 256);
+}
 
 static void copy_hotlist(bool edit_to_live) /* true = copy the editlist to the live list */
 {
@@ -612,6 +621,98 @@ static void hotlist_delete_selected(void)
   }
 }
 
+static bool copy_hotedit_to_selected(void)
+{
+  char *tmp;
+  int num;
+  hotlistnode *node = selectednode;
+  
+  if (!selectednode)
+    return true;  /* Shouldn't be possible */
+    
+  tmp = get_icon_data(win_hotedit, icon_hotedit_label);
+  while (*tmp==' ')
+    tmp++;
+  
+  if(*tmp<' ')
+  {
+    generror("HotBlankLabel",true);
+    return false;
+  }
+
+  if (node->label)
+    free(node->label);
+  node->label = strdup(tmp);
+
+  
+  tmp = get_icon_data(win_hotedit, icon_hotedit_hostname);
+  while (*tmp==' ')
+    tmp++;
+/*  
+  if(*tmp<' ')
+  {
+    generror("HotBlankHost",true);
+    return false;
+  }
+*/
+  if (node->host)
+    free(node->host);
+  node->host = strdup(tmp);
+  
+  
+  tmp = get_icon_data(win_hotedit, icon_hotedit_command);
+  while (*tmp==' ')
+    tmp++;
+/*  
+  if(*tmp<' ')
+  {
+    generror("HotBlankCommand",true);
+    return false;
+  }
+*/
+  if (node->command)
+    free(node->command);
+  node->command = strdup(tmp);
+  
+  
+  tmp = get_icon_data(win_hotedit, icon_hotedit_termwidth);
+  num = atoi(tmp);
+
+  if (num<2 || num>65535)
+  {
+    generror("HotBadWidth",true);
+    return false;
+  }
+
+  node->terminal_width = num;
+
+  
+  tmp = get_icon_data(win_hotedit, icon_hotedit_termheight);
+  num = atoi(tmp);
+
+  if (num<2 || num>65535)
+  {
+    generror("HotBadHeight",true);
+    return false;
+  }
+
+  node->terminal_height = num;
+
+  
+  tmp = get_icon_data(win_hotedit, icon_hotedit_scrollback);
+  num = atoi(tmp);
+
+  if (num<0 || num>65535)
+  {
+    generror("HotBadScroll",true);
+    return false;
+  }
+
+  node->scrollback = num;
+
+  return true;
+}
+
 static int hotlist_populate_selected(void)
 {
   hotlistnode *node = editlisthead;
@@ -621,6 +722,8 @@ static int hotlist_populate_selected(void)
   {
     if(node->internal_state & 1)
     {
+      selectednode = node;
+      
       set_icon_data(win_hotedit, icon_hotedit_label, node->label ? node->label : "<unnamed>");
       set_icon_data(win_hotedit, icon_hotedit_hostname, node->host ? node->host : "");
       set_icon_data(win_hotedit, icon_hotedit_command, node->command ? node->command : "");
@@ -788,9 +891,30 @@ void win_hotedit_click(int x, int y, int buttons, int icon_handle)
 {
   switch(icon_handle)
   {
-    case icon_hotedit_cancel:
+  case icon_hotedit_cancel:
+    close_window(win_hotedit);
+    break;
+      
+  case icon_hotedit_update:
+    if(copy_hotedit_to_selected())
       close_window(win_hotedit);
-      break;
+    break;
+      
+  case icon_hotedit_delete:
+    if (generror_question(lookup_static("DeleteHot")))
+    {
+      close_window(win_hotedit);
+      hotlist_delete_selected();
+      resize_hotpane();
+      force_redraw(win_hotpane,0,-(1<<28),1024,0);
+      {
+        struct wimp_getwindowinfo_block window;
+        window.window_handle=win_hotpane;
+        _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
+        _swi(Wimp_OpenWindow, _IN(1), &window);
+      }
+    }
+    break;
   }
 }
 

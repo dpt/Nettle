@@ -513,6 +513,8 @@ static colour_t get_colour_icon(int colour_handle, bool is_an_icon)
 
 void win_choices_click (int x, int y, int buttons, int icon_handle)
 {
+  close_window(win_hotedit);
+  
   switch (icon_handle)
   {
     case icon_choices_size:
