@@ -65,6 +65,12 @@ enum nettle_terminal {
 /* Maximum length of menu entries */
 #define MESSAGE_MAX_MENU        20
 
+typedef enum
+{
+  Nettle_MaxSessions = 64
+}
+NettleConsts;
+
 
 extern void start_connection(void);
 extern void write_out_string(int, char *);

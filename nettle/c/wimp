@@ -260,6 +260,26 @@ void close_window(int window_handle)
   }
 }
 
+// Determine if there are any sessions open.  If so, query the user as to whether
+//  to really quit the program.
+
+static void close_program(void)
+{
+  int session_handle;
+
+  for (session_handle = 0; session_handle < Nettle_MaxSessions; session_handle++) {
+    if (session[session_handle].socket_state == NETTLE_SESSION_CONNECTED)
+    {
+      char message[200];
+
+      quit_flag = generror_question(lookup("ConnectionMultiOpen", message, 200));
+      return;
+    }
+  }
+  quit_flag = true;
+}
+
+
 // Mouse click
 
 void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
@@ -826,7 +846,7 @@ void menu_selection()
       {
         case 2:
           // Quit
-          quit_flag=true;
+          close_program();
       }
       break;
     case MENU_TERMINAL:

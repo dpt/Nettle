@@ -64,7 +64,7 @@ void start_connection(void)
   zap_yeig=regs.r[2];
 
   // give up if too many sessions
-  if (current_session == 64)
+  if (current_session == Nettle_MaxSessions)
   {
     generror("TooMany", true);
     return;

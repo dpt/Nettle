@@ -58,7 +58,7 @@ bool line_editor=false;
 bool pass_f12=false;
 int line_editor_size=32;
 
-struct session_struct session[64];
+struct session_struct session[Nettle_MaxSessions];
 int current_session=0;
 int current_socket=0;
 
