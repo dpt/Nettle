@@ -23,7 +23,7 @@ WIPEFLAGS = ~CFR~V
 OBJASM = gcc
 OBJASMFLAGS = -c
 
-OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o hotlist.o \
+OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
 
 RUNIMAGE = !Nettle.!RunImage
@@ -59,7 +59,7 @@ misc.o: 	misc.c generic.h globals.h misc.h
 nettle.o:	nettle.h generic.h globals.h misc.h nettle.h seln.h socket.h \
 	      	wimp.h zapredraw.h
 process.o:	process.h generic.h globals.h graphics.h misc.h nettle.h \
-		process.h seln.h wimp.h zapredraw.h
+		keyboard.h seln.h wimp.h zapredraw.h
 quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h hotlist.h
 seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h
 socket.o:	socket.c generic.h globals.h socket.h

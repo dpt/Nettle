@@ -16,13 +16,13 @@ WIPEFLAGS = ~CFR~V
 ASM = objasm
 ASMFLAGS = -apcs 3/26
 
-OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o hotlist.o \
+OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
 
 all:	!Nettle.!RunImage
 
 !Nettle.!RunImage:	$(OBJS)
-	$(LINK) -o $@ $(LINKFLAGS) $(OBJS) C:o.stubs NetLib:o.NetLib
+	$(LINK) -o $@ $(LINKFLAGS) $(OBJS) C:o.stubs Netlib:o.NetLib
 	squeeze $@
 
 clean:
