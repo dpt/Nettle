@@ -1,7 +1,7 @@
 Nettle - Telnet and terminal emulation for RISC OS
 ==================================================
 
-Version : 0.2000r : September 1st, 2001.
+Version : 0.2010r : September 16th, 2001.
 
 Nettle is *the* terminal emulator and telnet client for the RISC OS
 operating system. It utilises the ZapRedraw module for speedy display and
@@ -29,7 +29,7 @@ will fall back to using two contained inside its own structure.
 Nettle currently requires Wimp 3.50 or better.  All versions of RISC OS
 can have at least Wimp 3.98 ("Nested Wimp") loaded, however, users of
 RISC OS 3.1 may not have this installed and see some reduction in
-functionality.  This will be addressed in the next release where we
+functionality.  This will be addressed in a future release where we
 intend to directly support older WIMP versions.
 
 In common with other RISC OS internet access software, to connect to
@@ -85,6 +85,10 @@ to be cleared, transmitted via the terminal, or saved to disc in either
 plain text or full ANSI format.   The menu also gives access to a resize
 dialog allowing the terminal size and scrollback to be changed.
 
+Note that when remote mousing is in operation (eg when running "pico -m")
+then local mouse operations will not function - selection and the session
+menu will be unavailable.
+
 
 Tailoring Nettle's defaults
 
@@ -106,7 +110,8 @@ defined as a hotlist item and saved to disc for quick access.  The
 hotlist editor can be seen by selecting the "hotlist" option in Nettle's
 choices window.  From here a new hotlist item can be created, existing
 items may be edited or deleted, and the list can be reordered by dragging
-items around.  To select an item for edit/delete, just click on it.
+items around.  To select an item for edit/delete/copy, just click on it.
+Dragging items will allow the list to be reordered to suit usage.
 Doubleclicking will go straight in to the item edit mode.  The hotlist
 is saved to disc when you select "Save" from the Choices window and
 loaded when Nettle is loaded.  You can access the hotlist by clicking
@@ -140,6 +145,14 @@ terminal.
 Nettle can launch URLs for you.  Doubleclicking on any word in a terminal
 window will attempt to launch a RISC OS web browser for that text.  Nettle
 supports all common URL launching mechanisms (Fresco/Oregano/Browse).
+
+Nettle supports the global clipboard via entries on the session menu and
+files can be dragged to a session window to transmit their contents.
+
+For systems that output ANSI graphics characters, you may intially see
+"top bit" characters (with accents) drawn.  You should switch to a font
+which draws these as block graphics - eg "08x16.PC" font.  This is seen
+when connecting to ArcadeBBS for example.
 
 
 ANSI task
@@ -190,10 +203,9 @@ Alex Macfarlane Smith ("archifishal") - project lead / telnet guru
 Peter Naulls ("pnaulls")              - unixlib/gcc specialist
 Ian Jeffray ("ijeffray")              - gui/ui/wimp/stubs
 Joseph Heenan ("jogu")                - url/general os expert
-David Thomas ("spanners")             - performance tweaks
 
 Contributions, assistance and patches have also been received from
-Darren Salt and Justin Fletcher.
+David Thomas, Darren Salt and Justin Fletcher.
 
 
 "To do" list - forthcoming features and ideas
@@ -205,16 +217,12 @@ as it stands.  Here's a roughly ordered list of things that will be
 added in future versions.  Please feel free to submit new ideas:
 mailto:archifishal@users.sourceforge.net
 
-* Respond to "telnet://" URL launch messages
-* Much faster terminal scrollback handling
-* Reordering of hotlist items within hotlist editor
-* More choices: F12 handling, blinking cursor...
-* Use global clipboard
-* Load data from dragged files
+* More choices: F12 handling, blinking, blinking cursor...
 * ANSI commandline task shell for ANSI task window (ROSH)
 * Dynamic resize of terminal
 * Scroll to bottom on keypress
 * VT 320/420/510
+* rlogin
 * SSH
 
 
@@ -230,19 +238,59 @@ mailto:archifishal@users.sourceforge.net
   - It never will, because it interprets codes as ANSI - that's its
     whole point in life.  This will be improved by "ROSH"
 * Doesn't abort desktop shutdown when connections are active
+* Clipboard pasting and file sending do not do LF translations for telnet.
 
 
 Release History
 ===============
 
 0.1306b : 1999 - 2001
-          Initial BASIC versions
+    Initial BASIC versions
 
 0.2000r : September 1st, 2001
-           - Recoded in C
-           - supports vt100, vt102, vt220, xterm emulations
-           - Telnet and ANSI task connections
-           - URL launching
+    Features:
+      Recoded in C
+      Supports vt100, vt102, vt220, xterm emulations
+      Telnet and ANSI task connections
+      URL launching
+
+0.2010r : September 16th 2001
+    New features:
+      Remote mouse support (pico -m, mc, links etc work nicely now)
+      Support basic telnet://hostname/ URL launching  (no user/password yet)
+      Inverse video emulation
+      Session spooling (logging)
+      Support X11 DISPLAY passing to remote
+      Implemented save/resore cursors
+      Support for blinking characters
+      Accept telnet requests to suppress go ahead
+      Global clipboard support
+      File loading (dragging of files to session window)
+
+    Changes/Improvements:
+      80/132 column switching doesn't change width on terminal reset now
+      Better support ANT broadcast launching of URLs
+      Improved recognition of URLs under double-click in terminal window
+      Builds with new unixlib file structure
+      Runs templheadr from a specified location
+      Change menu wording ("Connect..." is now "New Session...")
+      Much faster terminal drawing
+      Hotlist editor gains "Copy" button - buttons grey-out at appropriate times
+      Hotlist redraw cleaned up and made less flickery
+      Hotlist items can now be dragged around to change the ordering
+      Improve region scrolling behaviour
+
+    Bugs fixed:
+      Correctly turn off local echo (telnet to ArcadeBBS now works properly)
+      Corrected hotlist editor tab ordering
+      Hotlist editor couldn't create command for ANSItask
+      Terminal speed reporting (and change reported speed to 38400)
+      Selection saving fixes
+      LINES/COLUMNS variables now correct (for use by ANSItask apps)
+      Rare stack corruption solved
+      Could sometimes continually swap cursor between two windows
+      DNS lookup corrected
 
 
-(C) Nettle developers, September 1st, 2001. 
+(C) Nettle developers, September 16th, 2001.
+
