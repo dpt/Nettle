@@ -26,7 +26,8 @@ OBJASM = gcc
 OBJASMFLAGS = -c
 
 OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
-       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o
+       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o \
+       messages.o
 
 RUNIMAGE = !Nettle.!RunImage
 
@@ -68,3 +69,4 @@ socket.o:	socket.c generic.h globals.h socket.h
 wimp.o: 	wimp.c generic.h globals.h misc.h nettle.h process.h seln.h \
               	socket.h wimp.h zapredraw.h
 zapgen.o:    	zapgen.s
+messages.o:     messages.c messages.h generic.h globals.h misc.h

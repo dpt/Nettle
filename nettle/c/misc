@@ -16,35 +16,6 @@ static FILE *log_file = NULL;
 static int log_file_time=0;
 
 
-/* Looks up a messagetrans token */
-
-char *lookup(const char *token, char *buffer, int buf_size)
-{
-  assert(token != NULL);
-  assert(buffer != NULL);
-  assert(buf_size > 0);
-
-  _swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer,
-                                                         buf_size);
-
-  return buffer;
-}
-
-
-/* Looks up a messagetrans token and puts it in a static buffer*/
-
-const char *lookup_static(const char *token)
-{
-  static char buffer[256];
-  assert(token != NULL);
-
-  _swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer,
-                                                         sizeof (buffer));
-
-  return buffer;
-}
-
-
 /* Gets a system variable's contents */
 
 char *get_system_variable(char *variable, const char *variable_name,
