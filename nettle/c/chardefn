@@ -1,11 +1,8 @@
 /**
- *
  * Zap font character definitions
+ * (C) Nettle developers 2000-2001
  *
- * © Nettle developers 2000-2004
- *
- * @version $Id$
- *
+ * $Id$
  */
 
 #include "generic.h"
@@ -15,61 +12,62 @@
 #include "misc.h"
 #include "zapredraw.h"
 
-/**
- * Takes 2 characters, puts upper in the topleft of a character, and
- * lower in the bottomright of a chracter, and stores it in area
- *
- * @param area   Character to be filled in
- * @param step   Step size in bytes
- * @param height Height of the character
- * @param base   Base of ZapRedraw font area
- * @param upper  Character to be used in upper-left corner
- * @param lower  Character to be used in lower-right corner
- */
+/* Define Zap graphics characters */
+
 
 static void copypair (char *area, int step, int height,
-                      const char *base, char upper, char lower);
+                      const char *base, char upper, char lower)
+{
+  int x, y;
+  const char *ptr = base + upper * step * height;
+  for (y = 0; y < height; y++)
+  {
+    memcpy (area, ptr, step);
+    if ((height & 1) && y == height / 2)
+      ptr = base + lower * step * height;
+    else
+      ptr += step;
+    for (x = step - 1; x >= 0; x--)
+      area[x] |= ptr[x];
+    if ((height & 1) == 0 && y == (height - 1) / 2)
+      ptr = base + lower * step * height;
+    else
+      ptr += step;
+    area += step;
+  }
+}
 
-/**
- * Takes a character area, and underlines it
- *
- * @param area   Character to be filled in
- * @param step   Step size in bytes
- * @param height Height of the character
- */
-static void make_underline (char *area, int step, int height);
 
-/**
- * Takes an array of character data, and fills in the undefined characters
- * (ie. those not defined by the Zap font) required by Nettle
- *
- * @param int_area   pointer to character data
- * @param first_char first character defined by the Zap font
- * @param last_char  last character defined by the Zap font
- * @param char_size  size of character in bytes
- * @param width      width of character
- * @param height     height of character
- */
+static void make_underline (char *area, int step, int height)
+{
+  char pixels[8] = {0}; /* hmm, trouble if the font is > 64 pixels wide... */
+  int x;
 
-static void define_undefined_characters(int *int_area,
-                                        int first_char,
-                                        int last_char,
-                                        int char_size,
-                                        int width, int height);
+  area += step * height;
 
-/* ----------------------------------------------------------------------- */
+  while (--height > 1)
+  {
+    area -= step;
+    for (x = step - 1; x >= 0; --x)
+    {
+      area[x >> 3] |= area[(x >> 3) - 2 * step] & ~pixels[x >> 3];
+      pixels[x >> 3] |= area[x >> 3];
+    }
+  }
+}
 
-char *chardefn_define_cursors(int *int_area, int char_size,
-                              int width, int height, cursor_t cursor_type)
+
+void define_zap_chars(int *int_area, int char_size, int width, int height)
 {
   int loop;
   int step=char_size/height;
   char *area=(char *) int_area;
+  const char *base = area;
   /* define characters */
   area += 0x100 * char_size;
 
-  /* initialise cursor character area to 0 */
-  memset (area, 0, cursor_last * char_size);
+  /* initialise extra character area (chars 0x100-<end>) to 0 */
+  memset (area, 0, EXTRA_ZAP_CHARS * char_size);
 
   /*	Active Cursor	0x100 */
   switch (cursor_type)
@@ -130,33 +128,6 @@ char *chardefn_define_cursors(int *int_area, int char_size,
       break;
   }
   area+=char_size;
-
-  return area;
-}
-
-/* ----------------------------------------------------------------------- */
-
-void chardefn_define_characters(int *int_area, int first_char,
-                                int last_char, int char_size,
-                                int width, int height, cursor_t cursor_type)
-{
-  int loop;
-  int step=char_size/height;
-  char *area=(char *) int_area;
-  const char *base = area;
-  /* define characters */
-  area += 0x100 * char_size;
-
-  /* initialise extra character area (chars 0x100-<end>) to 0 */
-  memset (area, 0, EXTRA_ZAP_CHARS * char_size);
-
-  /* define the undefined characters */
-  define_undefined_characters(int_area, first_char, last_char, char_size,
-                              width, height);
-
-  /* define the cursor characters */
-  area = chardefn_define_cursors(int_area, char_size, width, height,
-                                 cursor_type);
 
   /*	Diamond		0x102 */
   {
@@ -367,56 +338,9 @@ void chardefn_define_characters(int *int_area, int first_char,
   }
 }
 
-/* ----------------------------------------------------------------------- */
 
-static void copypair (char *area, int step, int height,
-                      const char *base, char upper, char lower)
-{
-  int x, y;
-  const char *ptr = base + upper * step * height;
-  for (y = 0; y < height; y++)
-  {
-    memcpy (area, ptr, step);
-    if ((height & 1) && y == height / 2)
-      ptr = base + lower * step * height;
-    else
-      ptr += step;
-    for (x = step - 1; x >= 0; x--)
-      area[x] |= ptr[x];
-    if ((height & 1) == 0 && y == (height - 1) / 2)
-      ptr = base + lower * step * height;
-    else
-      ptr += step;
-    area += step;
-  }
-}
-
-/* ----------------------------------------------------------------------- */
-
-static void make_underline (char *area, int step, int height)
-{
-  char pixels[8] = {0}; /* hmm, trouble if the font is > 64 pixels wide... */
-  int x;
-
-  area += step * height;
-
-  while (--height > 1)
-  {
-    area -= step;
-    for (x = step - 1; x >= 0; --x)
-    {
-      area[x >> 3] |= area[(x >> 3) - 2 * step] & ~pixels[x >> 3];
-      pixels[x >> 3] |= area[x >> 3];
-    }
-  }
-}
-
-/* ----------------------------------------------------------------------- */
-
-static void define_undefined_characters(int *int_area,
-                                        int first_char,
-                                        int last_char, int char_size,
-                                        int width, int height)
+void define_zap_undef_chars(int *int_area, int first_char, int last_char,
+                            int char_size, int width, int height)
 {
   char *area = (char *)int_area;
 
@@ -466,6 +390,3 @@ static void define_undefined_characters(int *int_area,
       copypair (area + chr * char_size, step, height, area, chr | 64, '-');
   }
 }
-
-/* ----------------------------------------------------------------------- */
-

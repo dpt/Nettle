@@ -1,20 +1,14 @@
 /**
- *
  * ZapRedraw structure code
+ * (C) Nettle developers 2000-2002
  *
- * © Nettle developers 2000-2004
- *
- * @version $Id$
- *
+ * $Id$
  */
 
 /* ZapRedraw module (C) Zap developers */
 
 #ifndef ZAPREDRAW_H
 #define ZAPREDRAW_H
-
-/* FIXME: we shouldn't be including this */
-#include "globals.h"
 
 #ifndef ZapRedraw_RedrawArea
 
@@ -41,7 +35,7 @@
 #define ZapRedraw_Divide            0x48494
 #define ZapRedraw_PlotRectangle     0x48495
 
-#endif /* ZapRedraw_RedrawArea */
+#endif
 
 struct zapredraw_block
 {
@@ -75,13 +69,15 @@ struct zapredraw_block
 
 extern char *zapgen_code(int *, struct term_char **, int, int, int, int, int, int, int, int);
 
-/**
- * Update the cursors in a given font_area
- *
- * @param font_area   the area, as returned from load_font
- * @param cursor_type the cursor type we want to use
+/*
+ * Description:  Update the cursors in a given font_area
+ * Parameters:   font_area-> the area, as returned from load_font
+ * Returns:      none
+ * Note:         Will also update all the other special characters;
+ *               this is not intentional and should be replaced with
+ *               /just/ the cursors being updated.
  */
-void zapredraw_update_cursors(int *font_area, cursor_t cursor_type);
+void update_cursors(int *font_area);
 
 extern int *load_font(char *);
 

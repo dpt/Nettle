@@ -136,9 +136,7 @@ struct paste_buffer
 
 typedef enum {
   cursor_solid,
-  cursor_underline,
-
-  cursor_last
+  cursor_underline
 } cursor_t;
 
 extern cursor_t cursor_type;

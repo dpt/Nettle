@@ -305,16 +305,22 @@ void lose_zapredraw_area(void)
 }
 
 
-
-void zapredraw_update_cursors(int *font_area, cursor_t cursor_type)
+/*
+ * Description:  Update the cursors in a given font_area
+ * Parameters:   font_area-> the area, as returned from load_font
+ * Returns:      none
+ * Note:         Will also update all the other special characters;
+ *               this is not intentional and should be replaced with
+ *               /just/ the cursors being updated.
+ */
+void update_cursors(int *font_area)
 {
-  int width     = font_area[2];
-  int height    = font_area[3];
+  int width  = font_area[2];
+  int height = font_area[3];
   int char_size = ((width+ 7) & ~7)*height/8;
 
   /* fill in graphics chars */
-  chardefn_define_cursors(font_area+8, char_size, width, height,
-                          cursor_type);
+  define_zap_chars(font_area+8, char_size, width, height);
 }
 
 
@@ -466,11 +472,12 @@ int *load_font(char *font)
 
   fclose(file_handle);
 
-  /* fill in graphics characters and undefined characters */
-  /* FIXME: cursor_type is a global here, we shouldn't have globals */
-  chardefn_define_characters(zap_load_area+8, first_char,
-                             last_char, char_size, width,
-                             height, cursor_type);
+  /* fill in graphics chars */
+  define_zap_chars(zap_load_area+8, char_size, width, height);
+
+  /* fill in some undefined characters in range 0x00-0xFF*/
+  define_zap_undef_chars (zap_load_area+8, first_char, last_char,
+                          char_size, width, height);
 
   zap_load_area[4]=0;
   zap_load_area[5]=0x100+EXTRA_ZAP_CHARS;

@@ -1,6 +1,6 @@
 /**
  * Zap font character definitions
- * (C) Nettle developers 2000-2004
+ * (C) Nettle developers 2000-2001
  *
  * $Id$
  */
@@ -8,48 +8,11 @@
 #ifndef CHARDEFN_H
 #define CHARDEFN_H
 
-/* FIXME: We shouldn't be including this really as globals are evil */
-#include "globals.h"
-
 /* Number of additional characters we are going to define at 0x100 in
    chardefn.c */
 #define EXTRA_ZAP_CHARS (0x1e)
 
-/**
- * Takes an array of character data, and fills in the cursor characters
- *required by Nettle
- *
- * @param int_area    pointer to character data
- * @param char_size   size of character in bytes
- * @param width       width of character
- * @param height      height of character
- * @param cursor_type the type of the cursor we're using
- */
-char *chardefn_define_cursors(int     *int_area,
-                              int      char_size,
-                              int      width,
-                              int      height,
-                              cursor_t cursor_type);
+extern void define_zap_chars(int *, int, int, int);
+extern void define_zap_undef_chars(int *, int, int, int, int, int);
 
-/**
- * Takes an array of character data, and fills in the additional symbol/
- * cursor characters required by Nettle
- *
- * @param int_area  pointer to character data
- * @param first_char first character defined by the Zap font
- * @param last_char  last character defined by the Zap font
- * @param char_size size of character in bytes
- * @param width     width of character
- * @param height    height of character
- */
-
-void chardefn_define_characters(int     *int_area,
-                                int      first_char,
-                                int      last_char,
-                                int      char_size,
-                                int      width,
-                                int      height,
-                                cursor_t cursor_type);
-
-
-#endif /* CHARDEFN_H */
+#endif
