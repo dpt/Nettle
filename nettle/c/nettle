@@ -758,7 +758,7 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
 
     _swi(Wimp_SetExtent, _INR(0,1), session->window_handle, &block);
 
-    if (line_editor)
+    if (session->line_editor_type!=LINEEDIT_NONE)
     {
       block.min.x=0;
       block.min.y=-48;
@@ -785,6 +785,10 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     {
       block.min.y=block.max.y-(session->terminal_size.y*redraw.r_charh << eig.y);
     }
+
+    /* Scale the scroll offset according to the old font size/new font size */
+    block.scroll.x=(block.scroll.x*redraw.r_charw/old_charw);
+    block.scroll.y=(block.scroll.y*redraw.r_charh/old_charh);
 
     /* wimp_openwindow_block is essentially the same as wimp_getwindowstate_block */
     _swi(Wimp_OpenWindow, _IN(1), &block);

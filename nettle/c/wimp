@@ -125,14 +125,14 @@ void open_window_centred (int window_handle)
 
 /* Dunno what this is needed for really... or it should also */
 /* encompass the code currently in mode_change */
-static void redraw_all_sessions(bool font_change)
+/*static void redraw_all_sessions(bool font_change)
 {
-  struct session_struct *session = sessions;
+  struct session_struct *session = sessions;*/
 
   /* Eventually, also resize the terminals if the current font has been
    * changed. Which is why no use of terminal_size is made here. */
 
-  while (session)
+/*  while (session)
   {
     struct wimp_getwindowstate_block block;
 
@@ -145,7 +145,7 @@ static void redraw_all_sessions(bool font_change)
 
     session = session->next;
   }
-}
+}*/
 
 static void wimp_pollresolve(struct session_struct *session)
 {
@@ -3064,6 +3064,8 @@ static bool win_choices_read(int save)
   int new_scrollback;
   int new_line_editor_size;
   enum nettle_terminal new_default_terminal;
+  char new_zap_font[256];
+  char new_zap_lowres_font[256];
   char string[32];
 
   /* Read paneterm type options */
@@ -3103,8 +3105,9 @@ static bool win_choices_read(int save)
     return false;
   }
 
-  strcpy(zap_font, read_icon_data(win_paneterm, icon_paneterm_hifont, string, sizeof(string)));
-  strcpy(zap_lowres_font, read_icon_data(win_paneterm, icon_paneterm_lofont, string, sizeof(string)));
+  strcpy(new_zap_font, read_icon_data(win_paneterm, icon_paneterm_hifont, string, sizeof(string)));
+  strcpy(new_zap_lowres_font, read_icon_data(win_paneterm, icon_paneterm_lofont, string, sizeof(string)));
+
 
   /* Read panecols type options */
   {
@@ -3114,8 +3117,6 @@ static bool win_choices_read(int save)
       palette[loop] = get_colour_icon(loop, false);
     }
 
-    _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette, zap_palette, 16);
-    redraw_all_sessions(false);
   }
 
   /* Read panehot type options */
@@ -3125,6 +3126,26 @@ static bool win_choices_read(int save)
   default_terminal = new_default_terminal;
   defaultsize = new_termsize;
   defaultscroll = new_scrollback;
+
+  /* Set new palette */
+  _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette, zap_palette, 16);
+
+  /* Load in new zap fonts */
+  if (strcmp(zap_font, new_zap_font)!=0)
+  {
+    free(zap_font_area);
+    strcpy(zap_font, new_zap_font);
+    zap_font_area=load_font(zap_font);
+  }
+
+  if (strcmp(zap_lowres_font, new_zap_lowres_font)!=0)
+  {
+    free(zap_lowres_font_area);
+    strcpy(zap_lowres_font, new_zap_lowres_font);
+    zap_lowres_font_area=load_font(zap_lowres_font);
+  }
+
+  mode_change();
 
   /* if we're saving, save now */
   return save ? save_choices () : true;

@@ -8,18 +8,17 @@
 #include "generic.h"
 #include "globals.h"
 
-#include "chardefn.h"
-#include "init.h"
-#include "misc.h"
-#include "nettle.h"
-#include "wimp.h"
-#include "zapredraw.h"
-#include "sockwatch.h"
-#include "quit.h"
-#include "messages.h"
 #include "choices.h"
 #include "hotlist.h"
+#include "init.h"
+#include "messages.h"
+#include "misc.h"
+#include "nettle.h"
+#include "quit.h"
+#include "sockwatch.h"
 #include "templ.h"
+#include "wimp.h"
+#include "zapredraw.h"
 
 #define MAX_TEMPLATES 10
 #define LOAD_TEMPLATE_NO_FONTS          (int *)(-1)
@@ -250,125 +249,6 @@ static void load_templates(void)
 
   /* close the templates file */
   close_template();
-}
-
-
-static int *load_font(char *font)
-{
-  char string[5]="ZFLK";
-  int *zap_load_area;
-  int width;
-  int height;
-  int last_char;
-  int first_char;
-  int char_size;
-  FILE *file_handle=0;
-  char file_end[256];
-  char file_start[256];
-  char file_name[1024];
-  int object_type;
-
-  get_system_variable(file_name,"ZapFontsSource$Path",sizeof(file_name));
-  if (strlen(file_name)!=0)
-  {
-    strcpy(file_start,"ZapFontsSource:");
-  }
-  else
-  {
-    strcpy(file_start,"<Nettle$Dir>.Fonts.");
-  }
-
-  strcpy(file_end, font);
-
-  /* if string is ZFLK, then this is a redirection font */
-  while (strcmp(string,"ZFLK")==0)
-  {
-    sprintf(file_name,"%s%s",file_start,file_end);
-
-    /* if it's there, what sort of object is it */
-    if (_swix(OS_File, _INR(0,1)|_OUT(0), 17, file_name, &object_type)==0)
-    {
-      if (object_type == 0)
-      {
-          strcpy(string,"");
-      }
-      else if (object_type == 2)
-      {
-          /* If it's a directory, plonk .0 on the end */
-          strcat(file_end,".0");
-          strcat(file_name,".0");
-
-	  /* and pretend it's a file */
-	  object_type = 1;
-      }
-
-      if (object_type == 1)
-      {
-      	file_handle=fopen(file_name,"rb");
-
-      	if (file_handle != NULL)
-      	{
-      	  fread(&string[0],1,5,file_handle);
-	  string[4]='\0';
-
-      	  /* if it's redirection then */
-      	  if (strcmp(string,"ZFLK")==0)
-      	  {
-	    size_t chrs;
-
-      	    /* get the redirection font */
-      	    chrs = fread(&file_end[0], 1, sizeof(file_end)-1, file_handle);
-	    file_end[chrs]='\0';
-
-      	    fclose(file_handle);
-      	  }
-      	}
-      }
-    }
-    else
-    {
-      strcpy(string,"");
-    }
-  }
-
-  if (file_handle==0)
-  {
-    /* if we didn't find a font, use Nettle's internal ones */
-    /* (This may not be necessary if it uses <Nettle$Dir>.Fonts from above, but leave it for */
-    /* now) */
-
-    if (eig.y >1)
-      strcpy(file_name,"<Nettle$Dir>.Fonts.08x08.System.0");
-    else
-      strcpy(file_name,"<Nettle$Dir>.Fonts.08x16.Default.0");
-    file_handle=fopen(file_name,"rb");
-  }
-
-  assert(file_handle);
-
-  fseek(file_handle,8,SEEK_SET);
-
-  /* Get font information */
-  fread((char *) &width, 1, 4, file_handle);
-  fread((char *) &height, 1, 4, file_handle);
-  fread((char *) &first_char, 1, 4, file_handle);
-  fread((char *) &last_char, 1, 4, file_handle);
-
-  fclose(file_handle);
-
-  /* Set real character size (will be needed to implement graphics characters) */
-  char_size=((width+ 7) & ~7)*height/8;
-
-  zap_load_area=malloc(char_size*(0x11D-first_char)+0x20);
-  assert(zap_load_area != NULL);
-
-  _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);
-
-  /* fill in graphics chars */
-  define_zap_chars(zap_load_area+8+(char_size*(0x40-(zap_load_area[4]))),
-                   char_size, width, height, zap_load_area+8);
-
-  return zap_load_area;
 }
 
 

@@ -70,6 +70,8 @@ struct zapredraw_block
 
 extern char *zapgen_code(int *, const char *, int, int, int, int);
 
+extern int *load_font(char *);
+
 extern bool read_zap_font_selection (const int *, char *, int);
 extern bool create_zap_font_menu (int, int);
 extern void create_zap_font_submenu (const int *, struct coords);
