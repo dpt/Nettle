@@ -1,0 +1,61 @@
+/* sockwatch.c
+ *
+ * Generic interface functions for Dickon's socket watcher module
+ *
+ * (C) Joseph Heenan, 1998.
+ *
+ * $Id$
+ *
+ */
+
+#include <stdio.h>
+
+#include "swis.h"
+
+#include "sockwatch.h"
+
+int *socketwatch_pollword = 0;
+
+#define SWI_SocketWatch_Register      0x52280
+#define SWI_SocketWatch_Deregister    0x52281
+#define SWI_SocketWatch_AtomicReset   0x52282
+#define SWI_SocketWatch_AllocPW       0x52283
+#define SWI_SocketWatch_DeallocPW     0x52284
+
+void socketwatch_register(int socket)
+{
+  const unsigned int bitmask = 1;
+  
+  if (socketwatch_pollword)
+    _swi(SWI_SocketWatch_Register, _INR(0,2),
+           socketwatch_pollword, bitmask, socket);
+}
+
+void socketwatch_deregister(int socket)
+{
+  if (socketwatch_pollword)
+    _swi(SWI_SocketWatch_Deregister, _INR(0,1), socket, socketwatch_pollword);
+}
+
+void socketwatch_initialise(void)
+{
+  _kernel_oserror *e;
+  
+  e = _swix(SWI_SocketWatch_AllocPW, _OUT(0), &socketwatch_pollword);
+  if (e)
+  {
+    socketwatch_pollword = 0;
+    fprintf(stderr, "Socketwatch could not be initialised (%s), "
+            "will use null polls instead\n", e->errmess);
+  }
+  else
+  {
+    *socketwatch_pollword = 0;
+  }
+}
+
+void socketwatch_finalise(void)
+{
+  if (socketwatch_pollword)
+    _swi(SWI_SocketWatch_DeallocPW, _IN(0), socketwatch_pollword);
+}

@@ -9,12 +9,13 @@
 #include "globals.h"
 
 #include "choices.h"
+#include "hotlist.h"
 #include "init.h"
 #include "main.h"
 #include "misc.h"
 #include "quit.h"
+#include "sockwatch.h"
 #include "wimp.h"
-#include "hotlist.h"
 
 int main(void)
 {
@@ -40,6 +41,8 @@ int main(void)
 
   /* create the iconbar icon */
   create_icon_bar_icon();
+  
+  socketwatch_initialise();
 
   /* Turn off hourglass */
   _swi(Hourglass_Smash, 0);
@@ -48,13 +51,22 @@ int main(void)
   {
     union wimp_poll_block wimp_block;
     int event;
-    int time;
+    int nextpolltime;
+    const int mask = (1<<4)  | /* pointer enter window */
+                     (1<<5)  | /* pointer leave window */
+#ifdef SOCKETWATCH
+                     (1<<22) | /* R3 is pointer to pollword */
+#endif /*SOCKETWATCH*/
+                     0;
 
-    time = _swi(OS_ReadMonotonicTime, _RETURN(0));
+#ifdef SOCKETWATCH
+    nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0)) + 500;
+#else /*SOCKETWATCH*/
+    nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0)) + 5;
+#endif /*SOCKETWATCH*/
 
-    /* Ignore Pointer Enter/Leave events */
-    event = _swi(Wimp_PollIdle, _INR(0,2)|_RETURN(0), (1<<4)|(1<<5), &wimp_block,
-                                                                                time+5);
+    event = _swi(Wimp_PollIdle, _INR(0,2) | _RETURN(0),
+                 mask, &wimp_block, nextpolltime, socketwatch_pollword);
 
     switch (event)
     {

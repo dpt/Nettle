@@ -1,0 +1,22 @@
+/* sockwatch.h
+ *
+ * Generic interface functions for Dickon's socket watcher module
+ *
+ * (C) Joseph Heenan, 1998.
+ *
+ * $Id$
+ *
+ */
+
+#ifndef SOCKWATCH_H
+#define SOCKWATCH_H
+
+extern int *socketwatch_pollword;
+
+extern void socketwatch_register(int /*socket*/);
+extern void socketwatch_deregister(int /*socket*/);
+
+extern void socketwatch_initialise(void);
+extern void socketwatch_finalise(void);
+
+#endif /* SOCKWATCH_H */

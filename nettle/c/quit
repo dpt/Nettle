@@ -8,12 +8,13 @@
 #include "generic.h"
 #include "globals.h"
 
+#include "hotlist.h"
+#include "init.h"
 #include "misc.h"
 #include "nettle.h"
 #include "quit.h"
+#include "sockwatch.h"
 #include "wimp.h"
-#include "hotlist.h"
-#include "init.h"
 
 void closedown_application(void)
 {
@@ -34,6 +35,7 @@ void closedown_application(void)
   free(zap_font_area);
   free(zap_lowres_font_area);
   lose_hotlist();
+  socketwatch_finalise();
   lose_templates();
 
   close_log(true);

@@ -26,7 +26,7 @@ ASM = $(CC)
 ASMFLAGS = -c
 
 OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
-       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
+       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o
 
 RUNIMAGE = !Nettle/!RunImage,ff8
 
