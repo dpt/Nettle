@@ -1775,22 +1775,18 @@ void gain_caret(int window_handle)
 
 
 
-int wimp_handleurl(const char *url, int checkonly)
+/**
+ * Note - url has already had the 'telnet:' removed
+ */
+static int wimp_handletelneturl(const char *url)
 {
   const char *hostptr;
   const char *hostend;
   int         port;
   char       *hostcopy;
   int         retval;
-  
-  if (strncmp(url, "telnet:", strlen("telnet:")) != 0)
-    /* not a telnet url */
-    return 0;
-  
-  if (checkonly != 0)
-    return 1;
-  
-  hostptr = url + strlen("telnet:");
+
+  hostptr = url;
   while (*hostptr == '/')
     hostptr++;
   
@@ -1821,6 +1817,46 @@ int wimp_handleurl(const char *url, int checkonly)
   free(hostcopy);
   
   return retval;
+}
+
+
+
+/**
+ * Note - url has already had the 'ansitaskwindow:' removed
+ */
+static int wimp_handleansiurl(const char *url)
+{
+  return nettle_start_taskwindow(url);
+}
+
+
+
+int wimp_handleurl(const char *url, int checkonly)
+{
+  int (*handler)(const char *);
+  
+  if (strncmp(url, "telnet:", strlen("telnet:")) == 0)
+  {
+    url += strlen("telnet:");
+    handler = wimp_handletelneturl;
+  }
+  else if (strncmp(url, "ansitaskwindow:", strlen("ansitaskwindow:")) == 0)
+  {
+    url += strlen("ansitaskwindow:");
+    handler = wimp_handleansiurl;
+  }
+  else
+  {
+    handler = NULL;
+  }
+  
+  if (handler == NULL)
+    return 0;
+
+  if (checkonly != 0)
+    return 1;
+  
+  return handler(url);
 }
 
 
