@@ -315,12 +315,12 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
     return;
   }
 
-  if (window_handle==open)
+  if (window_handle == win_open)
   {
     switch (icon_handle)
     {
       case 2:
-        close_window(open);
+        close_window(win_open);
         break;
       case 3:
         start_connection();
@@ -335,7 +335,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
     return;
   }
 
-  if (window_handle==save)
+  if (window_handle == win_save)
   {
     switch (icon_handle)
     {
@@ -346,13 +346,13 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         {
           char save_data[1024];
 
-          read_icon_data(save, 2, save_data, sizeof(save_data));
+          read_icon_data(win_save, 2, save_data, sizeof(save_data));
 
           if ((instr(save_data, ":")>=0))
           {
             struct wimp_geticonstate_block block;
 
-            block.window_handle=save;
+            block.window_handle= win_save;
             block.icon_handle  =4;
 
             _swi(Wimp_GetIconState, _IN(1), &block);
@@ -383,7 +383,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         {
           case 64: case 16:
             /* Drag */
-            drag_start(save, 3);
+            drag_start(win_save, 3);
             break;
         }
         break;
@@ -391,7 +391,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
     return;
   }
 
-  if (window_handle==resize)
+  if (window_handle == win_resize)
   {
     switch (icon_handle)
     {
@@ -403,9 +403,9 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
           char string[8];
 
           resize_terminal(terminal_menu_session,
-                          atoi(read_icon_data(resize, 0, string, sizeof(string))),
-                          atoi(read_icon_data(resize, 2, string, sizeof(string))),
-                          atoi(read_icon_data(resize, 4, string, sizeof(string))),
+                          atoi(read_icon_data(win_resize, 0, string, sizeof(string))),
+                          atoi(read_icon_data(win_resize, 2, string, sizeof(string))),
+                          atoi(read_icon_data(win_resize, 4, string, sizeof(string))),
                           true);
 
           if (buttons!=1)
@@ -653,12 +653,12 @@ void drag_finished(void)
   struct wimp_getpointerinfo_block gpi_block;
   union wimp_poll_block block;
 
-  if (drag_window_handle==save)
+  if (drag_window_handle==win_save)
   {
     char string[1024];
     int loop;
 
-    read_icon_data(save, 2, string, sizeof(string));
+    read_icon_data(win_save, 2, string, sizeof(string));
     loop = strlen(string);
 
     while (loop>=0 && string[loop]!='.' && string[loop]!=':')
@@ -696,12 +696,12 @@ void key_pressed(int window_handle, int icon_handle, int key)
   bool key_status=false;
   char message[MESSAGE_MAX_CONNECTION];
 
-  if (window_handle == open)
+  if (window_handle == win_open)
   {
     char string[11];
     int connection_type;
 
-    read_icon_data(open, 4, string, sizeof(string));
+    read_icon_data(win_open, 4, string, sizeof(string));
 
     if (strcmp(string, lookup("SSH", message, MESSAGE_MAX_CONNECTION))==0)
       connection_type=NETTLE_SSH;
@@ -722,7 +722,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
                 start_connection();
                 break;
               case NETTLE_SSH:
-                set_caret_position(open,7,-1, get_icon_data_length(open, 7));
+                set_caret_position(win_open,7,-1, get_icon_data_length(win_open, 7));
                 break;
             }
             key_status=true;
@@ -746,7 +746,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
     }
   }
 
-  if (window_handle==resize)
+  if (window_handle==win_resize)
   {
     switch (icon_handle)
     {
@@ -758,9 +758,9 @@ void key_pressed(int window_handle, int icon_handle, int key)
               char string[8];
 
               resize_terminal(terminal_menu_session,
-                              atoi(read_icon_data(resize, 0, string, sizeof(string))),
-                              atoi(read_icon_data(resize, 2, string, sizeof(string))),
-                              atoi(read_icon_data(resize, 4, string, sizeof(string))),
+                              atoi(read_icon_data(win_resize, 0, string, sizeof(string))),
+                              atoi(read_icon_data(win_resize, 2, string, sizeof(string))),
+                              atoi(read_icon_data(win_resize, 4, string, sizeof(string))),
                               true);
             }
             key_status=true;
@@ -939,13 +939,13 @@ void menu_selection()
         switch (wimp_block.menu_selection.menu[0])
         {
           case 0:
-            set_icon_data(open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
+            set_icon_data(win_open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
             break;
           case 1:
-            set_icon_data(open, 4, lookup("SSH",  connection, MESSAGE_MAX_CONNECTION));
+            set_icon_data(win_open, 4, lookup("SSH",  connection, MESSAGE_MAX_CONNECTION));
             break;
           case 2:
-            set_icon_data(open, 4, lookup("Taskwindow", connection, MESSAGE_MAX_CONNECTION));
+            set_icon_data(win_open, 4, lookup("Taskwindow", connection, MESSAGE_MAX_CONNECTION));
             break;
         }
         open_open_window(false);
@@ -957,7 +957,7 @@ void menu_selection()
         char string[6];
         sprintf(string, "Term%d", wimp_block.menu_selection.menu[0]);
 
-        set_icon_data(open, 9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
+        set_icon_data(win_open, 9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
       }
       break;
   }
@@ -1686,7 +1686,7 @@ static void create_iconbar_menu(void)
   char *menu_choices = get_grey_menu_item("Choices");
   char *menu_quit    = get_last_menu_item("Quit");
 
-  if (create_menu(menu_data,0,menu_title,menu_info,info,menu_choices,menu_quit))
+  if (create_menu(menu_data,0,menu_title,menu_info, win_info,menu_choices,menu_quit))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
@@ -1720,13 +1720,13 @@ static void create_terminal_menu(void)
   {
     char string[8];
     sprintf(string,"%d",terminal_menu_session->terminal_size_x);
-    set_icon_data(resize, 0, string);
+    set_icon_data(win_resize, 0, string);
 
     sprintf(string,"%d",terminal_menu_session->terminal_size_y);
-    set_icon_data(resize, 2, string);
+    set_icon_data(win_resize, 2, string);
 
     sprintf(string,"%d",terminal_menu_session->scrollback);
-    set_icon_data(resize, 4, string);
+    set_icon_data(win_resize, 4, string);
   }
 
   if (!selection_session || (selection_start==selection_end))
@@ -1738,10 +1738,10 @@ static void create_terminal_menu(void)
     menu_selection=get_menu_item("Selection>");
   }
 
-  if (create_menu(menu_data,0,menu_title,menu_selection,menu_data2,menu_resize,resize,
+  if (create_menu(menu_data,0,menu_title,menu_selection,menu_data2,menu_resize,win_resize,
     		  menu_options))
   {
-    if (create_menu(menu_data2,0,menu_selection_title,menu_save,save,menu_launch_url,menu_send,
+    if (create_menu(menu_data2,0,menu_selection_title,menu_save,win_save,menu_launch_url,menu_send,
                     menu_clear))
     {
       _swi(Wimp_GetPointerInfo, _IN(1), &block);
@@ -1925,7 +1925,7 @@ static void open_open_window(bool open_window_flag)
   int connection_type;
   struct wimp_seticonstate_block block;
 
-  read_icon_data(open, 4, string, 11);
+  read_icon_data(win_open, 4, string, 11);
 
   {
     char type[20];
@@ -1941,13 +1941,13 @@ static void open_open_window(bool open_window_flag)
   switch (connection_type)
   {
     case NETTLE_TELNET:
-      block.window_handle=open;
+      block.window_handle=win_open;
       block.icon_handle  =7; /* Command icon */
       block.eor          =1<<22;
       block.clear        =1<<22;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
-      block.window_handle=open;
+      block.window_handle=win_open;
       block.icon_handle  =0; /* Host icon */
       block.eor          =0;
       block.clear        =1<<22;
@@ -1956,13 +1956,13 @@ static void open_open_window(bool open_window_flag)
       break;
 
     case NETTLE_SSH:
-      block.window_handle=open;
+      block.window_handle=win_open;
       block.icon_handle  =7; /* Command icon */
       block.eor          =0;
       block.clear        =1<<22;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
-      block.window_handle=open;
+      block.window_handle=win_open;
       block.icon_handle  =0; /* Host icon */
       block.eor          =0;
       block.clear        =1<<22;
@@ -1971,13 +1971,13 @@ static void open_open_window(bool open_window_flag)
       break;
 
     case NETTLE_TASKWINDOW:
-      block.window_handle=open;
+      block.window_handle=win_open;
       block.icon_handle  =7; /* Command icon */
       block.eor          =0;
       block.clear        =1<<22;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
-      block.window_handle=open;
+      block.window_handle=win_open;
       block.icon_handle  =0;     /* Host icon */
       block.eor          =1<<22;
       block.clear        =1<<22;
@@ -1988,18 +1988,18 @@ static void open_open_window(bool open_window_flag)
 
   if (open_window_flag)
   {
-    open_window(open,false);
+    open_window(win_open,false);
   }
 
   switch (connection_type)
   {
     case NETTLE_TELNET:
     case NETTLE_SSH:
-      set_caret_position(open, 0, -1, get_icon_data_length(open, 0));
+      set_caret_position(win_open, 0, -1, get_icon_data_length(win_open, 0));
       break;
 
     case NETTLE_TASKWINDOW:
-      set_caret_position(open, 7, -1, get_icon_data_length(open, 7));
+      set_caret_position(win_open, 7, -1, get_icon_data_length(win_open, 7));
       break;
   }
 }
