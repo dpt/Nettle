@@ -58,7 +58,7 @@ void start_connection(void)
   int loop;
   int connection_type;
   enum nettle_terminal terminal_type;
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
   struct session_struct *session;
 
   session = malloc(sizeof(struct session_struct));
@@ -434,7 +434,7 @@ void write_out_data(struct session_struct *session, char *data, int length_data)
     return;
   }
 
-  zap_yeig = _swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  zap_yeig = _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   calc=get_cursor_position(session);
 
@@ -506,7 +506,7 @@ void remove_session(struct session_struct *session)
           block.user_message.my_ref      =0;
           block.user_message.message_code=0x808C4;
 
-          _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, &block,
+          _swi(Wimp_SendMessage, _INR(0,2), 17, &block,
                                                        session->socket_handle);
         }
         break;
@@ -592,7 +592,7 @@ void nettle_senddata(struct session_struct *session, char *data, int length)
         block.user_message.message_code                   =0x808C0;
         block.user_message.contents.task_window_input.size=length;
 
-        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, &block,
+        _swi(Wimp_SendMessage, _INR(0,2), 17, &block,
                                                      session->socket_handle);
       }
       break;

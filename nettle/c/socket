@@ -27,7 +27,7 @@ char socket_resolvehost(char *host_name, unsigned int *address)
   int status;
   struct hostent *hostent;
 
-  if (_swix(Resolver_GetHost, _IN(0)|_OUT(0)|_OUT(1), host_name, &status, &hostent)==0)
+  if (_swix(Resolver_GetHost, _IN(0)|_OUTR(0,1), host_name, &status, &hostent)==0)
   {
     switch (status)
     {

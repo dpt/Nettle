@@ -88,7 +88,7 @@ void load_choices(void)
 
   while (true)
   {
-    str = fgets(string,256,file_handle);
+    str = fgets(string, sizeof(string), file_handle);
     if (!str)
       break;
 

@@ -62,7 +62,7 @@ void load_messages(void)
 
   messagetrans_buffer=malloc(size_of_messagetrans_buffer);
 
-  _swi(MessageTrans_OpenFile, _IN(0)|_IN(1)|_IN(2), messagetrans_area,
+  _swi(MessageTrans_OpenFile, _INR(0,2), messagetrans_area,
                                                     messages_file_name,
                                                     messagetrans_buffer);
 }
@@ -75,7 +75,7 @@ void load_sprites(void)
   FILE *file_handle;
 
   /* find out what sprites we need to load */
-  yeig=(int) pow(2, _swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5) );
+  yeig=(int) pow(2, _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5) );
 
   sprintf(file_name,"<%s$Dir>.Resources.Sprites",application_name);
 
@@ -95,7 +95,7 @@ void load_sprites(void)
     fclose(file_handle);
 
     /* get the sprite file size */
-    size=_swi(OS_File, _IN(0)|_IN(1)|_RETURN(4), 5, file_name)+64;
+    size=_swi(OS_File, _INR(0,1)|_RETURN(4), 5, file_name)+64;
 
     /* malloc a block big enough for it */
     sprite_area=malloc(size);
@@ -105,10 +105,10 @@ void load_sprites(void)
     sprite_area->offset_to_1st_sprite=16;
 
     /* initialise area */
-    _swi(OS_SpriteOp, _IN(0)|_IN(1), 256+9, sprite_area);
+    _swi(OS_SpriteOp, _INR(0,1), 256+9, sprite_area);
 
     /* load sprites into it */
-    _swi(OS_SpriteOp, _IN(0)|_IN(1)|_IN(2), 256+10, sprite_area, file_name);
+    _swi(OS_SpriteOp, _INR(0,2), 256+10, sprite_area, file_name);
   }
 }
 
@@ -121,7 +121,7 @@ static void open_template(void)
   FILE *file_handle;
 
   /* Check 3D bit of CMOS RAM */
-  if (_swi(OS_Byte, _IN(0)|_IN(1)|_RETURN(2), 161, 0x8C) & 1)
+  if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 0x8C) & 1)
     use_3d_templates=true;
 
   /* Again, set country to UK if we don't know */
@@ -196,7 +196,7 @@ static int load_template(int *font_array,char *window_name,int *sprite_area)
   strcpy(window_name_copy, window_name);
 
   /* get sizes of template data and indirected_data */
-  _swi(Wimp_LoadTemplate, _IN(1)|_IN(5)|_IN(6)|_OUT(1)|_OUT(2),
+  _swi(Wimp_LoadTemplate, _IN(1)|_INR(5,6)|_OUTR(1,2),
                           0, window_name_copy, 0,
                           &size_of_template_data, &size_of_indirected_data);
 
@@ -205,7 +205,7 @@ static int load_template(int *font_array,char *window_name,int *sprite_area)
   template_data=malloc(size_of_template_data);
 
   /* load the template */
-  _swi(Wimp_LoadTemplate, _IN(1)|_IN(2)|_IN(3)|_IN(4)|_IN(5)|_IN(6), template_data,
+  _swi(Wimp_LoadTemplate, _INR(1,6), template_data,
                           indirected_data, indirected_data+size_of_indirected_data,
                           font_array, window_name_copy, 0);
 
@@ -290,7 +290,7 @@ static int *load_font(char *zap_font)
     sprintf(file_name,"%s%s",file_start,file_end);
 
     /* if it's there, what sort of object is it */
-    if (_swix(OS_File, _IN(0)|_IN(1)|_OUT(0), 17, file_name, &object_type)==0)
+    if (_swix(OS_File, _INR(0,1)|_OUT(0), 17, file_name, &object_type)==0)
     {
       switch (object_type)
       {
@@ -360,7 +360,7 @@ static int *load_font(char *zap_font)
   zap_load_area=malloc(char_size*(0x11D-first_char)+0x20);
   fclose(file_handle);
 
-  _swi(OS_File, _IN(0)|_IN(1)|_IN(2)|_IN(3), 16, file_name, zap_load_area, 0);
+  _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);
 
   /* fill in graphics chars */
   define_zap_chars(zap_load_area+8+(char_size*(0x40-(zap_load_area[4]))),char_size,width,height);
@@ -394,7 +394,7 @@ void create_icon_bar_icon(void)
   block.icon_flags   =0x1700311a;
   block.buffer       =application_icon_name;
   block.validation   =(char *) sprite_area;
-  block.buffer_length=strlen(application_icon_name);
+  block.buffer_length=strlen(block.buffer);
 
   iconbar_handle=_swi(Wimp_CreateIcon, _IN(1)|_RETURN(0), &block);
 }

@@ -47,7 +47,7 @@ static void reprocess_position_scroll(struct session_struct *session)
     {
       /* scroll scrollback as well */
 
-      _swi(ZapRedraw_MoveBytes, _IN(1)|_IN(2)|_IN(3),
+      _swi(ZapRedraw_MoveBytes, _INR(1,3),
            session->assigned_area+(session->terminal_size_x*4),
 
            session->assigned_area,
@@ -57,7 +57,7 @@ static void reprocess_position_scroll(struct session_struct *session)
     }
     else
     {
-      _swi(ZapRedraw_MoveBytes, _IN(1)|_IN(2)|_IN(3),
+      _swi(ZapRedraw_MoveBytes, _INR(1,3),
                                 session->assigned_area+
       			        ((session->terminal_size_x*
       			        (session->scroll_start+
@@ -114,7 +114,7 @@ static void reprocess_position_scroll(struct session_struct *session)
     }
 
 
-    _swi(ZapRedraw_MoveBytes, _IN(1)|_IN(2)|_IN(3),
+    _swi(ZapRedraw_MoveBytes, _INR(1,3),
                               session->assigned_area+
       			      ((session->terminal_size_x*
       			      (session->scroll_start+
@@ -475,7 +475,7 @@ static void byte_default(struct session_struct *session, char byte)
             ((session->ypos+1)*session->terminal_size_x)*4;
 
     /* Maybe... calc2-calc-4 might be wrong */
-    _swi(ZapRedraw_MoveBytes, _IN(1)|_IN(2)|_IN(3), calc, calc+4, calc2-calc-4);
+    _swi(ZapRedraw_MoveBytes, _INR(1,3), calc, calc+4, calc2-calc-4);
   }
   data=((session->ypos*session->terminal_size_x)+
              session->xpos)*4;
@@ -2216,7 +2216,7 @@ void process_wimp_key(struct session_struct *session, int key)
   int size_of_block=0;
   int calc;
   char cursor_flags;
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   if (session->other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
     return;
@@ -2337,7 +2337,7 @@ void process_line_editor(struct session_struct *session)
   char *send_block=0;
   int size_of_send_block=0;
   int icon_text_loop;
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   {
     char data[512];

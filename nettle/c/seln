@@ -68,7 +68,7 @@ void refresh_selection_clear(void)
 
 void selection_adjust(int x,int x_pos, int y, int y_pos)
 {
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   if (selection_session)
   {
@@ -128,7 +128,7 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
 
 void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 {
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   if (selection_session)
   {
@@ -261,7 +261,7 @@ void save_selection(char *filename, bool ansi_colour)
 
   fclose(file_handle);
 
-  _swi(OS_File, _IN(0)|_IN(1)|_IN(2), 18, filename, 0xFFF);
+  _swi(OS_File, _INR(0,2), 18, filename, 0xFFF);
 }
 
 void handle_selection_drag(void)
@@ -270,7 +270,7 @@ void handle_selection_drag(void)
   int x, y, buttons, window_handle, icon_handle;
   int x_pos, y_pos;
   bool do_scroll;
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   _swi(Wimp_GetPointerInfo, _IN(1), block);
 

@@ -25,13 +25,13 @@ int main(void)
 #endif
 
   /* Set log file time */
-  log_file_time=_swi(OS_ReadMonotonicTime, _RETURN(0));
+  log_file_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
 
   /* Turn on hourglass */
   _swi(Hourglass_On, 0);
 
   /* Initialise application */
-  task_handle= _swi(Wimp_Initialise, _IN(0)|_IN(1)|_IN(2)|_IN(3)|_RETURN(1), 310, 0x4B534154,
+  task_handle= _swi(Wimp_Initialise, _INR(0,3)|_RETURN(1), 310, 0x4B534154,
                                     application_name, initialise_messages());
 
   /* load things in */
@@ -66,7 +66,7 @@ int main(void)
     time = _swi(OS_ReadMonotonicTime, _RETURN(0));
 
     /* Ignore Pointer Enter/Leave events */
-    event = _swi(Wimp_PollIdle, _IN(0)|_IN(1)|_IN(2)|_RETURN(0), (1<<4)|(1<<5), &wimp_block,
+    event = _swi(Wimp_PollIdle, _INR(0,2)|_RETURN(0), (1<<4)|(1<<5), &wimp_block,
                                                                                 time+5);
 
     switch (event)
