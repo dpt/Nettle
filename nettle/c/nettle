@@ -616,7 +616,7 @@ void reset_terminal(struct session_struct *session)
 
 void write_assigned(struct session_struct *session ,int pointer, char fg, char bg, char flags, char character)
 {
-  if (pointer<0 || pointer>(session->terminal_size.y+
+  if (pointer<0 || pointer>=(session->terminal_size.y+
     			    session->scrollback)*
     			    session->terminal_size.x*4)
   {
@@ -633,7 +633,7 @@ void write_assigned(struct session_struct *session ,int pointer, char fg, char b
 
 char read_assigned_fg(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session->terminal_size.y+
+  if (pointer<0 || pointer>=(session->terminal_size.y+
     			    session->scrollback)*
     			    session->terminal_size.x*4)
   {
@@ -647,7 +647,7 @@ char read_assigned_fg(struct session_struct *session, int pointer)
 
 char read_assigned_bg(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session->terminal_size.y+
+  if (pointer<0 || pointer>=(session->terminal_size.y+
     			    session->scrollback)*
     			    session->terminal_size.x*4)
   {
@@ -661,7 +661,7 @@ char read_assigned_bg(struct session_struct *session, int pointer)
 
 char read_assigned_flags(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session->terminal_size.y+
+  if (pointer<0 || pointer>=(session->terminal_size.y+
     			    session->scrollback)*
     			    session->terminal_size.x*4)
   {
@@ -675,7 +675,7 @@ char read_assigned_flags(struct session_struct *session, int pointer)
 
 char read_assigned_character(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session->terminal_size.y+
+  if (pointer<0 || pointer>=(session->terminal_size.y+
     			    session->scrollback)*
     			    session->terminal_size.x*4)
   {
@@ -689,7 +689,7 @@ char read_assigned_character(struct session_struct *session, int pointer)
 
 void write_assigned_flags(struct session_struct *session, int pointer, char flags)
 {
-  if (pointer<0 || pointer>(session->terminal_size.y+
+  if (pointer<0 || pointer>=(session->terminal_size.y+
     			    session->scrollback)*
     			    session->terminal_size.x*4)
   {
@@ -703,7 +703,7 @@ void write_assigned_flags(struct session_struct *session, int pointer, char flag
 
 void write_assigned_character(struct session_struct *session, int pointer, char character)
 {
-  if (pointer<0 || pointer>(session->terminal_size.y+
+  if (pointer<0 || pointer>=(session->terminal_size.y+
     			    session->scrollback)*
     			    session->terminal_size.x*4)
   {
