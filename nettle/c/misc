@@ -249,7 +249,7 @@ char *get_country(char *string, int size)
 
   string[0] = '\0';
 
-  if (_swix(OS_Byte,_INR(0,1)|_OUT(2), 0x46, 127, &country_number)==0)
+  if (_swix(OS_Byte,_INR(0,1)|_OUT(1), 0x46, 127, &country_number)==0)
   {
     _swi(OS_ServiceCall, _INR(1,5), 0x43, 2, country_number, string, size);
   }
