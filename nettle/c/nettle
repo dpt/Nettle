@@ -954,228 +954,129 @@ void delete_terminal(struct session_struct *session)
   }
 }
 
-void resize_terminal_dimensions(struct session_struct *session,
+
+
+static void resize_terminal_dimensions(struct session_struct *session,
                                 struct coords terminal_size, int scrollback)
 {
-  struct term_char **old_assigned_area=session->assigned_area;
-  struct term_char **old_alternate_area=session->alternate_area;
-  struct coords old_terminal_size=session->terminal_size;
-  int total_old_y=old_terminal_size.y+session->scrollback;
-  int total_new_y=terminal_size.y+scrollback;
+  struct coords old_terminal_size = session->terminal_size;
+  int total_old_y = old_terminal_size.y + session->scrollback;
+  int total_new_y = terminal_size.y + scrollback;
+  int bigger_y = total_new_y > total_old_y;
+  int area;
 
-  session->assigned_area=malloc((terminal_size.y+scrollback)*sizeof (int *));
-  assert(session->assigned_area);
+  session->terminal_size = terminal_size;
+  session->scrollback = scrollback;
 
-  session->terminal_size=terminal_size;
-  session->scrollback=scrollback;
-
-  if (total_new_y>=total_old_y)
+  for (area = 0; area < ((session->alternate_area != NULL) ? 2 : 1); area++)
   {
-    /* New terminal Y is bigger than old terminal Y */
+    struct term_char **new_area;
+    struct term_char **old_area;
+    int split;
     int loop;
 
-    /* Create first 0-(total_new_y-total_old_y) lines */
-    for (loop=0; loop<total_new_y-total_old_y; loop++)
+    if (area == 0)
     {
-      session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
-      assert(session->assigned_area[loop]);
+      old_area = session->assigned_area;
+      new_area = session->assigned_area =
+                  malloc((terminal_size.y + scrollback) * sizeof(int *));
+      assert(session->assigned_area);
 
-      clear_screen(session, loop*terminal_size.x, (loop+1)*terminal_size.x,
-                   NETTLE_COLOUR_NORMAL_WHITE,
-                   NETTLE_COLOUR_NORMAL_BLACK,
-                   0,
-                   ' ');
-    }
-
-    /* Copy (total_old_y) lines */
-    for (loop=total_new_y-total_old_y; loop<total_new_y; loop++)
-    {
-      int loop2;
-      int limit;
-      int old_loop=loop-(total_new_y-total_old_y);
-
-      if (terminal_size.x>old_terminal_size.x)
-        limit=old_terminal_size.x;
-      else
-        limit=terminal_size.x;
-
-      session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
-      assert(session->assigned_area[loop]);
-
-      for (loop2=0; loop2<limit; loop2++)
-      {
-        /* Note this is slightly bad as we're not using our nice interface */
-        /* to the area */
-        session->assigned_area[loop][loop2].fg=old_assigned_area[old_loop][loop2].fg;
-        session->assigned_area[loop][loop2].bg=old_assigned_area[old_loop][loop2].bg;
-        session->assigned_area[loop][loop2].flags=old_assigned_area[old_loop][loop2].flags;
-        session->assigned_area[loop][loop2].chr=old_assigned_area[old_loop][loop2].chr;
-      }
-
-      /* Clear the rest of the line */
-      for (loop2=limit; loop2<terminal_size.x; loop2++)
-      {
-        session->assigned_area[loop][loop2].fg=NETTLE_COLOUR_NORMAL_WHITE;
-        session->assigned_area[loop][loop2].bg=NETTLE_COLOUR_NORMAL_BLACK;
-        session->assigned_area[loop][loop2].flags=0;
-        session->assigned_area[loop][loop2].chr=' ';
-      }
-
-      free(old_assigned_area[old_loop]);
-    }
-
-    free(old_assigned_area);
-  }
-  else
-  {
-    int loop;
-
-    /* Copy (total_new_y) lines */
-    for (loop=0; loop<total_new_y; loop++)
-    {
-      int loop2;
-      int limit;
-      int old_loop=loop+(total_old_y-total_new_y);
-
-      if (terminal_size.x>old_terminal_size.x)
-        limit=old_terminal_size.x;
-      else
-        limit=terminal_size.x;
-
-      session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
-      assert(session->assigned_area[loop]);
-
-      for (loop2=0; loop2<limit; loop2++)
-      {
-        /* Note this is slightly bad as we're not using our nice interface */
-        /* to the area */
-        session->assigned_area[loop][loop2].fg=old_assigned_area[old_loop][loop2].fg;
-        session->assigned_area[loop][loop2].bg=old_assigned_area[old_loop][loop2].bg;
-        session->assigned_area[loop][loop2].flags=old_assigned_area[old_loop][loop2].flags;
-        session->assigned_area[loop][loop2].chr=old_assigned_area[old_loop][loop2].chr;
-      }
-
-      /* Clear the rest of the line */
-      for (loop2=limit; loop2<terminal_size.x; loop2++)
-      {
-        session->assigned_area[loop][loop2].fg=NETTLE_COLOUR_NORMAL_WHITE;
-        session->assigned_area[loop][loop2].bg=NETTLE_COLOUR_NORMAL_BLACK;
-        session->assigned_area[loop][loop2].flags=0;
-        session->assigned_area[loop][loop2].chr=' ';
-      }
-
-      free(old_assigned_area[old_loop]);
-    }
-
-    free(old_assigned_area);
-  }
-
-  if (session->alternate_area)
-  {
-    session->alternate_area=malloc((terminal_size.y)*sizeof (int *));
-    assert(session->alternate_area);
-
-    /* Copy the alternate area across too */
-    if (terminal_size.y>=old_terminal_size.y)
-    {
-      /* New terminal Y is bigger than old terminal Y */
-      int loop;
-
-      /* Create first 0-(terminal_size.y-old_terminal_size.y) lines */
-      for (loop=0; loop<terminal_size.y-old_terminal_size.y; loop++)
-      {
-        session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
-        assert(session->alternate_area[loop]);
-
-        clear_alt_screen(session, loop*terminal_size.x, (loop+1)*terminal_size.x,
-                         NETTLE_COLOUR_NORMAL_WHITE,
-                         NETTLE_COLOUR_NORMAL_BLACK,
-                         0,
-                         ' ');
-      }
-
-      /* Copy (old_terminal_size.y) lines */
-      for (loop=terminal_size.y-old_terminal_size.y; loop<terminal_size.y; loop++)
-      {
-        int loop2;
-        int limit;
-        int old_loop=loop-(terminal_size.y-old_terminal_size.y);
-
-        if (terminal_size.x>old_terminal_size.x)
-          limit=old_terminal_size.x;
-        else
-          limit=terminal_size.x;
-
-        session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
-        assert(session->alternate_area[loop]);
-
-        for (loop2=0; loop2<limit; loop2++)
-        {
-          /* Note this is slightly bad as we're not using our nice interface */
-          /* to the area */
-          session->alternate_area[loop][loop2].fg=old_alternate_area[old_loop][loop2].fg;
-          session->alternate_area[loop][loop2].bg=old_alternate_area[old_loop][loop2].bg;
-          session->alternate_area[loop][loop2].flags=old_alternate_area[old_loop][loop2].flags;
-          session->alternate_area[loop][loop2].chr=old_alternate_area[old_loop][loop2].chr;
-        }
-
-        /* Clear the rest of the line */
-        for (loop2=limit; loop2<terminal_size.x; loop2++)
-        {
-          session->alternate_area[loop][loop2].fg=NETTLE_COLOUR_NORMAL_WHITE;
-          session->alternate_area[loop][loop2].bg=NETTLE_COLOUR_NORMAL_BLACK;
-          session->alternate_area[loop][loop2].flags=0;
-          session->alternate_area[loop][loop2].chr=' ';
-        }
-
-        free(old_alternate_area[old_loop]);
-      }
-
-      free(old_alternate_area);
+      split = total_new_y - total_old_y;
     }
     else
     {
-      int loop;
+      old_area = session->alternate_area;
+      new_area = session->alternate_area =
+                 malloc((terminal_size.y) * sizeof(int *));
+      assert(session->alternate_area);
 
-      /* Copy (terminal_size.y) lines */
-      for (loop=0; loop<terminal_size.y; loop++)
+      split = terminal_size.y - old_terminal_size.y;
+    }
+
+    if (bigger_y)
+    {
+      /* New terminal Y is bigger than old terminal Y */
+
+      /* Create first 0-(total_new_y-total_old_y) lines */
+      for (loop = 0; loop < split; loop++)
       {
-        int loop2;
-        int limit;
-        int old_loop=loop+(old_terminal_size.y-terminal_size.y);
-
-        if (terminal_size.x>old_terminal_size.x)
-          limit=old_terminal_size.x;
+        new_area[loop] = malloc(terminal_size.x * sizeof(struct term_char));
+        assert(new_area[loop]);
+  
+        if (area == 0)
+        {
+          clear_screen(session, loop * terminal_size.x,
+                       (loop + 1) * terminal_size.x,
+                       NETTLE_COLOUR_NORMAL_WHITE,
+                       NETTLE_COLOUR_NORMAL_BLACK,
+                       0,
+                       ' ');
+        }
         else
-          limit=terminal_size.x;
-
-        session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
-        assert(session->alternate_area[loop]);
-
-        for (loop2=0; loop2<limit; loop2++)
         {
-          /* Note this is slightly bad as we're not using our nice interface */
-          /* to the area */
-          session->alternate_area[loop][loop2].fg=old_alternate_area[old_loop][loop2].fg;
-          session->alternate_area[loop][loop2].bg=old_alternate_area[old_loop][loop2].bg;
-          session->alternate_area[loop][loop2].flags=old_alternate_area[old_loop][loop2].flags;
-          session->alternate_area[loop][loop2].chr=old_alternate_area[old_loop][loop2].chr;
+         clear_alt_screen(session, loop * terminal_size.x,
+                       (loop + 1) * terminal_size.x,
+                       NETTLE_COLOUR_NORMAL_WHITE,
+                       NETTLE_COLOUR_NORMAL_BLACK,
+                       0,
+                       ' ');
         }
+      }
+    }
 
-        /* Clear the rest of the line */
-        for (loop2=limit; loop2<terminal_size.x; loop2++)
-        {
-          session->alternate_area[loop][loop2].fg=NETTLE_COLOUR_NORMAL_WHITE;
-          session->alternate_area[loop][loop2].bg=NETTLE_COLOUR_NORMAL_BLACK;
-          session->alternate_area[loop][loop2].flags=0;
-          session->alternate_area[loop][loop2].chr=' ';
-        }
+    /* Copy (total_old_y) lines */
 
-        free(old_alternate_area[old_loop]);
+    if (area == 1)
+    {
+      total_new_y = terminal_size.y;
+    }
+
+    for (loop = (bigger_y ? split : 0); loop < total_new_y; loop++)
+    {
+      int loop2;
+      int limit;
+      int old_loop;
+
+      if (area == 0)
+      {
+        old_loop = loop - (total_new_y - total_old_y);
+      }
+      else
+      {
+        old_loop = loop - (terminal_size.y - old_terminal_size.y);
       }
 
-      free(old_alternate_area);
+      if (terminal_size.x > old_terminal_size.x)
+        limit = old_terminal_size.x;
+      else
+        limit = terminal_size.x;
+
+      new_area[loop] = malloc(terminal_size.x * sizeof(struct term_char));
+
+      assert(new_area[loop]);
+      for (loop2 = 0; loop2 < limit; loop2++)
+      {
+        /* Note this is slightly bad as we're not using our nice interface */
+        /* to the area */
+        new_area[loop][loop2].fg    = old_area[old_loop][loop2].fg;
+        new_area[loop][loop2].bg    = old_area[old_loop][loop2].bg;
+        new_area[loop][loop2].flags = old_area[old_loop][loop2].flags;
+        new_area[loop][loop2].chr   = old_area[old_loop][loop2].chr;
+      }
+
+      /* Clear the rest of the line */
+      for (loop2 = limit; loop2 < terminal_size.x; loop2++)
+      {
+        new_area[loop][loop2].fg    = NETTLE_COLOUR_NORMAL_WHITE;
+        new_area[loop][loop2].bg    = NETTLE_COLOUR_NORMAL_BLACK;
+        new_area[loop][loop2].flags = 0;
+        new_area[loop][loop2].chr   = ' ';
+      }
+
+      free(old_area[old_loop]);
     }
+    free(old_area);
   }
 }
 
