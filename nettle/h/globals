@@ -136,7 +136,6 @@ struct session_struct
 };
 
 extern struct session_struct *sessions;
-extern struct session_struct *current_session;
 
 extern bool selection_in_progress;
 extern struct session_struct *selection_session;

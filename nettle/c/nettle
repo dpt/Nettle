@@ -561,11 +561,6 @@ void remove_session(struct session_struct *session)
     selection_session = NULL;
   }
 
-  if (current_session == session)
-  {
-    current_session = session->next;
-  }
-
   free(session);
 }
 

@@ -39,7 +39,7 @@ static void create_terminal_menu(void);
 static void create_connection_menu(void);
 static void create_terminal_type_menu(void);
 static void drag_start(int, int);
-static void create_menu_by_icon (int *menu, int window, int icon);
+static void create_menu_by_icon(int *menu, int window, int icon);
 
 
 
@@ -49,118 +49,129 @@ void closedown_wimp(void)
 }
 
 
-/* Null code */
 
-void null_reason_code(void)
+static void wimp_pollresolve(struct session_struct *session)
 {
-  if (!sessions) { return; }
-
-  if (!current_session) {
-    current_session = sessions;
-  }
-
-  if (current_session->connection_type == NETTLE_TELNET)
+  switch(socket_resolvehost(session->socket_host,
+                            &session->socket_ip))
   {
-    switch (current_session->socket_state)
+    case RESOLVER_INPROGRESS:
+      /* not finished yet */
+      break;
+    case RESOLVER_FAILED:
+      set_title_bar(session->window_handle,
+                    lookup_static("title_disconnect"));
+      write_out_strings(session, lookup_static("noresolv"), "\r\n", 0);
+      session->socket_state=NETTLE_SESSION_NONE;
+      break;
+    case RESOLVER_SUCCESS:
+      session->socket_handle =
+                      socket_connecttoip(session->socket_ip,
+                                         session->socket_port);
+  
+      if (session->socket_handle!=-1)
+      {
+        session->socket_state = NETTLE_SESSION_CONNECT;
+        write_out_strings(session, lookup_static("connecting"),
+                          socket_ip_string(session->socket_ip),
+                          "...\r\n", 0);
+      }
+      else
+      {
+        write_out_strings(session, lookup_static("nosocket"),
+                           "\r\n", 0);
+        session->socket_state=NETTLE_SESSION_NONE;
+      }
+  }
+}
+
+
+
+static void wimp_pollconnect(struct session_struct *session)
+{
+  switch (socket_connected(session->socket_handle))
+  {
+    case -6:
+      set_title_bar(session->window_handle,
+                     lookup_static("title_noconn"));
+      write_out_strings(session, lookup_static("noconn"), "\r\n", 0);
+      socket_close(session->socket_handle);
+
+      session->socket_handle=0;
+      session->socket_state=NETTLE_SESSION_NONE;
+      break;
+    case 4:
+      {
+        char string[1024];
+
+        sprintf(string,"nettle/%s (%s,%d)",
+                terminal_name[session->terminal_type],
+                session->socket_host,
+                session->socket_port);
+
+        set_title_bar(session->window_handle,string);
+
+        session->socket_state = NETTLE_SESSION_CONNECTED;
+        write_out_strings(session, lookup_static("connected"),
+                          socket_ip_string(session->socket_ip),
+                          "\r\n", 0);
+        break;
+     }
+  }
+}
+
+
+
+static void wimp_pollsocket(struct session_struct *session)
+{
+  int packet_length;
+  char receive_block[RECEIVE_BLOCK_LENGTH];
+
+  packet_length = socket_readdata(session->socket_handle, receive_block,
+                                  RECEIVE_BLOCK_LENGTH);
+
+  if (packet_length>0)
+  {
+    /* deal with data from socket */
+    write_out_data(session, receive_block, packet_length);
+  }
+  else
+  {
+    if (packet_length==-1)
     {
-      case NETTLE_SESSION_RESOLVE:
-        switch(socket_resolvehost(current_session->socket_host,
-                                  &current_session->socket_ip))
-        {
-          case RESOLVER_INPROGRESS:
-            /* not finished yet */
-            break;
-          case RESOLVER_FAILED:
-            set_title_bar (current_session->window_handle,
-                           lookup_static ("title_disconnect"));
-            write_out_strings (current_session, lookup_static ("noresolv"), "\r\n", 0);
-            current_session->socket_state=NETTLE_SESSION_NONE;
-            break;
-          case RESOLVER_SUCCESS:
-            current_session->socket_handle=
-                            socket_connecttoip(current_session->socket_ip,
-                                               current_session->socket_port);
-
-            if (current_session->socket_handle!=-1)
-            {
-              current_session->socket_state = NETTLE_SESSION_CONNECT;
-              write_out_strings (current_session, lookup_static ("connecting"),
-                                 socket_ip_string(current_session->socket_ip),
-                                 "...\r\n", 0);
-            }
-            else
-            {
-              write_out_strings (current_session, lookup_static ("nosocket"),
-                                 "\r\n", 0);
-              current_session->socket_state=NETTLE_SESSION_NONE;
-            }
-        }
-        break;
-      case NETTLE_SESSION_CONNECT:
-        switch (socket_connected(current_session->socket_handle))
-        {
-          case -6:
-            set_title_bar (current_session->window_handle,
-                           lookup_static ("title_noconn"));
-            write_out_strings (current_session, lookup_static ("noconn"), "\r\n", 0);
-            socket_close(current_session->socket_handle);
-
-            current_session->socket_handle=0;
-            current_session->socket_state=NETTLE_SESSION_NONE;
-            break;
-          case 4:
-            {
-              char string[1024];
-
-              sprintf(string,"nettle/%s (%s,%d)",
-                      terminal_name[current_session->terminal_type],
-                      current_session->socket_host,
-                      current_session->socket_port);
-
-              set_title_bar(current_session->window_handle,string);
-
-              current_session->socket_state = NETTLE_SESSION_CONNECTED;
-              write_out_strings (current_session, lookup_static ("connected"),
-                                 socket_ip_string (current_session->socket_ip),
-                                 "\r\n", 0);
-              break;
-           }
-        }
-        break;
-      case NETTLE_SESSION_CONNECTED:
-        {
-          int packet_length;
-          char receive_block[RECEIVE_BLOCK_LENGTH];
-
-          packet_length=socket_readdata(current_session->socket_handle,receive_block,
-                                        RECEIVE_BLOCK_LENGTH);
-
-          if (packet_length>0)
-          {
-            /* deal with data from socket */
-            write_out_data(current_session,receive_block,packet_length);
-          }
-          else
-          {
-            if (packet_length==-1)
-            {
-              set_title_bar (current_session->window_handle,
-                             lookup_static ("title_disconnect"));
-              write_out_strings (current_session, "\r\n", lookup_static ("closed"), 0);
-              write_out_strings (current_session, "\r\n", lookup_static ("disconn"), "\r\n", 0);
-              socket_close(current_session->socket_handle);
-              current_session->socket_handle=0;
-              current_session->socket_state=NETTLE_SESSION_NONE;
-            }
-          }
-        }
-        break;
+      set_title_bar(session->window_handle, lookup_static("title_disconnect"));
+      write_out_strings(session, "\r\n", lookup_static("closed"), 0);
+      write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
+      socket_close(session->socket_handle);
+      session->socket_handle=0;
+      session->socket_state=NETTLE_SESSION_NONE;
     }
   }
+}
 
-  current_session = current_session->next;
-  if (!current_session) {
-    current_session = sessions;
+
+
+void wimp_nullreasoncode(void)
+{
+  struct session_struct *session;
+  
+  for (session = sessions; session != NULL; session = session->next)
+  {
+    if (session->connection_type != NETTLE_TELNET)
+      continue;
+    
+    switch (session->socket_state)
+    {
+      case NETTLE_SESSION_RESOLVE:
+        wimp_pollresolve(session);
+        break;
+      case NETTLE_SESSION_CONNECT:
+        wimp_pollconnect(session);
+        break;
+      case NETTLE_SESSION_CONNECTED:
+        wimp_pollsocket(session);
+        break;
+    }
   }
 
   close_log(false);

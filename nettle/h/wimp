@@ -18,7 +18,7 @@
 
 extern void closedown_wimp(void);
 
-extern void null_reason_code(void);
+extern void wimp_nullreasoncode(void);
 extern void redraw_window(union wimp_poll_block *);
 extern void open_window(struct wimp_openwindow_block *, int);
 extern void close_window(int);
