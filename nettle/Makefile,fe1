@@ -1,9 +1,11 @@
 # Acorn / NetLib Makefile for Nettle
 # by A. Macfarlane Smith
 # (C) Archifishal Software 2001
+#
+# $Id$
 
 CC = cc
-CFLAGS = -g -IC:
+CFLAGS = -c -strict -IC: -INetlib: -fa -throwback -depend !Depend -DFORTIFY #-g
 
 LINK = link
 LINKFLAGS = #-d
@@ -11,63 +13,28 @@ LINKFLAGS = #-d
 WIPE = wipe
 WIPEFLAGS = ~CFR~V
 
-OBJASM = objasm
-OBJASMFLAGS =
+ASM = objasm
+ASMFLAGS =
 
-all:	o.chardefn o.choices o.globals o.init o.lineedit o.main o.misc o.nettle \
-	o.process o.quit o.seln o.socket o.wimp o.zapgen o.fortify
-	$(LINK) $(LINKFLAGS) C:o.stubs NetLib:o.NetLib o.chardefn o.choices o.globals \
-	o.init o.lineedit o.main o.misc o.nettle o.process o.quit o.seln o.socket o.wimp \
-	o.zapgen o.fortify \
-	-o !Nettle.!RunImage
+OBJS = o.chardefn o.choices o.globals o.init o.lineedit o.main o.misc \
+	o.nettle o.process o.quit o.seln o.socket o.wimp o.zapgen \
+	o.fortify
+
+all:	!Nettle.!RunImage
+
+!Nettle.!RunImage:	$(OBJS)
+	$(LINK) -o $@ $(LINKFLAGS) $(OBJS) C:o.stubs NetLib:o.NetLib
+	squeeze $@
 
 clean:
 	$(WIPE) o.* $(WIPEFLAGS)
 
-o.chardefn:	c.chardefn h.generic h.globals h.chardefn h.misc
-		$(CC) $(CFLAGS) -c c.chardefn
+.SUFFIXES: .o .s .c
 
-o.choices:	c.choices h.generic h.globals h.choices h.misc
-		$(CC) $(CFLAGS) -c c.choices
+.s.o:
+	$(ASM) $(ASMFLAGS) $< -o $@
 
-o.fortify:	c.fortify h.fortify h.ufortify
-		$(CC) $(CFLAGS) -c c.fortify
+.c.o:
+	$(CC) $(CFLAGS) -o $@ $<
 
-o.globals:	c.globals h.generic h.globals h.zapredraw
-		$(CC) $(CFLAGS) -c c.globals
-	
-o.init:		c.init h.generic h.globals h.chardefn h.init h.misc h.nettle h.quit h.wimp \
-		h.zapredraw
-		$(CC) $(CFLAGS) -c c.init
-
-o.lineedit:	c.lineedit h.generic h.globals h.lineedit h.misc h.wimp
-		$(CC) $(CFLAGS) -c c.lineedit
-
-o.main:		c.main h.generic h.globals h.choices h.init h.main h.misc h.quit h.wimp
-		$(CC) $(CFLAGS) -c c.main
-
-o.misc:		c.misc h.generic h.globals h.misc
-		$(CC) $(CFLAGS) -c c.misc
-
-o.nettle:	c.nettle h.generic h.globals h.misc h.nettle h.seln h.socket h.wimp h.zapredraw
-		$(CC) $(CFLAGS) -c c.nettle
-
-o.process:	c.process h.generic h.globals h.graphics h.misc h.nettle h.process h.seln \
-		h.wimp h.zapredraw
-		$(CC) $(CFLAGS) -c c.process
-
-o.quit:		c.quit h.generic h.globals h.misc h.nettle h.quit
-		$(CC) $(CFLAGS) -c c.quit
-
-o.seln:		c.seln h.generic h.globals h.nettle h.seln h.wimp h.zapredraw
-		$(CC) $(CFLAGS) -c c.seln
-
-o.socket:	c.socket h.generic h.globals h.socket
-		$(CC) $(CFLAGS) -INetLib: -c c.socket
-
-o.wimp:		c.wimp h.generic h.globals h.misc h.nettle h.process h.seln h.socket h.wimp \
-		h.zapredraw
-		$(CC) $(CFLAGS) -c c.wimp
-
-o.zapgen:	s.zapgen
-		$(OBJASM) $(OBJASMFLAGS) s.zapgen
+# Dynamic dependencies:
