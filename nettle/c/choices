@@ -443,6 +443,8 @@ bool win_choices_read(int save)
     return false;
   }
 
+  line_editor_size=new_line_editor_size;
+
   strcpy(new_zap_font, read_icon_data(win_paneterm, icon_paneterm_hifont, string, sizeof(string)));
   strcpy(new_zap_lowres_font, read_icon_data(win_paneterm, icon_paneterm_lofont, string, sizeof(string)));
 
