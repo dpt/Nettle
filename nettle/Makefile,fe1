@@ -5,7 +5,7 @@
 # $Id$
 
 CC = cc
-CFLAGS = -c -strict -IC: -INetlib: -fa -apcs 3/26 -throwback -depend !Depend -DFORTIFY #-g
+CFLAGS = -c -strict -IC: -INetlib: -fa -apcs 3/26 -throwback -depend !Depend #-DFORTIFY #-g
 
 LINK = link
 LINKFLAGS = #-d
