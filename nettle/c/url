@@ -30,19 +30,30 @@
 #define Wimp_EUserMessageRecorded     18
 #define Wimp_EUserMessageAcknowledge  19
 
-/* url broadcast is 'quite' a long winded process.
- * 1) We first try a URI dispatch, if this fails we jump to the ANT broadcast (4).
- * 2) If the call succeeds, we then waits for the wimp message indicating success or failure.
- * 3) If this indicates failure, we try a:
- * 4) ANT broadcast
- * 5) If the ANT broadcast bounces, we try a ANT URL_open
- * 6) If _that_ fails, we give the user an error message!
+
+
+/* steps in a url broadcast:
+ * 1) Try ANT broadcast
+ * 2) If that bounces, try Acorn URI dispatch [broadcast + load]
+ * 3) If that succeeds, what for succes or failure wimp message
+ * 4) If either fails, try ANT Url_open
+ * 5) If that fails, give error message
  */
+
+
+
 #define WORDALIGN(x) ( (x+3) & ~3 )
 
 
 
-static int url_antbroadcast( const char *url )
+static void url_failed(void)
+{
+  generror("No application has been seen that can launch this URL", false);
+}
+
+
+
+static int url_antbroadcast(const char *url)
 {
   url_message urlblock;
   _kernel_oserror *error;
@@ -63,24 +74,62 @@ static int url_antbroadcast( const char *url )
 
 
 
-int url_launch(const char *url)
+static int url_antload(const char *url)
+{
+  char buf[512];
+  char *off;
+  
+  off = strchr(url, ':');
+  
+  /* our url request wasn't answered :-( */
+  /* try an Alias$URLOpen, instead */
+  if (off == NULL)
+    return -1;  /* no ':' */
+
+  strcpy(buf, "Alias$URLOpen_");
+  strncat(buf, url, off - url);
+  if (getenv(buf) == NULL)
+    return -1;
+
+  strcat(buf, " ");
+  strncat(buf, url, sizeof(buf) - strlen(buf) - 1 );
+
+  if (_swix(Wimp_StartTask, _IN(0), buf + sizeof("Alias$") - 1) != NULL)
+    return -1;
+    
+  
+  return 0;
+}
+
+
+
+void url_launch(const char *url)
+{
+  if (url_antbroadcast(url) == -1)
+    url_failed();
+}
+
+
+
+static int url_acornlaunch(const char *url)
 {
   int taskhan = 0;
   int success = 1;
   int flags;
-  if ( _swix( Wimp_ReadSysInfo, _IN(0) | _OUT(0), 5, &taskhan ) )
+  
+  if (_swix( Wimp_ReadSysInfo, _IN(0) | _OUT(0), 5, &taskhan) != NULL)
     success = 0;
 
-  if ( success )
+  if (success)
   {
-    if ( _swix( URI_Dispatch, _INR(0,2) | _OUT(0), URI_inform_caller, url, taskhan, &flags ) || flags & 1 )
+    if (_swix(URI_Dispatch, _INR(0,2) | _OUT(0), URI_inform_caller, url, taskhan, &flags ) != NULL || flags & 1)
     {
       success = 0;
     }
   }
 
-  if ( !success )
-    url_antbroadcast( url );
+  if (!success)
+    url_antload(url);
 
   return 0;
 }
@@ -89,19 +138,17 @@ int url_launch(const char *url)
 
 void url_bounce(user_message *mess)
 {
-  _kernel_oserror *error;
-  char buf[ 512 ];
-  char *off;
+  char              buf[512];
+  _kernel_oserror  *error;
 
   if ( mess->message_code == URI_MReturnResult )
   {
     uri_returnresultmessage *msg = (uri_returnresultmessage *) mess;
 
-    /* failed AcornURI. Try ANT broadcast */
-
     if ( (msg->flags & 0x01) == 0 )
       return; /* url was claimed */
 
+    /* failed AcornURI. Try ANT launch */
     error = _swix(URI_RequestURI, _INR(0, 3), 0, buf, sizeof buf,
                   msg->uri_handle);
     if (error)
@@ -110,8 +157,9 @@ void url_bounce(user_message *mess)
       return;
     }
 
-    url_antbroadcast(buf);
-
+    if (url_antload(buf) == -1)
+      url_failed();
+    
     /* we haven't acknowledged the returnresult message, so the URI
      * handler task will automatically free the URI */
 
@@ -122,26 +170,9 @@ void url_bounce(user_message *mess)
     return;
   }
 
-  /* otherwise, it was an ANT url broadcast that failed - try URLOpen_<scheme> */
+  /* otherwise, it was an ANT url broadcast that failed - try Acorn broadcast/launch */
 
-  off = strchr( mess->contents.bytes, ':');
-
-  /* our url request wasn't answered :-( */
-  /* try an Alias$URLOpen, instead */
-  if (!off)
-    return;  /* no ':' */
-
-  strcpy( buf, "Alias$URLOpen_" );
-  strncat( buf, mess->contents.bytes, off - mess->contents.bytes );
-  if ( !getenv( buf ) )
-  {
-    generror("No application has been seen that can launch this URL", false);
-    return;
-  }
-  strcat(buf, " ");
-  strncat(buf, mess->contents.bytes, sizeof(buf) - strlen(buf) - 1 );
-
-  _swi(Wimp_StartTask, _IN(0), buf + sizeof("Alias$") - 1);
+  url_acornlaunch(mess->contents.bytes);
 }
 
 

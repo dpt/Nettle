@@ -124,7 +124,7 @@ typedef int (*url_handler_func)(const char */*url*/, int /*checkonly*/);
  *
  * Tries the acorn system first, then the ANT system if Acorn one fails.
  */
-int url_launch(const char *url);
+void url_launch(const char *url);
 
 
 
