@@ -3,16 +3,18 @@
 #
 # $Id$
 
-
+ifeq (${LIB},scl)
+LIBFLAGS   = -mlibscl -I$(NETLIB)
+EXTRALIBS  = $(NETLIB)/o/NetLib,ffd
+endif
 
 
 CC = $(GCCDIR)/cross/bin/gcc
-CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -DFORTIFY -mlibscl \
-	-I$(NETLIB)
+CFLAGS = -c -mapcs -Wall -Wno-unknown-pragmas -DFORTIFY $(LIBFLAGS)
 # -mamu : generate !Depend file - only useful with AMU
 
 LINK = $(CC)
-LINKFLAGS = -debug -mlibscl $(NETLIB)/o/NetLib,ffd
+LINKFLAGS = -debug $(LIBFLAGS) $(EXTRALIBS)
 
 WIPE = rm
 WIPEFLAGS = -rf
@@ -23,7 +25,7 @@ OBJASMFLAGS = -c
 OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
 
-RUNIMAGE = !Nettle.!RunImage,ff8
+RUNIMAGE = !Nettle/!RunImage,ff8
 
 all: $(RUNIMAGE)
 

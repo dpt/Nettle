@@ -5,9 +5,29 @@
 #
 # $Id$
 
+lib=$1
+cross_path=$2
+
 if [ "$cross_path" == "" ] ; then
   cross_path=/home/riscos
 fi  
+
+
+if [ "$lib" == "-scl" ] ; then
+
+  if [ ! -e $cross_path/lib/netlib ] ; then
+    echo Cannot find Netlib in $cross_path/lib/netlib
+    exit 1
+  fi
+
+  # For NetLib's "Internet:file.h"includes
+  export INTERNET_PATH=$cross_path/lib/netlib
+  library=scl
+
+else
+  library=unixlib
+
+fi
 
 
 rm *.o *.c *.h *.s 2>/dev/null
@@ -25,12 +45,5 @@ do
   cd -
 done
 
-if [ ! -e $cross_path/lib/netlib ] ; then
-  echo Cannot find Netlib in $cross_path/lib/netlib
-  exit 1
-fi
 
-# For NetLib's "Internet:file.h"includes
-export INTERNET_PATH=$cross_path/lib/netlib
-
-make -f MakeCross GCCDIR=$cross_path NETLIB=$INTERNET_PATH
+make -f MakeCross GCCDIR=$cross_path NETLIB=$INTERNET_PATH LIB=$library
