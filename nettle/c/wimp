@@ -307,8 +307,8 @@ static void wimp_pollsessions(void)
 
           if (sent == -1)
           {
-            generror("nettle_senddata returned -1, this is probably bad... report it to the \
-                      authors.",false);
+            generror("nettle_senddata returned -1, this is probably bad... "
+                     "report it to the authors.",false);
           }
           else if (sent == session->paste->length)
           {
@@ -1010,11 +1010,12 @@ static void win_resize_click(int x, int y, int buttons, int icon_handle)
  */
 static void wimp_claimcaret(struct session_struct *session)
 {
+  struct wimp_getcaretposition_block block;
+
+  _swi(Wimp_GetCaretPosition, _IN(1), &block);
+
   if (line_editor_active(session))
   {
-    struct wimp_getcaretposition_block block;
-
-    _swi(Wimp_GetCaretPosition, _IN(1), &block);
 
     if (session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON)
     {
@@ -1034,8 +1035,11 @@ static void wimp_claimcaret(struct session_struct *session)
   }
   else
   {
-    /* no line editor, place in window */
-    set_caret_position(session->window_handle,-1,-1,-1);
+    if (block.window_handle!=session->window_handle)
+    {
+      /* no line editor, place in window */
+      set_caret_position(session->window_handle,-1,-1,-1);
+    }
   }
 }
 

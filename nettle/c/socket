@@ -148,7 +148,17 @@ int socket_senddata(int socket_handle, const char * buffer, int length)
   int result=send(socket_handle, (const void *) buffer, length, 0);
 
   if (result==-1)
-    printf("errno for socket_senddata was: %d\n",errno);
+  {
+    if (errno == EWOULDBLOCK)
+    {
+      /* We just wait for some time when we would not block */
+      return 0;
+    }
+    else
+    {
+      printf("errno for socket_senddata was: %d (for sending %p, %d)\n",errno, buffer, length);
+    }
+  }
 
   return result;
 }
