@@ -1,6 +1,7 @@
 # gcc / NetLib Makefile for Nettle
-# by A. Macfarlane Smith
-# (C) Archifishal Software 2001
+# (C) Nettle developers 2000-2001
+#
+# $Id$
 
 ifeq (${lib},scl)
 SCLIB=-mlibscl

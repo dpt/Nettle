@@ -72,8 +72,7 @@ static void reprocess_position_scroll(struct session_struct *session)
 
   /* scroll if y>scroll_end */
 
-  while (session->ypos>(session->scroll_end+
-                                        session->scrollback-1))
+  while (session->ypos>(session->scroll_end+session->scrollback-1))
   {
     session->ypos--;
 
@@ -1352,7 +1351,7 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 case '0': case 'c':
                   {
-                    char block[18];
+                    char block[16];
 
                     strcpy(block,"\x1B[?6x;1;6c");
 
@@ -1365,7 +1364,7 @@ static bool process_escape_length_x(struct session_struct *session)
                       block[4]='2';
                     }
 
-                    nettle_senddata(session,block,18);
+                    nettle_senddata(session,block,strlen(block));
                   }
                   break;
               }
@@ -1767,6 +1766,7 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 session->ypos=session->scrollback+session->scroll_start-1;
               }
+
               if (session->ypos>session->scrollback+session->scroll_end-1)
               {
                 session->ypos=session->scrollback+session->scroll_end-1;
@@ -1852,12 +1852,9 @@ static bool process_escape_length_x(struct session_struct *session)
                   block[2]=24;  /* TERMINAL-TYPE */
                   block[3]=0;   /* IS */
                   strcpy(block+4,terminal_name[session->terminal_type]);
-                  block[4+strlen(terminal_name[session->terminal_type])]
-                  								     =255; /* IAC */
-                  block[5+strlen(terminal_name[session->terminal_type])]
-                  								     =240; /* SE */
-                  nettle_senddata(session,block,
-                                 6+strlen(terminal_name[session->terminal_type]));
+                  block[4+strlen(terminal_name[session->terminal_type])]=255; /* IAC */
+                  block[5+strlen(terminal_name[session->terminal_type])]=240; /* SE */
+                  nettle_senddata(session,block,6+strlen(terminal_name[session->terminal_type]));
                   done=true;
                 }
                 break;
@@ -2243,8 +2240,7 @@ void process_wimp_key(struct session_struct *session, int key)
   calc=get_cursor_position(session);
 
   /* get the cursor flags */
-  cursor_flags=read_assigned_flags(session,calc) &
-                                 		     (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
+  cursor_flags=read_assigned_flags(session,calc) & (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
   if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
@@ -2330,8 +2326,7 @@ void process_wimp_key(struct session_struct *session, int key)
   /* OR back in the cursor flags */
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
-    write_assigned_flags(session,calc,read_assigned_flags(session,calc)
-    										| cursor_flags);
+    write_assigned_flags(session,calc,read_assigned_flags(session,calc) | cursor_flags);
   }
 
   /* force the selection back on (it may have got overwritten by new data) */
@@ -2471,8 +2466,7 @@ void process_line_editor(struct session_struct *session)
   /* OR back in the cursor flags */
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
-    write_assigned_flags(session,calc,read_assigned_flags(session,calc)
-										 | cursor_flags);
+    write_assigned_flags(session,calc,read_assigned_flags(session,calc) | cursor_flags);
   }
 
   /* force the selection back on (it may have got overwritten by new data) */

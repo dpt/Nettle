@@ -1,7 +1,6 @@
 |
 | !Nettle.!Boot
-|   by A. Macfarlane Smith
-|   © Archifishal Software 2000-2001
+|   © Nettle developers 2000-2001
 
 Set Nettle$Dir <Obey$Dir>
 IconSprites <Nettle$Dir>.!Sprites

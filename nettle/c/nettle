@@ -17,6 +17,7 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
+static void allocate_zapredraw_area(int, int, int);
 
 
 #ifdef DEBUG
@@ -401,27 +402,8 @@ void start_connection(void)
       break;
   }
 
-  /* make a ZapRedraw area big enough - note: the assembly is quite
-   * inefficient, so writes out the stuff to change the colour every
-   * 'character', which means typically each character takes up 5 bytes, so 6
-   * is a number >5. Basically if you start getting screens full of graphics
-   * characters and stuff, 6 isn't enough. Possibly the draw routine should
-   * stop writing when it falls outside the area, and the number returned at
-   * the end - it could  make a larger buffer, but not done yet.
-   */
+  allocate_zapredraw_area(session->terminal_size_x, session->terminal_size_y, session->scrollback);
 
-  if (size_of_zapredraw_area < session->terminal_size_x *
-    (session->terminal_size_y + session->scrollback) * 8) /* 8 is 'some value' */
-  {
-    int *new_zapredraw_area;
-
-    size_of_zapredraw_area = session->terminal_size_x *
-      (session->terminal_size_y + session->scrollback) * 8; /* same here */
-
-    new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
-    assert(new_zapredraw_area != NULL);
-    zapredraw_area = new_zapredraw_area;
-  }
 }
 
 void write_out_string(struct session_struct *session, const char *string)
@@ -746,19 +728,7 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
 
   free(old_assigned_area);
 
-  if (size_of_zapredraw_area < session->terminal_size_x *
-    (session->terminal_size_y + session->scrollback) * 8) /* 8 is 'some
-    value' */
-  {
-    int *new_zapredraw_area;
-
-    size_of_zapredraw_area = session->terminal_size_x *
-      (session->terminal_size_y + session->scrollback) * 8; /* same here */
-
-    new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
-    assert(new_zapredraw_area != NULL);
-    zapredraw_area = new_zapredraw_area;
-  }
+  allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
 
   reopen_and_size_window(session, old_terminal_size_x, old_terminal_size_y,
                          redraw.r_charw, redraw.r_charh);
@@ -836,5 +806,57 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
                         session->terminal_size_x*redraw.r_charw*2,0);
     if (line_editor)
       open_pane_window(session, (struct wimp_openwindow_block *) &block);
+  }
+}
+
+static void allocate_zapredraw_area(int terminal_size_x, int terminal_size_y, int scrollback)
+{
+    /* make a ZapRedraw area big enough - note: the assembly is quite
+   * inefficient, so writes out the stuff to change the colour every
+   * 'character', which means typically each character takes up 5 bytes, so 6
+   * is a number >5. Basically if you start getting screens full of graphics
+   * characters and stuff, 6 isn't enough. Possibly the draw routine should
+   * stop writing when it falls outside the area, and the number returned at
+   * the end - it could  make a larger buffer, but not done yet.
+   */
+
+  if (size_of_zapredraw_area < terminal_size_x * (terminal_size_y + scrollback) * 8)
+  {
+    int *new_zapredraw_area;
+
+    size_of_zapredraw_area = terminal_size_x * (terminal_size_y + scrollback) * 8; /* 8 is some value */
+
+    if (dynamic_areas_available())
+    {
+      if (zapredraw_area_number==0)
+      {
+        char string[]="Nettle ZapRedraw area";
+
+        /* Note maximum size is -1 since potentially could be any size */
+        _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, size_of_zapredraw_area,
+                             -1, 0x80, -1, 0, -1, string, &zapredraw_area_number,
+                             &new_zapredraw_area);
+
+        assert(new_zapredraw_area != NULL);
+        zapredraw_area = new_zapredraw_area;
+      }
+      else
+      {
+        int current_size;
+
+        _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, zapredraw_area_number, &current_size);
+
+        if (size_of_zapredraw_area-current_size!=0)
+        {
+          _swi(OS_ChangeDynamicArea, _INR(0,1), zapredraw_area_number, size_of_zapredraw_area-current_size);
+        }
+      }
+    }
+    else
+    {
+      new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
+      assert(new_zapredraw_area != NULL);
+      zapredraw_area = new_zapredraw_area;
+    }
   }
 }

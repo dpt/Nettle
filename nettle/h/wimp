@@ -31,6 +31,7 @@ extern void wimp_message(int, int, int);
 extern void mode_change(void);
 
 extern void lose_bitmaps(void);
+extern void lose_zapredraw_area(void);
 extern void generror(const char *, bool);
 extern void set_caret_position(int, int, int, int);
 extern void set_icon_data(int, int, const char *);

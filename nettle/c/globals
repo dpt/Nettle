@@ -26,6 +26,7 @@ int *zap_lowres_font_area;
 struct zapredraw_block redraw;
 
 int *zapredraw_area=0;
+int zapredraw_area_number=0;
 int size_of_zapredraw_area=0;
 
 int task_handle;

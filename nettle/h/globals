@@ -27,6 +27,7 @@ extern int *zap_lowres_font_area;
 extern struct zapredraw_block redraw;
 
 extern int *zapredraw_area;
+extern int zapredraw_area_number;
 extern int size_of_zapredraw_area;
 
 extern struct os_spriteop_area *sprite_area;

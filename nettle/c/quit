@@ -25,7 +25,8 @@ void closedown_application(void)
   _swi(MessageTrans_CloseFile, _IN(0), messagetrans_area);
 
   lose_bitmaps();
-  
+  lose_zapredraw_area();
+
   free(messagetrans_buffer);
   free(sprite_area);
   free(zap_font_area);

@@ -784,6 +784,8 @@ void key_pressed(int window_handle, int icon_handle, int key)
                               atoi(read_icon_data(win_resize, 2, string, sizeof(string))),
                               atoi(read_icon_data(win_resize, 4, string, sizeof(string))),
                               true);
+
+              _swi(Wimp_CreateMenu, _IN(1), -1);
             }
             key_status=true;
         }
@@ -1318,25 +1320,25 @@ void mode_change(void)
   /* Reallocate the bitmaps area */
   if (dynamic_areas_available())
   {
-      if (bitmaps_area_number==0)
+    if (bitmaps_area_number==0)
+    {
+      char string[]="Nettle bitmaps area";
+
+      _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, mem_required, -1, 0x80,
+                           (zap_font_used[2]*zap_font_used[3]*384*4),
+                           0, -1, string, &bitmaps_area_number, &bitmaps_area);
+    }
+    else
+    {
+      int current_size;
+
+      _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, bitmaps_area_number, &current_size);
+
+      if (mem_required-current_size!=0)
       {
-        char string[]="Nettle bitmaps area";
-
-        _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, mem_required, -1, 0x80,
-                             (zap_font_used[2]*zap_font_used[3]*384*4),
-                             0, -1, string, &bitmaps_area_number, &bitmaps_area);
+        _swi(OS_ChangeDynamicArea, _INR(0,1), bitmaps_area_number, mem_required-current_size);
       }
-      else
-      {
-        int current_size;
-
-        _swi(OS_DynamicArea, _INR(0,1)|_OUT(2), 2, bitmaps_area_number, &current_size);
-
-        if (mem_required-current_size!=0)
-        {
-          _swi(OS_ChangeDynamicArea, _INR(0,1), bitmaps_area_number, mem_required-current_size);
-        }
-      }
+    }
   }
   else
   {
@@ -1391,6 +1393,20 @@ void lose_bitmaps(void)
   }
 }
 
+void lose_zapredraw_area(void)
+{
+  if (dynamic_areas_available())
+  {
+    if (zapredraw_area_number!=0)
+    {
+      _swi(OS_DynamicArea, _INR(0,1), 1, zapredraw_area_number);
+    }
+  }
+  else
+  {
+    free(zapredraw_area);
+  }
+}
 
 /* Other Wimp related code */
 
@@ -1669,7 +1685,7 @@ static char *get_menu_item(const char *name)
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 1);
-  
+
   assert(item != NULL);
 
   return strcpy(item, value);
@@ -1682,7 +1698,7 @@ static char *get_last_menu_item(const char *name)
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 2);
-  
+
   assert(item != NULL);
 
   strcpy(item, value);
@@ -1696,7 +1712,7 @@ static char *get_grey_menu_item(const char *name)
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 2);
-  
+
   assert(item != NULL);
 
   item[0] = '#';
@@ -1711,7 +1727,7 @@ static char *get_grey_last_menu_item(const char *name)
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, 20);
   char *item = malloc(strlen(value) + 3);
-  
+
   assert(item != NULL);
 
   item[0] = '#';
