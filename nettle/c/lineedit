@@ -14,7 +14,7 @@
 #include "wimputil.h"
 #include "zapredraw.h"
 
-static char line_editor_buffer_indirected[]="Pptr_write";
+static char line_editor_buffer_indirected[]="Pptr_write,2,4;KN";
 static char line_editor_icon_text[]="";
 static char line_editor_icon_sprite[]="Soptoff,opton";
 

@@ -1853,6 +1853,19 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
           break;
         }
       }
+
+      if ( ( key == 13 || key_status == false ) && scroll_on_keypress )
+      {
+        if ( !( !pass_f12 && ( key==0x1CC || key==0x1DC || key==0x1EC || key==0x1FC ) ) )
+        {
+          struct wimp_getwindowstate_block block;
+
+          block.window_handle = session->window_handle;
+          _swi (Wimp_GetWindowState, _IN(1), &block);
+          block.scroll.y = -1<<30;
+          open_window((struct wimp_openwindow_block *) &block, session->window_handle);
+        }
+      }
     }
   }
 
