@@ -41,10 +41,10 @@ int main(void)
 
   /* create the iconbar icon */
   create_icon_bar_icon();
-  
+
 #ifdef SOCKETWATCH
   socketwatch_initialise();
-#endif /*SOCKETWATCH*/
+#endif /* SOCKETWATCH */
 
   /* Turn off hourglass */
   _swi(Hourglass_Smash, 0);
@@ -63,7 +63,11 @@ int main(void)
       mask |= (1<<22); /* R3 is pointer to pollword */
       /* FIXME: need to set nextpolltime shorter if dns or connect in
        * progress (and selection too?) */
-      nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0)) + 500;
+      nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0));
+      if (selection_in_progress)
+        nextpolltime += 5;
+      else
+        nextpolltime += 500;
     }
     else
     {
