@@ -307,8 +307,7 @@ char *misc_string_lower(char *string)
 
   for (loop=0; loop<len; loop++)
   {
-    if (string[loop]>='A' && string[loop]<='Z')
-      string[loop]+=32;
+    string[loop]=tolower(string[loop]);
   }
 
   return string;
@@ -321,8 +320,7 @@ char *misc_string_upper(char *string)
 
   for (loop=0; loop<len; loop++)
   {
-    if (string[loop]>='a' && string[loop]<='z')
-      string[loop]-=32;
+    string[loop]=toupper(string[loop]);
   }
 
   return string;
