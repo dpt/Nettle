@@ -1769,7 +1769,8 @@ void gain_caret(int window_handle)
 
       /* again, set caret if it's not already in the pane */
       if (block.window_handle!=session->pane_handle &&
-          session->line_editor_type==LINEEDIT_CHECKBOX)
+          session->line_editor_type==LINEEDIT_CHECKBOX &&
+          block.index!=get_icon_data_length(session->pane_handle,1))
       {
         set_caret_position(session->pane_handle, 1, -1,
            		   get_icon_data_length(session->pane_handle,1));

@@ -84,10 +84,19 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
       register char colour_type;
       char fg = input->fg;
       char bg = input->bg;
+      bool invert=false;
 
       /* swap foreground and background if inverted or selected, not both */
-      if (((input->flags & NETTLE_FLAG_INVERTED) != 0) ^
-          ((input->flags & NETTLE_FLAG_SELECTED) != 0))
+      if (input->flags & NETTLE_FLAG_INVERTED)
+        invert=invert ? false : true;
+
+      if (input->flags & NETTLE_FLAG_SELECTED)
+        invert=invert ? false : true;
+
+      if (session_flags & NETTLE_OTHER_REVERSE_VIDEO)
+        invert=invert ? false : true;
+
+      if (invert)
       {
         fg ^= bg;
         bg ^= fg;

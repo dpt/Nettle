@@ -2007,6 +2007,7 @@ static bool process_escape_length_x(struct session_struct *session)
                         case 5:
                           /* Selects reverse video */
                           session->other_session_flags |= NETTLE_OTHER_REVERSE_VIDEO;
+                          changedbox_update_whole();
                           break;
                         case 6:
                           /* Home position based in scrolling region */
@@ -2145,6 +2146,7 @@ static bool process_escape_length_x(struct session_struct *session)
                         case 5:
                           /* Selects normal video */
                           session->other_session_flags &= ~NETTLE_OTHER_REVERSE_VIDEO;
+                          changedbox_update_whole();
                           break;
                         case 6:
                           /* Home position based in top-left of screen */
