@@ -36,7 +36,7 @@ typedef struct _hotlistnode
   char *command;
   unsigned char internal_state;       /* Used for selection etc */
   unsigned char vttype;               /* An index in to the vt type array -- the user gives a string, and we match that to the array at load time */
-  unsigned char uselineeditor;
+  unsigned char lineeditor;
   unsigned short terminal_width;
   unsigned short terminal_height;
   unsigned short scrollback;
@@ -47,6 +47,7 @@ static hotlistnode *editlisttail = NULL;
 static hotlistnode *hotlisthead = NULL;
 static hotlistnode *hotlisttail = NULL;
 static hotlistnode *selectednode = NULL;
+static int selcon=0, seltype=0, selline=0;
 static int edititems = 0;
 static int items = 0;
 static int *menublock = NULL;
@@ -88,7 +89,7 @@ static void copy_hotlist(bool edit_to_live) /* true = copy the editlist to the l
     newnode->internal_state = node->internal_state;
     newnode->type           = node->type;
     newnode->vttype         = node->vttype;
-    newnode->uselineeditor  = node->uselineeditor;
+    newnode->lineeditor     = node->lineeditor;
     newnode->terminal_width = node->terminal_width;
     newnode->terminal_height= node->terminal_height;
     newnode->scrollback     = node->scrollback;
@@ -277,7 +278,7 @@ static hotlistnode *create_blank(void)
   node->command = NULL;
   /* The following should be pulled from the global choices! */
   hash_term(&node->vttype, "vt220");
-  node->uselineeditor = line_editor;
+  node->lineeditor = line_editor;
   node->terminal_width = defaultsize.x;
   node->terminal_height = defaultsize.y;
   node->scrollback = defaultscroll;
@@ -288,6 +289,7 @@ static hotlistnode *create_blank(void)
 static void create_entry(char *title, FILE *in)
 {
   char *str,*tail,tmp;
+  unsigned short tmpy;
   hotlistnode *node = create_blank();
   if (!node)
     goto error;
@@ -331,6 +333,9 @@ static void create_entry(char *title, FILE *in)
         if(read_hot_number(&node->terminal_width , tail, str, "wide")) goto errbarf;
         if(read_hot_number(&node->terminal_height, tail, str, "high")) goto errbarf;
         if(read_hot_number(&node->scrollback     , tail, str, "scrl")) goto errbarf;
+        tmpy = node->lineeditor;
+        if(read_hot_number(&tmpy                 , tail, str, "lned")) goto errbarf;
+        node->lineeditor = (char) tmpy;
         if(read_hot_present(&tmp                 , tail, str, "type")) goto errbarf;
           else if (tmp) if (hash_type(&node->type, tail)) goto errbarf;
         if(read_hot_present(&tmp                 , tail, str, "term")) goto errbarf;
@@ -418,6 +423,8 @@ static bool save_hotlist(void)
         fprintf(file_handle, "  high: %d\n", node->terminal_height);
         
         fprintf(file_handle, "  scrl: %d\n", node->scrollback);
+        
+        fprintf(file_handle, "  lned: %d\n", node->lineeditor);
         
         fprintf(file_handle, "}\n");
         
@@ -648,13 +655,14 @@ static bool copy_hotedit_to_selected(void)
   tmp = get_icon_data(win_hotedit, icon_hotedit_hostname);
   while (*tmp==' ')
     tmp++;
-/*  
+  
+  if(selcon != ht_task)
   if(*tmp<' ')
   {
     generror("HotBlankHost",true);
     return false;
   }
-*/
+
   if (node->host)
     free(node->host);
   node->host = strdup(tmp);
@@ -663,13 +671,14 @@ static bool copy_hotedit_to_selected(void)
   tmp = get_icon_data(win_hotedit, icon_hotedit_command);
   while (*tmp==' ')
     tmp++;
-/*  
+
+  if(selcon == ht_task)
   if(*tmp<' ')
   {
     generror("HotBlankCommand",true);
     return false;
   }
-*/
+
   if (node->command)
     free(node->command);
   node->command = strdup(tmp);
@@ -709,6 +718,10 @@ static bool copy_hotedit_to_selected(void)
   }
 
   node->scrollback = num;
+  
+  node->type = (hotlisttype) selcon;
+  node->vttype = seltype;
+  node->lineeditor = selline;
 
   return true;
 }
@@ -734,7 +747,17 @@ static int hotlist_populate_selected(void)
       sprintf(tmp,"%d",node->scrollback);
       set_icon_data(win_hotedit, icon_hotedit_scrollback, tmp);
 
-      /* Need to set connection, term type, line editor type */
+      set_icon_data(win_hotedit, icon_hotedit_contype, lookup_static(\
+          node->type != ht_task ? node->type != ht_ssh ? \
+          "Telnet" : "SSH" : "Taskwindow") );
+      selcon = node->type;
+
+      set_icon_data(win_hotedit, icon_hotedit_termtype, terminal_name[node->vttype]);
+      seltype = node->vttype;
+      
+      sprintf(tmp,"LineEd%d", node->lineeditor);
+      set_icon_data(win_hotedit, icon_hotedit_lineedittype, lookup_static(tmp));
+      selline = node->lineeditor;
 
       return 1;
     }
@@ -950,7 +973,7 @@ void fire_hotlist(int item)
   params.width            = hot->terminal_width;
   params.height           = hot->terminal_height;
   params.scrollback       = hot->scrollback;
-  params.line_editor_type = hot->uselineeditor;
+  params.line_editor_type = hot->lineeditor;
   strcpy(params.label, hot->label);
 
   switch(hot->type)
