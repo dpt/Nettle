@@ -15,9 +15,9 @@
 
 static void read_choice(char *variable, const char *line, const char *lookfor)
 {
-  int len = strlen(lookfor);
+  int len=strlen(lookfor);
 
-  if (strncmp(line,lookfor,len) == 0)
+  if (strncmp(line,lookfor,len)==0)
   {
     strcpy(variable, line+len);
   }
@@ -25,14 +25,13 @@ static void read_choice(char *variable, const char *line, const char *lookfor)
 
 
 
-static void read_boolean_choice(bool *var, const char *line,
-                                const char *lookfor)
+static void read_boolean_choice(bool *var, const char *line, const char *lookfor)
 {
   int len = strlen(lookfor);
 
-  if (strncmp(line,lookfor,len) == 0)
+  if (strncmp(line,lookfor,len)==0)
   {
-    if (strncmp(line+len,"1",1) == 0)
+    if (strncmp(line+len,"1",1)==0)
     {
       *var=true;
     }
@@ -47,14 +46,24 @@ static void read_boolean_choice(bool *var, const char *line,
 
 static void read_integer_choice(int *var, const char *line, const char *lookfor)
 {
-  int len = strlen(lookfor);
+  int len=strlen(lookfor);
 
-  if (strncmp(line,lookfor,len) == 0)
+  if (strncmp(line,lookfor,len)==0)
   {
     *var=atoi(line+len);
   }
 }
 
+
+static void read_character_choice(char *var, const char *line, const char *lookfor)
+{
+  int len=strlen(lookfor);
+
+  if (strncmp(line,lookfor,len)==0)
+  {
+    *var=atoi(line+len);
+  }
+}
 
 
 void load_choices(void)
@@ -67,7 +76,7 @@ void load_choices(void)
 
   get_system_variable(choices_path, "Choices$Write", sizeof(choices_path));
 
-  if (choices_path[0] == '\0' )
+  if (choices_path[0]=='\0')
   {
     sprintf(string, "<%s$Dir>.Choices.Choices", application_name);
   }
@@ -76,23 +85,23 @@ void load_choices(void)
     sprintf(string, "Choices:%s.Choices", application_name);
   }
 
-  file_handle = fopen(string,"r");
-  if (file_handle == NULL)
+  file_handle=fopen(string,"r");
+  if (file_handle==NULL)
   {
     /* If the file doesn't exist, drop back to using default choices file */
     sprintf(string, "<%s$Dir>.Choices.Default", application_name);
-    file_handle = fopen(string, "r");
-    if (file_handle == NULL)
+    file_handle=fopen(string, "r");
+    if (file_handle==NULL)
       return;
   }
 
   while (true)
   {
-    str = fgets(string, sizeof(string), file_handle);
+    str=fgets(string, sizeof(string), file_handle);
     if (!str)
       break;
 
-    len = strlen(string);
+    len=strlen(string);
     if (string[len-1]=='\n')
       string[len-1]='\0';
 
@@ -100,7 +109,7 @@ void load_choices(void)
     read_choice(zap_lowres_font, string, "ZapFontLo:");
 
     read_boolean_choice(&logging, string, "Logging:");
-    read_boolean_choice(&line_editor, string, "LineEditor:");
+    read_character_choice(&line_editor, string, "LineEditor:");
     read_boolean_choice(&pass_f12, string, "PassF12:");
 
     read_integer_choice(&defaultsize.x, string, "TerminalWidth:");

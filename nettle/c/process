@@ -10,6 +10,7 @@
 
 #include "graphics.h"
 #include "keyboard.h"
+#include "lineedit.h"
 #include "misc.h"
 #include "nettle.h"
 #include "process.h"
@@ -613,7 +614,7 @@ static void clear_screen(struct session_struct *session, int calc, int calc2, ch
   int loop;
 
   /* clear the specified area with the specified fg,bg,flags and character */
-  for (loop=calc; loop<=calc2; loop+=4)
+  for (loop=calc; loop<calc2; loop+=4)
   {
     write_assigned(session,loop,fg,bg,flags,character);
   }
@@ -883,7 +884,7 @@ static bool process_escape_length_2(struct session_struct *session)
                          session->pos.x)*4,
 
                        (session->pos.y+1)*
-                       session->terminal_size.x*4-4,
+                       session->terminal_size.x*4,
 
                        session->current_fg,
                        session->current_bg,
@@ -1242,7 +1243,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        ((session->pos.y*
                          session->terminal_size.x)+
-                        session->pos.x)*4,
+                        session->pos.x)*4+4,
 
                        session->current_fg,
                        session->current_bg,
@@ -1284,7 +1285,7 @@ static bool process_escape_length_x(struct session_struct *session)
                          session->pos.x)*4,
 
                        (session->pos.y+1)*
-                       session->terminal_size.x*4-4,
+                       session->terminal_size.x*4,
 
                        session->current_fg,
                        session->current_bg,
@@ -1301,7 +1302,7 @@ static bool process_escape_length_x(struct session_struct *session)
                        (session->pos.y*session->terminal_size.x)*4,
 
                        ((session->pos.y*session->terminal_size.x)+
-                        session->pos.x)*4,
+                        session->pos.x)*4+4,
 
                        session->current_fg,
                        session->current_bg,
@@ -1318,7 +1319,7 @@ static bool process_escape_length_x(struct session_struct *session)
                        (session->pos.y*session->terminal_size.x)*4,
 
                        ((session->pos.y+1)*
-                        session->terminal_size.x)*4-4,
+                        session->terminal_size.x)*4,
 
                        session->current_fg,
                        session->current_bg,
@@ -1350,8 +1351,6 @@ static bool process_escape_length_x(struct session_struct *session)
                        (session->pos.y-session->scrollback-1)+1;
                 }
 
-                printf("Insert move :%d\n",move);
-
                 calc2 = session->assigned_area+
                              ((session->pos.y+move)*session->terminal_size.x)*4;
 
@@ -1362,10 +1361,11 @@ static bool process_escape_length_x(struct session_struct *session)
                 changedbox_update (0, session->pos.y,
                                    session->terminal_size.x - 1,
                                    session->scrollback + session->terminal_size.y - 1);
+
                 clear_screen(session,
                              (session->pos.y*session->terminal_size.x)*4,
 
-                             ((session->pos.y+move)*session->terminal_size.x)*4-4,
+                             ((session->pos.y+move)*session->terminal_size.x)*4,
 
                              session->current_fg,
                              session->current_bg,
@@ -1396,8 +1396,6 @@ static bool process_escape_length_x(struct session_struct *session)
                        (session->pos.y-session->scrollback-1)+1;
                 }
 
-                printf("Delete move :%d\n",move);
-
                 calc2 = session->assigned_area+
                              ((session->pos.y+move)*session->terminal_size.x)*4;
 
@@ -1409,12 +1407,13 @@ static bool process_escape_length_x(struct session_struct *session)
                 changedbox_update (0, session->pos.y,
                                    session->terminal_size.x - 1,
                                    session->scrollback + session->terminal_size.y - 1);
+
                 clear_screen(session,
                              ((session->scrollback+session->scroll_end-move)*
                               session->terminal_size.x)*4,
 
                              ((session->scrollback+session->scroll_end)*
-                              session->terminal_size.x)*4-4,
+                              session->terminal_size.x)*4,
 
                              session->current_fg,
                              session->current_bg,
@@ -1442,12 +1441,13 @@ static bool process_escape_length_x(struct session_struct *session)
 
                 changedbox_update (session->pos.x, session->pos.y,
                                    session->terminal_size.x - 1, session->pos.y);
+
                 clear_screen(session,
 
                              ((session->pos.y*session->terminal_size.x)+
                               (session->terminal_size.x-move))*4,
 
-                              ((session->pos.y+1)*session->terminal_size.x)*4-4,
+                              ((session->pos.y+1)*session->terminal_size.x)*4,
 
                               session->current_fg,
                               session->current_bg,
@@ -1470,7 +1470,7 @@ static bool process_escape_length_x(struct session_struct *session)
                               (session->pos.x))*4,
 
                               ((session->pos.y*session->terminal_size.x)+
-                               (session->pos.x+(move < 1 ? 1 : move)))*4-4,
+                               (session->pos.x+(move < 1 ? 1 : move)))*4,
 
                               session->current_fg,
                               session->current_bg,
@@ -2255,11 +2255,12 @@ void process_line_editor(struct session_struct *session)
   char *send_block=0;
   int size_of_send_block=0;
   int icon_text_loop;
+  int line_editor_icon=(session->line_editor_type==LINEEDIT_CHECKBOX ? 1 : 0);
 
   {
     char data[512];
 
-    read_icon_data(session->pane_handle, 1, data, sizeof(data));
+    read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
 
     icon_text = malloc(strlen(data) + 3);
     assert(icon_text != NULL);
@@ -2274,8 +2275,7 @@ void process_line_editor(struct session_struct *session)
   calc=get_cursor_position(session);
 
   /* get the cursor flags */
-  cursor_flags=read_assigned_flags(session,calc) &
-                                 		     (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
+  cursor_flags=read_assigned_flags(session,calc) & (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
   cursor_flags |= NETTLE_FLAG_CURSOR;
@@ -2405,9 +2405,9 @@ void process_line_editor(struct session_struct *session)
   strcpy(session->line_editor_history+(1*512),
          icon_text);
 
-  set_icon_data(session->pane_handle,1,"");
+  set_icon_data(session->pane_handle,line_editor_icon,"");
 
-  set_caret_position(session->pane_handle, 1, -1, 0);
+  set_caret_position(session->pane_handle, line_editor_icon, -1, 0);
 
   session->line_editor_position=0;
   session->line_editor_total++;

@@ -10,23 +10,23 @@
 
 #include "zapredraw.h"
 
-const char *application_name=APPLICATION_NAME;
+const char *application_name     =APPLICATION_NAME;
 const char *application_icon_name=APPLICATION_ICON_NAME;
-bool quit_flag=false;
+bool quit_flag                   =false;
 
 struct os_spriteop_area *sprite_area;
 int messagetrans_area[4];
 int *messagetrans_buffer;
 
-char zap_font[256]=ZAP_FONT;
+char zap_font[256]       =ZAP_FONT;
 char zap_lowres_font[256]=ZAP_LOWRES_FONT;
 
 int *zap_font_area;
 int *zap_lowres_font_area;
 struct zapredraw_block redraw;
 
-int *zapredraw_area=0;
-int zapredraw_area_number=0;
+int *zapredraw_area       =0;
+int zapredraw_area_number =0;
 int size_of_zapredraw_area=0;
 
 struct coords eig;
@@ -40,23 +40,23 @@ int win_choices;
 int win_open;
 int win_resize;
 int win_save;
-int menu_open = 0;
+int menu_open=0;
 
-bool logging=LOGGING;
-bool line_editor=LINE_EDITOR;
-bool pass_f12=PASS_F12;
-int line_editor_size=LINE_EDITOR_SIZE;
-struct coords defaultsize = {TERMINAL_WIDTH, TERMINAL_HEIGHT};
-int defaultscroll = SCROLLBACK_LINES;
+bool logging             =LOGGING;
+char line_editor         =LINE_EDITOR;
+bool pass_f12            =PASS_F12;
+int line_editor_size     =LINE_EDITOR_SIZE;
+struct coords defaultsize={TERMINAL_WIDTH, TERMINAL_HEIGHT};
+int defaultscroll        =SCROLLBACK_LINES;
 
-struct session_struct *sessions = NULL;
-struct session_struct *current_session = NULL;
+struct session_struct *sessions       =NULL;
+struct session_struct *current_session=NULL;
 
-bool selection_in_progress=false;
-struct session_struct *selection_session = NULL;
-int selection_start=0;
-int selection_end=0;
-int selection_adjust_dragging=0;
+bool selection_in_progress              =false;
+struct session_struct *selection_session=NULL;
+int selection_start                     =0;
+int selection_end                       =0;
+int selection_adjust_dragging           =0;
 
 char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};
 

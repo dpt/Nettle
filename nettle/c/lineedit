@@ -14,7 +14,7 @@
 #include "lineedit.h"
 #include "misc.h"
 #include "wimp.h"
-
+#include "zapredraw.h"
 
 static char line_editor_buffer_indirected[]="Pptr_write";
 static char line_editor_icon_text[]="";
@@ -29,6 +29,9 @@ static void create_line_editor_icons(struct session_struct *session, int width)
   int caret_window_handle;
   int caret_icon_handle;
   int caret_index;
+
+  if (session->line_editor_type==LINEEDIT_NONE)
+    return;
 
   {
     struct wimp_getcaretposition_block block;
@@ -60,19 +63,30 @@ static void create_line_editor_icons(struct session_struct *session, int width)
       if (width==old_width)
         return;
 
-      if (block.icon_flags & WIMP_ICON_SELECTED_BIT)
-        selected=true;
-      else
-        selected=false;
-
-      for (loop=0; loop<2; loop++)
+      if (session->line_editor_type==LINEEDIT_CHECKBOX)
       {
-        struct wimp_deleteicon_block delete_icon;
+        if (block.icon_flags & WIMP_ICON_SELECTED_BIT)
+          selected=true;
+        else
+          selected=false;
+      }
+      else
+      {
+        selected=true; /* Lineeditor should never be deleted in antterm mode */
+      }
 
-        delete_icon.window_handle=session->pane_handle;
-        delete_icon.icon_handle  =loop;
+      {
+        int loop_limit=(session->line_editor_type==LINEEDIT_CHECKBOX ? 2 : 1);
 
-        _swi(Wimp_DeleteIcon, _IN(1), &delete_icon);
+        for (loop=0; loop<loop_limit; loop++)
+        {
+          struct wimp_deleteicon_block delete_icon;
+
+          delete_icon.window_handle=session->pane_handle;
+          delete_icon.icon_handle  =loop;
+
+          _swi(Wimp_DeleteIcon, _IN(1), &delete_icon);
+        }
       }
     }
   }
@@ -80,34 +94,44 @@ static void create_line_editor_icons(struct session_struct *session, int width)
   {
     struct wimp_createicon_block block;
 
-    block.window_handle=session->pane_handle;
-    block.min.x         =width-48;
-    block.min.y         =-48;
-    block.max.x         =width;
-    block.max.y         =0;
-    block.icon_flags   =WIMP_ICON_BGCOL(1) | WIMP_ICON_TYPE(11) | WIMP_ICON_INDIRECTED_BIT | \
-                        WIMP_ICON_VCENT_BIT | WIMP_ICON_TEXT_BIT | WIMP_ICON_SPRITE_BIT;
-    if (selected)
+    if (session->line_editor_type==LINEEDIT_CHECKBOX)
     {
-      block.icon_flags |= WIMP_ICON_SELECTED_BIT;
-    }
-    block.contents.it.text         =line_editor_icon_text;
-    block.contents.it.validation   =line_editor_icon_sprite;
-    block.contents.it.text_len     =sizeof(line_editor_icon_text);
+      block.window_handle=session->pane_handle;
+      block.min.x         =width-48;
+      block.min.y         =-48;
+      block.max.x         =width;
+      block.max.y         =0;
+      block.icon_flags    =WIMP_ICON_BGCOL(1) | WIMP_ICON_TYPE(11) | WIMP_ICON_INDIRECTED_BIT | \
+                          WIMP_ICON_VCENT_BIT | WIMP_ICON_TEXT_BIT | WIMP_ICON_SPRITE_BIT;
 
-    _swi(Wimp_CreateIcon, _IN(1), &block);
+      if (selected)
+      {
+        block.icon_flags |= WIMP_ICON_SELECTED_BIT;
+      }
+      block.contents.it.text         =line_editor_icon_text;
+      block.contents.it.validation   =line_editor_icon_sprite;
+      block.contents.it.text_len     =sizeof(line_editor_icon_text);
+
+      _swi(Wimp_CreateIcon, _IN(1), &block);
+    }
 
     block.window_handle=session->pane_handle;
     block.min.x         =-4;
     block.min.y         =-52;
-    block.max.x         =width-54;
+
+    if (session->line_editor_type==LINEEDIT_CHECKBOX)
+      block.max.x         =width-54;
+    else
+      block.max.x         =width+2;
+
     block.max.y         =4;
     block.icon_flags   =WIMP_ICON_FGCOL(7) | WIMP_ICON_TYPE(15) | \
                         WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_FILLED_BIT | \
 		        WIMP_ICON_VCENT_BIT | WIMP_ICON_BORDER_BIT | WIMP_ICON_TEXT_BIT;
-    if (selected==false)
+
+    if (session->line_editor_type==LINEEDIT_CHECKBOX && selected==false)
     {
-    	block.icon_flags |= WIMP_ICON_DELETED_BIT;
+      block.icon_flags |= WIMP_ICON_DELETED_BIT;
     }
 
     block.contents.it.text      =session->line_editor_buffer;
@@ -119,7 +143,10 @@ static void create_line_editor_icons(struct session_struct *session, int width)
 
   if (width != old_width)
   {
-    force_redraw(session->pane_handle, min(width,old_width)-56, -48, max(width,old_width), 0);
+    if (session->line_editor_type==LINEEDIT_CHECKBOX)
+      force_redraw(session->pane_handle, min(width,old_width)-56, -48, max(width,old_width), 0);
+    else
+      force_redraw(session->pane_handle, min(width,old_width), -48, max(width,old_width), 0);
   }
 
   if (caret_window_handle==session->pane_handle)
@@ -161,18 +188,102 @@ void open_pane_window(struct session_struct *session, struct wimp_openwindow_blo
 
 bool line_editor_active(struct session_struct *session)
 {
-  if (line_editor)
+  switch (session->line_editor_type)
   {
-    struct wimp_geticonstate_block block;
+    case LINEEDIT_CHECKBOX:
+    {
+      struct wimp_geticonstate_block block;
 
-    block.window_handle=session->pane_handle;
-    block.icon_handle  =0;
+      block.window_handle=session->pane_handle;
+      block.icon_handle  =0;
 
-    _swi(Wimp_GetIconState, _IN(1), &block);
+      _swi(Wimp_GetIconState, _IN(1), &block);
 
-    if ((block.icon_flags & (1<<21)) || (block.icon_flags & (1<<23)))
-      return true;
+      if ((block.icon_flags & WIMP_ICON_SELECTED_BIT) || (block.icon_flags & WIMP_ICON_DELETED_BIT))
+        return true;
+
+      break;
+    }
+    case LINEEDIT_ANTTERM:
+      return true; /* antterm style is always on */
+      break;
   }
 
   return false;
+}
+
+void lineedit_allocate_space(struct session_struct *session)
+{
+  int loop;
+
+  /* Note - this *must* be called if the lineeditor is turned on at any point */
+  session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
+  assert(session->line_editor_history != NULL);
+  session->line_editor_position=0;
+  session->line_editor_total=1;
+
+  for (loop=0; loop<line_editor_size; loop++)
+  {
+    strcpy(session->line_editor_history+(loop*512),"");
+  }
+
+  strcpy(session->line_editor_buffer,"");
+
+  {
+    /* Create new pane window */
+    struct wimp_createwindow_block block;
+
+    block.min.x=102;
+    block.min.y=1088-(session->terminal_size.y*redraw.r_charh << eig.y)-40;
+    block.max.x=102+(session->terminal_size.x*redraw.r_charw << eig.x);
+    block.max.y=1088-(session->terminal_size.y*redraw.r_charh << eig.y);
+
+    block.scroll.x=0;
+    block.scroll.y=0;
+
+    block.handle_behind=-1;
+    block.window_flags =0x80080162;
+
+    block.title_fg     =7;
+    block.title_bg     =2;
+    block.work_fg      =7;
+    block.work_bg      =1;
+
+    block.scroll_outer_colour=3;
+    block.scroll_inner_colour=1;
+    block.title_focus_colour =12;
+    block.flags              =0;
+
+    block.work_min.x=0;
+    block.work_min.y=-48;
+    block.work_max.x=session->terminal_size.x*redraw.r_charw << eig.x;
+    block.work_max.y=0;
+
+    block.icon_flags    =0x00000000;
+    block.workarea_flags=0<<12;
+
+    block.sprite_area=(struct os_spriteop_area *) 1;
+    block.min_width  =4;
+    block.min_height =4;
+
+    block.title.it.text      =0;
+    block.title.it.validation=0;
+    block.title.it.text_len  =0;
+
+    block.number_of_icons    =0;
+
+    session->pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
+  }
+}
+
+void lineedit_free_space(struct session_struct *session)
+{
+  /* Note - this *must* be called if the lineeditor is turned off at any point */
+  struct wimp_deletewindow_block block;
+
+  block.window_handle=session->pane_handle;
+
+  _swi(Wimp_DeleteWindow, _IN(1), &block);
+
+  free(session->line_editor_history);
 }

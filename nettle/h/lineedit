@@ -8,7 +8,14 @@
 #ifndef LINEEDIT_H
 #define LINEEDIT_H
 
+#define LINEEDIT_NONE       0
+#define LINEEDIT_CHECKBOX   1
+#define LINEEDIT_ANTTERM    2
+
 void open_pane_window(struct session_struct *, struct wimp_openwindow_block *);
 bool line_editor_active(struct session_struct *);
+
+void lineedit_allocate_space(struct session_struct *);
+void lineedit_free_space(struct session_struct *);
 
 #endif

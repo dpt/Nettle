@@ -262,21 +262,13 @@ Fortify_CheckAllMemory();
   }
 Fortify_CheckAllMemory();
 
+  session->line_editor_type=line_editor;
+
   /* if line editor is turned on, allocate all the lineeditor space */
-  if (line_editor)
-  {
-    session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
-    assert(session->line_editor_history != NULL);
-    session->line_editor_position=0;
-    session->line_editor_total=1;
-
-    for (loop=0; loop<line_editor_size; loop++)
-    {
-      strcpy(session->line_editor_history+(loop*512),"");
-    }
-
-    strcpy(session->line_editor_buffer,"");
-  }
+  if (session->line_editor_type==LINEEDIT_NONE)
+    session->pane_handle=0;
+  else
+    lineedit_allocate_space(session);
 
 Fortify_CheckAllMemory();
   /* make new terminal window */
@@ -287,16 +279,16 @@ Fortify_CheckAllMemory();
     block.min.y         =1088-(session->terminal_size.y*redraw.r_charh << eig.y);
     block.max.x         =102+(session->terminal_size.x*redraw.r_charw << eig.x);
     block.max.y         =1088;
-    block.scroll.x     =0;
-    block.scroll.y     =-((session->terminal_size.y+
+    block.scroll.x      =0;
+    block.scroll.y      =-((session->terminal_size.y+
                            session->scrollback)
                           *(redraw.r_charh << eig.y));
-    block.handle_behind=-1;
-    block.window_flags =0xff000002;
-    block.title_fg     =7;
-    block.title_bg     =2;
-    block.work_fg      =7;
-    block.work_bg      =0xFF;
+    block.handle_behind =-1;
+    block.window_flags  =0xff000002;
+    block.title_fg      =7;
+    block.title_bg      =2;
+    block.work_fg       =7;
+    block.work_bg       =0xFF;
 
     block.scroll_outer_colour=3;
     block.scroll_inner_colour=1;
@@ -328,64 +320,27 @@ Fortify_CheckAllMemory();
   }
 Fortify_CheckAllMemory();
 
-  if (line_editor)
-  {
-    /* Create new pane window */
-    struct wimp_createwindow_block block;
-
-    block.min.x=102;
-    block.min.y=1088-(session->terminal_size.y*redraw.r_charh << eig.y)-40;
-    block.max.x=102+(session->terminal_size.x*redraw.r_charw << eig.x);
-    block.max.y=1088-(session->terminal_size.y*redraw.r_charh << eig.y);
-
-    block.scroll.x=0;
-    block.scroll.y=0;
-
-    block.handle_behind=-1;
-    block.window_flags =0x80080162;
-
-    block.title_fg     =7;
-    block.title_bg     =2;
-    block.work_fg      =7;
-    block.work_bg      =1;
-
-    block.scroll_outer_colour=3;
-    block.scroll_inner_colour=1;
-    block.title_focus_colour =12;
-    block.flags              =0;
-
-    block.work_min.x=0;
-    block.work_min.y=-48;
-    block.work_max.x=session->terminal_size.x*redraw.r_charw << eig.x;
-    block.work_max.y=0;
-
-    block.icon_flags    =0x00000000;
-    block.workarea_flags=0<<12;
-
-    block.sprite_area=(struct os_spriteop_area *) 1;
-    block.min_width  =4;
-    block.min_height =4;
-
-    block.title.it.text      =0;
-    block.title.it.validation=0;
-    block.title.it.text_len  =0;
-
-    block.number_of_icons    =0;
-
-    session->pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
-  }
-
   open_window(NULL, session->window_handle);
 
-  if (line_editor)
+  switch (session->line_editor_type)
   {
-    char string[1024];
-    set_caret_position(session->pane_handle,1,-1,
-				strlen(read_icon_data(session->pane_handle, 1, string, sizeof (string))));
-  }
-  else
-  {
-    set_caret_position(session->window_handle,-1,-1,-1);
+    case LINEEDIT_NONE:
+      set_caret_position(session->window_handle,-1,-1,-1);
+      break;
+    case LINEEDIT_CHECKBOX:
+    {
+      char string[1024];
+      set_caret_position(session->pane_handle,1,-1,
+                         strlen(read_icon_data(session->pane_handle, 1, string, sizeof(string))));
+      break;
+    }
+    case LINEEDIT_ANTTERM:
+    {
+      char string[1024];
+      set_caret_position(session->pane_handle,0,-1,
+			 strlen(read_icon_data(session->pane_handle, 0, string, sizeof(string))));
+      break;
+    }
   }
 
   switch (connection_type)
@@ -451,9 +406,6 @@ void write_out_data(struct session_struct *session, const char *data, int length
     /* log the byte */
     log_byte(data[loop]);
 
-    /*fclose(log_file); */
-    /*log_file=0; */
-
     /* process the current byte at this position */
     process_data(session, data[loop]);
   }
@@ -507,25 +459,19 @@ void remove_session(struct session_struct *session)
   }
 
   {
-    /* delete the windows */
+    /* delete the window */
     struct wimp_deletewindow_block block;
 
     block.window_handle=session->window_handle;
 
     _swi(Wimp_DeleteWindow, _IN(1), &block);
 
-    if (line_editor)
-    {
-      block.window_handle=session->pane_handle;
-
-      _swi(Wimp_DeleteWindow, _IN(1), &block);
-    }
   }
 
   /* free lineeditor space */
-  if (line_editor)
+  if (session->line_editor_type!=LINEEDIT_NONE)
   {
-    free(session->line_editor_history);
+    lineedit_free_space(session);
   }
 
   /* free the assigned area and title */
