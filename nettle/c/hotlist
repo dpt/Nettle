@@ -10,6 +10,7 @@
 
 #include "hotlist.h"
 #include "misc.h"
+#include "wimp.h"
 #include <ctype.h>
 
 #define STRANDLEN(x) x,sizeof(x)-1
@@ -17,13 +18,6 @@
 #define _TELNET "telnet"
 #define _SSH    "ssh"
 #define _TASK   "task"
-
-typedef enum
-{
-  ht_telnet,
-  ht_ssh,
-  ht_task
-} hotlisttype;
 
 typedef struct _hotlistnode
 {
@@ -36,6 +30,8 @@ typedef struct _hotlistnode
 
 static hotlistnode *hotlisthead = NULL;
 static hotlistnode *hotlisttail = NULL;
+static int items = 0;
+static int *menublock = NULL;
 
 static void addnodetolist(hotlistnode *node)
 {
@@ -45,6 +41,7 @@ static void addnodetolist(hotlistnode *node)
   else
     hotlisttail->next = node;
   hotlisttail = node;
+  items++;
 }
 
 static void load_telnet_line(char *string)
@@ -115,8 +112,15 @@ static void load_ssh_line(char *string)
      tmp = strchr(string, ',');
 
   if (tmp)
-    if ((strchr(string, ' ')<tmp) || (strchr(string, '\t')<tmp))
-      tmp=NULL;  /* the : or , was in the command, not the address part */
+  {
+    char *s=strchr(string, ' ');
+      if (s && s<tmp)
+        tmp = NULL;
+
+    s=strchr(string, '\t');
+      if (s && s<tmp)
+        tmp = NULL;  /* the : or , was in the command, not the address part */
+  }
 
   node = (hotlistnode *) malloc(sizeof(hotlistnode));
   if (node)
@@ -223,6 +227,9 @@ void lose_hotlist(void)
     free(hotlisthead);
     hotlisthead = next;
   }
+  
+  if (menublock)
+    free(menublock);
 }
 
 void load_hotlist(void)
@@ -276,3 +283,69 @@ void load_hotlist(void)
 
   fclose(file_handle);
 }
+
+
+void create_hotlist_menu(void)
+{
+  hotlistnode *node = hotlisthead;
+  struct wimp_getpointerinfo_block block;
+  int position=7;
+  char *entry=NULL;
+
+  if (!menublock)
+  {
+    menublock = (int *) malloc(24*items+28);
+    if (!menublock)
+      return;
+  }
+  
+  strcpy((char *)menublock, "Hotlist");  /* Quick hacky title */
+
+  menublock[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
+  menublock[4]=0;
+  menublock[5]=44;
+  menublock[6]=0;
+
+  while (node)
+  {
+    menublock[position++]= node->next ? 0 : (1<<7);  /* Set "last" bit if this is the end of the list */
+    menublock[position++]=-1;  /* No submenu */
+    menublock[position++]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | \
+                          WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT;
+
+    if (node->host[0])
+      entry=node->host;
+    else
+      entry=node->command;
+
+    menublock[position++]=(int) entry;
+    menublock[position++]=(int) entry+(strlen(entry));
+    menublock[position++]=strlen(entry)+1;
+
+    node = node->next;
+  }
+
+  _swi(Wimp_GetPointerInfo, _IN(1), &block);
+  _swi(Wimp_CreateMenu, _INR(1,3), menublock, block.x-64, 96+(items*44));
+
+  menu_open=MENU_HOTLIST;
+}
+
+
+hotlisttype get_hotlist_entry(int entry, char **host, unsigned short *port, char **command)
+{
+  hotlistnode *node = hotlisthead;
+  
+  if (entry<0 || entry>=items)
+    return ht_invalid;
+    
+  for(;entry;entry--)
+     node = node->next;
+   
+  *host = node->host;
+  *port = node->port;
+  *command = node->command;
+  
+  return node->type;
+}
+
