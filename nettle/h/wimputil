@@ -51,7 +51,7 @@ extern char *get_grey_last_menu_item(const char *name);
 
 extern void drag_start(int window_handle, int icon_handle);
 
-/*************************************************** Gerph *********
+/******************************************************************
  Function:     tick_menu_for_icon_text
  Description:  Ticks the menu item that matches the text in the
                icon specified

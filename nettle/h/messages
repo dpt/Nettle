@@ -14,7 +14,7 @@ extern char *lookup(const char *, char *, int);
 extern const char *lookup_static(const char *);
 extern const char *lookup_static_sub(const char *token, int params, va_list va);
 
-/*************************************************** Gerph *********
+/*******************************************************************
  Function:     lookup_inbuffer
  Description:  Look up a messagetrans token and return a pointer to
                it in the MessageTrans buffer.

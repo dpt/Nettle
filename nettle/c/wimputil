@@ -584,7 +584,7 @@ void create_menu_by_icon (int *menu, int window, int icon)
 }
 
 
-/*************************************************** Gerph *********
+/*******************************************************************
  Function:     tick_menu_for_icon_text
  Description:  Ticks the menu item that matches the text in the
                icon specified
