@@ -306,3 +306,31 @@ char *strndup(const char *s, size_t len)
 
   return t;
 }
+
+
+char *misc_string_lower(char *string)
+{
+  int loop;
+
+  for (loop=0; loop<strlen(string); loop++)
+  {
+    if (string[loop]>='A' && string[loop]<='Z')
+      string[loop]+=32;
+  }
+
+  return string;
+}
+
+char *misc_string_upper(char *string)
+{
+  int loop;
+
+  for (loop=0; loop<strlen(string); loop++)
+  {
+    if (string[loop]>='a' && string[loop]<='z')
+      string[loop]-=32;
+  }
+
+  return string;
+}
+
