@@ -54,6 +54,10 @@ static int bitmaps_area_number=0;
 static int msg_ref;
 static struct session_struct *paste_session;
 
+static int old_charw;
+static int old_charh;
+
+
 /* Dunno what this is about - AMS 12/09/2001 */
 enum ansi_colour_flag
 {

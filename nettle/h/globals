@@ -221,8 +221,6 @@ extern struct session_struct *mouse_handling_session;
 
 extern const char terminal_name[NO_OF_TERMINAL_TYPES][12];
 
-extern int old_charw;
-extern int old_charh;
 
 typedef struct user_message
 {
