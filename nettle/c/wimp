@@ -646,6 +646,13 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
       reopen_and_size_window(session, session->terminal_size.x, session->terminal_size.y,
                              session->scrollback, old_charw, old_charh, old_eig);
 
+      /* Refetch the window state so that it's up to date, and as the Wimp may have changed it if it
+       * didn't fit on the screen etc.
+       */
+      _swi(Wimp_GetWindowState, _IN(1), block);
+
+      session->window_needs_resized=false;
+
       /* We might need to show the resizer here?  Unsure. */
       /* resize_handle = block->window_handle; */
     }
@@ -708,14 +715,7 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
       block->handle_behind = session->pane_handle;
     }
 
-    if (!session->window_needs_resized)
-    {
-      _swi(Wimp_OpenWindow, _IN(1), block);
-    }
-    else
-    {
-      session->window_needs_resized=false;
-    }
+    _swi(Wimp_OpenWindow, _IN(1), block);
 
     if ( block->window_handle == resize_handle )
     {
@@ -742,14 +742,7 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     return;
   }
 
-  if (!session->window_needs_resized)
-  {
-    _swi(Wimp_OpenWindow, _IN(1), block);
-  }
-  else
-  {
-    session->window_needs_resized=false;
-  }
+  _swi(Wimp_OpenWindow, _IN(1), block);
 }
 
 
