@@ -210,12 +210,15 @@ static void wimp_pollsocket(struct session_struct *session)
   }
 
   write_out_data(session, receive_block, packet_length);
-  if (packet_length == RECEIVE_BLOCK_LENGTH)
-  {
-    /* the recv() call filled the input buffer - probably more data to read,
-     * but poll first so the machine stays usable */
-    main_requirenull = true;
-  }
+
+  /* take a null poll as there may be either more data waiting to be read
+   * (and sockwatch won't notify us again about data that's already been
+   * received), or there may be an EOF condition waiting for us to read
+   * it. We don't try reading again straight away, as we might end up taking
+   * lots of processor time if data is arriving faster than we can process
+   * it.
+   */
+  main_requirenull = true;
 }
 
 
