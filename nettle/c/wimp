@@ -54,6 +54,7 @@ static struct session_struct *paste_session;
 
 static int old_charw;
 static int old_charh;
+static struct coords old_eig;
 
 static int msg_ref;
 static bool queried_user_filetype=false;
@@ -643,8 +644,7 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
       /* If we need to be resized, do it here - opening also happens here
        * -NB this function is also used by the font change code */
       reopen_and_size_window(session, session->terminal_size.x, session->terminal_size.y,
-                             session->scrollback, old_charw, old_charh);
-      session->window_needs_resized=false;
+                             session->scrollback, old_charw, old_charh, old_eig);
 
       /* We might need to show the resizer here?  Unsure. */
       /* resize_handle = block->window_handle; */
@@ -708,7 +708,14 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
       block->handle_behind = session->pane_handle;
     }
 
-    _swi(Wimp_OpenWindow, _IN(1), block);
+    if (!session->window_needs_resized)
+    {
+      _swi(Wimp_OpenWindow, _IN(1), block);
+    }
+    else
+    {
+      session->window_needs_resized=false;
+    }
 
     if ( block->window_handle == resize_handle )
     {
@@ -735,7 +742,14 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     return;
   }
 
-  _swi(Wimp_OpenWindow, _IN(1), block);
+  if (!session->window_needs_resized)
+  {
+    _swi(Wimp_OpenWindow, _IN(1), block);
+  }
+  else
+  {
+    session->window_needs_resized=false;
+  }
 }
 
 
@@ -2736,6 +2750,8 @@ void mode_change(void)
   struct session_struct *session = sessions;
   struct wimp_gadgetsizes sizes;
 
+  old_eig=eig;
+
   eig.x = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 4);
   eig.y = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 5);
 
@@ -2794,12 +2810,8 @@ void mode_change(void)
         if (height > 0)
         {
           /* The sprite was found and we have its size */
-          int yeig;
-          if (_swix(OS_ReadModeVariable,_INR(0,1)|_OUT(2),mode,5,&yeig)==NULL)
-          {
-            /* And (finally) we can work out the height of the toolbar! */
-            toolheight = height<<yeig;
-          }
+          /* And we can work out the height of the toolbar! */
+          toolheight = height<<eig.y;
         }
       }
     }

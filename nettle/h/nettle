@@ -166,7 +166,7 @@ void create_terminal(struct session_struct *, struct coords, int);
 void delete_terminal(struct session_struct *);
 
 void resize_terminal(struct session_struct *, int, int, int, bool);
-void reopen_and_size_window(struct session_struct *, int, int, int, int, int);
+void reopen_and_size_window(struct session_struct *, int, int, int, int, int, struct coords);
 
 void scroll_term(struct session_struct *, int);
 

@@ -1087,10 +1087,6 @@ void write_assigned(struct session_struct *session, int xpos, int ypos,
     session->assigned_area[ypos][xpos].flags = flags;
     session->assigned_area[ypos][xpos].chr = character;
   }
-  else
-  {
-    printf("write_assigned: something is trying to write to %d, %d\n", xpos, ypos);
-  }
 }
 
 void write_alt_assigned(struct session_struct *session, int xpos, int ypos,
@@ -1102,10 +1098,6 @@ void write_alt_assigned(struct session_struct *session, int xpos, int ypos,
     session->alternate_area[ypos][xpos].bg = bg;
     session->alternate_area[ypos][xpos].flags = flags;
     session->alternate_area[ypos][xpos].chr = character;
-  }
-  else
-  {
-    printf("write_alt_assigned: something is trying to write to %d, %d\n", xpos, ypos);
   }
 }
 
@@ -1476,7 +1468,7 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   }
 
   reopen_and_size_window(session, old_terminal_size.x, old_terminal_size.y, old_scrollback,
-                         redraw.r_charw, redraw.r_charh);
+                         redraw.r_charw, redraw.r_charh, eig);
 
   if (use_naws)
   {
@@ -1501,7 +1493,7 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
 
 void reopen_and_size_window(struct session_struct *session, int old_terminal_size_x,
                             int old_terminal_size_y, int old_scrollback,
-                            int old_charw, int old_charh)
+                            int old_charw, int old_charh, struct coords old_eig)
 {
   {
     struct wimp_setextent_block block;
@@ -1530,22 +1522,25 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     block.window_handle=session->window_handle;
     _swi(Wimp_GetWindowState, _IN(1), &block);
 
+    printf("Window size was %d,%d,%d,%d\n", block.min.x, block.min.y, block.max.x,block.max.y);
+    printf("charw %d,charh %d ,oldcharw %d,oldcharh %d\n", redraw.r_charw,redraw.r_charh,old_charw,old_charh);
+
     /* If terminal at fullsize, then reopen window at fullsize, otherwise leave it */
-    if (block.max.x-block.min.x==(old_terminal_size_x*old_charw << eig.x))
+    if (block.max.x-block.min.x==(old_terminal_size_x*old_charw << old_eig.x))
     {
       block.max.x=block.min.x+(session->terminal_size.x*redraw.r_charw << eig.x);
     }
-    if (block.max.y-block.min.y==(old_terminal_size_y*old_charh << eig.y))
+    if (block.max.y-block.min.y==(old_terminal_size_y*old_charh << old_eig.y))
     {
       block.min.y=block.max.y-(session->terminal_size.y*redraw.r_charh << eig.y);
     }
 
     /* If terminal is bigger than fullsize in the new font shrink it down to fullsize */
-    if ((block.max.x-block.min.x)>(session->terminal_size.x*redraw.r_charw << eig.x))
+    if (block.max.x-block.min.x>(session->terminal_size.x*redraw.r_charw << old_eig.x))
     {
       block.max.x=block.min.x+(session->terminal_size.x*redraw.r_charw << eig.x);
     }
-    if ((block.max.y-block.min.y)>(session->terminal_size.y*redraw.r_charh << eig.y))
+    if (block.max.y-block.min.y>(session->terminal_size.y*redraw.r_charh << old_eig.y))
     {
       block.min.y=block.max.y-(session->terminal_size.y*redraw.r_charh << eig.y);
     }
@@ -1569,8 +1564,10 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     }
 
     /* Scale the scroll offset according to the old font size/new font size */
-    block.scroll.x=(block.scroll.x*redraw.r_charw/old_charw);
-    block.scroll.y=(block.scroll.y*redraw.r_charh/old_charh);
+    block.scroll.x=(block.scroll.x*(redraw.r_charw << eig.x)/(old_charw << old_eig.x));
+    block.scroll.y=(block.scroll.y*(redraw.r_charh << eig.y)/(old_charh << old_eig.y));
+
+    printf("Window size is now %d,%d,%d,%d\n", block.min.x, block.min.y, block.max.x,block.max.y);
 
     /* wimp_openwindow_block starts the same way as wimp_getwindowstate_block */
     _swi(Wimp_OpenWindow, _IN(1), &block);
