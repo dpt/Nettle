@@ -24,11 +24,13 @@
 #include "hotlist.h"
 #include "lineedit.h"
 #include "messages.h"
+#include "main.h"
 #include "misc.h"
 #include "nettle.h"
 #include "process.h"
 #include "seln.h"
 #include "socket.h"
+#include "sockwatch.h"
 #include "termlist.h"
 #include "wimp.h"
 #include "zapredraw.h"
@@ -94,7 +96,8 @@ static void wimp_pollresolve(struct session_struct *session)
                              &session->socket_ip))
   {
     case RESOLVER_INPROGRESS:
-      /* not finished yet */
+      /* resolving not finished yet, continue to take null polls */
+      main_requirenull = true;
       break;
     case RESOLVER_FAILED:
       set_title_bar(session->window_handle,
@@ -113,6 +116,9 @@ static void wimp_pollresolve(struct session_struct *session)
         write_out_strings(session, lookup_static("connecting"),
                           socket_ip_string(session->socket_ip),
                           "...\r\n", 0);
+        /* take a null so the state machine gets kicked and wimp_pollconect
+         * starts taking null polls */
+        main_requirenull = true;
       }
       else
       {
@@ -153,8 +159,13 @@ static void wimp_pollconnect(struct session_struct *session)
         write_out_strings(session, lookup_static("connected"),
                           socket_ip_string(session->socket_ip),
                           "\r\n", 0);
+        main_requirenull = true; /* read any data waiting on the socket */
         break;
-     }
+      }
+    default:
+      /* still connecting, take null polls */
+      main_requirenull = true;
+      break;
   }
 }
 
@@ -199,6 +210,12 @@ static void wimp_pollsocket(struct session_struct *session)
   }
 
   write_out_data(session, receive_block, packet_length);
+  if (packet_length == RECEIVE_BLOCK_LENGTH)
+  {
+    /* the recv() call filled the input buffer - probably more data to read,
+     * but poll first so the machine stays usable */
+    main_requirenull = true;
+  }
 }
 
 

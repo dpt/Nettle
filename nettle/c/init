@@ -415,9 +415,7 @@ void initialise_application(void)
   /* create the iconbar icon */
   create_icon_bar_icon();
 
-#ifdef SOCKETWATCH
   socketwatch_initialise();
-#endif /* SOCKETWATCH */
 
   /* Turn off hourglass */
   _swi(Hourglass_Smash, 0);

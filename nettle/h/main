@@ -8,4 +8,6 @@
 #ifndef RUNIMAGE_H
 #define RUNIMAGE_H
 
+extern bool main_requirenull;
+
 #endif

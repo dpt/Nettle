@@ -15,6 +15,15 @@
 #include "sockwatch.h"
 #include "wimp.h"
 
+
+
+bool main_requirenull = false; /* this is set to true if anything decides it
+                                 * needs null polls. (eg. sockets with more
+                                 * data waiting than they want to handle
+                                 * and during dns / connect, etc.) */
+
+
+
 int main(void)
 {
   initialise_application();
@@ -34,10 +43,13 @@ int main(void)
       /* FIXME: need to set nextpolltime shorter if dns or connect in
        * progress (and selection too?) */
       nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0));
-      if (selection_in_progress)
-        nextpolltime += 5;
+      if (main_requirenull)
+        nextpolltime += 0; /* immediate null required */
+      else if (selection_in_progress)
+        nextpolltime += 5; /* reasonable number of updates required to redraw
+                            * selection as mouse moves */
       else
-        nextpolltime += 500;
+        nextpolltime += 500; /* otherwise, wait 5 seconds between nulls */
     }
     else
     {
@@ -54,6 +66,7 @@ int main(void)
     {
       case 0:
         /* null reason code */
+        main_requirenull = false;
         wimp_nullreasoncode();
         break;
       case 1:
