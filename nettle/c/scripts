@@ -1,0 +1,204 @@
+/**
+ * Script handling code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#include "generic.h"
+#include "globals.h"
+
+#include "misc.h"
+#include "scripts.h"
+#include "wimputil.h"
+
+static struct script_struct *scripts;
+
+static void script_examine_dir(const char *);
+static void remove_script(struct script_struct *);
+
+bool script_exist_items(void)
+{
+  return false;
+
+  /* Comment out until finished - AMS 08/01/2002 */
+  /*if (scripts!=NULL)
+    return true;
+
+  return false;*/
+}
+
+static void script_examine_dir(const char *directory)
+{
+  char file_name[256];
+  int dir_index=0;
+  int objects_read=0;
+  struct script_struct *script;
+
+  /* Get the files available in the given directory */
+  while (dir_index!=-1)
+  {
+    if (!_swix(OS_GBPB, _INR(0,6)|_OUTR(3,4), 9, directory, file_name, 1, dir_index,
+               sizeof(file_name), "*", &objects_read, &dir_index))
+    {
+      if (objects_read!=0)
+      {
+        script = malloc(sizeof(struct script_struct));
+        if (!script)
+        {
+          generror("OutOfMem", true);
+          return;
+        }
+
+        /* Create a script struct and insert into the list of scripts */
+        script->prev = NULL;
+        script->next = scripts;
+        if (scripts)
+        {
+          scripts->prev = script;
+        }
+        scripts = script;
+
+        script->file_name=malloc(strlen(directory)+strlen(file_name)+2);
+        if (!script->file_name)
+        {
+          generror("OutOfMem", true);
+          return;
+        }
+
+        strcpy(script->file_name, directory);
+        strcat(script->file_name, ".");
+        strcat(script->file_name, file_name);
+
+        {
+          FILE *file_handle;
+
+          file_handle=fopen(script->file_name, "r");
+
+          if (file_handle)
+          {
+            char string[256];
+
+            script->name=NULL;
+
+            while (true)
+            {
+              char *orig_str=fgets(string, sizeof(string), file_handle);
+              char *str;
+
+              if (!orig_str)
+                break;
+
+              if (orig_str[strlen(orig_str)-1]=='\n')
+                orig_str[strlen(orig_str)-1]='\0';
+
+              str=strdup(orig_str);
+
+              if (!str)
+              {
+                generror("OutOfMem", true);
+                return;
+              }
+
+              misc_string_lower(str);
+
+              if (str[0]=='#')
+              {
+                char *ptr;
+                if (strstr(str, "name:"))
+                {
+                  ptr=strstr(str, "name:");
+
+                  /* Skip to spaces after name: */
+                  while (*ptr!=' ')
+                    ptr++;
+
+                  /* Skip spaces after name: */
+                  while (*ptr==' ')
+                    ptr++;
+
+                  if (!script->name)
+                  {
+                    /* Only do this if we don't have a script name already */
+
+                    script->name=malloc(strlen(ptr)+1);
+                    if (!script->name)
+                    {
+                      generror("OutOfMem", true);
+                      return;
+                    }
+
+                    /* Copy original string into script->name (ie. with original case) */
+                    strcpy(script->name, ptr-str+orig_str);
+                  }
+                }
+              }
+
+              free(str);
+            }
+
+            fclose(file_handle);
+          }
+          else
+          {
+            remove_script(script);
+          }
+        }
+      }
+    }
+    else
+    {
+      dir_index=-1;
+    }
+  }
+}
+
+void load_scripts(void)
+{
+  script_examine_dir("<Nettle$Dir>.Scripts");
+  script_examine_dir("Choices:Nettle.Scripts");
+}
+
+void script_closedown(void)
+{
+  /* Free all the scripts data */
+  while (scripts)
+  {
+    remove_script(scripts);
+  }
+}
+
+static void remove_script(struct script_struct *script)
+{
+  if (script->file_name)
+    free(script->file_name);
+
+  if (script->name)
+    free(script->name);
+
+  if (script->prev)
+  {
+    script->prev->next = script->next;
+  }
+  else
+  {
+    scripts = script->next;
+  }
+
+  if (script->next)
+  {
+    script->next->prev = script->prev;
+  }
+
+  free(script);
+}
+
+void script_process(void)
+{
+  /* This is likely to change - depending if we decide to handle multiple scripts at once say */
+}
+
+const int *create_scriptlist_menu(void)
+{
+  return NULL;
+}
