@@ -20,13 +20,16 @@
 #include <time.h>
 #include <ctype.h>
 
+#define ENTRYHEIGHT (44)
+
 typedef enum
 {
   ht_invalid,
   ht_telnet,
   ht_ssh,
   ht_task
-} hotlisttype;
+}
+hotlisttype;
 
 typedef struct _hotlistnode
 {
@@ -41,7 +44,8 @@ typedef struct _hotlistnode
   unsigned short terminal_width;
   unsigned short terminal_height;
   unsigned short scrollback;
-} hotlistnode;
+}
+hotlistnode;
 
 static hotlistnode *editlisthead = NULL;
 static hotlistnode *editlisttail = NULL;
@@ -132,12 +136,9 @@ static void copy_hotlist(bool edit_to_live) /* true = copy the editlist to the l
   return;
  
 erro:  
-  if (newnode->label)
-    free(newnode->label);
-  if (newnode->host)
-    free(newnode->host);
-  if (newnode->command)
-    free(newnode->command);
+  free(newnode->label);
+  free(newnode->host);
+  free(newnode->command);
   free(newnode);
 }
 
@@ -228,18 +229,15 @@ static void int_lose_hotlist(hotlistnode **head)
   {
     hotlistnode *next = (*head)->next;
 
-    if ((*head)->label)
-      free((*head)->label);
-    if ((*head)->command)
-      free((*head)->command);
-    if ((*head)->host)
-      free((*head)->host);
+    free((*head)->label);
+    free((*head)->command);
+    free((*head)->host);
     free(*head);
+
     *head = next;
   }
 
-  if (menublock)
-    free(menublock);
+  free(menublock);
   menublock = NULL;
 }
 
@@ -351,9 +349,9 @@ errbarf:
 error:
   if (node)
   {
-    if (node->label)   free(node->label);
-    if (node->host)    free(node->host);
-    if (node->command) free(node->command);
+    free(node->label);
+    free(node->host);
+    free(node->command);
     free(node);
   }
   fseek(in, 0, SEEK_END);
@@ -563,8 +561,8 @@ void hotlist_draw(struct wimp_getrectangle_block *getrect_block)
   for(;node;node=node->next)
   {
     pib.max.y = y;
-    pib.min.y = y-44;
-    y-=44;
+    pib.min.y = y - ENTRYHEIGHT;
+    y -= ENTRYHEIGHT;
 
     pib.contents.it.text = node->label;
     pib.contents.it.validation = (char *)(int) (node->type == ht_ssh ? "snettle_ssh" : \
@@ -616,12 +614,9 @@ static void hotlist_delete_selected(void)
           editlisttail = prev;
       }
       
-      if (node->label)
-        free(node->label);
-      if (node->command)
-        free(node->command);
-      if (node->host)
-        free(node->host);
+      free(node->label);
+      free(node->command);
+      free(node->host);
       free(node);
       edititems--;
       return;
@@ -648,10 +643,9 @@ static bool copy_hotedit_to_selected(void)
     return false;
   }
 
-  if (node->label)
-    free(node->label);
+  free(node->label);
   node->label = strdup(tmp);
-
+  assert(node->label);
   
   tmp = get_icon_data(win_hotedit, icon_hotedit_hostname);
   while (*tmp==' ')
@@ -664,10 +658,9 @@ static bool copy_hotedit_to_selected(void)
     return false;
   }
 
-  if (node->host)
-    free(node->host);
+  free(node->host);
   node->host = strdup(tmp);
-  
+  assert(node->host);
   
   tmp = get_icon_data(win_hotedit, icon_hotedit_command);
   while (*tmp==' ')
@@ -680,10 +673,9 @@ static bool copy_hotedit_to_selected(void)
     return false;
   }
 
-  if (node->command)
-    free(node->command);
+  free(node->command);
   node->command = strdup(tmp);
-  
+  assert(node->command);
   
   tmp = get_icon_data(win_hotedit, icon_hotedit_termwidth);
   num = atoi(tmp);
@@ -732,20 +724,20 @@ static void do_grey_hotedit(int contype)
   switch (contype)
   {
     case ht_telnet:
-       /* unshade the host icons, shade the command icons */
-       set_icon_state (win_hotedit, icon_hotedit_hostname, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_hotedit, icon_hotedit_command, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_hotedit, icon_hotedit_commandbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-       break;
+      /* unshade the host icons, shade the command icons */
+      set_icon_state (win_hotedit, icon_hotedit_hostname, 0, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_command, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_commandbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      break;
 
     case ht_ssh:
        /* unshade the host and command icons */
-       set_icon_state (win_hotedit, icon_hotedit_hostname, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_hotedit, icon_hotedit_command, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_hotedit, icon_hotedit_commandbut, 0, WIMP_ICON_SHADED_BIT);
-       break;
+      set_icon_state (win_hotedit, icon_hotedit_hostname, 0, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_command, 0, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_commandbut, 0, WIMP_ICON_SHADED_BIT);
+      break;
 
     case ht_task:
       /* shade the host icons, unshade the command icons */
@@ -817,8 +809,7 @@ static hotlistnode *hotlist_createnew(void)
   if (!node)
     return NULL;
 
-  if (menublock)
-    free(menublock);
+  free(menublock);
   menublock = NULL;
 
   node->label = malloc(100);
@@ -837,12 +828,13 @@ static hotlistnode *hotlist_createnew(void)
 
   addnodetolist(&editlisthead, &editlisttail, node);
   edititems++;
+  
   return node;
 
 err:
-  if (node->label) free(node->label);
-  if (node->command) free(node->command);
-  if (node->host) free(node->host);
+  free(node->label);
+  free(node->command);
+  free(node->host);
   free(node);
 
   return NULL;
@@ -924,7 +916,7 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
     y_pos=block.max.y-block.scroll.y;
   }
 
-  item = -((y-y_pos)+8)/44;
+  item = -((y - y_pos) + 8) / ENTRYHEIGHT;
 
   node = decode_hotlist_menu(editlisthead, item);
   if (!node)
@@ -1011,8 +1003,8 @@ void resize_hotpane(void)
   ext.min.x = 0;
   ext.max.y = 0;
   ext.max.x = window.max.x - window.min.x;
-  ext.min.y = -(edititems*44 + 16);
-  if (ext.min.y> -(window.max.y - window.min.y))
+  ext.min.y = -(edititems * ENTRYHEIGHT + 16);
+  if (ext.min.y > -(window.max.y - window.min.y))
     ext.min.y = -(window.max.y - window.min.y);
 
   _swi(Wimp_SetExtent,_INR(0,1),win_hotpane, &ext);
@@ -1090,4 +1082,3 @@ void hotlist_inform(int icon, int menuselection)
       break;
   }
 }
-

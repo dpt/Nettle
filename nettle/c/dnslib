@@ -53,8 +53,7 @@ dns_t *dns_gethostbyname(const char *hostname)
   return dns;
 
 failed:
-  if (dns)
-    free(dns);
+  free(dns);
 
   return NULL;
 }
@@ -66,8 +65,7 @@ void dns_dispose(dns_t *dns)
 
   if (dns)
   {
-    if (dns->hostname)
-      free(dns->hostname);
+    free(dns->hostname);
     free(dns);
   }
 }

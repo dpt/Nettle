@@ -423,7 +423,7 @@ create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
     int loop;
 
     /* free up a small amount of memory */
-    menu_entries = realloc (menu_entries, entry_offset);
+    menu_entries = realloc (menu_entries, entry_offset); /* FIXME: Dangerous use of realloc() */
 
     /* claim space for the menu */
     menu_block = malloc (28 + 24 * items);
@@ -432,7 +432,9 @@ create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
 
     /* set up the menu header */
     if (root_menu)
+    {
       lookup ("MenuFont", (char *) menu_block, 12);
+    }
     else
     {
       /* use the leafname as the title */

@@ -48,8 +48,7 @@ create_termlist_menu (void)
 
   if (termitems != items)
   {
-    if (menublock)
-      free(menublock);
+    free(menublock);
     items = termitems;
     menublock = (int *) malloc(24 * items + 28);
     if (!menublock)
