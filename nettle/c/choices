@@ -612,9 +612,11 @@ void win_paneterm_click(int x, int y, int buttons, int icon_handle)
     case icon_paneterm_termtypebut:
       create_terminal_type_menu(win_paneterm, icon_paneterm_termtype, icon_paneterm_termtypebut);
       break;
+
     case icon_paneterm_lineeditbut:
-      create_lineeditor_type_menu();
+      create_lineeditor_type_menu(win_paneterm, icon_paneterm_lineedittype, icon_paneterm_lineeditbut);
       break;
+
     case icon_paneterm_hifontbut:
     case icon_paneterm_lofontbut:
       if (create_zap_font_menu (win_paneterm, icon_handle))

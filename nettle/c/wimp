@@ -52,7 +52,6 @@ static int bitmaps_area_number=0;
 static void create_iconbar_menu(void);
 static void open_open_window(bool open_window_flag);
 static void create_terminal_menu(void);
-static void create_connection_menu(void);
 
 void open_window_centred (int window_handle)
 {
@@ -669,19 +668,16 @@ static void win_open_click(int x, int y, int buttons, int icon_handle)
   switch (icon_handle)
   {
     case icon_open_cancel:
-      if ((buttons & 1)==0)
-        close_window(win_open);
-
+      close_window(win_open);
       break;
 
     case icon_open_connect:
       if (start_connection() && (buttons & 1)==0)
         close_window(win_open);
-
       break;
 
     case icon_open_contypebut:
-      create_connection_menu();
+      create_connection_type_menu(win_open, icon_open_contype, icon_open_contypebut);
       break;
 
     case icon_open_termtypebut:
@@ -1524,32 +1520,36 @@ void wimp_menu_selection(int *selection)
       break;
 
     case MENU_CONNECTION:
+      if (selection[0] != -1)
       {
-        char connection[MESSAGE_MAX_CONNECTION];
-
         switch (selection[0])
         {
           case 0:
-            set_icon_data(win_open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
+            set_icon_data(menu_window, menu_icon, lookup_static("Telnet"));
             break;
           case 1:
-            set_icon_data(win_open, 4, lookup("SSH",  connection, MESSAGE_MAX_CONNECTION));
+            set_icon_data(menu_window, menu_icon, lookup_static("SSH"));
             break;
           case 2:
-            set_icon_data(win_open, 4, lookup("Taskwindow", connection, MESSAGE_MAX_CONNECTION));
+            set_icon_data(menu_window, menu_icon, lookup_static("Taskwindow"));
             break;
         }
-        open_open_window(false);
+        if (menu_window == win_open)
+          open_open_window(false);
+        else if (menu_window == win_hotedit)
+          hotlist_inform(menu_icon, selection[0]);
       }
       break;
 
     case MENU_TERMINAL_TYPE:
       if (selection[0] != -1)
       {
-        char string[6];
+        char string[8];
         sprintf(string, "Term%d", selection[0]);
 
         set_icon_data(menu_window, menu_icon, lookup_static (string));
+        if (menu_window == win_hotedit)
+          hotlist_inform(menu_icon, selection[0]);
       }
       break;
 
@@ -1562,7 +1562,9 @@ void wimp_menu_selection(int *selection)
       {
         char string[8];
         sprintf(string, "LineEd%d", selection[0]);
-	set_icon_data(win_paneterm, icon_paneterm_lineedittype, lookup_static (string));
+	set_icon_data(menu_window, menu_icon, lookup_static (string));
+        if (menu_window == win_hotedit)
+          hotlist_inform(menu_icon, selection[0]);
       }
       break;
 
@@ -1594,7 +1596,7 @@ void wimp_menu_selection(int *selection)
           break;
 
         case MENU_CONNECTION:
-          create_connection_menu();
+          create_connection_type_menu(menu_window, menu_icon, menu_icon);
           break;
 
         case MENU_TERMINAL_TYPE:
@@ -1606,7 +1608,7 @@ void wimp_menu_selection(int *selection)
           break;
 
 	case MENU_LINEED_TYPE:
-	  create_lineeditor_type_menu();
+	  create_lineeditor_type_menu(menu_window, menu_icon, menu_icon);
 	  break;
 
 	case MENU_ZAPFONTLIST:
@@ -2212,7 +2214,7 @@ static void create_terminal_menu(void)
 
 
 
-static void create_connection_menu(void)
+void create_connection_type_menu(int window_handle, int text_icon, int by_icon)
 {
   struct wimp_getpointerinfo_block block;
 
@@ -2225,7 +2227,7 @@ static void create_connection_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    create_menu_by_icon (menu_data, win_open, icon_open_contypebut);
+    create_menu_by_icon (menu_data, window_handle, by_icon);
   }
 
   free(menu_title);
@@ -2234,6 +2236,8 @@ static void create_connection_menu(void)
   free(menu_taskwindow);
 
   menu_open=MENU_CONNECTION;
+  menu_window = window_handle;
+  menu_icon = text_icon;
 }
 
 
@@ -2279,7 +2283,7 @@ void create_terminal_type_menu(int window_handle, int text_icon, int by_icon)
 
 
 
-void create_lineeditor_type_menu(void)
+void create_lineeditor_type_menu(int window_handle, int text_icon, int by_icon)
 {
   struct wimp_getpointerinfo_block block;
 
@@ -2292,7 +2296,7 @@ void create_lineeditor_type_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    create_menu_by_icon (menu_data, win_paneterm, icon_paneterm_lineeditbut);
+    create_menu_by_icon (menu_data, window_handle, by_icon);
   }
 
   free (menu_title);
@@ -2301,6 +2305,8 @@ void create_lineeditor_type_menu(void)
   free (menu_line2);
 
   menu_open=MENU_LINEED_TYPE;
+  menu_window = window_handle;
+  menu_icon = text_icon;
 }
 
 

@@ -1,3 +1,4 @@
+
 /**
  * Nettle Hotlist code
  * (C) Nettle developers 2000-2001
@@ -726,6 +727,51 @@ static bool copy_hotedit_to_selected(void)
   return true;
 }
 
+static void do_grey_hotedit(int contype)
+{
+  switch (contype)
+  {
+    case ht_telnet:
+       /* unshade the host icons, shade the command icons */
+       set_icon_state (win_hotedit, icon_hotedit_hostname, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_hotedit, icon_hotedit_command, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_hotedit, icon_hotedit_commandbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+       break;
+
+    case ht_ssh:
+       /* unshade the host and command icons */
+       set_icon_state (win_hotedit, icon_hotedit_hostname, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_hotedit, icon_hotedit_command, 0, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_hotedit, icon_hotedit_commandbut, 0, WIMP_ICON_SHADED_BIT);
+       break;
+
+    case ht_task:
+      /* shade the host icons, unshade the command icons */
+      set_icon_state (win_hotedit, icon_hotedit_hostname, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_hostnamebut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_command, 0, WIMP_ICON_SHADED_BIT);
+      set_icon_state (win_hotedit, icon_hotedit_commandbut, 0, WIMP_ICON_SHADED_BIT);
+      break;      
+  }
+
+  switch (contype)
+  {
+    case ht_telnet:
+    case ht_ssh:
+      set_caret_position(win_hotedit, icon_hotedit_hostname, -1,
+                         get_icon_data_length(win_hotedit, icon_hotedit_hostname));
+      break;
+
+    case ht_task:
+      set_caret_position(win_hotedit, icon_hotedit_command, -1,
+                         get_icon_data_length(win_hotedit, icon_hotedit_command));
+      break;
+  }
+
+}
+
 static int hotlist_populate_selected(void)
 {
   hotlistnode *node = editlisthead;
@@ -815,6 +861,7 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
       }
       hotlist_populate_selected();
       open_window_centred(win_hotedit);
+      do_grey_hotedit(selcon);
       _swi(Wimp_SetCaretPosition, _INR(0,5), win_hotedit, icon_hotedit_label, \
         -1, -1, -1, get_icon_data_length(win_hotedit, icon_hotedit_label));
       resize_hotpane();
@@ -832,6 +879,7 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
       if (hotlist_populate_selected())
       {
         open_window_centred(win_hotedit);
+        do_grey_hotedit(selcon);
         _swi(Wimp_SetCaretPosition, _INR(0,5), win_hotedit, icon_hotedit_label, \
           -1, -1, -1, get_icon_data_length(win_hotedit, icon_hotedit_label));
       }
@@ -938,6 +986,18 @@ void win_hotedit_click(int x, int y, int buttons, int icon_handle)
       }
     }
     break;
+  
+  case icon_hotedit_lineeditbut:
+    create_lineeditor_type_menu(win_hotedit, icon_hotedit_lineedittype, icon_hotedit_lineeditbut);
+    break;
+    
+  case icon_hotedit_contypebut:
+    create_connection_type_menu(win_hotedit, icon_hotedit_contype, icon_hotedit_contypebut);
+    break;
+    
+  case icon_hotedit_termtypebut:
+    create_terminal_type_menu(win_hotedit, icon_hotedit_termtype, icon_hotedit_termtypebut);
+    break;
   }
 }
 
@@ -1008,3 +1068,26 @@ bool finish_hotlist_editing(int dowhat) /* 0=cancel, 1=set, 2=save */
   
   return true;
 }
+
+void hotlist_inform(int icon, int menuselection)
+{
+  if (menuselection<0)
+    return;
+
+  switch(icon)
+  {
+    case icon_hotedit_lineedittype:
+      selline = menuselection;
+      break;
+
+    case icon_hotedit_contype:
+      selcon = menuselection+1;
+      do_grey_hotedit(selcon);
+      break;
+    
+    case icon_hotedit_termtype:
+      seltype = menuselection;
+      break;
+  }
+}
+
