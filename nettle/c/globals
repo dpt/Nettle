@@ -79,6 +79,8 @@ int selection_start                     =0;
 int selection_end                       =0;
 int selection_adjust_dragging           =0;
 
+bool we_own_clipboard                   = false;
+
 const struct session_struct *cursor_session=NULL;
 int nextcursortime;
 bool cursor_state = false;

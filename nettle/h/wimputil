@@ -41,6 +41,8 @@ extern void create_menu_by_icon(int *menu, int window, int icon);
 extern bool win_is_open(int window_handle);
 extern int get_icon_data_length(int window_handle, int icon_handle);
 extern char *get_icon_validation (int window_handle, int icon_handle);
+extern bool read_icon_ticked (int window_handle, int icon_handle);
+
 extern int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, ... );
 extern char *get_menu_item(const char *name);
 extern char *get_last_menu_item(const char *name);

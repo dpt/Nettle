@@ -30,9 +30,9 @@ int main(int argc, char *argv[])
 {
   int i;
   enum { s_none, s_url } state;
-  
+
   initialise_application();
-  
+
   state = s_none;
   for (i = 1; i < argc; i++)
   {
@@ -42,11 +42,11 @@ int main(int argc, char *argv[])
         if (strcmp(argv[i], "-url") == 0)
           state = s_url;
         break;
-      
+
       case s_url:
         wimp_handleurl(argv[i], 0);
         break;
-      
+
       default:
         assert(0);
     }
@@ -157,8 +157,8 @@ int main(int argc, char *argv[])
         wimp_message(&wimp_block);
         break;
       case 19:
-        if (wimp_block.user_message.message_code == Wimp_MOpenUrl)
-          url_bounce(&wimp_block.user_message);
+        /* wimp message bounce/ack */
+        wimp_message_ack(&wimp_block);
         break;
     }
   }

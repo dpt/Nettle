@@ -105,6 +105,8 @@ CantSaveChoices:Nettle was unable to save its Choices file:
 CantSaveHotlist:Nettle was unable to save its Hotlist file: 
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.
 NoStartTask:Nettle was unable to create an ANSI task
+CantAlloc:Nettle was unable to claim enough memory for the requested operation.
+CantLoad:Nettle was unable to load the file: 
 
 HotBlankLabel:Please enter a hotlist label
 HotBlankHost:Please enter a hostname

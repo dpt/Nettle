@@ -422,7 +422,7 @@ void force_redraw_selection (void)
 
 
 
-void selection_paste(void)
+void selection_paste(struct session_struct *session)
 {
   char   *buffer;
   int     bufferptr=0;
@@ -462,9 +462,9 @@ void selection_paste(void)
   for (loop=0; loop<bufferptr; loop+=1024)
   {
     if ((bufferptr-loop)>1024)
-      process_data_transmission(terminal_menu_session, buffer+loop, 1024);
+      process_data_transmission(session, buffer+loop, 1024);
     else
-      process_data_transmission(terminal_menu_session, buffer+loop, bufferptr-loop);
+      process_data_transmission(session, buffer+loop, bufferptr-loop);
   }
 
   _swi(Hourglass_Off, 0);

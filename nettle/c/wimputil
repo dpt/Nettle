@@ -224,6 +224,17 @@ char *get_icon_validation (int window_handle, int icon_handle)
   return block.contents.it.validation;
 }
 
+bool read_icon_ticked (int window_handle, int icon_handle)
+{
+  struct wimp_geticonstate_block block;
+
+  block.window_handle = window_handle;
+  block.icon_handle = icon_handle;
+  _swi (Wimp_GetIconState, _IN(1), &block);
+
+  return (block.icon_flags & WIMP_ICON_SELECTED_BIT) ? true : false;
+}
+
 
 
 /* Create menu code */

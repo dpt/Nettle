@@ -51,9 +51,26 @@ static char indirected[1024];
 static int *bitmaps_area=0;
 static int bitmaps_area_number=0;
 
+static int msg_ref;
+static struct session_struct *paste_session;
+
+/* Dunno what this is about - AMS 12/09/2001 */
+enum ansi_colour_flag
+{
+  SAVE_NO_ANSI,
+  SAVE_FLAG_ANSI,
+  SAVE_FORCE_ANSI
+};
+
+static enum ansi_colour_flag allow_ansi_colour = SAVE_NO_ANSI;
+
 static void create_iconbar_menu(void);
 static void open_open_window(bool open_window_flag);
 static void create_terminal_menu(void);
+
+static bool parse_ant_url (union wimp_poll_block *);
+static bool parse_acorn_uri (union wimp_poll_block *);
+static bool paste_text_file (union wimp_poll_block *);
 
 void open_window_centred (int window_handle)
 {
@@ -1247,8 +1264,7 @@ static void wimp_initiatesave(const char *filename)
 
   block.user_message.contents.data_save.window_handle=gpi_block.window_handle;
   block.user_message.contents.data_save.icon_handle  =gpi_block.icon_handle;
-  block.user_message.contents.data_save.pos.x        =gpi_block.pos.x;
-  block.user_message.contents.data_save.pos.y        =gpi_block.pos.y;
+  block.user_message.contents.data_save.pos          =gpi_block.pos;
   block.user_message.contents.data_save.size         =selection_end-selection_start;
   block.user_message.contents.data_save.filetype     =0xFFF;
 
@@ -1258,10 +1274,21 @@ static void wimp_initiatesave(const char *filename)
   block.user_message.your_ref    =0;
   block.user_message.message_code=1; /* DataSave */
 
-  _swi(Wimp_SendMessage, _INR(0,3), 17, &block,
+  _swi(Wimp_SendMessage, _INR(0,3), 18, &block,
                          block.user_message.contents.data_save.window_handle,
                          block.user_message.contents.data_save.icon_handle);
+  msg_ref = block.user_message.my_ref;
+}
 
+static void reply_to_dataload (union wimp_poll_block *block)
+{
+  assert (block->user_message.message_code == WIMP_MESSAGE_DATALOAD);
+
+  block->user_message.your_ref     = block->user_message.my_ref;
+  block->user_message.message_code = WIMP_MESSAGE_DATASAVE;
+
+  _swi (Wimp_SendMessage, _INR(0,2), 18, block, block->user_message.sender_ref);
+  msg_ref = block->user_message.my_ref;
 }
 
 /* Drag finished */
@@ -1601,10 +1628,11 @@ void wimp_menu_selection(int *selection)
               break;
 
             case 2: /* send */
-              selection_paste();
+              selection_paste(terminal_menu_session);
               break;
 
-            case 3: /* copy to clipbaord */
+            case 3: /* copy to clipboard */
+              clipboard_claim();
               break;
 
             case 4:
@@ -1615,6 +1643,11 @@ void wimp_menu_selection(int *selection)
               }
               break;
           }
+          break;
+        case 2: /* paste from clipboard */
+          clipboard_datarequest(terminal_menu_session);
+          break;
+        case 3: /* options */
           break;
         case 4: /* spool menu */
           switch (selection[1])
@@ -1989,34 +2022,75 @@ void wimp_message(union wimp_poll_block *wimp_block)
     case WIMP_MESSAGE_QUIT:
       quit_flag=true;
       break;
+    case WIMP_MESSAGE_DATASAVE:
+      if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
+        break;
+
+      msg_ref = 0;
+      switch (wimp_block->user_message.contents.data_save.filetype)
+      {
+        case 0xFFF: /* Text */
+          /* text must be dragged to a terminal window or its input pane */
+          {
+            struct session_struct *session = sessions;
+            int window_handle = wimp_block->user_message.contents.data_save.window_handle;
+
+            while (session
+                   && session->window_handle != window_handle
+                   && session->pane_handle != window_handle)
+            {
+              session = session->next;
+            }
+
+            if (!session)
+              break;
+          }
+        case 0xB28: /* ANT URL */
+        case 0xF91: /* Acorn URI */
+          /* we don't care where URL and URI files are dropped */
+
+          /* Common DataSaveAck reply code */
+          wimp_block->user_message.contents.data_save_ack.size = -1;
+          strcpy (wimp_block->user_message.contents.data_save_ack.file_name, "<Wimp$Scrap>");
+          wimp_block->user_message.length = 60;
+          wimp_block->user_message.your_ref = my_ref;
+          wimp_block->user_message.message_code = WIMP_MESSAGE_DATASAVEACK;
+
+          _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
+          msg_ref = wimp_block->user_message.my_ref;
+      }
 
     case WIMP_MESSAGE_DATASAVEACK:
       {
         char string[1024];
 
-        read_mem(string, wimp_block->user_message.contents.data_save_ack.file_name, sizeof(string));
+        if (!msg_ref || wimp_block->user_message.your_ref != msg_ref)
+          break;
+
+        msg_ref = 0;
+
+        read_mem(string, wimp_block->user_message.contents.data_save_ack.file_name,
+                 sizeof(string));
+
         if (drag_window_handle == win_save ||
             drag_window_handle == selection_session->window_handle)
         {
-          struct wimp_geticonstate_block block;
-
-          block.window_handle=drag_window_handle;
-          block.icon_handle  =icon_save_ansi;
-
-          _swi(Wimp_GetIconState, _IN(1), &block);
-
-          if (block.icon_flags & (1<<21))
+          switch (allow_ansi_colour)
           {
-            save_selection(string, true);
-          }
-          else
-          {
-            save_selection(string, false);
-          }
+            case SAVE_NO_ANSI:
+              save_selection(string, false);
+              break;
 
-          if (instr(string,"Wimp$Scrap")==-1 && drag_window_handle == win_save)
-          {
-            set_icon_data(drag_window_handle, icon_save_filename, string);
+            case SAVE_FORCE_ANSI:
+              save_selection(string, true);
+              break;
+
+            default:
+              save_selection(string, read_icon_ticked(win_save, icon_save_ansi));
+              if (instr(string,"Wimp$Scrap")==-1 && drag_window_handle == win_save)
+              {
+                set_icon_data(drag_window_handle, icon_save_filename, string);
+              }
           }
         }
         else if (drag_window_handle == win_spoolsave)
@@ -2028,21 +2102,8 @@ void wimp_message(union wimp_poll_block *wimp_block)
           }
           else
           {
-            struct wimp_geticonstate_block block;
-
-            block.window_handle=drag_window_handle;
-            block.icon_handle  =icon_spoolsave_raw;
-
-            _swi(Wimp_GetIconState, _IN(1), &block);
-
-            if (block.icon_flags & (1<<21))
-            {
-              spool_open(terminal_menu_session, string, true);
-            }
-            else
-            {
-              spool_open(terminal_menu_session, string, false);
-            }
+            spool_open(terminal_menu_session, string,
+                       read_icon_ticked(win_spoolsave, icon_spoolsave_raw));
 
             if (instr(string,"Wimp$Scrap")==-1)
             {
@@ -2052,11 +2113,58 @@ void wimp_message(union wimp_poll_block *wimp_block)
         }
 
         wimp_block->user_message.your_ref    =my_ref;
-        wimp_block->user_message.message_code=3;
+        wimp_block->user_message.message_code=WIMP_MESSAGE_DATALOAD;
 
-        _swi(Wimp_SendMessage, _INR(0,2), 17, wimp_block, sender_ref);
+        _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
+        msg_ref = wimp_block->user_message.my_ref;
 
         _swi(Wimp_CreateMenu, _IN(1), -1);
+      }
+      break;
+
+    case WIMP_MESSAGE_DATALOAD:
+      if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
+        break;
+      msg_ref = 0;
+      switch (wimp_block->user_message.contents.data_save.filetype)
+      {
+        case 0xB28:
+          if (parse_ant_url (wimp_block))
+            reply_to_dataload (wimp_block);
+          break;
+        case 0xF91:
+          if (parse_acorn_uri (wimp_block))
+            reply_to_dataload (wimp_block);
+          break;
+        case 0xFFF:
+          if (paste_text_file (wimp_block))
+            reply_to_dataload (wimp_block);
+          break;
+      }
+      break;
+
+    case WIMP_MESSAGE_DATALOADACK:
+      msg_ref = 0;
+      break;
+
+    case WIMP_MESSAGE_CLIP_CLAIMENTITY:
+      if (wimp_block->user_message.sender_ref != task_handle)
+        we_own_clipboard = false;
+      break;
+
+    case WIMP_MESSAGE_CLIP_DATAREQUEST:
+      if (we_own_clipboard)
+      {
+        wimp_block->user_message.contents.data_save.size = selection_end-selection_start;
+        wimp_block->user_message.contents.data_save.filetype = 0xFFF;
+        strcpy (wimp_block->user_message.contents.data_save.file_name, "Clipboard");
+        wimp_block->user_message.length = 60;
+        wimp_block->user_message.your_ref = wimp_block->user_message.my_ref;
+        wimp_block->user_message.message_code = WIMP_MESSAGE_DATASAVE;
+        _swi (Wimp_SendMessage, _INR(0,2), 18, wimp_block,
+              wimp_block->user_message.sender_ref);
+        msg_ref = wimp_block->user_message.my_ref;
+        allow_ansi_colour = SAVE_NO_ANSI;
       }
       break;
 
@@ -2179,6 +2287,32 @@ void wimp_message(union wimp_poll_block *wimp_block)
   }
 }
 
+/* Wimp message bounce/ack */
+
+void wimp_message_ack (union wimp_poll_block *wimp_block)
+{
+  switch (wimp_block->user_message.message_code)
+  {
+    case WIMP_MESSAGE_DATASAVE:
+    case WIMP_MESSAGE_DATALOAD:
+    case WIMP_MESSAGE_DATASAVEACK:
+    case WIMP_MESSAGE_DATALOADACK:
+      /* receiver not there or not responding? */
+      msg_ref = 0;
+      break;
+
+    case WIMP_MESSAGE_CLIP_DATAREQUEST:
+      /* nobody owns the clipboard */
+      if (msg_ref && wimp_block->user_message.your_ref == msg_ref)
+        selection_paste (paste_session);
+      msg_ref = 0;
+      break;
+
+    case Wimp_MOpenUrl:
+      url_bounce(&wimp_block->user_message);
+      break;
+  }
+}
 
 
 void mode_change(void)
@@ -2780,4 +2914,120 @@ enum nettle_terminal read_terminal_type (int window_handle, int icon_handle)
   }
 
   return default_terminal;
+}
+
+
+
+void clipboard_claim (void)
+{
+  if (selection_session && selection_start != selection_end)
+  {
+    union wimp_poll_block block;
+    we_own_clipboard = true;
+    block.user_message.contents.clip_claimentity.flags = 4;
+    block.user_message.length       = 24;
+    block.user_message.your_ref     = 0;
+    block.user_message.message_code = WIMP_MESSAGE_CLIP_CLAIMENTITY;
+    _swi(Wimp_SendMessage, _INR(0,3), 18, &block, 0, 0);
+  }
+}
+
+
+void clipboard_datarequest (struct session_struct *session)
+{
+  paste_session = session;
+  /* need paste-from-file (DataLoad) before more can be done here */
+}
+
+
+static char *load_file (const char *name, int *size)
+{
+  int filesize;
+  char *data;
+  _kernel_oserror *err;
+
+  err = _swix (OS_File, _INR(0,1) | _OUT(4), 17, name, &filesize);
+  if (err)
+  {
+    generror (err->errmess, false);
+    return NULL;
+  }
+
+  data = malloc (filesize + 1);
+  if (!data)
+  {
+    generror ("CantAlloc", true);
+    return NULL;
+  }
+
+  err = _swix (OS_File, _INR(0,3), 16, name, data, 0);
+  if (err)
+  {
+    free (data);
+    generror (err->errmess, false);
+    return NULL;
+  }
+
+  if (size)
+    *size = filesize;
+
+  data[filesize] = 0;
+  return data;
+}
+
+
+static bool parse_ant_url (union wimp_poll_block *block)
+{
+  char *url = load_file (block->user_message.contents.data_load.file_name, NULL);
+
+  if (url)
+  {
+    url_launch (url);
+    free (url);
+    return true;
+  }
+  return false;
+}
+
+
+static bool parse_acorn_uri (union wimp_poll_block *block)
+{
+  int size;
+  char *uri = load_file (block->user_message.contents.data_load.file_name, &size);
+
+  if (uri)
+  {
+    int offset = -1;
+    int lf = 3;
+
+    /* skip the first three LFs */
+    while (lf && ++offset < size)
+      if (uri[offset] == '\n')
+        lf--;
+    if (!lf)
+    {
+      /* then past any whitespace */
+      while (++offset < size && isspace (uri[offset]))
+        ;
+      if (offset < size)
+      {
+        /* now ensure that the URL is NUL-terminated */
+        char *eol = strchr (uri + offset, '\n');
+        if (eol)
+          *eol = '\0';
+        /* finally (!) launch it */
+        url_launch (uri + offset);
+        return true;
+      }
+    }
+    free (uri);
+  }
+  return false;
+}
+
+
+static bool paste_text_file (union wimp_poll_block *block)
+{
+  /* dummy implementation */
+  return true;
 }
