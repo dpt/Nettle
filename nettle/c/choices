@@ -561,7 +561,7 @@ bool win_choices_read(int save)
     while (session)
     {
       reopen_and_size_window(session, session->terminal_size.x, session->terminal_size.y,
-                             session->scrollback, old_charw, old_charh);
+                             session->scrollback, old_charw, old_charh, eig);
       session->window_needs_resized=false;
       session=session->next;
     }
