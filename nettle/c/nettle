@@ -1410,6 +1410,10 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     selection_start_y=selection_start_y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
     selection_end_y=selection_end_y-old_scrollback-old_terminal_size.y+scrollback+terminal_size_y;
 
+    /* do range checking on terminal_size_x */
+    if (selection_start_x>terminal_size_x) selection_start_x=terminal_size_x;
+    if (selection_end_x>terminal_size_x) selection_end_x=terminal_size_x;
+
     /* write the selection positions back to the variables */
     selection_start=(selection_start_y*terminal_size_x)+selection_start_x;
     selection_end=(selection_end_y*terminal_size_x)+selection_end_x;
