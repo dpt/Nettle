@@ -35,7 +35,7 @@ zapgen_code
 
 	STMFD   R13!,{R4-R10}
 
-        LDR     R12,[R13,#0] ; get session flags from stack
+        LDR     R12,[R13,#28] ; get session flags from stack
 
 	ADD     R4,R3,#1
 	MOV     R4,R4,LSL#2 ; R4 is current_pointer%
