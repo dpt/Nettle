@@ -2118,27 +2118,34 @@ static void open_open_window(bool open_window_flag)
 
   if (open_window_flag)
   {
-    struct wimp_openwindow_block wowb;
-    wowb.window_handle = win_open;
-    _swi(Wimp_GetWindowState, _IN(1), &wowb);
+    struct wimp_getwindowstate_block window;
 
-    wowb.handle_behind = -1;  /* Open on top of stack */
-
+    window.window_handle = win_open;
+    _swi(Wimp_GetWindowState, _IN(1), &window);
+    
+    window.handle_behind = -1;  /* Open on top of stack */
+  
+    if ((window.window_flags & (1 << 16)) == 0)
     {
-      int width = wowb.max.x - wowb.min.x;
-      int height = wowb.max.y - wowb.min.y;
+      /* window is not open, open it centred on the pointer taking care to
+       * not obscure the icon bar */
+      struct wimp_getpointerinfo_block pointer;
+      int width = window.max.x - window.min.x;
+      int height = window.max.y - window.min.y;
 
-      struct wimp_getpointerinfo_block wgpib;
-      _swi(Wimp_GetPointerInfo, _IN(1), &wgpib);
+      _swi(Wimp_GetPointerInfo, _IN(1), &pointer);
 
-      wowb.min.x = (wgpib.pos.x - width) + 64;
-      wowb.max.x = wowb.min.x + width;
+      window.min.x = pointer.pos.x - width / 2;
+      window.min.y = pointer.pos.y - height / 2;
 
-      wowb.min.y = 96;
-      wowb.min.y = wowb.min.y + height;
+      /* '134 + 2' is a cheap approximation of the height of the icon bar */
+      if (window.min.y < 134 + 2)
+        window.min.y = 134 + 2;
+
+      window.max.x = window.min.x + width;
+      window.max.y = window.min.y + height;
     }
-
-    _swi(Wimp_OpenWindow, _IN(1), &wowb);
+    _swi(Wimp_OpenWindow, _IN(1), &window);
   }
 
   switch (connection_type)
