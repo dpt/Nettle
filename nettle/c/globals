@@ -109,7 +109,8 @@ struct session_struct *terminal_menu_session = NULL;
 
 struct session_struct *mouse_handling_session = NULL;
 
-const char terminal_name[NO_OF_TERMINAL_TYPES][MESSAGE_MAX_TERMINAL]={
+const char terminal_name[NO_OF_TERMINAL_TYPES][MESSAGE_MAX_TERMINAL]=
+{
   "vt100",
   "vt102",
   "vt220",
@@ -118,4 +119,6 @@ const char terminal_name[NO_OF_TERMINAL_TYPES][MESSAGE_MAX_TERMINAL]={
   "vt510",
   "rxvt",
   "xterm",
-  "xterm-color"};
+  "xterm-color",
+  "linux"
+};

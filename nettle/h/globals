@@ -33,7 +33,7 @@
 #define MAX_TERMINAL_HEIGHT     128
 #define MAX_SCROLLBACK_SIZE     (1<<16)
 
-#define NO_OF_TERMINAL_TYPES    9
+#define NO_OF_TERMINAL_TYPES    10
 
 #define LOGGING                 false
 #define LINE_EDITOR             0
@@ -249,7 +249,7 @@ extern struct session_struct *terminal_menu_session;
 
 extern struct session_struct *mouse_handling_session;
 
-extern const char terminal_name[NO_OF_TERMINAL_TYPES][12];
+extern const char terminal_name[NO_OF_TERMINAL_TYPES][MESSAGE_MAX_TERMINAL];
 
 typedef struct user_message
 {

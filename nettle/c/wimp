@@ -3011,10 +3011,11 @@ void create_terminal_type_menu(int window_handle, int text_icon, int by_icon)
   char *menu_term5     =get_grey_menu_item("Term5");
   char *menu_term6     =get_grey_menu_item("Term6");
   char *menu_term7     =get_menu_item("Term7");
-  char *menu_term8     =get_last_menu_item("Term8");
+  char *menu_term8     =get_menu_item("Term8");
+  char *menu_term9     =get_last_menu_item("Term9");
 
   if (create_menu(menu_data,0,menu_title,menu_term0,menu_term1,menu_term2,menu_term3,
-    		  menu_term4,menu_term5,menu_term6,menu_term7,menu_term8))
+    		  menu_term4,menu_term5,menu_term6,menu_term7,menu_term8,menu_term9))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
@@ -3031,6 +3032,7 @@ void create_terminal_type_menu(int window_handle, int text_icon, int by_icon)
   free(menu_term6);
   free(menu_term7);
   free(menu_term8);
+  free(menu_term9);
 
   menu_open=MENU_TERMINAL_TYPE;
   menu_window = window_handle;
