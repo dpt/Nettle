@@ -11,7 +11,6 @@ RO 3.1 bits (C icons, titlebar redraw...)
 
 Wimp slot size settable for new tasks?
 
-// * Much faster terminal scrollback handling
 * Reordering of hotlist items within hotlist editor
 * More choices: F12 handling, blinking cursor...
 * ANSI commandline task shell for ANSI task window (ROSH)
