@@ -1778,15 +1778,7 @@ void gain_caret(int window_handle)
 
 
 
-/**
- * Call back function for url_receivebroadcast.
- *
- * @param url        Url to be handled
- * @param checkonly  non-zero if we should only check if the return can be handle
- *
- * @return non-zero if url has been [or can be] handled
- */
-static int wimp_handleurl(const char *url, int checkonly)
+int wimp_handleurl(const char *url, int checkonly)
 {
   const char *hostptr;
   const char *hostend;

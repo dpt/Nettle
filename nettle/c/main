@@ -26,9 +26,31 @@ bool main_requirenull = false; /* this is set to true if anything decides it
 const char *__dynamic_da_name = "Nettle Heap";
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
+  int i;
+  enum { s_none, s_url } state;
+  
   initialise_application();
+  
+  state = s_none;
+  for (i = 1; i < argc; i++)
+  {
+    switch (state)
+    {
+      case s_none:
+        if (strcmp(argv[i], "-url") == 0)
+          state = s_url;
+        break;
+      
+      case s_url:
+        wimp_handleurl(argv[i], 0);
+        break;
+      
+      default:
+        assert(0);
+    }
+  }
 
   while (!quit_flag)
   {
