@@ -157,7 +157,7 @@ static void reprocess_position_scroll(struct session_struct *session)
     {
       /* scroll scrollback as well */
 
-      _swi(ZapRedraw_MoveBytes, _INR(1,3),
+      MEMMOVE (
            session->assigned_area+(session->terminal_size.x*4),
 
            session->assigned_area,
@@ -167,20 +167,12 @@ static void reprocess_position_scroll(struct session_struct *session)
     }
     else
     {
-      _swi(ZapRedraw_MoveBytes, _INR(1,3),
-                                session->assigned_area+
-      			        ((session->terminal_size.x*
-      			        (session->scroll_start+
-      			        session->scrollback))*4),
-
-                                session->assigned_area+
-      				((session->terminal_size.x*
-      				(session->scroll_start+
-      				session->scrollback-1))*4),
-
-                                (session->terminal_size.x*
-                                (session->scroll_end-
-                                 session->scroll_start))*4);
+      char *calc = session->assigned_area +
+		   ((session->terminal_size.x *
+		     (session->scroll_start + session->scrollback)) * 4);
+      MEMMOVE (calc, calc - session->terminal_size.x * 4,
+	       session->terminal_size.x *
+		 (session->scroll_end - session->scroll_start) * 4);
     }
 
     /* and clear the new line */
@@ -224,22 +216,14 @@ static void reprocess_position_scroll(struct session_struct *session)
         		    session->scrollback));
       }
     }
-
-
-    _swi(ZapRedraw_MoveBytes, _INR(1,3),
-                              session->assigned_area+
-      			      ((session->terminal_size.x*
-      			      (session->scroll_start+
-      			      session->scrollback-1))*4),
-
-                              session->assigned_area+
-      			      ((session->terminal_size.x*
-      			      (session->scroll_start+
-      			      session->scrollback))*4),
-
-                              (session->terminal_size.x*
-                              (session->scroll_end-
-                              session->scroll_start))*4);
+    {
+      char *calc = session->assigned_area +
+		   ((session->terminal_size.x *
+		     (session->scroll_start + session->scrollback)) * 4);
+      MEMMOVE (calc - session->terminal_size.x * 4, calc,
+	       session->terminal_size.x *
+		 (session->scroll_end - session->scroll_start) * 4);
+    }
 
     /* and clear the new line */
     for (count=0; count<session->terminal_size.x; count++)
@@ -298,7 +282,7 @@ static void row_shift_right (struct session_struct *session, int chars)
   end = session->assigned_area +
         (session->pos.y + 1) * session->terminal_size.x * 4;
 
-  memmove (start + 4 * chars, start, end - start - 4 * chars);
+  MEMMOVE (start, start + 4 * chars, end - start - 4 * chars);
 }
 
 
@@ -878,7 +862,7 @@ static bool process_escape_length_2(struct session_struct *session)
 
                        (session->terminal_size.x*
                        (session->terminal_size.y+
-                        session->scrollback))*4,
+                        session->scrollback))*4-4,
 
                        session->current_fg,
                        session->current_bg,
@@ -998,7 +982,7 @@ static bool process_escape_length_3(struct session_struct *session)
 
                            (session->terminal_size.x*
                            (session->terminal_size.y+
-                            session->scrollback))*4,
+                            session->scrollback))*4-4,
 
                            session->current_fg,
                            session->current_bg,
@@ -1239,7 +1223,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        (session->terminal_size.x*
                        (session->terminal_size.y+
-                        session->scrollback))*4,
+                        session->scrollback))*4-4,
 
                        session->current_fg,
                        session->current_bg,
@@ -1276,7 +1260,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        (session->terminal_size.x*
                         (session->terminal_size.y+
-                         session->scrollback))*4,
+                         session->scrollback))*4-4,
 
                        session->current_fg,
                        session->current_bg,
@@ -1350,13 +1334,13 @@ static bool process_escape_length_x(struct session_struct *session)
                   &&
                   session->pos.y-session->scrollback>=session->scroll_start-1)
               {
-                int calc, calc2;
+                char *calc, *calc2;
                 int move=atoi(session->escape_string+2);
 
                 if (move==0)
                   move=1;
 
-                calc=(int) session->assigned_area+
+                calc = session->assigned_area+
                             (session->pos.y*session->terminal_size.x)*4;
 
                 if (move>session->scroll_end-session->scroll_start-
@@ -1368,10 +1352,10 @@ static bool process_escape_length_x(struct session_struct *session)
 
                 printf("Insert move :%d\n",move);
 
-                calc2=(int) session->assigned_area+
+                calc2 = session->assigned_area+
                              ((session->pos.y+move)*session->terminal_size.x)*4;
 
-                _swi(ZapRedraw_MoveBytes, _INR(1,3), calc, calc2,
+                MEMMOVE (calc, calc2,
                                           ((session->scroll_end+session->scrollback-
                                             session->pos.y-move)*session->terminal_size.x*4));
 
@@ -1396,13 +1380,13 @@ static bool process_escape_length_x(struct session_struct *session)
                   &&
                   session->pos.y-session->scrollback>=session->scroll_start-1)
               {
-                int calc, calc2;
+                char *calc, *calc2;
                 int move=atoi(session->escape_string+2);
 
                 if (move==0)
                   move=1;
 
-                calc=(int) session->assigned_area+
+                calc = session->assigned_area+
                             (session->pos.y*session->terminal_size.x)*4;
 
                 if (move>session->scroll_end-session->scroll_start-
@@ -1414,10 +1398,10 @@ static bool process_escape_length_x(struct session_struct *session)
 
                 printf("Delete move :%d\n",move);
 
-                calc2=(int) session->assigned_area+
+                calc2 = session->assigned_area+
                              ((session->pos.y+move)*session->terminal_size.x)*4;
 
-                _swi(ZapRedraw_MoveBytes, _INR(1,3), calc2, calc,
+                MEMMOVE (calc2, calc,
                                           ((session->scroll_end-(session->pos.y-
                                             session->scrollback)-move)*
                                             session->terminal_size.x*4));
@@ -1442,20 +1426,19 @@ static bool process_escape_length_x(struct session_struct *session)
             case 'P':
               {
                 /* Delete character(s) */
-                int calc, calc2;
+                char *calc, *calc2;
                 int move=atoi(session->escape_string+2);
 
                 if (move==0)
                   move=1;
 
-                calc=(int) session->assigned_area+
+                calc = session->assigned_area+
                            ((session->pos.y*session->terminal_size.x)+
                            session->pos.x)*4;
-                calc2=(int) session->assigned_area+
+                calc2 = session->assigned_area+
                             ((session->pos.y+1)*session->terminal_size.x)*4;
 
-                _swi(ZapRedraw_MoveBytes, _INR(1,3), calc+(4*move), calc,
-                                              calc2-calc-(4*move));
+                MEMMOVE (calc+(4*move), calc, calc2-calc-(4*move));
 
                 changedbox_update (session->pos.x, session->pos.y,
                                    session->terminal_size.x - 1, session->pos.y);
@@ -1510,7 +1493,7 @@ static bool process_escape_length_x(struct session_struct *session)
                        session->pos.x)*4,
 
               	       ((session->pos.y*session->terminal_size.x)+
-                        session->pos.x + move) * 4,
+                        session->pos.x + move) * 4 - 4,
 
                        session->current_fg,
                        session->current_bg,
