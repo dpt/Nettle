@@ -25,11 +25,43 @@
 #define TELNET_DONT     254
 #define TELNET_IAC      255
 
-#define TELOPT_ECHO            1
-#define TELOPT_TERMINAL_TYPE   24
-#define TELOPT_NAWS            31
-#define TELOPT_TERMINAL_SPEED  32
-#define TELOPT_XDISPLOC        35
+/* Leave these indented by 1 char until they're handled somewhere! */
+ #define TELOPT_TRANSMIT_BINARY    0 /* RFC 856 */
+#define TELOPT_ECHO               1 /* RFC 857 */
+#define TELOPT_SUPPRESS_GO_AHEAD  3 /* RFC 858 */
+ #define TELOPT_STATUS             5 /* RFC 859 */
+ #define TELOPT_RTCE               7 /* RFC 726 */
+ #define TELOPT_TIMING_MARK        6 /* RFC 860 */
+ #define TELOPT_NAOCRD            10 /* RFC 652 */
+ #define TELOPT_NAOHTS            11 /* RFC 653 */
+ #define TELOPT_NAOHTD            12 /* RFC 654 */
+ #define TELOPT_NAOFFD            13 /* RFC 655 */
+ #define TELOPT_NAOVTS            14 /* RFC 656 */
+ #define TELOPT_NAOVTD            15 /* RFC 657 */
+ #define TELOPT_NAOFLD            16 /* RFC 658 */
+ #define TELOPT_EXTEND_ASCII      17 /* RFC 698 */
+ #define TELOPT_LOGOUT            18 /* RFC 727 */
+ #define TELOPT_BM                19 /* RFC 735 */
+ #define TELOPT_DET               20 /* RFC 1043 */
+ #define TELOPT_SUPDUP            21 /* RFC 736 */
+ #define TELOPT_SUPDUP_OUTPUT     22 /* RFC 749 */
+ #define TELOPT_SEND_LOCATION     23 /* RFC 779 */
+#define TELOPT_TERMINAL_TYPE     24 /* RFC 1091 */
+ #define TELOPT_END_OF_RECORD     25 /* RFC 885 */
+ #define TELOPT_TUID              26 /* RFC 927 */
+ #define TELOPT_OUTMRK            27 /* RFC 933 */
+ #define TELOPT_TTYLOC            28 /* RFC 946 */
+ #define TELOPT_3270_REGIME       29 /* RFC 1041 */
+ #define TELOPT_X3_PAD            30 /* RFC 1053 */
+#define TELOPT_NAWS              31 /* RFC 1073 */
+#define TELOPT_TERMINAL_SPEED    32 /* RFC 1079 */
+ #define TELOPT_TOGGLE_FLOW_CONTROL 33 /* RFC 1372 */
+ #define TELOPT_LINEMODE          34 /* RFC 1184 */
+#define TELOPT_XDISPLOC          35 /* RFC 1096 */
+ #define TELOPT_ENVIRON           36 /* RFC 1408 */
+ #define TELOPT_AUTHENTICATION    37 /* RFC 1416 */
+ #define TELOPT_NEW_ENVIRON       39 /* RFC 1572 */
+ #define TELOPT_EXTENDED_OPTIONS_LIST 255 /* RFC 861 */
 
 #define TELOPT_SUB_IS   0
 #define TELOPT_SUB_SEND 1
