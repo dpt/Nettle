@@ -30,6 +30,10 @@ static struct session_struct *changedsession;
 static struct coordspair changedbox;
 
 static char csi_sequence[8];
+static void handle_iac_will(struct session_struct* session);
+static void handle_iac_wont(struct session_struct* session);
+static void handle_iac_do(struct session_struct* session);
+static void handle_iac_dont(struct session_struct* session);
 
 void changedbox_init (struct session_struct *session)
 {
@@ -83,55 +87,6 @@ void force_redraw_changedbox (void)
                 -changedbox.tl.y * redraw.r_charh << eig.y);
 }
 
-static char status_positive(char iac_type)
-{
-  switch (iac_type)
-  {
-    case TELNET_WILL:
-      return TELNET_DO;
-      break;
-
-    case TELNET_WONT:
-      return TELNET_DONT;
-      break;
-
-    case TELNET_DO:
-      return TELNET_WILL;
-      break;
-
-    case TELNET_DONT:
-      return TELNET_WONT;
-      break;
-  }
-
-  generror("Invalid IAC type",false);
-  return 0;
-}
-
-static int status_negative(int iac_type)
-{
-  switch (iac_type)
-  {
-    case TELNET_WILL:
-      return TELNET_DONT;
-      break;
-
-    case TELNET_WONT:
-      return TELNET_DONT;
-      break;
-
-    case TELNET_DO:
-      return TELNET_WONT;
-      break;
-
-    case TELNET_DONT:
-      return TELNET_WONT;
-      break;
-  }
-
-  generror("Invalid IAC type",false);
-  return 0;
-}
 
 static void shuffle_up(struct session_struct *session, int start, int end)
 {
@@ -1306,90 +1261,151 @@ static bool process_escape_length_3(struct session_struct *session)
     case 255:
       {
         /* IAC */
+				
         int iac_type=session->escape_string[1];
 
         switch (iac_type)
         {
-          case TELNET_WILL:
-          case TELNET_DO:
-            switch (session->escape_string[2])
-            {
-              case TELOPT_ECHO:
-              case TELOPT_TERMINAL_TYPE:
-              case TELOPT_NAWS:
-              case TELOPT_TERMINAL_SPEED:
-              case TELOPT_XDISPLOC:
-                if (session->session_flags[(unsigned char) session->escape_string[2]]==false)
-                {
-                  char block[3];
+        case TELNET_WILL: /* Informational/Confirmational - remote end says it will do something */
+				  handle_iac_will(session);
+	        done = true;
+					break;
+        case TELNET_WONT: /* Informational/Confirmational - remote end says it will NOT do something */
+				  handle_iac_wont(session);
+	        done = true;
+					break;
 
-                  block[0]=TELNET_IAC;
-                  block[1]=status_positive(iac_type);
-                  block[2]=session->escape_string[2];
-                  nettle_senddata(session,block,3);
-
-                }
-
-                session->session_flags[(unsigned char) session->escape_string[2]]=true;
-
-                if (session->escape_string[2]==TELOPT_NAWS)
-                {
-                  char block[9];
-
-                  block[0]=TELNET_IAC;
-                  block[1]=TELNET_SB;
-                  block[2]=TELOPT_NAWS;
-                  block[3]=session->terminal_size.x / 256;
-                  block[4]=session->terminal_size.x % 256;
-                  block[5]=session->terminal_size.y / 256;
-                  block[6]=session->terminal_size.y % 256;
-                  block[7]=TELNET_IAC;
-                  block[8]=TELNET_SE;
-                  nettle_senddata(session,block,9);
-                }
-
-                break;
-              default:
-                {
-                  char block[3];
-
-                  block[0]=TELNET_IAC;
-                  block[1]=status_negative(iac_type);
-                  block[2]=session->escape_string[2];
-                  nettle_senddata(session,block,3);
-
-                  printf("For information: Telnet option %d, %d not supported\n",iac_type, session->escape_string[2]);
-                }
-
-                session->session_flags[(unsigned char) session->escape_string[2]]=false;
-
-                break;
-            }
-            done=true;
-            break;
-          case TELNET_WONT:
-          case TELNET_DONT:
-            if (session->session_flags[(unsigned char) session->escape_string[2]]==true)
-            {
-              char block[3];
-
-              block[0]=TELNET_IAC;
-              block[1]=status_negative(iac_type);
-              block[2]=session->escape_string[2];
-              nettle_senddata(session,block,3);
-
-            }
-
-            session->session_flags[(unsigned char) session->escape_string[2]]=false;
-
-            done=true;
-            break;
-        }
-      }
-      break;
+        case TELNET_DO:   /* Request/Ack - remote end wants us to do something */
+				  handle_iac_do(session);
+	        done = true;
+					break;
+        case TELNET_DONT: /* Refusal/NAck - remote end refuses to do something (which maybe we asked it to do) */
+				  handle_iac_dont(session);
+	        done = true;
+					break;
+				}
+				
+		  }
+      break; /* case iac */
   }
 
   return done;
+}
+
+#define SESSIONFLAG session->session_flags[(unsigned char) session->escape_string[2]]
+
+static void handle_iac_will(struct session_struct* session)
+{
+	/* By default, if we don't recognise something that the remote is saying it can do */
+	/* Then we ask it not to do that */
+	char ret = TELNET_DONT; 
+
+  char block[3];
+
+  switch (session->escape_string[2])
+  {
+  case TELOPT_ECHO:
+	  session->local_echo = false;
+  case TELOPT_TERMINAL_TYPE:
+  case TELOPT_NAWS:
+  case TELOPT_TERMINAL_SPEED:
+  case TELOPT_XDISPLOC:
+  case TELOPT_SUPPRESS_GO_AHEAD:
+	  ret = TELNET_DO;
+	  break;
+	}
+
+  block[0]=TELNET_IAC;
+  block[1]=ret;
+  block[2]=session->escape_string[2];
+  nettle_senddata(session,block,3);
+}
+
+
+static void handle_iac_wont(struct session_struct* session)
+{
+  /* This is the most potential upset for us */
+	/* We (probably) asked the remote end to do something, and it's refusing */
+	/* (Or it's just telling us it won't do something, because it feels like telling us!) */
+
+  /* Currently, we act dumb and just say "ok, don't do that, then" */
+	/* But we might want to be smarter in future.  Eg, if we have local echo turned off and we asked */
+	/* For the remote to echo, and it refuses, we could turn our local echo back on and/or send a WILL */
+
+  char block[3];
+
+  block[0]=TELNET_IAC;
+  block[1]=TELNET_DONT;
+  block[2]=session->escape_string[2];
+  nettle_senddata(session,block,3);
+}
+
+
+static void handle_iac_do(struct session_struct* session)
+{
+	/* By default, if we don't recognise something that the remote asking us to do */
+	/* Then we well it we cannot to do that */
+	bool ret = false; 
+
+  char block[9];
+
+  switch (session->escape_string[2])
+  {
+  case TELOPT_ECHO:
+  case TELOPT_TERMINAL_TYPE:
+  case TELOPT_NAWS:
+  case TELOPT_TERMINAL_SPEED:
+  case TELOPT_XDISPLOC:
+  case TELOPT_SUPPRESS_GO_AHEAD:
+    ret = true;
+		break;
+  default:
+		printf("For information: Telnet IAC DO %d not supported\n", session->escape_string[2]);
+		break;
+  }
+
+  if (SESSIONFLAG != ret || ret==false)
+	{
+    block[0]=TELNET_IAC;
+    block[1]=ret == true ? TELNET_WILL : TELNET_WONT;
+    block[2]=session->escape_string[2];
+    nettle_senddata(session,block,3);
+
+		SESSIONFLAG = ret;
+  }
+
+  if (session->escape_string[2]==TELOPT_NAWS)
+  {
+    block[0]=TELNET_IAC;
+    block[1]=TELNET_SB;
+    block[2]=TELOPT_NAWS;
+    block[3]=session->terminal_size.x / 256;
+    block[4]=session->terminal_size.x % 256;
+    block[5]=session->terminal_size.y / 256;
+    block[6]=session->terminal_size.y % 256;
+    block[7]=TELNET_IAC;
+    block[8]=TELNET_SE;
+    nettle_senddata(session,block,9);
+  }
+}
+
+
+static void handle_iac_dont(struct session_struct* session)
+{
+  /* Remote is DEMANDING that we do not do something */
+	/* We're obedient - we reply that we won't do it, as they ask */
+
+  if (SESSIONFLAG==true)
+  {
+    char block[3];
+
+    block[0]=TELNET_IAC;
+    block[1]=TELNET_WONT;
+    block[2]=session->escape_string[2];
+    nettle_senddata(session,block,3);
+
+    SESSIONFLAG=false;
+  }
 }
 
 
@@ -2138,7 +2154,8 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 12:
                           /* Turn off local echo (NB. just using telnet's local echo stuff) */
-                          session->session_flags[1]=true;
+                          /* session->session_flags[1]=true; */
+													session->local_echo = false;
                           break;
                         case 20:
                           /* Make LF,FF,VT move to first column of next line */
@@ -2290,7 +2307,8 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 12:
                           /* Turn on local echo (NB. just using telnet's echo stuff) */
-                          session->session_flags[1]=false;
+                          /* session->session_flags[1]=false; */
+													session->local_echo = true;
                           break;
                         case 20:
                           /* Make LF,FF,VT move to next line (normal behaviour) */
@@ -2566,6 +2584,9 @@ static bool process_escape_length_x(struct session_struct *session)
             {
               case 0:
                 /* Change Icon Name and Window Title to Pt */
+		/* Fall through */
+	      case 2:
+                /* Change Window Title to Pt */
                 {
                   char string[256];
                   int loop=esc_instr(session->escape_string,
@@ -2580,33 +2601,18 @@ static bool process_escape_length_x(struct session_struct *session)
                   set_title_bar(session->window_handle,string);
                 }
                 break;
+/*
               case 1:
-                /* Change Icon Name to Pt */
-                break;
-              case 2:
-                /* Change Window Title to Pt */
-                {
-                  char string[256];
-                  int loop=esc_instr(session->escape_string,
-                                     ";", session->escape_string_length)+1;
-                  int counter=0;
-
-                  while (session->escape_string[loop]!=7)
-                  {
-                    string[counter]=session->escape_string[loop];
-                    counter++;
-                    loop++;
-                  }
-                  string[counter]='\0';
-                  set_title_bar(session->window_handle,string);
-                }
-                break;
+*/              /* Change Icon Name to Pt */
+/*              break;
               case 46:
-                /* Change Log File to Pt */
-                break;
+*/              /* Change Log File to Pt */
+/*              break;
               case 50:
-                /* Set Font to Pt */
-                break;
+*/              /* Set Font to Pt */
+/*              break;
+
+*/
             }
 
             done=true;
@@ -2642,15 +2648,16 @@ static bool process_escape_length_x(struct session_struct *session)
               case TELOPT_TERMINAL_SPEED:
                 if (session->escape_string[3]==TELOPT_SUB_SEND)
                 {
-                  char block[256];
+                  char block[256],len;
                   block[0]=TELNET_IAC;
                   block[1]=TELNET_SB;
                   block[2]=TELOPT_TERMINAL_SPEED;
                   block[3]=TELOPT_SUB_IS;
-                  strcpy(block+4,"9600");
-                  block[4+strlen("9600")]=TELNET_IAC;
-                  block[5+strlen("9600")]=TELNET_SE;
-                  nettle_senddata(session,block,6+strlen("9600"));
+                  sprintf(block+4,"%d,%d",TERMINAL_SPEED, TERMINAL_SPEED);
+	                len=strlen(block+4);
+                  block[4+len]=TELNET_IAC;
+                  block[5+len]=TELNET_SE;
+                  nettle_senddata(session,block,6+len);
                   done=true;
                 }
                 break;
@@ -2681,6 +2688,7 @@ static bool process_escape_length_x(struct session_struct *session)
                   block[9+strlen(name)]=TELNET_SE;
 
                   block[10+strlen(name)]='\0';
+/*
                   printf("TELOPT_XDISPLOC: ");
                   {
                     int loop;
@@ -2690,7 +2698,7 @@ static bool process_escape_length_x(struct session_struct *session)
                     }
                     printf("\n");
                   }
-
+*/
                   nettle_senddata(session,block,10+strlen(name));
                   done=true;
                 }
@@ -2931,7 +2939,7 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
 
   size_of_block = decode_key (session, key, extra, block);
 
-  if (session->session_flags[1]==false)
+  if (session->local_echo == true) /* session->session_flags[1]==false) */
   {
     int loop;
 
@@ -3122,7 +3130,7 @@ void process_data_transmission(struct session_struct *session,
 
     size_of_block = decode_key (session, key, 0, block);
 
-    if (session->session_flags[1]==false)
+    if (session->local_echo == true) /* session->session_flags[1]==false) */
     {
       int loop;
 
