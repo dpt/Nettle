@@ -90,8 +90,8 @@ void open_window_centred (int window_handle)
 
 static void wimp_pollresolve(struct session_struct *session)
 {
-  switch(socket_resolvehost(session->socket_host,
-                            &session->socket_ip))
+  switch (socket_resolvehost(session->socket_host,
+                             &session->socket_ip))
   {
     case RESOLVER_INPROGRESS:
       /* not finished yet */
@@ -167,9 +167,14 @@ static void wimp_pollsocket(struct session_struct *session)
 
   packet_length = recv(session->socket_handle, receive_block,
                        RECEIVE_BLOCK_LENGTH, 0);
-
+  
+  if (packet_length == -1 && errno == EWOULDBLOCK)
+    /* we've read all the available data */
+    return;
+  
   if (packet_length == 0 || packet_length == -1)
   {
+    /* EOF or error condition */
     set_title_bar(session->window_handle, lookup_static("title_disconnect"));
     reset_terminal(session);
     if (packet_length == 0)
@@ -184,17 +189,16 @@ static void wimp_pollsocket(struct session_struct *session)
       write_out_strings(session, "\r\n", "Nettle: Socket error ", errorstr,
                         " occurred", 0);
     }
-
+  
     write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
     socket_close(session->socket_handle);
     session->socket_handle=0;
     session->socket_state=NETTLE_SESSION_NONE;
+    
+    return;
   }
-  else
-  {
-    /* deal with data from socket */
-    write_out_data(session, receive_block, packet_length);
-  }
+
+  write_out_data(session, receive_block, packet_length);
 }
 
 
@@ -275,6 +279,9 @@ static void wimp_pollsessions(void)
 
 void wimp_nullreasoncode(void)
 {
+  if (socketwatch_pollword != NULL)
+    *socketwatch_pollword = 0;
+
   wimp_pollsessions();
 
   close_log(false);

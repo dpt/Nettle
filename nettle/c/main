@@ -50,9 +50,6 @@ int main(void)
     event = _swi(Wimp_PollIdle, _INR(0,3) | _RETURN(0),
                  mask, &wimp_block, nextpolltime, socketwatch_pollword);
 
-    if (socketwatch_pollword != NULL)
-      *socketwatch_pollword = 0;
-
     switch (event)
     {
       case 0:
