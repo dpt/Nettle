@@ -68,23 +68,22 @@ void refresh_selection_clear(void)
 
 void selection_adjust(int x,int x_pos, int y, int y_pos)
 {
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
-
   if (selection_session)
   {
-    int click_point=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-		selection_session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
+    int click_point = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+                      * selection_session->terminal_size.x
+                      + (((x - x_pos) / redraw.r_charw) >> eig.x);
 
     if (click_point<0)
     {
       click_point=0;
     }
-    if (click_point>(selection_session->terminal_size_x*
-				(selection_session->terminal_size_y+
+    if (click_point>(selection_session->terminal_size.x*
+				(selection_session->terminal_size.y+
 					selection_session->scrollback)))
     {
-      click_point=(selection_session->terminal_size_x*
-				(selection_session->terminal_size_y+
+      click_point=(selection_session->terminal_size.x*
+				(selection_session->terminal_size.y+
 					selection_session->scrollback));
     }
 
@@ -119,32 +118,31 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
     refresh_selection_set();
 
     force_redraw(selection_session->window_handle,0,
-       (-selection_session->terminal_size_y-
+       (-selection_session->terminal_size.y-
 	selection_session->scrollback)*
-	redraw.r_charh*2*zap_yeig,
-	      selection_session->terminal_size_x*redraw.r_charw*2,0);
+	redraw.r_charh << eig.y,
+	      selection_session->terminal_size.x*redraw.r_charw << eig.x,0);
   }
 }
 
 static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 {
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
-
   if (selection_session)
   {
-    int click_point=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-		selection_session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
+    int click_point = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+                      * selection_session->terminal_size.x
+                      + (((x - x_pos) / redraw.r_charw) >> eig.x);
 
     if (click_point<0)
     {
       click_point=0;
     }
-    if (click_point>(selection_session->terminal_size_x*
-				(selection_session->terminal_size_y+
+    if (click_point>(selection_session->terminal_size.x*
+				(selection_session->terminal_size.y+
 					selection_session->scrollback)))
     {
-      click_point=(selection_session->terminal_size_x*
-				(selection_session->terminal_size_y+
+      click_point=(selection_session->terminal_size.x*
+				(selection_session->terminal_size.y+
 					selection_session->scrollback));
     }
 
@@ -163,10 +161,10 @@ static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
     refresh_selection_set();
 
     force_redraw(selection_session->window_handle,0,
-       (-selection_session->terminal_size_y-
+       (-selection_session->terminal_size.y-
 	selection_session->scrollback)*
-	redraw.r_charh*2*zap_yeig,
-	      selection_session->terminal_size_x*redraw.r_charw*2,0);
+	redraw.r_charh << eig.y,
+	      selection_session->terminal_size.x*redraw.r_charw << eig.x, 0);
   }
 }
 
@@ -185,7 +183,7 @@ void save_selection(char *filename, bool ansi_colour)
   if (file_handle==0)
   {
     char string[1024];
-    sprintf(string,"Failed to open file '%s' for writing",filename);
+    sprintf (string, lookup_static ("cantwrite"), filename);
     generror(string, false);
     return;
   }
@@ -205,7 +203,7 @@ void save_selection(char *filename, bool ansi_colour)
   {
     if (loop!=loop_start*4)
     {
-      if ((loop % (selection_session->terminal_size_x*4))==0)
+      if ((loop % (selection_session->terminal_size.x*4))==0)
       {
 	fputc('\n',file_handle);
       }
@@ -269,7 +267,6 @@ void handle_selection_drag(void)
   int x, y, buttons, window_handle, icon_handle;
   int x_pos, y_pos;
   bool do_scroll;
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   {
     struct wimp_getpointerinfo_block block;
@@ -342,16 +339,16 @@ void handle_selection_drag(void)
       /* Drag SELECT - clear the selection, re-work it out, and set it again, then redraw */
       refresh_selection_clear();
 
-      selection_end=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-				selection_session->terminal_size_x)+
-								((x-x_pos)/redraw.r_charw/2);
+      selection_end = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+                      * selection_session->terminal_size.x
+                      + (((x - x_pos) / redraw.r_charw) >> eig.x);
 
-      if (selection_end>(selection_session->terminal_size_x*
-				(selection_session->terminal_size_y+
+      if (selection_end>(selection_session->terminal_size.x*
+				(selection_session->terminal_size.y+
 					selection_session->scrollback)))
       {
-	selection_end=(selection_session->terminal_size_x*
-				(selection_session->terminal_size_y+
+	selection_end=(selection_session->terminal_size.x*
+				(selection_session->terminal_size.y+
 					selection_session->scrollback));
       }
       if (selection_end<0)
@@ -362,10 +359,10 @@ void handle_selection_drag(void)
       refresh_selection_set();
 
       force_redraw(selection_session->window_handle,0,
-	       (-selection_session->terminal_size_y-
+	       (-selection_session->terminal_size.y-
 		selection_session->scrollback)*
-		redraw.r_charh*2*zap_yeig,
-		      selection_session->terminal_size_x*redraw.r_charw*2,0);
+		redraw.r_charh << eig.y,
+		selection_session->terminal_size.x*redraw.r_charw << eig.x, 0);
 
       break;
     case 1:
@@ -379,13 +376,9 @@ void handle_selection_drag(void)
 void force_redraw_selection (struct session_struct *session)
 {
   int top, bottom;
-  int xeig, yeig;
 
   if (session != selection_session)
     return;
-
-  xeig = _swi (OS_ReadModeVariable, _INR(0,1) | _RETURN(2), -1, 4);
-  yeig = _swi (OS_ReadModeVariable, _INR(0,1) | _RETURN(2), -1, 5);
 
   if (selection_start <= selection_end)
   {
@@ -398,11 +391,11 @@ void force_redraw_selection (struct session_struct *session)
     bottom = selection_start;
   }
 
-  top /= session->terminal_size_x;
-  bottom /= session->terminal_size_x;
+  top /= session->terminal_size.x;
+  bottom /= session->terminal_size.x;
 
   force_redraw (session->window_handle, 0,
-	        (-bottom - 1) * redraw.r_charh << yeig,
-		selection_session->terminal_size_x * redraw.r_charw << xeig,
-		-top * redraw.r_charh << yeig);
+	        (-bottom - 1) * redraw.r_charh << eig.y,
+		selection_session->terminal_size.x * redraw.r_charw << eig.x,
+		-top * redraw.r_charh << eig.y);
 }

@@ -10,6 +10,7 @@
 #define MISC_H
 
 char *lookup(const char *, char *, int);
+const char *lookup_static(const char *);
 char *get_system_variable(char *, const char *, int);
 int binary(const char *);
 int instr(const char *, const char *);

@@ -69,8 +69,9 @@ void null_reason_code(void)
             /* not finished yet */
             break;
           case RESOLVER_FAILED:
-            set_title_bar(current_session->window_handle,"nettle (Disconnected)");
-            write_out_string(current_session, "nettle: Failed to resolve remote host\r\n");
+            set_title_bar (current_session->window_handle,
+                           lookup_static ("title_disconnect"));
+            write_out_strings (current_session, lookup_static ("noresolv"), "\r\n", 0);
             current_session->socket_state=NETTLE_SESSION_NONE;
             break;
           case RESOLVER_SUCCESS:
@@ -81,13 +82,14 @@ void null_reason_code(void)
             if (current_session->socket_handle!=-1)
             {
               current_session->socket_state = NETTLE_SESSION_CONNECT;
-              write_out_string(current_session, "nettle: Connecting to ");
-              write_out_string(current_session, socket_ip_string(current_session->socket_ip));
-              write_out_string(current_session, "...\r\n");
+              write_out_strings (current_session, lookup_static ("connecting"),
+                                 socket_ip_string(current_session->socket_ip),
+                                 "...\r\n", 0);
             }
             else
             {
-              write_out_string(current_session,"nettle: Failed to create socket\r\n");
+              write_out_strings (current_session, lookup_static ("nosocket"),
+                                 "\r\n", 0);
               current_session->socket_state=NETTLE_SESSION_NONE;
             }
         }
@@ -96,8 +98,9 @@ void null_reason_code(void)
         switch (socket_connected(current_session->socket_handle))
         {
           case -6:
-            set_title_bar(current_session->window_handle,"nettle (Connection refused)");
-            write_out_string(current_session,"nettle: Connection refused\r\n");
+            set_title_bar (current_session->window_handle,
+                           lookup_static ("title_noconn"));
+            write_out_strings (current_session, lookup_static ("noconn"), "\r\n", 0);
             socket_close(current_session->socket_handle);
 
             current_session->socket_handle=0;
@@ -115,9 +118,9 @@ void null_reason_code(void)
               set_title_bar(current_session->window_handle,string);
 
               current_session->socket_state = NETTLE_SESSION_CONNECTED;
-              write_out_string(current_session, "nettle: Connected to ");
-              write_out_string(current_session, socket_ip_string(current_session->socket_ip));
-              write_out_string(current_session, "\r\n");
+              write_out_strings (current_session, lookup_static ("connected"),
+                                 socket_ip_string (current_session->socket_ip),
+                                 "\r\n", 0);
               break;
            }
         }
@@ -139,9 +142,10 @@ void null_reason_code(void)
           {
             if (packet_length==-1)
             {
-              set_title_bar(current_session->window_handle,"nettle (Disconnected)");
-              write_out_string(current_session,"\r\nnettle: Remote has closed connection\r\n");
-              write_out_string(current_session,"nettle: Disconnected\r\n");
+              set_title_bar (current_session->window_handle,
+                             lookup_static ("title_disconnect"));
+              write_out_strings (current_session, "\r\n", lookup_static ("closed"),
+                                 "\r\n", lookup_static ("disconn"), "\r\n", 0);
               socket_close(current_session->socket_handle);
               current_session->socket_handle=0;
               current_session->socket_state=NETTLE_SESSION_NONE;
@@ -180,8 +184,8 @@ void redraw_window(int window_handle)
   {
     zapgen_code(zapredraw_area,
                 session->assigned_area,
-                session->terminal_size_x,
-                session->terminal_size_y + session->scrollback,
+                session->terminal_size.x,
+                session->terminal_size.y + session->scrollback,
                 session->other_session_flags);
 
     redraw.r_data = zapredraw_area;
@@ -243,9 +247,8 @@ void open_window(int window_handle, bool poll_flag)
     if (_swi (OS_Byte, _INR(0,2) | _RETURN(1), 129, 254, 255))
     {
       /* Ctrl pressed - limit to the number of rows */
-      int yeig = _swi (OS_ReadModeVariable, _INR(0,1) | _RETURN(2), -1, 5);
       int height = block->maxy - block->miny;
-      int maxheight = (session->terminal_size_y * redraw.r_charh) << yeig;
+      int maxheight = (session->terminal_size.y * redraw.r_charh) << eig.y;
       if (height > maxheight)
         block->miny = block->maxy - maxheight;
     }
@@ -443,8 +446,6 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
   int x_pos;
   int y_pos;
 
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
-
   /* if we're not pressing MENU */
   if (buttons!=2 && buttons!=32)
   {
@@ -486,15 +487,16 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       refresh_selection_clear();
 
       selection_session = session;
-      selection_start=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-		       session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
+      selection_start = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+                        * session->terminal_size.x
+                        + (((x - x_pos) / redraw.r_charw) >> eig.x);
 
-      if (selection_start > (selection_session->terminal_size_x*
-			    (selection_session->terminal_size_y+
+      if (selection_start > (selection_session->terminal_size.x*
+			    (selection_session->terminal_size.y+
 				    selection_session->scrollback)))
       {
-	selection_start=(selection_session->terminal_size_x*
-			    (selection_session->terminal_size_y+
+	selection_start=(selection_session->terminal_size.x*
+			    (selection_session->terminal_size.y+
 				    selection_session->scrollback));
       }
 
@@ -513,15 +515,16 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 	refresh_selection_clear();
 
 	selection_session = session;
-	selection_start=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-		       session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
+	selection_start = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+			  * session->terminal_size.x
+			  + (((x - x_pos) / redraw.r_charw) >> eig.x);
 
-	if (selection_start>(selection_session->terminal_size_x*
-			    (selection_session->terminal_size_y+
+	if (selection_start>(selection_session->terminal_size.x*
+			    (selection_session->terminal_size.y+
 				    selection_session->scrollback)))
 	{
-	  selection_start=(selection_session->terminal_size_x*
-			    (selection_session->terminal_size_y+
+	  selection_start=(selection_session->terminal_size.x*
+			    (selection_session->terminal_size.y+
 				    selection_session->scrollback));
 	}
 
@@ -545,10 +548,10 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       {
 	refresh_selection_clear();
 	force_redraw(selection_session->window_handle,0,
-	  (-selection_session->terminal_size_y-
+	  (-selection_session->terminal_size.y-
 	    selection_session->scrollback)*
-	    redraw.r_charh*2*zap_yeig,
-	       selection_session->terminal_size_x*redraw.r_charw*2,0);
+	    redraw.r_charh << eig.y,
+	       selection_session->terminal_size.x*redraw.r_charw << eig.x,0);
 	selection_session = NULL;
       }
       break;
@@ -957,14 +960,12 @@ void menu_choice()
             case 3:
               {
                 /* Clear selection */
-                int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
-
                 refresh_selection_clear();
                 force_redraw(selection_session->window_handle,0,
-               			(-selection_session->terminal_size_y-
+               			(-selection_session->terminal_size.y-
                			selection_session->scrollback)*
-               			redraw.r_charh*2*zap_yeig,
-                      		selection_session->terminal_size_x*redraw.r_charw*2,0);
+               			redraw.r_charh << eig.y,
+                      		selection_session->terminal_size.x*redraw.r_charw << eig.x,0);
 
                 selection_session = NULL;
               }
@@ -1088,7 +1089,6 @@ void lose_caret()
 {
   struct session_struct *session = sessions;
   int calc;
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   while (session && wimp_block.caret.window_handle != session->window_handle)
   {
@@ -1111,10 +1111,10 @@ void lose_caret()
       			   read_assigned_flags(session, calc) | NETTLE_FLAG_NO_INPUT);
 
       force_redraw(session->window_handle,
-      		   session->xpos*redraw.r_charw*2,
-		   (-session->ypos-1)*redraw.r_charh*2*zap_yeig,
-		   (session->xpos+1)*redraw.r_charw*2,
-		   (-session->ypos)*redraw.r_charh*2*zap_yeig);
+      		   session->pos.x*redraw.r_charw << eig.x,
+		   (-session->pos.y-1)*redraw.r_charh << eig.y,
+		   (session->pos.x+1)*redraw.r_charw << eig.x,
+		   (-session->pos.y)*redraw.r_charh << eig.y);
     }
     return;
   }
@@ -1134,10 +1134,10 @@ void lose_caret()
     			 read_assigned_flags(session, calc) | NETTLE_FLAG_NO_INPUT);
 
     force_redraw(session->window_handle,
-    		 session->xpos*redraw.r_charw*2,
-		 (-session->ypos-1)*redraw.r_charh*2*zap_yeig,
-		 (session->xpos+1)*redraw.r_charw*2,
-		 (-session->ypos)*redraw.r_charh*2*zap_yeig);
+    		 session->pos.x*redraw.r_charw << eig.x,
+		 (-session->pos.y-1)*redraw.r_charh << eig.y,
+		 (session->pos.x+1)*redraw.r_charw << eig.x,
+		 (-session->pos.y)*redraw.r_charh*2 << eig.y);
   }
 }
 
@@ -1149,7 +1149,6 @@ void gain_caret()
 {
   struct session_struct *session = sessions;
   int calc;
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   while (session && wimp_block.caret.window_handle != session->window_handle)
   {
@@ -1165,10 +1164,10 @@ void gain_caret()
     			 read_assigned_flags(session, calc) & ~NETTLE_FLAG_NO_INPUT);
 
     force_redraw(session->window_handle,
-    		 session->xpos*redraw.r_charw*2,
-		 (-session->ypos-1)*redraw.r_charh*2*zap_yeig,
-		 (session->xpos+1)*redraw.r_charw*2,
-	         (-session->ypos)*redraw.r_charh*2*zap_yeig);
+    		 session->pos.x*redraw.r_charw << eig.x,
+		 (-session->pos.y-1)*redraw.r_charh << eig.y,
+		 (session->pos.x+1)*redraw.r_charw << eig.x,
+	         (-session->pos.y)*redraw.r_charh << eig.y);
 
     if (line_editor_active(session))
     {
@@ -1203,10 +1202,10 @@ void gain_caret()
     			 read_assigned_flags(session, calc) & ~NETTLE_FLAG_NO_INPUT);
 
     force_redraw(session->window_handle,
-    		 session->xpos*redraw.r_charw*2,
-		 (-session->ypos-1)*redraw.r_charh*2*zap_yeig,
-		 (session->xpos+1)*redraw.r_charw*2,
-		 (-session->ypos)*redraw.r_charh*2*zap_yeig);
+    		 session->pos.x*redraw.r_charw << eig.x,
+		 (-session->pos.y-1)*redraw.r_charh << eig.y,
+		 (session->pos.x+1)*redraw.r_charw << eig.x,
+	         (-session->pos.y)*redraw.r_charh << eig.y);
 
     {
       struct wimp_getcaretposition_block block;
@@ -1315,7 +1314,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         {
           session->socket_state = NETTLE_SESSION_CONNECTED;
           session->socket_handle = sender_ref;
-          set_title_bar(session->window_handle,"nettle (Open)");
+          set_title_bar (session->window_handle, lookup_static ("title_open"));
         }
       }
       break;
@@ -1334,12 +1333,12 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
 
         if (session)
         {
-          set_title_bar(session->window_handle,"nettle (Closed)");
+          set_title_bar (session->window_handle, lookup_static ("title_closed"));
           session->socket_state=NETTLE_SESSION_NONE;
           session->socket_handle=0;
         }
 
-        write_out_string(session, "\r\nnettle: Taskwindow has closed\r\n");
+        write_out_strings (session, "\r\n", lookup_static ("twclosed"), "\r\n", 0);
       }
       break;
   }
@@ -1356,20 +1355,15 @@ void mode_change(void)
   int old_charw;
   int old_charh;
   struct session_struct *session = sessions;
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
+
+  eig.x = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 4);
+  eig.y = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 5);
 
   old_charw=redraw.r_charw;
   old_charh=redraw.r_charh;
 
   /* work out which font we should be using */
-  if (zap_yeig==1)
-  {
-    zap_font_used=zap_font_area;
-  }
-  else
-  {
-    zap_font_used=zap_lowres_font_area;
-  }
+  zap_font_used = (eig.y == 1) ? zap_font_area : zap_lowres_font_area;
 
   _swi(ZapRedraw_ReadVduVars, _IN(1), &redraw);
 
@@ -1437,7 +1431,7 @@ void mode_change(void)
   /* Resize all of the terminals to fit the new font size */
   while (session)
   {
-    reopen_and_size_window(session, session->terminal_size_x, session->terminal_size_y,
+    reopen_and_size_window(session, session->terminal_size.x, session->terminal_size.y,
                            old_charw, old_charh);
 
     session = session->next;
@@ -1848,10 +1842,10 @@ static void create_terminal_menu(void)
 
   {
     char string[8];
-    sprintf(string,"%d",terminal_menu_session->terminal_size_x);
+    sprintf(string,"%d",terminal_menu_session->terminal_size.x);
     set_icon_data(win_resize, 0, string);
 
-    sprintf(string,"%d",terminal_menu_session->terminal_size_y);
+    sprintf(string,"%d",terminal_menu_session->terminal_size.y);
     set_icon_data(win_resize, 2, string);
 
     sprintf(string,"%d",terminal_menu_session->scrollback);
@@ -1993,7 +1987,7 @@ void force_redraw(int window_handle, int minx, int miny, int maxx, int maxy)
 
 static void drag_start(int window_handle, int icon_handle)
 {
-  int xstart, ystart, xeig, yeig, xsize, ysize;
+  int xstart, ystart, xsize, ysize;
   char string[256];
 
   drag_window_handle=window_handle;
@@ -2010,13 +2004,11 @@ static void drag_start(int window_handle, int icon_handle)
     ystart=block.maxy-block.scroll_y;
   }
 
-  xeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 4);
-  yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
   xsize=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 11);
   ysize=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 12);
 
-  xsize*=xeig*2;
-  ysize*=yeig*2;
+  xsize <<= eig.x;
+  ysize <<= eig.y;
 
   {
     struct wimp_geticonstate_block gis_block;

@@ -103,6 +103,9 @@ void load_choices(void)
     read_boolean_choice(&line_editor, string, "LineEditor:");
     read_boolean_choice(&pass_f12, string, "PassF12:");
 
+    read_integer_choice(&defaultsize.x, string, "TerminalWidth:");
+    read_integer_choice(&defaultsize.y, string, "TerminalHeight:");
+    read_integer_choice(&defaultscroll, string, "TerminalScroll:");
     read_integer_choice(&line_editor_size, string, "LineEditorSize:");
   }
 

@@ -31,6 +31,19 @@ char *lookup(const char *token, char *buffer, int buf_size)
 }
 
 
+/* Looks up a messagetrans token and puts it in a static buffer*/
+
+const char *lookup_static(const char *token)
+{
+  static char buffer[256];
+  assert(token != NULL);
+
+  _swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer,
+                                                         sizeof (buffer));
+
+  return buffer;
+}
+
 
 /* Gets a system variable's contents */
 
@@ -244,6 +257,6 @@ bool dynamic_areas_available(void)
 {
   if (_swix(OS_DynamicArea, _INR(0,1), 3, -1))
     return false;
-    
+
   return true;
 }

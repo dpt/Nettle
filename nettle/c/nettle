@@ -17,6 +17,9 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
+#include "stdarg.h"
+
+
 static void allocate_zapredraw_area(int, int, int);
 
 
@@ -35,14 +38,14 @@ void dumptermdata(struct session_struct *session)
   int x;
   int y;
 
-  for (y = 0; y < session->terminal_size_y; y++)
+  for (y = 0; y < session->terminal_size.y; y++)
   {
-    for (x = 0; x < session->terminal_size_x; x++)
+    for (x = 0; x < session->terminal_size.x; x++)
     {
       assigned_data *ptr;
 
       ptr = (assigned_data *) session->assigned_area;
-      ptr += y * session->terminal_size_x + x;
+      ptr += y * session->terminal_size.x + x;
       printf("[%02d,%02d]: ", x, y);
       printf("'%c' (bg %d, fg %d, flags %x)\n",
              ptr->character, ptr->bg, ptr->fg, ptr->flags);
@@ -60,7 +63,6 @@ void start_connection(void)
   int loop;
   int connection_type;
   enum nettle_terminal terminal_type;
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
   struct session_struct *session;
 
   session = malloc(sizeof(struct session_struct));
@@ -233,26 +235,26 @@ void start_connection(void)
   }
 
   /* set all the attributes to their defaults */
-  session->terminal_size_x=80;
-  session->terminal_size_y=25;
-  session->scrollback=95;
+  session->terminal_size.x = defaultsize.x;
+  session->terminal_size.y = defaultsize.y;
+  session->scrollback = defaultscroll;
   session->title=malloc(256);
   assert(session->title != NULL);
   strcpy(session->title,"");
-  session->assigned_area=malloc(session->terminal_size_x*
-                                                (session->terminal_size_y+
+  session->assigned_area=malloc(session->terminal_size.x*
+                                                (session->terminal_size.y+
                                                  session->scrollback)*4);
   assert(session->assigned_area);
-  session->xpos=0;
-  session->ypos=session->scrollback;
+  session->pos.x=0;
+  session->pos.y=session->scrollback;
   session->connection_type=connection_type;
   session->terminal_type=terminal_type;
   reset_terminal(session);
 
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
   {
-    int loop_limit=((session->terminal_size_x)*
-                   (session->terminal_size_y+
+    int loop_limit=((session->terminal_size.x)*
+                   (session->terminal_size.y+
                     session->scrollback)*4);
 
     for (loop=0; loop<loop_limit; loop+=4)
@@ -263,7 +265,7 @@ void start_connection(void)
 
   /* create tabs */
   session->number_of_tabs=0;
-  for (loop=0; loop<session->terminal_size_x; loop+=8)
+  for (loop=0; loop<session->terminal_size.x; loop+=8)
   {
     session->tabs[session->number_of_tabs]=loop;
     session->number_of_tabs++;
@@ -290,13 +292,13 @@ void start_connection(void)
     struct wimp_createwindow_block block;
 
     block.minx         =102;
-    block.miny         =1088-(session->terminal_size_y*redraw.r_charh*2*zap_yeig);
-    block.maxx         =102+(session->terminal_size_x*redraw.r_charw*2);
+    block.miny         =1088-(session->terminal_size.y*redraw.r_charh << eig.y);
+    block.maxx         =102+(session->terminal_size.x*redraw.r_charw << eig.x);
     block.maxy         =1088;
     block.scroll_x     =0;
-    block.scroll_y     =-((session->terminal_size_y+
+    block.scroll_y     =-((session->terminal_size.y+
                            session->scrollback)
-                          *(redraw.r_charh*2*zap_yeig));
+                          *(redraw.r_charh << eig.y));
     block.handle_behind=-1;
     block.window_flags =0xff000002;
     block.title_fg     =7;
@@ -310,10 +312,10 @@ void start_connection(void)
     block.flags              =0;
 
     block.work_minx=0;
-    block.work_miny=-((session->terminal_size_y+
+    block.work_miny=-((session->terminal_size.y+
                        session->scrollback)
-                      *(redraw.r_charh*2*zap_yeig));
-    block.work_maxx=session->terminal_size_x*redraw.r_charw*2;
+                      *(redraw.r_charh << eig.y));
+    block.work_maxx=session->terminal_size.x*redraw.r_charw << eig.x;
     block.work_maxy=0;
 
     block.icon_flags    =0x00000119;
@@ -339,9 +341,9 @@ void start_connection(void)
     struct wimp_createwindow_block block;
 
     block.minx=102;
-    block.miny=1088-(session->terminal_size_y*redraw.r_charh*2*zap_yeig)-40;
-    block.maxx=102+(session->terminal_size_x*redraw.r_charw*2);
-    block.maxy=1088-(session->terminal_size_y*redraw.r_charh*2*zap_yeig);
+    block.miny=1088-(session->terminal_size.y*redraw.r_charh << eig.y)-40;
+    block.maxx=102+(session->terminal_size.x*redraw.r_charw << eig.x);
+    block.maxy=1088-(session->terminal_size.y*redraw.r_charh << eig.y);
 
     block.scroll_x=0;
     block.scroll_y=0;
@@ -361,7 +363,7 @@ void start_connection(void)
 
     block.work_minx=0;
     block.work_miny=-48;
-    block.work_maxx=session->terminal_size_x*redraw.r_charw*2;
+    block.work_maxx=session->terminal_size.x*redraw.r_charw << eig.x;
     block.work_maxy=0;
 
     block.icon_flags    =0x00000000;
@@ -395,14 +397,13 @@ void start_connection(void)
   switch (connection_type)
   {
     case NETTLE_TELNET:
-      set_title_bar(session->window_handle,"nettle (Connecting)");
-      write_out_string(session,"nettle: Looking up host ");
-      write_out_string(session,session->socket_host);
-      write_out_string(session,"...\r\n");
+      set_title_bar(session->window_handle, lookup_static ("title_conn"));
+      write_out_strings (session, lookup_static ("lookup"),
+                         session->socket_host, "...\r\n", 0);
       break;
   }
 
-  allocate_zapredraw_area(session->terminal_size_x, session->terminal_size_y, session->scrollback);
+  allocate_zapredraw_area(session->terminal_size.x, session->terminal_size.y, session->scrollback);
 
 }
 
@@ -411,17 +412,26 @@ void write_out_string(struct session_struct *session, const char *string)
   write_out_data(session, string, strlen(string));
 }
 
+void write_out_strings (struct session_struct *session, ...)
+{
+  va_list va;
+  const char *str;
+  va_start (va, session);
+
+  while ((str = va_arg (va, const char *)) != 0)
+  {
+    write_out_data(session, str, strlen (str));
+  }
+}
+
 void write_out_data(struct session_struct *session, const char *data, int length_data)
 {
   int loop, calc;
   char cursor_flags;
-  int zap_yeig;
 
   if (length_data == 0) {
     return;
   }
-
-  zap_yeig = _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   calc=get_cursor_position(session);
 
@@ -596,7 +606,7 @@ void reset_terminal(struct session_struct *session)
   session->escape_string_length=0;
   session->escape_state=NETTLE_ESCAPE_NONE;
   session->scroll_start=1;
-  session->scroll_end=session->terminal_size_y;
+  session->scroll_end=session->terminal_size.y;
   session->character_set=NETTLE_CHSET_G0;
 
   session->character_set_g0=NETTLE_CHSET_US;
@@ -607,9 +617,9 @@ void reset_terminal(struct session_struct *session)
 
 void write_assigned(struct session_struct *session ,int pointer, char fg, char bg, char flags, char character)
 {
-  if (pointer<0 || pointer>(session->terminal_size_y+
+  if (pointer<0 || pointer>(session->terminal_size.y+
     			    session->scrollback)*
-    			    session->terminal_size_x*4)
+    			    session->terminal_size.x*4)
   {
     printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
@@ -624,9 +634,9 @@ void write_assigned(struct session_struct *session ,int pointer, char fg, char b
 
 char read_assigned_fg(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session->terminal_size_y+
+  if (pointer<0 || pointer>(session->terminal_size.y+
     			    session->scrollback)*
-    			    session->terminal_size_x*4)
+    			    session->terminal_size.x*4)
   {
     printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
@@ -638,9 +648,9 @@ char read_assigned_fg(struct session_struct *session, int pointer)
 
 char read_assigned_bg(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session->terminal_size_y+
+  if (pointer<0 || pointer>(session->terminal_size.y+
     			    session->scrollback)*
-    			    session->terminal_size_x*4)
+    			    session->terminal_size.x*4)
   {
     printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
@@ -652,9 +662,9 @@ char read_assigned_bg(struct session_struct *session, int pointer)
 
 char read_assigned_flags(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session->terminal_size_y+
+  if (pointer<0 || pointer>(session->terminal_size.y+
     			    session->scrollback)*
-    			    session->terminal_size_x*4)
+    			    session->terminal_size.x*4)
   {
     printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
@@ -666,9 +676,9 @@ char read_assigned_flags(struct session_struct *session, int pointer)
 
 char read_assigned_character(struct session_struct *session, int pointer)
 {
-  if (pointer<0 || pointer>(session->terminal_size_y+
+  if (pointer<0 || pointer>(session->terminal_size.y+
     			    session->scrollback)*
-    			    session->terminal_size_x*4)
+    			    session->terminal_size.x*4)
   {
     printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
@@ -680,9 +690,9 @@ char read_assigned_character(struct session_struct *session, int pointer)
 
 void write_assigned_flags(struct session_struct *session, int pointer, char flags)
 {
-  if (pointer<0 || pointer>(session->terminal_size_y+
+  if (pointer<0 || pointer>(session->terminal_size.y+
     			    session->scrollback)*
-    			    session->terminal_size_x*4)
+    			    session->terminal_size.x*4)
   {
     printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
@@ -694,9 +704,9 @@ void write_assigned_flags(struct session_struct *session, int pointer, char flag
 
 void write_assigned_character(struct session_struct *session, int pointer, char character)
 {
-  if (pointer<0 || pointer>(session->terminal_size_y+
+  if (pointer<0 || pointer>(session->terminal_size.y+
     			    session->scrollback)*
-    			    session->terminal_size_x*4)
+    			    session->terminal_size.x*4)
   {
     printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
     generror("Erk", false);
@@ -710,16 +720,18 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
                      int scrollback, bool use_naws)
 {
   char *old_assigned_area=session->assigned_area;
-  int old_terminal_size_x=session->terminal_size_x;
-  int old_terminal_size_y=session->terminal_size_y;
+  struct coords old_terminal_size;
 
-  if (terminal_size_x != old_terminal_size_x || terminal_size_y !=
-      old_terminal_size_y || scrollback != session->scrollback)
+  old_terminal_size.x = session->terminal_size.x;
+  old_terminal_size.y = session->terminal_size.y;
+
+  if (terminal_size_x != old_terminal_size.x || terminal_size_y !=
+      old_terminal_size.y || scrollback != session->scrollback)
   {
     session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
     assert(session->assigned_area != NULL);
-    session->terminal_size_x=terminal_size_x;
-    session->terminal_size_y=terminal_size_y;
+    session->terminal_size.x=terminal_size_x;
+    session->terminal_size.y=terminal_size_y;
     session->scrollback     =scrollback;
 
     /* Blank area */
@@ -741,7 +753,7 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
   }
 
-  reopen_and_size_window(session, old_terminal_size_x, old_terminal_size_y,
+  reopen_and_size_window(session, old_terminal_size.x, old_terminal_size.y,
                          redraw.r_charw, redraw.r_charh);
 
   if (use_naws)
@@ -754,10 +766,10 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
       block[0]=255; /* IAC */
       block[1]=250; /* SB */
       block[2]=31;  /* NAWS */
-      block[3]=session->terminal_size_x / 256;
-      block[4]=session->terminal_size_x % 256;
-      block[5]=session->terminal_size_y / 256;
-      block[6]=session->terminal_size_y % 256;
+      block[3]=session->terminal_size.x / 256;
+      block[4]=session->terminal_size.x % 256;
+      block[5]=session->terminal_size.y / 256;
+      block[6]=session->terminal_size.y % 256;
       block[7]=255; /* IAC */
       block[8]=240; /* SE */
       nettle_senddata(session, block, 9);
@@ -768,14 +780,12 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
 void reopen_and_size_window(struct session_struct *session, int old_terminal_size_x,
                             int old_terminal_size_y, int old_charw, int old_charh)
 {
-  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
-
   {
     struct wimp_setextent_block block;
 
     block.minx=0;
-    block.miny=-((session->terminal_size_y+session->scrollback)*redraw.r_charh*2*zap_yeig);
-    block.maxx=session->terminal_size_x*redraw.r_charw*2;
+    block.miny=-((session->terminal_size.y+session->scrollback)*redraw.r_charh << eig.y);
+    block.maxx=session->terminal_size.x*redraw.r_charw << eig.x;
     block.maxy=0;
 
     _swi(Wimp_SetExtent, _INR(0,1), session->window_handle, &block);
@@ -784,7 +794,7 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     {
       block.minx=0;
       block.miny=-48;
-      block.maxx=session->terminal_size_x*redraw.r_charw*2;
+      block.maxx=session->terminal_size.x*redraw.r_charw << eig.x;
       block.maxy=0;
 
       _swi(Wimp_SetExtent, _INR(0,1), session->pane_handle, &block);
@@ -799,22 +809,22 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     _swi(Wimp_GetWindowState, _IN(1), &block);
 
     /* If terminal at fullsize, then reopen window at fullsize, otherwise leave it */
-    if (block.maxx-block.minx==(old_terminal_size_x*old_charw*2))
+    if (block.maxx-block.minx==(old_terminal_size_x*old_charw << eig.x))
     {
-      block.maxx=block.minx+(session->terminal_size_x*redraw.r_charw*2);
+      block.maxx=block.minx+(session->terminal_size.x*redraw.r_charw << eig.x);
     }
-    if (block.maxy-block.miny==(old_terminal_size_y*old_charh*2*zap_yeig))
+    if (block.maxy-block.miny==(old_terminal_size_y*old_charh << eig.y))
     {
-      block.miny=block.maxy-(session->terminal_size_y*redraw.r_charh*2*zap_yeig);
+      block.miny=block.maxy-(session->terminal_size.y*redraw.r_charh << eig.y);
     }
 
     /* wimp_openwindow_block is essentially the same as wimp_getwindowstate_block */
     _swi(Wimp_OpenWindow, _IN(1), &block);
 
     force_redraw(session->window_handle,0,
-                 (-session->terminal_size_y-session->scrollback)*
-                 redraw.r_charh*2*zap_yeig,
-                        session->terminal_size_x*redraw.r_charw*2,0);
+                 (-session->terminal_size.y-session->scrollback)*
+                 redraw.r_charh << eig.y,
+                        session->terminal_size.x*redraw.r_charw << eig.x,0);
     if (line_editor)
       open_pane_window(session, (struct wimp_openwindow_block *) &block);
   }

@@ -34,6 +34,8 @@ extern struct os_spriteop_area *sprite_area;
 extern int messagetrans_area[4];
 extern int *messagetrans_buffer;
 
+extern struct coords eig;
+
 extern int task_handle;
 extern int iconbar_handle;
 
@@ -48,6 +50,8 @@ extern bool logging;
 extern bool line_editor;
 extern bool pass_f12;
 extern int line_editor_size;
+extern struct coords defaultsize;
+extern int defaultscroll;
 
 struct session_struct
 {
@@ -57,10 +61,8 @@ struct session_struct
   int pane_handle;		/* pane window handle */
   char *assigned_area;		/* data area for terminal */
   enum nettle_terminal terminal_type; /* terminal type */
-  int xpos;			/* current x position */
-  int ypos;			/* current y position */
-  int terminal_size_x;		/* size of terminal in X */
-  int terminal_size_y;		/* size of terminal in Y */
+  struct coords pos;		/* current position */
+  struct coords terminal_size;	/* size of terminal */
   int scrollback;		/* size of scrollback */
   int socket_handle;		/* socket handle (or task handle etc.) */
   char socket_host[256];	/* hostname */
@@ -80,8 +82,7 @@ struct session_struct
   int other_session_flags;	/* other session flags (see nettle.h) */
   char connection_type;		/* connection type: telnet, ssh, etc. */
 
-  int old_xpos;			/* old X position */
-  int old_ypos;			/* old Y position */
+  struct coords old_pos;	/* old position */
   char old_current_fg;		/* old fg colour */
   char old_current_bg;		/* old bg colour */
   int old_current_flags;	/* old current flags */
