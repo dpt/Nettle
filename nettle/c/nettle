@@ -274,8 +274,27 @@ static void start_connection_int (struct connection_params *params )
 
         if (params->command && params->command[0]!='\0')
         {
-          sprintf (temp_string, "%%TaskWindow \"%s\" -ctrl -name \"Nettle task\"" \
-                     " -quit -task &%X -txt &%X", params->command, task_handle, (int)session);
+           FILE *pipefile;
+
+          /* To disable escape in ANSI TaskWindows, we need to execute
+             *FX 229,1 before the task proper is run.  Make an Obey file
+             in Pipe: to achieve this */
+
+           pipefile = fopen("Pipe:$.NettleTask", "w");
+           if (!pipefile)
+           {
+             generror("NoStartTask", true);
+             return;
+           }
+           else
+           {
+             fprintf(pipefile, "*fx 229,1\n%s\n", params->command);
+             fclose(pipefile);
+             misc_setfiletype("Pipe:$.NettleTask", 0xfeb);
+
+             sprintf (temp_string, "%%TaskWindow Pipe:$.NettleTask -ctrl -name \"Nettle task\"" \
+                        " -quit -task &%X -txt &%X", task_handle, (int)session);
+           }
         }
         else
         {

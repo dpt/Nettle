@@ -95,3 +95,4 @@ BadHotlist:Error in hotlist file. Has it been mis-edited by hand?
 nocreate:Nettle was unable to save the file: 
 CantSaveChoices:Nettle was unable to save its Choices file: 
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.
+NoStartTask:Nettle was unable to create an ANSI Task
