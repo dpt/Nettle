@@ -419,7 +419,7 @@ void wimp_nullreasoncode(void)
                         0,
                         (-session->terminal_size.y-session->scrollback) * redraw.r_charh <<eig.y,
                         session->terminal_size.x * redraw.r_charw << eig.x,
-                         -session->scrollback * redraw.r_charh << eig.y);
+                        0);
           }
         }
       }
