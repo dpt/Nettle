@@ -120,18 +120,13 @@ static void wimp_pollresolve(struct session_struct *session)
 
 static void wimp_pollconnect(struct session_struct *session)
 {
-  switch (socket_connected(session->socket_handle))
+  int retval;
+  
+  retval = socket_connected(session->socket_handle);
+  
+  switch (retval)
   {
-    case -6:
-      set_title_bar(session->window_handle,
-                     lookup_static("title_noconn"));
-      write_out_strings(session, lookup_static("noconn"), "\r\n", 0);
-      socket_close(session->socket_handle);
-
-      session->socket_handle=0;
-      session->socket_state=NETTLE_SESSION_NONE;
-      break;
-    case 4:
+    case 0:
       {
         char string[1024];
 
@@ -149,10 +144,28 @@ static void wimp_pollconnect(struct session_struct *session)
         main_requirenull = true; /* read any data waiting on the socket */
         break;
       }
-    default:
+
+    case -1:
       /* still connecting, take null polls */
       main_requirenull = true;
       break;
+
+    default:
+    {
+      char string[1024];
+      /* error, retval contains errno */
+      set_title_bar(session->window_handle,
+                     lookup_static("title_noconn"));
+      write_out_strings(session, lookup_static("noconn"), "\r\n", 0);
+      sprintf(string, "errno = %d", errno);
+      write_out_strings(session, string, "\r\n", 0);
+      /*FIXME: convert errno to proper string */
+      socket_close(session->socket_handle);
+
+      session->socket_handle=0;
+      session->socket_state=NETTLE_SESSION_NONE;
+      break;
+    }
   }
 }
 
