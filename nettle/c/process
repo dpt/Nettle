@@ -456,26 +456,14 @@ void byte_horizontal_tabulation(struct session_struct *session)
 void byte_reverse_horizontal_tabulation(struct session_struct *session)
 {
   /* Tab */
-  int loop;
-  int current_tab=session->terminal_size.x;
+  int loop=session->number_of_tabs-1;
 
-  for (loop=session->number_of_tabs-1; loop>=0; loop--)
-   {
-    if (session->tabs[loop]<session->pos.x &&
-        session->tabs[loop]>current_tab)
-    {
-      current_tab=session->tabs[loop];
-    }
+  while (loop>0 && session->tabs[loop]>session->pos.x)
+  {
+    loop--;
   }
 
-  if (current_tab < session->terminal_size.x)
-  {
-    session->pos.x = current_tab;
-  }
-  else
-  {
-    session->pos.x = 0;
-  }
+  session->pos.x = session->tabs[loop];
 }
 
 void byte_linefeed(struct session_struct *session)
