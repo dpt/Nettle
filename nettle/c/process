@@ -33,8 +33,8 @@ char csi_sequence[8];
 void changedbox_init (struct session_struct *session)
 {
   changedsession = session;
-  changedbox.tl.x = 255;
-  changedbox.tl.y = 255;
+  changedbox.tl.x = session->terminal_size.x;
+  changedbox.tl.y = session->terminal_size.y + session->scrollback;
   changedbox.br.x = 0;
   changedbox.br.y = 0;
 }
