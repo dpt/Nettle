@@ -21,4 +21,14 @@ char *get_country(char *, int);
 bool dynamic_areas_available(void);
 void misc_setfiletype(const char *filename, int type);
 
+
+
+/**
+ * printf like function for writing to the log file
+ *
+ * @param format  printf() style format string
+ * @param ...     parameters matching format string
+ */
+void logf(const char */*format*/, ...);
+
 #endif /* MISC_H */

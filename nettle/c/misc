@@ -121,13 +121,16 @@ char *read_mem(char *dest, const char *source, int max_length)
 
 
 
-/* log a string to the log file */
-void log_string(const char *string)
+/**
+ * Make sure the log file is open for append, creating it if necessary
+ *
+ * @return true if the logfile should be written to, false if logging is
+ *         disabled or the file open failed.
+ */
+static bool log_checkopen(void)
 {
-  assert(string != NULL);
-
   if (!logging)
-    return;
+    return false;
 
   if (log_file == NULL)
     log_file=fopen("<Nettle$Dir>.Log", "a");
@@ -136,11 +139,45 @@ void log_string(const char *string)
     log_file=fopen("<Nettle$Dir>.Log", "w");
 
   if (log_file == NULL)
-    return;
+    return false;
 
-  fputs(string,log_file);
+  return true;
+}
 
-  log_file_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
+
+
+/* log a string to the log file */
+void log_string(const char *string)
+{
+  assert(string != NULL);
+
+  if (log_checkopen())
+  {
+    fputs(string, log_file);
+    log_file_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
+  }
+}
+
+
+
+/**
+ * printf like function for writing to the log file
+ *
+ * @param format  printf() style format string
+ * @param ...     parameters matching format string
+ */
+void logf(const char *format, ...)
+{
+  assert(format != NULL);
+
+  if (log_checkopen())
+  {
+    va_list ap;
+    
+    va_start(ap, format);
+    vfprintf(log_file, format, ap);
+    va_end(ap);
+  }
 }
 
 
