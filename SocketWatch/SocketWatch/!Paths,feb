@@ -1,0 +1,3 @@
+Set SocketWatch$Path <Obey$Dir>.
+Set SocketWatchsource$Path <Obey$Dir>.
+Set SocketWatch$Write <Obey$Dir>
