@@ -1,6 +1,10 @@
-/* Choices code */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Nettle Choices code
+ * by A. Macfarlane Smith
+ * (C) Archifishal Software 2001
+ *
+ * $Id$
+ */
 
 #include "generic.h"
 #include "globals.h"
@@ -8,71 +12,28 @@
 #include "choices.h"
 #include "misc.h"
 
-void load_choices(void)
+
+
+static void read_choice(char *variable, const char *line, const char *lookfor)
 {
-  FILE *file_handle;
-  char choices_path[256];
-  char string[256];
-
-  get_system_variable(choices_path,"Choices$Write",256);
-
-  if (strlen(choices_path)==0)
+  int len = strlen(lookfor);
+  
+  if (strncmp(line,lookfor,len) == 0)
   {
-    sprintf(string,"<%s$Dir>.Choices.Choices",application_name);
-  }
-  else
-  {
-    sprintf(string,"Choices:%s.Choices",application_name);
-  }
-
-  file_handle=fopen(string,"r");
-  if (file_handle==0)
-  {
-    /* If the file doesn't exist, drop back to using default choices file */
-    sprintf(string,"<%s$Dir>.Choices.Default",application_name);
-    file_handle=fopen(string,"r");
-    if (file_handle==0)
-      return;
-  }
-
-  while (!feof(file_handle))
-  {
-    char *str=fgets(string,256,file_handle);
-    if (str)
-    {
-      int len=strlen(string);
-      if (string[len-1]=='\n')
-        string[len-1]='\0';
-
-      read_choice(zap_font,string,"ZapFontHi:");
-      read_choice(zap_lowres_font,string,"ZapFontLo:");
-
-      read_boolean_choice(&logging,string,"Logging:");
-      read_boolean_choice(&line_editor,string,"LineEditor:");
-      read_boolean_choice(&pass_f12,string,"PassF12:");
-
-      read_integer_choice(&line_editor_size,string,"LineEditorSize:");
-    }
-  }
-
-  fclose(file_handle);
-}
-
-void read_choice(char *variable, char *line, char *lookfor)
-{
-  int len=strlen(lookfor);
-  if (strncmp(line,lookfor,len)==0)
-  {
-    strcpy(variable,line+len);
+    strcpy(variable, line+len);
   }
 }
 
-void read_boolean_choice(bool *var, char *line, char *lookfor)
+
+
+static void read_boolean_choice(bool *var, const char *line,
+                                const char *lookfor)
 {
-  int len=strlen(lookfor);
-  if (strncmp(line,lookfor,len)==0)
+  int len = strlen(lookfor);
+  
+  if (strncmp(line,lookfor,len) == 0)
   {
-    if (strncmp(line+len,"1",1)==0)
+    if (strncmp(line+len,"1",1) == 0)
     {
       *var=true;
     }
@@ -81,16 +42,70 @@ void read_boolean_choice(bool *var, char *line, char *lookfor)
       *var=false;
     }
   }
-  return;
 }
 
-void read_integer_choice(int *var, char *line, char *lookfor)
+
+
+static void read_integer_choice(int *var, const char *line, const char *lookfor)
 {
-  int len=strlen(lookfor);
-  if (strncmp(line,lookfor,len)==0)
+  int len = strlen(lookfor);
+  
+  if (strncmp(line,lookfor,len) == 0)
   {
     *var=atoi(line+len);
   }
-  return;
 }
 
+
+
+void load_choices(void)
+{
+  FILE *file_handle;
+  char choices_path[256];
+  char string[256];
+  char *str;
+  int len;
+
+  get_system_variable(choices_path, "Choices$Write", sizeof(choices_path));
+
+  if (choices_path[0] == '\0' )
+  {
+    sprintf(string, "<%s$Dir>.Choices.Choices", application_name);
+  }
+  else
+  {
+    sprintf(string, "Choices:%s.Choices", application_name);
+  }
+
+  file_handle = fopen(string,"r");
+  if (file_handle == NULL)
+  {
+    /* If the file doesn't exist, drop back to using default choices file */
+    sprintf(string, "<%s$Dir>.Choices.Default", application_name);
+    file_handle = fopen(string, "r");
+    if (file_handle == NULL)
+      return;
+  }
+
+  while (true)
+  {
+    str = fgets(string,256,file_handle);
+    if (!str)
+      break;
+    
+    len = strlen(string);
+    if (string[len-1]=='\n')
+      string[len-1]='\0';
+
+    read_choice(zap_font, string, "ZapFontHi:");
+    read_choice(zap_lowres_font, string, "ZapFontLo:");
+
+    read_boolean_choice(&logging, string, "Logging:");
+    read_boolean_choice(&line_editor, string, "LineEditor:");
+    read_boolean_choice(&pass_f12, string, "PassF12:");
+
+    read_integer_choice(&line_editor_size, string, "LineEditorSize:");
+  }
+
+  fclose(file_handle);
+}
