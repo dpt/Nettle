@@ -9,7 +9,7 @@
 #define INIT_H
 
 #define LOAD_TEMPLATE_NO_FONTS          (int *)(-1)
-#define LOAD_TEMPLATE_WIMP_SPRITE_AREA  (int *)(1)
+#define LOAD_TEMPLATE_WIMP_SPRITE_AREA  (struct os_spriteop_area *)(1)
 
 extern void initialise_wimp(void);
 extern void load_messages(void);

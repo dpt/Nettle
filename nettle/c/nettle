@@ -70,6 +70,7 @@ void start_connection(void)
   }
 
   /* Insert into list */
+  session->prev = NULL;
   session->next = sessions;
   if (sessions)
   {
@@ -316,7 +317,7 @@ void start_connection(void)
 
     block.icon_flags    =0x00000119;
     block.workarea_flags=6<<12;
-    block.sprite_area   =1;
+    block.sprite_area   =(struct os_spriteop_area *) 1;
     block.min_width     =4;
     block.min_height    =4;
 
@@ -365,7 +366,7 @@ void start_connection(void)
     block.icon_flags    =0x00000000;
     block.workarea_flags=0<<12;
 
-    block.sprite_area=1;
+    block.sprite_area=(struct os_spriteop_area *) 1;
     block.min_width  =4;
     block.min_height =4;
 
@@ -750,7 +751,7 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     value' */
   {
     int *new_zapredraw_area;
-    
+
     size_of_zapredraw_area = session->terminal_size_x *
       (session->terminal_size_y + session->scrollback) * 8; /* same here */
 

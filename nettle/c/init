@@ -89,7 +89,7 @@ void load_sprites(void)
    * call */
   if (yeig == 2)
     strcat(file_name, "22");
-  
+
   _swi(OS_File, _INR(0,1)|_OUT(0)|_OUT(4), 17, file_name, &obj_type, &obj_size);
   if (obj_type == 1)
   {
@@ -187,7 +187,7 @@ static void open_template(void)
 }
 
 
-static int load_template(int *font_array, char *window_name, int *templ_sprites)
+static int load_template(int *font_array,char *window_name,struct os_spriteop_area *templ_sprite)
 {
   char window_name_copy[12];
   struct wimp_createwindow_block *template_data;
@@ -215,7 +215,7 @@ static int load_template(int *font_array, char *window_name, int *templ_sprites)
     0);
 
   /* set the sprite area pointer */
-  template_data->sprite_area = (int) templ_sprites;
+  template_data->sprite_area=templ_sprite;
 
   window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), template_data);
 
@@ -363,7 +363,7 @@ static int *load_font(char *font)
   }
   zap_load_area=malloc(char_size*(0x11D-first_char)+0x20);
   assert(zap_load_area != NULL);
-  
+
   fclose(file_handle);
 
   _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);

@@ -128,8 +128,6 @@ extern struct session_struct *terminal_menu_session;
 extern int drag_window_handle;
 extern int drag_icon_handle;
 
-extern int pane_attached_session;
-
 extern char line_editor_buffer[512];
 extern char *line_editor_buffer_indirected;
 extern char *line_editor_icon_text;

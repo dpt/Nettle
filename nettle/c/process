@@ -17,6 +17,15 @@
 #include "zapredraw.h"
 
 
+static bool work_out_flag(int iac_type)
+{
+  if (iac_type % 2 != 0)
+  {
+    return true;
+  }
+
+  return false;
+}
 
 static void reprocess_position_scroll(struct session_struct *session)
 {
@@ -944,6 +953,10 @@ static bool process_escape_length_3(struct session_struct *session)
         {
           case 251: /* WILL */
           case 253: /* DO */
+          case 252: /* WONT */
+          case 254: /* DONT */
+
+            /* NB - test */
 
             done=true;
 
@@ -952,7 +965,7 @@ static bool process_escape_length_3(struct session_struct *session)
               case 1: /* ECHO */
                 {
                   char block[3];
-                  session->session_flags[1]=true;
+                  session->session_flags[1]=work_out_flag(iac_type);
                   block[0]=255; /* IAC */
                   block[1]=status_positive(iac_type);
                   block[2]=1;   /* ECHO */
@@ -962,7 +975,7 @@ static bool process_escape_length_3(struct session_struct *session)
               case 24: /* TERMINAL-TYPE */
                 {
                   char block[3];
-                  session->session_flags[24]=true;
+                  session->session_flags[24]=work_out_flag(iac_type);
                   block[0]=255; /* IAC */
                   block[1]=status_positive(iac_type);
                   block[2]=24;  /* TERMINAL-TYPE */
@@ -972,7 +985,7 @@ static bool process_escape_length_3(struct session_struct *session)
               case 31: /* NAWS */
                 {
                   char block[9];
-                  session->session_flags[31]=true;
+                  session->session_flags[31]=work_out_flag(iac_type);;
                   block[0]=255; /* IAC */
                   block[1]=status_positive(iac_type);
                   block[2]=31;  /* NAWS */
@@ -1001,21 +1014,6 @@ static bool process_escape_length_3(struct session_struct *session)
                   nettle_senddata(session,block,3);
                 }
                 break;
-            }
-            break;
-          case 252: /* WONT */
-          case 254: /* DONT */
-            {
-              char block[3];
-
-              done=true;
-
-              session->session_flags[(unsigned char)session->escape_string[2]]=
-                                                                                           false;
-              block[0]=255; /* IAC */
-              block[1]=status_negative(iac_type);
-              block[2]=session->escape_string[3];
-              nettle_senddata(session,block,3);
             }
             break;
         }
@@ -1722,11 +1720,9 @@ static bool process_escape_length_x(struct session_struct *session)
               /* Specify scrolling region */
               done=true;
 
-              if (esc_instr(session->escape_string,";",
-                				session->escape_string_length)>=0)
+              if (esc_instr(session->escape_string,";",session->escape_string_length)>=0)
               {
-                session->scroll_start=
-                				   atoi(session->escape_string+2);
+                session->scroll_start=atoi(session->escape_string+2);
 
                 session->scroll_end=atoi(session->escape_string+
                                                 esc_instr(session->escape_string,
@@ -1739,25 +1735,20 @@ static bool process_escape_length_x(struct session_struct *session)
                 session->scroll_end=session->terminal_size_y;
               }
 
-              if (session->ypos<session->scrollback+
-                			       session->scroll_start-1)
+              if (session->ypos<session->scrollback+session->scroll_start-1)
               {
-                session->ypos=session->scrollback+
-                			       session->scroll_start-1;
+                session->ypos=session->scrollback+session->scroll_start-1;
               }
-              if (session->ypos>session->scrollback+
-                			       session->scroll_end-1)
+              if (session->ypos>session->scrollback+session->scroll_end-1)
               {
-                session->ypos=session->scrollback+
-                			       session->scroll_end-1;
+                session->ypos=session->scrollback+session->scroll_end-1;
               }
 
               break;
           }
           break;
         case ']':
-          if (session->escape_string[
-            				session->escape_string_length-1]==7)
+          if (session->escape_string[session->escape_string_length-1]==7)
           {
             switch (atoi(session->escape_string+2))
             {
@@ -1817,11 +1808,9 @@ static bool process_escape_length_x(struct session_struct *session)
       switch (session->escape_string[1])
       {
         case 250: /* SB */
-          if (session->escape_string[
-            				session->escape_string_length-2]==255
-            				&&
-              session->escape_string[
-            				session->escape_string_length-1]==240)
+          if (session->escape_string[session->escape_string_length-2]==255
+              &&
+              session->escape_string[session->escape_string_length-1]==240)
           {
             switch (session->escape_string[2])
             {
@@ -1979,13 +1968,13 @@ static int decode_key(struct session_struct *session, int key, char *block)
       /* Return */
       if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
       {
-        strcpy(block,"\r\n");
-        size_of_block=2;
+        strcpy(block,"\r\n\n");
+        size_of_block=3;
       }
       else
       {
-        strcpy(block,"\r");
-        size_of_block=1;
+        strcpy(block,"\r\n");
+        size_of_block=2;
       }
       break;
     case 0x01E:
@@ -2330,7 +2319,6 @@ void process_wimp_key(struct session_struct *session, int key)
 
 void process_line_editor(struct session_struct *session)
 {
-  int loop;
   char *icon_text;
   char block[256];
   int size_of_block=0;
@@ -2348,7 +2336,7 @@ void process_line_editor(struct session_struct *session)
 
     icon_text = malloc(strlen(data) + 3);
     assert(icon_text != NULL);
-    
+
     strcpy(icon_text, data);
     strcat(icon_text, "\r");
   }
@@ -2381,6 +2369,7 @@ void process_line_editor(struct session_struct *session)
     if (session->session_flags[1]==false)
     {
       int data;
+      int loop;
 
       for (loop=0; loop<size_of_block; loop++)
       {
@@ -2467,10 +2456,14 @@ void process_line_editor(struct session_struct *session)
                redraw.r_charh*2*zap_yeig,
                       session->terminal_size_x*redraw.r_charw*2,0);
 
-  for (loop=line_editor_size-1; loop>1; loop--)
   {
-    strcpy(session->line_editor_history+(loop*512),
-      	   session->line_editor_history+((loop-1)*512));
+    int loop;
+
+    for (loop=line_editor_size-1; loop>1; loop--)
+    {
+      strcpy(session->line_editor_history+(loop*512),
+        	   session->line_editor_history+((loop-1)*512));
+    }
   }
 
   strcpy(session->line_editor_history+(1*512),

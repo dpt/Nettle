@@ -106,7 +106,7 @@ struct wimp_createwindow_block
   int work_maxy;
   int icon_flags;
   int workarea_flags;
-  int sprite_area;
+  struct os_spriteop_area *sprite_area;
   unsigned short min_width;
   unsigned short min_height;
   union icon_data title;
@@ -201,7 +201,7 @@ struct wimp_getwindowinfo_block
   int work_maxy;
   int icon_flags;
   int workarea_flags;
-  int sprite_area;
+  struct os_spriteop_area *sprite_area;
   unsigned short min_width;
   unsigned short min_height;
   union icon_data title;
