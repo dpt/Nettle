@@ -160,12 +160,6 @@ void log_string(const char *string)
 
 
 
-/**
- * printf like function for writing to the log file
- *
- * @param format  printf() style format string
- * @param ...     parameters matching format string
- */
 void logf(const char *format, ...)
 {
   assert(format != NULL);
