@@ -17,6 +17,11 @@
 #include "sys/errno.h"
 #include "sys/ioctl.h"
 #include "sys/socket.h"
+#ifdef USE_TCIPIPLIB
+#  include "socklib.h"
+#else
+#  include "sys/select.h"
+#endif
 #include "sys/select.h"
 #include "sys/time.h"
 
@@ -74,7 +79,7 @@ int socket_connected(int socket_handle)
   fd_set fds;
   struct timeval timeout = { 0, 0 };
   int numready;
-  
+
   FD_ZERO(&fds);
   FD_SET(socket_handle, &fds);
   numready = select(socket_handle+1, NULL, &fds, NULL, &timeout);
@@ -86,11 +91,11 @@ int socket_connected(int socket_handle)
 
     if (getsockopt(socket_handle, SOL_SOCKET, SO_ERROR, (char *) &result, &size) == -1)
       return errno;
-    
+
     if (result == 0)
       /* connected! */
       return 0;
-    
+
     if (result != 0)
       /* error occurred */
       return result;
@@ -144,7 +149,9 @@ const char *socket_strerror(int errnum)
 
 case ENOENT               : return "Not found"; /* 2 */
 case EBADF                : return "Invalid descriptor"; /* 9 */
+#ifndef USE_TCIPIPLIB
 case EAGAIN               : return "No more ports"; /* 11 */
+#endif
 case EFAULT               : return "Bad address"; /* 14 */
 case EINVAL               : return "Invalid argument"; /* 22 */
 case ENOSPC               : return "No space on device/DNS buffer overflow"; /* 28 */

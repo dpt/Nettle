@@ -89,6 +89,9 @@ closed:Nettle: Remote has closed the connection
 disconn:Nettle: Disconnected
 twclosed:Nettle: Task window has been closed
 
+socketerror:Nettle: Socket error 
+occurred:occurred
+
 # Errors
 DeleteHot:Are you sure you wish to delete this hotlist entry?
 BadHotlist:Error in hotlist file. Has it been mis-edited by hand?

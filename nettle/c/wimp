@@ -15,6 +15,7 @@
 
 #ifdef USE_TCPIPLIB
 #  include "socklib.h"
+#  include "unixlib.h"
 #else
 #  include "sys/socket.h"
 #endif
@@ -112,28 +113,28 @@ static void wimp_connectsession(struct session_struct *session)
 static void wimp_pollresolve(struct session_struct *session)
 {
   struct hostent *dnsanswer;
-  
+
   switch (dns_check(session->dns))
   {
     default:
       /* still in progress */
       main_requirenull = true;
       break;
-      
+
     case dns_complete_failure:
       set_title_bar(session->window_handle,
                     lookup_static("title_disconnect"));
       write_out_strings(session, lookup_static("noresolv"), "\r\n", 0);
       session->socket_state=NETTLE_SESSION_NONE;
       break;
-      
+
     case dns_complete_success:
       dnsanswer = dns_getanswer(session->dns);
       assert(dnsanswer != NULL);
       session->socket_ip = (unsigned int) *((int *)(void *)(*dnsanswer).h_addr);
       dns_dispose(session->dns);
       session->dns = NULL;
-      
+
       wimp_connectsession(session);
       break;
   }
@@ -215,8 +216,9 @@ static void wimp_pollsocket(struct session_struct *session)
     }
     else
     {
-      write_out_strings(session, "Nettle: Socket error '",
-                        socket_strerror(errno), "' occurred\r\n", 0);
+      write_out_strings(session, "\r\n", lookup_static("socketerror"),
+                        socket_strerror(errno), " ", 0);
+      write_out_strings(session, lookup_static ("occurred"), "\r\n", 0);
     }
 
     write_out_strings(session, lookup_static("disconn"), "\r\n", 0);
@@ -1914,7 +1916,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
         colourpicker_handle = 0;
       }
       break;
-    
+
     case URI_MReturnResult:
       url_bounce(&wimp_block->user_message);
       break;

@@ -10,6 +10,8 @@
 #include "globals.h"
 
 #include "keyboard.h"
+#include "seln.h"
+#include "wimp.h"
 
 
 bool inkey (int key)
@@ -19,39 +21,75 @@ bool inkey (int key)
 }
 
 
+static int
+setmod (char *block, const char *key, int extra)
+{
+  int length = strlen (key);
+
+  strncpy (block, key, length);
+
+  extra = (extra | extra >> 1) & 0x5;	/* modifier keys: ccss -> 0c0s */
+  block[length] = "~$  ^@"[extra];
+
+  return length + 1;
+}
+
+
+
 int
 decode_key (struct session_struct *session, int key, int extra, char *block)
 {
 #define SETBLOCK(LEN,STR) { strcpy (block, STR); return LEN; }
   int ekey = extra >> 16;
+#define APPLI(TRUE,FALSE) \
+  ((session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? TRUE : FALSE)
 
   switch (key)
   {
   case 0x008:			/* Backspace */
-    if (ekey == 30
-	&& (session->other_session_flags & NETTLE_OTHER_BACKSPACE_MODE))
-      SETBLOCK (1, "\x7F")
+    if (ekey == 30 && (session->other_session_flags & NETTLE_OTHER_BACKSPACE_MODE))
+    {
+      SETBLOCK (1, "\x7F");
+    }
     else
-      SETBLOCK (1, "\b")
+    {
+      SETBLOCK (1, "\b");
+    }
   case 0x00D:			/* Return */
     if (ekey == 103 &&
 	(((session->other_session_flags & NETTLE_OTHER_APPLI_MODE) != 0) ^
 	 ((extra & 0x3) != 0)))
-      SETBLOCK (3, "\x1BOM")	/* Enter */
-
-      /* Darren reckons this is wrong - I'm not convinced (and don't know why */
-      /* bash should be turning on LINEFEED_MODE anyway) */
+    {
+      SETBLOCK (3, "\x1BOM");	/* Enter */
+    }
+      /* Leaving this as it is for now - it's more likely to break things if we change it */
+      /* now IMO - leave it til post 1st Sep */
     else if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
-      SETBLOCK (3, "\r\n\n")
+    {
+      SETBLOCK (3, "\r\n\n");
+    }
     else
-      SETBLOCK (2, "\r\n")
+    {
+      SETBLOCK (2, "\r\n");
+    }
   case 0x01E:			/* Home */
-    SETBLOCK (4, "\x1B[1~");
+    if (ekey != 32)
+    {
+      SETBLOCK (1, "\x1E");
+    }
+    else
+    {
+      return setmod (block, "\x1B[1", extra);
+    }
   case 0x07F:			/* Delete */
     if (session->other_session_flags & NETTLE_OTHER_BACKSPACE_MODE)
-      SETBLOCK (4, "\x1B[3~")
+    {
+      return setmod (block, "\x1B[3", extra);
+    }
     else
-      SETBLOCK (1, "\x7F")
+    {
+      SETBLOCK (1, "\x7F");
+    }
 
   case 0x181:			/* F1 */
     SETBLOCK (3, "\x1BOP");
@@ -76,36 +114,23 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
   case 0x18B:			/* Copy */
     SETBLOCK (4, "\x1B[4~");
   case 0x18C:			/* Left */
-    SETBLOCK (3,
-	      (session->
-	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOD" :
-	      "\x1B[D");
+    SETBLOCK (3, APPLI ("\x1BOD", "\x1B[D"));
   case 0x18D:			/* Right */
-    SETBLOCK (3,
-	      (session->
-	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOC" :
-	      "\x1B[C");
+    SETBLOCK (3, APPLI ("\x1BOC", "\x1B[C"));
   case 0x18E:			/* Down, sPageDown */
     if (ekey == 54)
     {
       scroll_term (session, -1);
       break;
     }
-    SETBLOCK (3,
-	      (session->
-	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOB" :
-	      "\x1B[B");
+    SETBLOCK (3, APPLI ("\x1BOB", "\x1B[B"));
   case 0x18F:			/* Up, sPageUp */
     if (ekey == 33)
     {
       scroll_term (session, 1);
       break;
     }
-    SETBLOCK (3,
-	      (session->
-	       other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOA" :
-	      "\x1B[A");
-
+    SETBLOCK (3, APPLI ("\x1BOA", "\x1B[A"));
   case 0x191:			/* sF1 */
     SETBLOCK (5, "\x1B[23~");
   case 0x192:			/* sF2 */
@@ -128,10 +153,28 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
     SETBLOCK (3, "\x1B[Z");
   case 0x19B:			/* sCopy */
     SETBLOCK (4, "\x1B[4$");
+  case 0x19C:                   /* sLeft */
+    SETBLOCK (3, APPLI ("\x1BOd", "\x1B[d"));
+  case 0x19D:                   /* sRight */
+    SETBLOCK (3, APPLI ("\x1BOc", "\x1B[c"));
   case 0x19E:			/* PgDown, sDown */
-    SETBLOCK (4, "\x1B[6~");
+    if (ekey == 99)
+    {
+      SETBLOCK (3, APPLI ("\x1BOb", "\x1B[b"))
+    }
+    else
+    {
+      SETBLOCK (4, "\x1B[6~")
+    }
   case 0x19F:			/* PgUp, sUp */
-    SETBLOCK (4, "\x1B[5~");
+    if (ekey == 89)
+    {
+      SETBLOCK (3, APPLI ("\x1BOa", "\x1B[a"))
+    }
+    else
+    {
+      SETBLOCK (4, "\x1B[5~")
+    }
 
   case 0x1A1:			/* cF1 */
     SETBLOCK (3, "\x1B[11^");
@@ -155,6 +198,28 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
     SETBLOCK (1, "\t");
   case 0x1AB:			/* cCopy */
     SETBLOCK (4, "\x1B[4^");
+  case 0x1AC:			/* cLeft */
+    SETBLOCK (3, APPLI ("\x1BOd", "\x1B[d"));
+  case 0x1AD:			/* cRight */
+    SETBLOCK (3, APPLI ("\x1BOc", "\x1B[c"));
+  case 0x1AE:			/* scPgDown, cDown */
+    if (ekey == 99)
+    {
+      SETBLOCK (3, APPLI ("\x1B[b", "\x1BOb"));
+    }
+    else
+    {
+      SETBLOCK (4, "\x1B[6@");
+    }
+  case 0x1AF:			/* scPgUp, cUp */
+    if (ekey == 89)
+    {
+      SETBLOCK (3, APPLI ("\x1B[a", "\x1BOa"));
+    }
+    else
+    {
+      SETBLOCK (4, "\x1B[5@");
+    };
 
   case 0x1B1:			/* csF1 */
     SETBLOCK (5, "\x1B[23^");
@@ -178,11 +243,28 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
     SETBLOCK (3, "\x1B[Z");
   case 0x1BB:			/* csCopy */
     SETBLOCK (4, "\x1B[4@");
-
+  case 0x1BC:			/* scLeft */
+    SETBLOCK (3, APPLI ("\x1B[d", "\x1BOd"));
+  case 0x1BD:			/* scRight */
+    SETBLOCK (3, APPLI ("\x1B[c", "\x1BOc"));
   case 0x1BE:			/* cPgDown, scDown */
-    SETBLOCK (4, "\x1B[6^");
+    if (ekey == 99)
+    {
+      SETBLOCK (3, APPLI ("\x1BOb", "\x1B[b"));
+    }
+    else
+    {
+      SETBLOCK (4, "\x1B[6^");
+    }
   case 0x1BF:			/* cPgUp, scUp */
-    SETBLOCK (4, "\x1B[5^");
+    if (ekey == 89)
+    {
+      SETBLOCK (3, APPLI ("\x1BOa", "\x1B[a"));
+    }
+    else
+    {
+      SETBLOCK (4, "\x1B[5^");
+    }
 
   case 0x1CA:			/* F10 */
     SETBLOCK (5, "\x1B[21~");
@@ -199,8 +281,6 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
     SETBLOCK (5, "\x1B[23~");
   case 0x1DC:			/* sF12 */
     SETBLOCK (5, "\x1B[24~");
-  case 0x1DD:			/* Insert */
-    SETBLOCK (4, "\x1B[2$");
 
   case 0x1EA:			/* cF10 */
     SETBLOCK (5, "\x1B[21^");
