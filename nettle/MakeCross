@@ -29,7 +29,7 @@ TEMPLATES = !Nettle/Resources/UK/Template3D,fec
 
 OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o \
-       messages.o termlist.o wimputil.o
+       messages.o termlist.o wimputil.o url.o
 
 RUNIMAGE = !Nettle/!RunImage,ff8
 
@@ -90,4 +90,4 @@ messages.o:     messages.c messages.h generic.h globals.h misc.h
 sockwatch.o:	sockwatch.c sockwatch.h
 termlist.o:	termlist.c generic.h globals.h termlist.h misc.h nettle.h wimp.h
 wimputil.o:     wimputil.h wimp.h globals.h generic.h nettle.h messages.h misc.h
-
+url.o:          generic.h globals.h url.h wimp.h wimputil.h
