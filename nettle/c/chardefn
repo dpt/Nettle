@@ -13,649 +13,260 @@
 
 /* Define Zap graphics characters */
 
-void define_zap_chars(int *int_area, int char_size, int width, int height)
+
+static void copypair (char *area, int step, int height,
+                      const char *base, char upper, char lower)
+{
+  int x, y;
+  const char *ptr = base + upper * step * height;
+  for (y = 0; y < height; y++)
+  {
+    memcpy (area, ptr, step);
+    if ((height & 1) && y == height / 2)
+      ptr = base + lower * step * height;
+    else
+      ptr += step;
+    for (x = step - 1; x >= 0; x--)
+      area[x] |= ptr[x];
+    if ((height & 1) == 0 && y == (height - 1) / 2)
+      ptr = base + lower * step * height;
+    else
+      ptr += step;
+    area += step;
+  }
+}
+
+
+static void make_underline (char *area, int step, int height)
+{
+  char pixels[8] = {0}; /* hmm, trouble if the font is > 64 pixels wide... */
+  int x;
+
+  area += step * height;
+
+  while (--height > 1)
+  {
+    area -= step;
+    for (x = step - 1; x >= 0; --x)
+    {
+      area[x >> 3] |= area[(x >> 3) - 2 * step] & ~pixels[x >> 3];
+      pixels[x >> 3] |= area[x >> 3];
+    }
+  }
+}
+
+
+void define_zap_chars(int *int_area, int char_size, int width, int height,
+                      const int *int_base)
 {
   int loop;
   int step=char_size/height;
   char *area=(char *) int_area;
+  char *base = (char *) int_base;
   /* define characters */
 
-  /*	Cursor		0x100 */
+  /* currently defining 0x100 - 0x11C - initialise this area to 0 */
+  memset (area, 0, 0x1D * char_size);
 
-  for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0xff;
-        break;
-      case 2:
-        area[loop+0]=0xff;
-        area[loop+1]=0xff;
-        break;
-    }
-  }
-  area+=char_size;
+  /*	Cursor		0x100 */
+  area += char_size;
 
   /*	Blank cursor	0x101 */
-  switch (step)
-  {
-    case 1:
-      area[0]=0xff;
-      break;
-    case 2:
-      area[0]=0xff;
-      area[1]=0xff;
-      break;
-  }
-
-  for (loop=step; loop<(char_size-step); loop+=step)
-  {
-    switch (step)
+  for (loop = 0; loop < step; loop++)
+    area[char_size - loop - 1] = area[loop] = 0xFF;
+  if (step == 1)
+    for (loop = step; loop < char_size - step; loop += step)
+      area[loop] = 1 | 1 << (width - 1);
+  else
+    for (loop = step; loop < char_size - step; loop += step)
     {
-      case 1:
-        area[loop+0]=0x01 | (1<<(width-1));
-        break;
-      case 2:
-        area[loop+0]=0x01;
-        area[loop+1]=0x00 | (1<<(width-9));
-        break;
+      area[loop] = 1;
+      area[loop + step - 1] = 1 << (width - 1 & 7);
     }
-  }
-
-  switch (step)
-  {
-    case 1:
-      area[loop+0]=0xff;
-      break;
-    case 2:
-      area[loop+0]=0xff;
-      area[loop+1]=0xff;
-      break;
-  }
   area+=char_size;
 
   /*	Diamond		0x102 */
   {
-    char string[8];
-
-    strcpy(string,"00000000");
-    string[(width/2)+1]='1';
-
-    for (loop=0; loop<char_size/2; loop+=(2*step))
+    int scale = (height >= width * 2) ? 2 : 1;
+    int pix1 = (MIN (height, width) - 1) / 2;
+    int pix2 = pix1;
+    char *ptr = area + (height >> 1) * step;
+    while (pix1 >= 0)
     {
-      switch (step)
+      int loop2;
+      char *ptr2 = ptr - pix1 * step * scale;
+      /* top half */
+      for (loop2 = pix1; loop2 <= pix2; loop2++)
+        ptr2[loop2 / 8] |= 1 << (loop2 & 7);
+      if (scale == 2)
       {
-        case 1:
-          area[loop+0]=binary(string);
-          area[loop+step+0]=binary(string);
-          break;
-        case 2:
-          /* Not implemented */
-          printf("Attempt to use a font of width > 8\n");
-         break;
+        memcpy (ptr2 - step, ptr2, step); /*duplicate*/
+        memmove (ptr + pix1 * step * scale - step, ptr2 - step, step * 2); /*mirror*/
       }
-
-      {
-        int one_loop=0;
-        while (string[one_loop]!='1' && one_loop<width)
-        {
-          one_loop++;
-        }
-
-        if (one_loop<width && string[one_loop]=='1')
-        {
-          string[one_loop-1]='1';
-        }
-
-        while (string[one_loop]!='0' && one_loop<width)
-        {
-          one_loop++;
-        }
-
-        if (one_loop<width && string[one_loop]=='0')
-        {
-          string[one_loop]='1';
-        }
-      }
-    }
-
-    strcpy(string,"00000000");
-    string[(width/2)+1]='1';
-
-    for (loop=char_size-step; loop>(char_size/2)-step; loop-=(2*step))
-    {
-      switch (step)
-      {
-        case 1:
-          area[loop+0]=binary(string);
-          area[loop+step+0]=binary(string);
-          break;
-        case 2:
-          /* Not implemented */
-          printf("Attempt to use a font of width > 8\n");
-         break;
-      }
-
-      {
-        int one_loop=0;
-        while (string[one_loop]!='1' && one_loop<width)
-        {
-          one_loop++;
-        }
-
-        if (one_loop<width && string[one_loop]=='1')
-        {
-          string[one_loop-1]='1';
-        }
-
-        while (string[one_loop]!='0' && one_loop<width)
-        {
-          one_loop++;
-        }
-
-        if (one_loop<width && string[one_loop]=='0')
-        {
-          string[one_loop]='1';
-        }
-      }
+      else
+        memcpy (ptr + pix1 * step * scale, ptr2, step); /*mirror*/
+      pix1--;
+      pix2++;
     }
   }
   area+=char_size;
 
   /*	Checkerboard	0x103 */
+  {
+    char fill = 0xAA;
+    for (loop = 0; loop < char_size; loop += step)
+    {
+      memset (area + loop, fill, step);
+      fill = ~fill;
+    }
+  }
   area+=char_size;
 
   /*	H topleft/T bottomright	0x104 */
+  copypair (area, step, height, base, 'H', 'T');
   area+=char_size;
 
   /*	F topleft/F bottomright	0x105 */
+  copypair (area, step, height, base, 'F', 'F');
   area+=char_size;
 
   /*	C topleft/R bottomright	0x106 */
+  copypair (area, step, height, base, 'C', 'R');
   area+=char_size;
 
   /*	L topleft/F bottomright	0x107 */
+  copypair (area, step, height, base, 'L', 'F');
   area+=char_size;
 
   /*	N topleft/L bottomright	0x108 */
+  copypair (area, step, height, base, 'N', 'L');
   area+=char_size;
 
   /*	V topleft/T bottomright	0x109 */
+  copypair (area, step, height, base, 'V', 'T');
   area+=char_size;
 
   /*	_| (bottomright of box)	0x10A */
   for (loop=0; loop<(char_size/2); loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0x00 | (((1<<width /2)*2)-1);
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  for (loop = 0; loop <= width / 2; loop++)
+    area[step * (height >> 1) + loop / 8] |= 1 << (loop & 7);
   area+=char_size;
 
   /*	-, (topright of box)	0x10B */
-  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  for (loop=0; loop<(char_size/2); loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0x00 | (((1<<width /2)*2)-1);
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  for (loop = char_size - step; loop > (char_size/2); loop-=step)
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  for (loop = 0; loop <= width / 2; loop++)
+    area[step * (height >> 1) + loop / 8] |= 1 << (loop & 7);
   area+=char_size;
 
   /*	,- (topleft of box)	0x10C */
-  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  for (loop=0; loop<(char_size/2); loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0x00 | ~(((1<<width /2)/2)-1);
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  for (loop = char_size - step; loop > (char_size/2); loop-=step)
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  for (loop = width / 2; loop < width; loop++)
+    area[step * (height >> 1) + loop / 8] |= 1 << (loop & 7);
   area+=char_size;
 
   /*	|_ (bottomleft of box)	0x10D */
   for (loop=0; loop<(char_size/2); loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-
-  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0x00 | ~(((1<<width /2)/2)-1);
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  for (loop = width / 2; loop < width; loop++)
+    area[step * (height >> 1) + loop / 8] |= 1 << (loop & 7);
   area+=char_size;
 
   /*	-|- (crossing lines)	0x10E */
   for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0xff;
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  memset (area + step * (height >> 1), 0xFF, step);
   area+=char_size;
 
   /*	Horiz line - scan 1	0x10F */
-  for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[0]=0xff;
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  memset (area, 0xFF, step);
   area+=char_size;
 
   /*	Scan 3			0x110 */
-  for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[(step+(step*height/2))/2]=0xff;
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  memset (area + step * (int) (height * 3 / 10), 0xFF, step);
   area+=char_size;
 
   /*	Scan 5			0x111 */
-  for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0xff;
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  memset (area + step * (int) (height * 5 / 10), 0xFF, step);
   area+=char_size;
 
   /*	Scan 7			0x112 */
-  for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[((step*height/2)+(char_size-step))/2]=0xff;
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  memset (area + step * (int) (height * 7 / 10), 0xFF, step);
   area+=char_size;
 
   /*	Scan 9			0x113 */
-  for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[char_size-step]=0xff;
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  memset (area + step * (int) (height * 9 / 10), 0xFF, step);
   area+=char_size;
 
   /*	Left T |-		0x114 */
   for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0x00 | ~(((1<<width /2)/2)-1);
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  for (loop = width / 2; loop < width; loop++)
+    area[step * (height >> 1) + loop / 8] |= 1 << (loop & 7);
   area+=char_size;
 
   /*	Right T -|	0x115 */
   for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0x00 | (((1<<width /2)*2)-1);
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  for (loop = 0; loop < width / 2; loop++)
+    area[step * (height >> 1) + loop / 8] |= 1 << (loop & 7);
   area+=char_size;
 
   /*	Bottom T	0x116 */
-  for (loop=0; loop<(char_size/2); loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-
-  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
-  {
-    switch(step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0xff;
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  for (loop = char_size - step; loop > (char_size/2); loop-=step)
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  memset (area + step * (height >> 1), 0xFF, step);
   area+=char_size;
 
   /*	Top T	T	0x117 */
-  for (loop=0; loop<(char_size/2); loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00;
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-  for (loop=(char_size/2)+step; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
-
-  switch (step)
-  {
-    case 1:
-      area[step*height/2]=0xff;
-      break;
-    case 2:
-      /* Not implemented */
-      printf("Attempt to use a font of width > 8\n");
-      break;
-  }
+  for (loop = 0; loop < (char_size/2); loop+=step)
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
+  memset (area + step * (height >> 1), 0xFF, step);
   area+=char_size;
 
-  for (loop=0; loop<char_size; loop+=step)
-  {
-    switch (step)
-    {
-      case 1:
-        area[loop+0]=0x00 | (((1<<(width/2))/2)+(1<<(width/2)));
-        break;
-      case 2:
-        /* Not implemented */
-        printf("Attempt to use a font of width > 8\n");
-        break;
-    }
-  }
+  /*    Vertical bar    0x118 */
+  for (loop = 0; loop < char_size; loop+=step)
+    area[loop + (width / 16)] = 1 << (width / 2 & 7);
   area+=char_size;
 
   /*	<=	0x119 */
+  memcpy (area, base + '<' * char_size, char_size);
+  make_underline (area, step, height);
   area+=char_size;
 
   /*	>=	0x11A */
+  memcpy (area, base + '>' * char_size, char_size);
+  make_underline (area, step, height);
   area+=char_size;
 
   /*	PI	0x11B */
+  {
+    int pix1 = (width <= 8) ? 1 : 2;
+    int pix2 = width - 2 - (width > 8);
+    char *ptr = area + (height * 3 / 8) * step;
+    for (loop = pix1; loop <= pix2; loop++)
+      ptr[loop / 8] |= 1 << (loop & 7);
+    pix1 += (width <= 8) ? 1 : 2;
+    pix2 -= (width <= 8) ? 1 : 2;
+    if (pix2 == pix1 + 1)
+      pix2 += 1;
+    for (loop = (height * 3 / 8) * step; loop <= (height * 7 / 8) * step; loop++)
+    {
+      ptr[pix1 / 8] |= 1 << (pix1 & 7);
+      ptr[pix2 / 8] |= 1 << (pix2 & 7);
+      ptr += step;
+    }
+  }
   area+=char_size;
 
   /*	Not equal	0x11C */
+  {
+    const char *ptr1 = base + '=' * char_size;
+    const char *ptr2 = base + '/' * char_size;
+    for (loop = char_size - 1; loop >= 0; loop--)
+      area[loop] = ptr1[loop] | ptr2[loop];
+  }
   area+=char_size;
 }
-

@@ -24,13 +24,17 @@
 #define SCROLLBACK_LINES        96
 
 #define MAX_LINE_EDITOR_SIZE    255
+#define MIN_TERMINAL_WIDTH      8
 #define MAX_TERMINAL_WIDTH      256
+#define MIN_TERMINAL_HEIGHT     4
 #define MAX_TERMINAL_HEIGHT     128
+#define MAX_SCROLLBACK_SIZE     5000
 
 #define LOGGING                 false
 #define LINE_EDITOR             0
 #define PASS_F12                false
 
+#define CURSOR_BLINK_DELAY      50
 
 /*******************************************/
 
@@ -61,6 +65,9 @@ extern int *zapredraw_area;
 extern int zapredraw_area_number;
 extern int size_of_zapredraw_area;
 
+extern colour_t palette[16];
+extern const colour_t default_palette[16];
+
 extern struct os_spriteop_area *sprite_area;
 
 extern struct coords eig;
@@ -70,6 +77,7 @@ extern int iconbar_handle;
 
 extern int win_info;
 extern int win_choices;
+extern int win_colours;
 extern int win_open;
 extern int win_resize;
 extern int win_save;
@@ -146,7 +154,11 @@ extern int selection_start;
 extern int selection_end;
 extern int selection_adjust_dragging;
 
-extern char terminal_name[8][6];
+extern const struct session_struct *cursor_session;
+extern int nextcursortime;
+extern bool cursor_state;
+
+extern const char terminal_name[8][6];
 
 union wimp_poll_block
 {

@@ -16,6 +16,8 @@ typedef enum
   false = 0, true = 1
 } bool;
 
+typedef unsigned long colour_t;
+
 /* Standard includes */
 #include <assert.h>
 #include <stdio.h>
@@ -249,6 +251,18 @@ struct wimp_seticonstate_block
   int clear;
 };
 
+struct colourpicker_block
+{
+  int flags;
+  char *title;
+  struct coords bl, tr; /* bl.y = 0x80000000, tr.x =0x7FFFFFFF */
+  int zero0, zero1; /* 0, 0 */
+  colour_t colour;
+  int extsize;/* normally 0 */
+  int exttype;
+  /* extension data */
+};
+
 #define WIMP_ICON_TEXT_BIT       (1<<0)
 #define WIMP_ICON_SPRITE_BIT     (1<<1)
 #define WIMP_ICON_BORDER_BIT     (1<<2)
@@ -274,6 +288,9 @@ struct wimp_seticonstate_block
 #define WIMP_MESSAGE_DATASAVEACK             2
 #define WIMP_MESSAGE_MENUWARNING       0x400c0
 #define WIMP_MESSAGE_MODECHANGE        0x400c1
+#define WIMP_MESSAGE_MENUSDELETED      0x400c9
+#define COLOURPICKER_COLOUR_CHOICE     0x47700
+#define COLOURPICKER_CLOSE_REQUEST     0x47702
 #define WIMP_MESSAGE_TASKWINDOW_OUTPUT 0x808c1
 #define WIMP_MESSAGE_TASKWINDOW_EGO    0x808c2
 #define WIMP_MESSAGE_TASKWINDOW_MORIO  0x808c3

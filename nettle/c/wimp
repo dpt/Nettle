@@ -47,11 +47,9 @@ static int bitmaps_area_number=0;
 static int drag_window_handle=0;
 static int drag_icon_handle=0;
 static struct session_struct *terminal_menu_session = NULL;
-static int zap_palette[16];
-static int palette[16]={0x00000000, 0x0000D000, 0x00D00000, 0x00D0D000,
-  		        0xD0000000, 0xD000D000, 0xD0D00000, 0xD0D0D000,
-  		        0x40404000, 0x0000FF00, 0x00FF0000, 0x00FFFF00,
-  		        0xFF000000, 0xFF00FF00, 0xFFFF0000, 0xFFFFFF00};
+static colour_t zap_palette[16];
+static int menu_window, menu_icon; /* for use with the currently-open menu */
+static int colourpicker_handle;
 
 static bool generror_question(char *string);
 static void create_iconbar_menu(void);
@@ -717,25 +715,24 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
     x_pos=block.min.x-block.scroll.x;
     y_pos=block.max.y-block.scroll.y;
   }
-  
+
   char_offset = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                         * session->terminal_size.x
                         + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
-
   end_offset = session->terminal_size.x*
                      (session->terminal_size.y + session->scrollback);
-  
+
   logf("clicked on '%c'\n",session->assigned_area[char_offset*4+3]);
-  
+
   if (isspace((int) session->assigned_area[char_offset*4+3]))
     return;
-  
+
   /* go back to the start of the clicked on 'word' */
   while (char_offset > 0 && !isspace((int) session->assigned_area[char_offset*4+3]))
     char_offset--;
   if (!isalpha((int) session->assigned_area[char_offset*4+3]))
     char_offset++;
-  
+
   /* go forward to the end of the form [ie. until we find whitespace] */
   urlptr = url;
   urlend = url + sizeof(url) - 8; /* leave space for a '\0', and 'http://' */
@@ -747,7 +744,7 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   }
   *urlptr = '\0';
   logf("url = '%s'\n", url);
-  
+
   /* we've got a url, check for full formedness */
   urlptr = url;
   while (isalpha((int) (*urlptr)))
@@ -762,12 +759,12 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
       scheme = "mailto:";
     else
       scheme = "http://";
-    
+
     /* prefix string we have with the scheme we've guessed */
     memmove(url + strlen(scheme), url, strlen(url) + 1);
     memcpy(url, scheme, strlen(scheme));
   }
-  
+
   _swix(URI_Dispatch, _INR(0,2), 0, url, 0);
 }
 
@@ -777,7 +774,7 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 {
   int x_pos;
   int y_pos;
-  
+
   /* if we're not pressing MENU */
   if (buttons != ClickMenu && buttons != DragMenu)
     wimp_claimcaret(session);
@@ -822,7 +819,7 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       selection_end=selection_start;
       selection_in_progress=true;
       break;
-      
+
     case DragAdjust:
       /* if ADJUST drag, then if there is no selection, then start one */
       if (!selection_session)
@@ -861,7 +858,7 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
     case DoubleSelect:
       wimp_launchurl(session, x, y);
       break;
-      
+
     case ClickSelect:
       /* if SELECT click, then clear the selection */
       if (selection_session)
@@ -875,12 +872,12 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 	selection_session = NULL;
       }
       break;
-      
+
     case ClickMenu: /* menu click */
       terminal_menu_session = session;
       create_terminal_menu();
       break;
-      
+
     case ClickAdjust:
       /* if ADJUST click, then extend the selection */
       selection_adjust(x,x_pos,y,y_pos);

@@ -40,32 +40,32 @@
 
 struct zapredraw_block
 {
-  int r_flags       /*=0*/;    /* Redraw flags */
-  int r_minx        /*=0*/;    /* min x in pixs inc */
-  int r_miny        /*=0*/;    /* min y in pixs inc (from top) */
-  int r_maxx        /*=0*/;    /* max x in pixs exc */
-  int r_maxy        /*=0*/;    /* max y in pixs exc (from top) */
-  int r_screen      /*=0*/;    /* address of the screen */
-  int r_bpl         /*=0*/;    /* bytes per raster line */
-  int r_bpp         /*=0*/;    /* log base 2 of bpp */
-  int r_charw       /*=0*/;    /* width of a character in pixs */
-  int r_charh       /*=0*/;    /* height of a character in pixs */
-  int *r_caddr      /*=0*/;    /* cache address / font name */
-  int r_cbpl        /*=0*/;    /* bytes per cached line */
-  int r_cbpc        /*=0*/;    /* bytes per cached character */
-  int r_linesp      /*=0*/;    /* line spacing in pixels */
-  int *r_data       /*=0*/;    /* address of data to print */
-  int r_scrollx     /*=0*/;    /* x scroll offset in pixs */
-  int r_scrolly     /*=0*/;    /* y scroll offset in pixs */
-  int *r_palette    /*=0*/;    /* address of palette data */
-  int r_for         /*=0*/;    /* start forground colour */
-  int r_bac         /*=0*/;    /* start background colour */
-  int *r_workarea   /*=0*/;    /* address of work area */
-  int r_magx        /*=0*/;    /* log 2 of num of x os per pixel */
-  int r_magy        /*=0*/;    /* log 2 of num of y os per pixel */
-  int r_xsize       /*=0*/;    /* screen width in pixels */
-  int r_ysize       /*=0*/;    /* screen height in pixels */
-  int r_mode        /*=0*/;    /* screen mode */
+  int r_flags         /*=0*/;    /* Redraw flags */
+  int r_minx          /*=0*/;    /* min x in pixs inc */
+  int r_miny          /*=0*/;    /* min y in pixs inc (from top) */
+  int r_maxx          /*=0*/;    /* max x in pixs exc */
+  int r_maxy          /*=0*/;    /* max y in pixs exc (from top) */
+  int r_screen        /*=0*/;    /* address of the screen */
+  int r_bpl           /*=0*/;    /* bytes per raster line */
+  int r_bpp           /*=0*/;    /* log base 2 of bpp */
+  int r_charw         /*=0*/;    /* width of a character in pixs */
+  int r_charh         /*=0*/;    /* height of a character in pixs */
+  int *r_caddr        /*=0*/;    /* cache address / font name */
+  int r_cbpl          /*=0*/;    /* bytes per cached line */
+  int r_cbpc          /*=0*/;    /* bytes per cached character */
+  int r_linesp        /*=0*/;    /* line spacing in pixels */
+  int *r_data         /*=0*/;    /* address of data to print */
+  int r_scrollx       /*=0*/;    /* x scroll offset in pixs */
+  int r_scrolly       /*=0*/;    /* y scroll offset in pixs */
+  colour_t *r_palette /*=0*/;    /* address of palette data */
+  int r_for           /*=0*/;    /* start forground colour */
+  int r_bac           /*=0*/;    /* start background colour */
+  int *r_workarea     /*=0*/;    /* address of work area */
+  int r_magx          /*=0*/;    /* log 2 of num of x os per pixel */
+  int r_magy          /*=0*/;    /* log 2 of num of y os per pixel */
+  int r_xsize         /*=0*/;    /* screen width in pixels */
+  int r_ysize         /*=0*/;    /* screen height in pixels */
+  int r_mode          /*=0*/;    /* screen mode */
 };
 
 extern char *zapgen_code(int *, const char *, int, int, int);

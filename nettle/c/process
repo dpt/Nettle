@@ -140,7 +140,7 @@ static void reprocess_position_scroll(struct session_struct *session)
     session->pos.y--;
     scrolled = 1;
 
-    if (selection_session)
+    if (session==selection_session)
     {
       selection_start-=session->terminal_size.x;
       selection_end-=session->terminal_size.x;

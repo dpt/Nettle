@@ -27,6 +27,16 @@ int *zapredraw_area       =0;
 int zapredraw_area_number =0;
 int size_of_zapredraw_area=0;
 
+colour_t palette[16];
+
+const colour_t default_palette[16]=
+{
+  0x00000000, 0x0000D000, 0x00D00000, 0x00D0D000,
+  0xD0000000, 0xD000D000, 0xD0D00000, 0xD0D0D000,
+  0x40404000, 0x0000FF00, 0x00FF0000, 0x00FFFF00,
+  0xFF000000, 0xFF00FF00, 0xFFFF0000, 0xFFFFFF00
+};
+
 struct coords eig;
 
 int task_handle;
@@ -35,6 +45,7 @@ int iconbar_handle;
 /* Template windows */
 int win_info;
 int win_choices;
+int win_colours;
 int win_open;
 int win_resize;
 int win_save;
@@ -56,5 +67,8 @@ int selection_start                     =0;
 int selection_end                       =0;
 int selection_adjust_dragging           =0;
 
-char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};
+const struct session_struct *cursor_session=NULL;
+int nextcursortime;
+bool cursor_state = false;
 
+const char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};

@@ -289,7 +289,7 @@ static int *load_font(char *font)
           /* If it's a directory, plonk .0 on the end */
           strcat(file_end,".0");
           strcat(file_name,".0");
-	  
+
 	  /* and pretend it's a file */
 	  object_type = 1;
       }
@@ -307,7 +307,7 @@ static int *load_font(char *font)
       	  if (strcmp(string,"ZFLK")==0)
       	  {
 	    size_t chrs;
-	
+
       	    /* get the redirection font */
       	    chrs = fread(&file_end[0], 1, sizeof(file_end)-1, file_handle);
 	    file_end[chrs]='\0';
@@ -329,7 +329,7 @@ static int *load_font(char *font)
     strcpy(file_name,"<Nettle$Dir>.Fonts.08x16.Default.0");
     file_handle=fopen(file_name,"rb");
   }
-  
+
   assert(file_handle);
 
   fseek(file_handle,8,SEEK_SET);
@@ -357,7 +357,8 @@ static int *load_font(char *font)
   _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);
 
   /* fill in graphics chars */
-  define_zap_chars(zap_load_area+8+(char_size*(0x40-(zap_load_area[4]))),char_size,width,height);
+  define_zap_chars(zap_load_area+8+(char_size*(0x40-(zap_load_area[4]))),
+                   char_size, width, height, zap_load_area+8);
 
   return zap_load_area;
 }
