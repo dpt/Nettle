@@ -1866,26 +1866,6 @@ void wimp_message(union wimp_poll_block *wimp_block)
     case WIMP_MESSAGE_MENUWARNING:
       switch (wimp_block->user_message.contents.menu_warning.submenu)
       {
-        case MENU_TERMLIST:
-          {
-            const int *menublock=create_termlist_menu();
-            if (menublock)
-              _swi (Wimp_CreateSubMenu, _INR(1,3), menublock,
-                    wimp_block->user_message.contents.menu_warning.pos.x,
-                    wimp_block->user_message.contents.menu_warning.pos.y);
-          }
-          break;
-
-        case MENU_HOTLIST:
-          {
-            const int *menublock=create_hotlist_menu();
-            if (menublock)
-              _swi (Wimp_CreateSubMenu, _INR(1,3), menublock,
-                    wimp_block->user_message.contents.menu_warning.pos.x,
-                    wimp_block->user_message.contents.menu_warning.pos.y);
-          }
-          break;
-
         case MENU_ZAPFONTLIST:
           create_zap_font_submenu (wimp_block->user_message.contents.menu_warning.selection,
                                     wimp_block->user_message.contents.menu_warning.pos);
@@ -2115,8 +2095,8 @@ static void create_iconbar_menu(void)
                   menu_info, win_info,
                   menu_choices,
                   menu_connect,
-                  menu_hotlist, MENU_HOTLIST,
-                  menu_session, MENU_TERMLIST,
+                  menu_hotlist, create_hotlist_menu(),
+                  menu_session, create_termlist_menu(),
                   menu_quit))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);

@@ -85,13 +85,14 @@ colour_t zap_palette[16];
 
 struct session_struct *terminal_menu_session = NULL;
 
-const char terminal_name[NO_OF_TERMINAL_TYPES][12]={"vt100",
-                                                    "vt102",
-                                                    "vt220",
-                                                    "vt320",
-                                                    "vt420",
-                                                    "vt510",
-                                                    "rxvt",
-                                                    "xterm",
-                                                    "xterm-color"};
+const char terminal_name[NO_OF_TERMINAL_TYPES][MESSAGE_MAX_TERMINAL]={
+  "vt100",
+  "vt102",
+  "vt220",
+  "vt320",
+  "vt420",
+  "vt510",
+  "rxvt",
+  "xterm",
+  "xterm-color"};
 

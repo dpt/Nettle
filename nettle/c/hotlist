@@ -271,6 +271,7 @@ int *create_hotlist_menu(void)
 {
   hotlistnode *node = hotlisthead;
   int position=7;
+  int wide=200;
 
   if (!items)
     return NULL;
@@ -281,10 +282,10 @@ int *create_hotlist_menu(void)
     if (!menublock)
       return NULL;
 
-    strcpy((char *)menublock, lookup_static("Hotlist"));
+    lookup("Hotlist", (char *)menublock, 12);
 
     menublock[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
-    menublock[4]=0;
+    menublock[4]=wide;
     menublock[5]=44;
     menublock[6]=0;
 
@@ -300,9 +301,14 @@ int *create_hotlist_menu(void)
                                   node->type == ht_telnet ? "snettle_telnt" :
                                   "snettle_task");
       menublock[position++]=strlen(node->label)+1;
+    
+    if (menublock[position-1]+1 * 16 > wide)
+      wide =  menublock[position-1]+1 * 16;
 
       node = node->next;
     }
+    
+    menublock[4] = wide;
   }
   return (int *) menublock;
 }

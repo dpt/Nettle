@@ -6,13 +6,13 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.1901b (28-Aug-2001)
+AppVersion:v0.1902b (30-Aug-2001)
 
 Info:Info>
 Choices:Choices...
 Connect:.Connect...
-Hotlist]:[Hotlist>
-Session]:.[Sessions>
+Hotlist]:Hotlist>
+Session]:.Sessions>
 Quit:Quit
 
 Terminal:Terminal

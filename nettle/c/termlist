@@ -22,7 +22,8 @@ static int *menublock = NULL;
 void
 lose_termlist_menu (void)
 {
-  free (menublock);
+  if (menublock)
+    free (menublock);
   menublock = NULL;
 }
 
@@ -33,6 +34,10 @@ create_termlist_menu (void)
   struct session_struct *node;
   int position = 7;
   int termitems = 0;
+  int wide=100;
+
+  if (!sessions)
+    return NULL;
 
   node = sessions;
   while (node)
@@ -41,32 +46,22 @@ create_termlist_menu (void)
     node = node->next;
   }
 
-  if (termitems > items)
+  if (termitems != items)
   {
-    items = termitems ? termitems : 1;
-    menublock = (int *) realloc (menublock, 24 * items + 28);
+    if (menublock)
+      free(menublock);
+    items = termitems;
+    menublock = (int *) malloc(24 * items + 28);
     if (!menublock)
       return NULL;
   }
 
-  strcpy ((char *) menublock, lookup_static ("Session"));
+  lookup("Session", (char *)menublock, 12);
 
   menublock[3] = 0x70207; /* standard menu colours */
-  menublock[4] = 0;
+  menublock[4] = wide;
   menublock[5] = 44;
   menublock[6] = 0;
-
-  if (!sessions)
-  {
-    /* Empty menu - give it a dummy entry */
-    menublock[5] = 0;		/* height = 0 */
-    menublock[7] = 0x80;
-    menublock[8] = -1;		/* No submenu */
-    menublock[9] = WIMP_ICON_SHADED_BIT;
-    menublock[10] = menublock[11] = (int) "";
-    menublock[12] = 1;
-    return menublock;
-  }
 
   node = sessions;
   while (node)
@@ -78,14 +73,19 @@ create_termlist_menu (void)
       WIMP_ICON_FGCOL (7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT |
       WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_SPRITE_BIT;
 
-      menublock[position++]=(int) node->label;
-      menublock[position++]=(int)(node->connection_type == NETTLE_SSH ? "snettle_ssh" : \
+    menublock[position++]=(int) node->label;
+    menublock[position++]=(int)(node->connection_type == NETTLE_SSH ? "snettle_ssh" : \
                                   node->connection_type == NETTLE_TELNET ? "snettle_telnt" :
                                   "snettle_task");
-      menublock[position++]=strlen(node->label)+1;
+    menublock[position++]=strlen(node->label)+1;
+    
+    if (menublock[position-1]+1 * 16 > wide)
+      wide =  menublock[position-1]+1 * 16;
 
     node = node->next;
   }
+  
+  menublock[4] = wide;
 
   return menublock;
 }

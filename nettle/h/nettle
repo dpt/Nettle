@@ -65,7 +65,7 @@ enum nettle_terminal {
 #define MESSAGE_MAX_CONNECTION  20
 
 /* Maximum length for terminal type - vt100, vt102, etc */
-#define MESSAGE_MAX_TERMINAL    10
+#define MESSAGE_MAX_TERMINAL    12
 
 /* Maximum length of menu entries */
 #define MESSAGE_MAX_MENU        20
