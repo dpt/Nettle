@@ -467,7 +467,7 @@ void selection_paste(void)
       process_data_transmission(terminal_menu_session, buffer+loop, bufferptr-loop);
   }
 
-  _swi(Hourglass_Smash, 0);
+  _swi(Hourglass_Off, 0);
 
   free(buffer);
 }

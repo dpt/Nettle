@@ -167,7 +167,7 @@ const char *socket_strerror(int errnum)
 
 case ENOENT               : return "Not found"; /* 2 */
 case EBADF                : return "Invalid descriptor"; /* 9 */
-#ifndef USE_TCIPIPLIB
+#ifndef USE_TCPIPLIB
 case EAGAIN               : return "No more ports"; /* 11 */
 #endif
 case EFAULT               : return "Bad address"; /* 14 */

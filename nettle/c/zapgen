@@ -99,10 +99,10 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
     }
   }
   /* End tautological moan */
-  
+
   if (selection_start_line < first_line && selection_end_line >= first_line)
     selected = true;
-  
+
   startoffset = input_line_offsets[selection_start_line]+selection_start_x;
   endoffset = input_line_offsets[selection_end_line]+selection_end_x;
 
@@ -134,10 +134,10 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
       /* swap foreground and background if inverted or selected or inverse video etc. */
       if (input->flags & NETTLE_FLAG_INVERTED)
         invert=NOT(invert);
-      
+
       if ((const int*)input == startoffset || (const int*)input == endoffset)
         selected=NOT(selected);
-      
+
       if (selected)
         invert=NOT(invert);
 
@@ -210,7 +210,7 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
 int *load_font(char *font)
 {
   char string[5]="ZFLK";
-  int *zap_load_area;
+  int *zap_load_area = 0;
   int width;
   int height;
   int last_char;
@@ -308,16 +308,38 @@ int *load_font(char *font)
   fread((char *) &first_char, 1, 4, file_handle);
   fread((char *) &last_char, 1, 4, file_handle);
 
-  fclose(file_handle);
-
   /* Set real character size (will be needed to implement graphics characters) */
   char_size=((width+ 7) & ~7)*height/8;
 
-  zap_load_area=malloc(char_size*0x11D+0x20);
-  assert(zap_load_area != NULL);
+  if (first_char > 256)
+    first_char = 256;
+  if (last_char > 256)
+    last_char = 256;
 
-  memset (zap_load_area, 0, char_size*0x11D + 0x20);
-  _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);
+  if (first_char != last_char)
+  {
+    zap_load_area=malloc(char_size*0x11D+0x20);
+    assert(zap_load_area != NULL);
+    memset (zap_load_area, 0, char_size*0x11D + 0x20);
+    fseek(file_handle,0,SEEK_SET);
+    fread ((char *) zap_load_area, 1, 0x20, file_handle);
+    fread ((char *) zap_load_area + 0x20 + first_char * char_size,
+           1, (last_char - first_char) * char_size, file_handle);
+  }
+
+  if (ferror (file_handle) || first_char == last_char)
+  {
+    /* Eek! Fall back on system font... */
+    zap_load_area[2] = width = 8;
+    zap_load_area[3] = height = (eig.y > 1) ? 8 : 16;
+    char_size = height;
+    zap_load_area[4] = first_char = 32;
+    zap_load_area[5] = last_char = 32;
+    zap_load_area = realloc (zap_load_area, char_size * 0x11D + 0x20);
+    assert (zap_load_area != NULL);
+  }
+
+  fclose(file_handle);
 
   {
     char *area=(char *) zap_load_area;

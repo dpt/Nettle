@@ -10,6 +10,7 @@
 
 #include "chardefn.h"
 #include "misc.h"
+#include "zapredraw.h"
 
 /* Define Zap graphics characters */
 
@@ -287,8 +288,9 @@ void define_zap_undef_chars(int *int_area, int first_char, int last_char,
       if (chr == first_char)
       {
         /* skip the defined characters */
-        chr = last_char - 1;
-        continue;
+        chr = last_char;
+        if (chr >= 0x100)
+          break;
       }
 
       /* undefined character - fill in the definition */
@@ -304,6 +306,14 @@ void define_zap_undef_chars(int *int_area, int first_char, int last_char,
           ptr[i*2 + 1] = ptr[i*2] = def[i + 1];
       }
     }
+    if (first_char > 32)
+      _swi (ZapRedraw_ReverseBitmaps, _INR(1,3),
+            area + 32 * char_size, area + 32 * char_size,
+            (first_char - 32) * char_size);
+    if (last_char < 256)
+      _swi (ZapRedraw_ReverseBitmaps, _INR(1,3),
+            area + last_char * char_size, area + last_char * char_size,
+            (256 - last_char) * char_size);
   }
 
   {

@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.2004 (09 Sep 2001)
+AppVersion:v0.2005 (10 Sep 2001)
 
 Info:Info>
 Choices:Choices...
@@ -48,8 +48,8 @@ Hotlist:Hotlist
 NoTemplates:No Templates file was found.
 NoSprites:No Sprites file was found.
 
-ConnectionOpen:This connection is currently open. Are you sure you wish to close it?
-ConnectionMultiOpen:There are connections currently open. Are you sure you wish to quit?
+ConnectionOpen:This session is currently open. Are you sure you wish to close it?
+ConnectionMultiOpen:There are sessions currently open. Are you sure you wish to quit?
 InvalidAddr:The remote address you entered is invalid. Please check and try again.
 InvalidPort:The port you entered was either malformed or too large.
 InvalidComm:You must enter a command to start a Nettle task window.

@@ -299,6 +299,6 @@ void initialise_application(void)
   socketwatch_initialise();
 
   /* Turn off hourglass */
-  _swi(Hourglass_Smash, 0);
+  _swi(Hourglass_Off, 0);
 
 }
