@@ -16,6 +16,9 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
+
+static int zapredraw_block[128];
+
 void initialise_wimp(void)
 {
   static int messages[] =

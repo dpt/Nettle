@@ -22,9 +22,6 @@ int main(void)
   Fortify_EnterScope();
 #endif
 
-  /* Set log file time */
-  log_file_time = _swi(OS_ReadMonotonicTime, _RETURN(0));
-
   /* Turn on hourglass */
   _swi(Hourglass_On, 0);
 
@@ -38,16 +35,7 @@ int main(void)
   load_templates();
   load_zap_fonts();
 
-  if (logging)
-  {
-    /* create log file for use later */
-    log_file=fopen("<Nettle$Dir>.Log","w");
-    if (log_file!=0)
-    {
-      fclose(log_file);
-      log_file=0;
-    }
-  }
+  create_log();
 
   /* create the iconbar icon */
   create_icon_bar_icon();

@@ -15,6 +15,8 @@
 
 #define RECEIVE_BLOCK_LENGTH	0x400
 
+extern void closedown_wimp(void);
+
 extern void null_reason_code(void);
 extern void redraw_window(int);
 extern void open_window(int, bool);
@@ -28,6 +30,7 @@ extern void gain_caret(void);
 extern void wimp_message(int, int, int);
 extern void mode_change(void);
 
+extern void lose_bitmaps(void);
 extern void generror(const char *, bool);
 extern void set_caret_position(int, int, int, int);
 extern void set_icon_data(int, int, const char *);

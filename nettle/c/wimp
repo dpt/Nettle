@@ -17,7 +17,19 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
-
+static int menu_data[64];
+static int menu_data2[64];
+static int *bitmaps_area=0;
+static int bitmaps_area_number=0;
+static int menu_open=0;
+static int drag_window_handle=0;
+static int drag_icon_handle=0;
+static struct session_struct *terminal_menu_session = NULL;
+static int zap_palette[16];
+static int palette[16]={0x00000000, 0x0000D000, 0x00D00000, 0x00D0D000,
+  		        0xD0000000, 0xD000D000, 0xD0D00000, 0xD0D0D000,
+  		        0x40404000, 0x0000FF00, 0x00FF0000, 0x00FFFF00,
+  		        0xFF000000, 0xFF00FF00, 0xFFFF0000, 0xFFFFFF00};
 
 static bool generror_question(char *string);
 static void create_iconbar_menu(void);
@@ -28,6 +40,11 @@ static void create_connection_menu(void);
 static void create_terminal_type_menu(void);
 static void drag_start(int, int);
 
+
+void closedown_wimp(void)
+{
+  _swi(Wimp_CloseDown, _INR(0,1), task_handle, 0x4b534154);
+}
 
 
 /* Null code */
@@ -140,7 +157,7 @@ void null_reason_code(void)
     current_session = sessions;
   }
 
-  close_log();
+  close_log(false);
 
   if (selection_in_progress)
     handle_selection_drag();
@@ -187,52 +204,44 @@ void redraw_window(int window_handle)
 
 void open_window(int window_handle, bool poll_flag)
 {
-  struct wimp_openwindow_block block;
+  struct wimp_openwindow_block local_block, *block=&local_block;
   struct session_struct *session = sessions;
 
-  /* find out which session this window is */
+  /* find out which session this window is - if any! */
 
   while (session && window_handle != session->window_handle)
   {
     session = session->next;
   }
-
-  switch (poll_flag)
+  
+  if (poll_flag)
   {
-    case true:
-      if (session)
-      {
-        if (line_editor)
-        {
-          /* open the pane window and set the 'behind' word to behind the pane */
-          open_pane_window(session, (struct wimp_openwindow_block *) &wimp_block);
-          wimp_block.open_window.handle_behind = session->pane_handle;
-        }
-      }
-      break;
-    default:
-      block.window_handle = window_handle;
+    /* Called from Wimp_Poll, so use that block, which contains an OpenWindow struct */
+    block = (struct wimp_openwindow_block *) &wimp_block;
+  }
+  else
+  {
+    /* Called from our own code, so fetch the OpenWindow block */
+    block->window_handle = window_handle;
 
-      _swi(Wimp_GetWindowState, _IN(1), &block);
+    _swi(Wimp_GetWindowState, _IN(1), block);
 
-      block.handle_behind = -1;
-      if (session)
-      {
-        if (line_editor)
-        {
-          /* open the pane window and set the 'behind' word to behind the pane */
-          open_pane_window(session, &block);
-          block.handle_behind = session->pane_handle;
-        }
-      }
-      break;
+    block->handle_behind = -1;  /* Open on top of stack */
   }
 
-  /* open the main window */
-  if (poll_flag)
-    _swi(Wimp_OpenWindow, _IN(1), &wimp_block);
-  else
-    _swi(Wimp_OpenWindow, _IN(1), &block);
+  if (session)
+  {
+    /* This is a main "session" window, so handle the pane, if any */
+
+    if (line_editor)
+    {
+      /* open the pane window and set the 'behind' word to behind the pane */
+      open_pane_window(session, block);
+      block->handle_behind = session->pane_handle;
+    }
+  }
+
+  _swi(Wimp_OpenWindow, _IN(1), block);
 }
 
 
@@ -293,6 +302,327 @@ static void close_program(void)
 }
 
 
+static void iconbar_click(int x, int y, int buttons, int icon_handle)
+{
+  if (icon_handle==iconbar_handle)
+  {
+     switch (buttons)
+     {
+       case 4:
+  	 open_open_window(true);
+  	 break;
+       case 2:
+  	 create_iconbar_menu();
+  	 break;
+     }
+  }
+}
+
+static void win_open_click(int x, int y, int buttons, int icon_handle)
+{
+  switch (icon_handle)
+  {
+    case 2:
+      close_window(win_open);
+      break;
+    case 3:
+      start_connection();
+      break;
+    case 5:
+      create_connection_menu();
+      break;
+    case 10:
+      create_terminal_type_menu();
+      break;
+  }
+}
+
+static void win_save_click(int x, int y, int buttons, int icon_handle)
+{
+  switch (icon_handle)
+  {
+    case 0:
+      _swi(Wimp_CreateMenu, _IN(1), -1);
+      break;
+
+    case 1:
+      {
+	char save_data[1024];
+
+	read_icon_data(win_save, 2, save_data, sizeof(save_data));
+
+	if ((instr(save_data, ":")>=0))
+	{
+	  struct wimp_geticonstate_block block;
+
+	  block.window_handle= win_save;
+	  block.icon_handle  =4;
+
+	  _swi(Wimp_GetIconState, _IN(1), &block);
+
+	  /* if selected bit is set, then we save with ANSI colour */
+	  if (block.icon_flags & (1<<21))
+	  {
+	    save_selection(save_data, true);
+	  }
+	  else
+	  {
+	    save_selection(save_data, false);
+	  }
+
+	  if (buttons!=1)
+	  {
+	    _swi(Wimp_CreateMenu, _IN(1), -1);
+	  }
+	}
+	else
+	{
+	  generror("ToSaveDrag", true);
+	}
+      }
+      break;
+
+    case 3:
+      switch (buttons)
+      {
+	case 64: case 16:
+	  /* Drag */
+	  drag_start(win_save, 3);
+	  break;
+      }
+      break;
+  }
+}
+
+
+static void win_resize_click(int x, int y, int buttons, int icon_handle)
+{
+  switch (icon_handle)
+  {
+    case 6:
+      _swi(Wimp_CreateMenu, _IN(1), -1);
+      break;
+    case 7:
+      {
+	char string[8];
+
+	resize_terminal(terminal_menu_session,
+			atoi(read_icon_data(win_resize, 0, string, sizeof(string))),
+			atoi(read_icon_data(win_resize, 2, string, sizeof(string))),
+			atoi(read_icon_data(win_resize, 4, string, sizeof(string))),
+			true);
+
+	if (buttons!=1)
+	{
+	  _swi(Wimp_CreateMenu, _IN(1), -1);
+	}
+      }
+      break;
+  }
+}
+
+
+static void session_window_click(int x, int y, int buttons, int icon_handle, struct session_struct *session)
+{
+  int x_pos;
+  int y_pos;
+
+  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
+
+  /* if we're not pressing MENU */
+  if (buttons!=2 && buttons!=32)
+  {
+    /* set the caret to be in the window or line editor (depending if lineeditor is on) */
+    if (line_editor_active(session))
+    {
+      struct wimp_getcaretposition_block block;
+
+      _swi(Wimp_GetCaretPosition, _IN(1), &block);
+
+      if (block.window_handle!=session->pane_handle)
+      {
+	set_caret_position(session->pane_handle, 1, -1,
+	  get_icon_data_length(session->pane_handle, 1));
+      }
+    }
+    else
+    {
+      set_caret_position(session->window_handle,-1,-1,-1);
+    }
+  }
+
+  {
+    struct wimp_getwindowstate_block block;
+
+    block.window_handle=session->window_handle;
+
+    _swi(Wimp_GetWindowState, _IN(1), &block);
+
+    x_pos=block.minx-block.scroll_x;
+    y_pos=block.maxy-block.scroll_y;
+  }
+
+  switch (buttons)
+  {
+    case 64:
+      /* if SELECT drag, then clear the selection and work out what where the selection */
+      /* start is */
+      refresh_selection_clear();
+
+      selection_session = session;
+      selection_start=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
+		       session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
+
+      if (selection_start > (selection_session->terminal_size_x*
+			    (selection_session->terminal_size_y+
+				    selection_session->scrollback)))
+      {
+	selection_start=(selection_session->terminal_size_x*
+			    (selection_session->terminal_size_y+
+				    selection_session->scrollback));
+      }
+
+      if (selection_start<0)
+      {
+	selection_start=0;
+      }
+
+      selection_end=selection_start;
+      selection_in_progress=true;
+      break;
+    case 16:
+      /* if ADJUST drag, then if there is no selection, then start one */
+      if (!selection_session)
+      {
+	refresh_selection_clear();
+
+	selection_session = session;
+	selection_start=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
+		       session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
+
+	if (selection_start>(selection_session->terminal_size_x*
+			    (selection_session->terminal_size_y+
+				    selection_session->scrollback)))
+	{
+	  selection_start=(selection_session->terminal_size_x*
+			    (selection_session->terminal_size_y+
+				    selection_session->scrollback));
+	}
+
+	if (selection_start<0)
+	{
+	  selection_start = 0;
+	}
+
+	selection_end=selection_start;
+	selection_in_progress=true;
+	selection_adjust_dragging=SELECTION_ADJUST_END;
+      }
+      else
+      {
+	selection_in_progress=true;
+      }
+      break;
+    case 4:
+      /* if SELECT click, then clear the selection */
+      if (selection_session)
+      {
+	refresh_selection_clear();
+	force_redraw(selection_session->window_handle,0,
+	  (-selection_session->terminal_size_y-
+	    selection_session->scrollback)*
+	    redraw.r_charh*2*zap_yeig,
+	       selection_session->terminal_size_x*redraw.r_charw*2,0);
+	selection_session = NULL;
+      }
+      break;
+    case 2:
+      terminal_menu_session = session;
+      create_terminal_menu();
+      break;
+    case 1:
+      /* if ADJUST click, then extend the selection */
+      selection_adjust(x,x_pos,y,y_pos);
+      break;
+  }
+}
+
+static void session_pane_click(int x, int y, int buttons, int icon_handle, struct session_struct *session)
+{
+  switch (icon_handle)
+  {
+    case 0:
+      {
+	struct wimp_geticonstate_block block;
+
+	block.window_handle=session->pane_handle;
+	block.icon_handle  =icon_handle;
+
+	_swi(Wimp_GetIconState, _IN(1), &block);
+
+	if (block.icon_flags & (1<<21))
+	{
+	  {
+	    struct wimp_seticonstate_block icon_set;
+
+	    icon_set.window_handle=session->pane_handle;
+	    icon_set.icon_handle  =1;
+	    icon_set.eor	  =0;
+	    icon_set.clear	  =1<<23;
+
+	    _swi(Wimp_SetIconState, _IN(1), &icon_set);
+	  }
+
+	  {
+	    struct wimp_getcaretposition_block caret_pos;
+
+	    _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
+
+	    if (caret_pos.window_handle==session->window_handle)
+	    {
+	      set_caret_position(session->pane_handle, 1, -1,
+		   get_icon_data_length(session->pane_handle, 1));
+	    }
+	  }
+	}
+	else
+	{
+	  {
+	    struct wimp_seticonstate_block icon_set;
+
+	    icon_set.window_handle=session->pane_handle;
+	    icon_set.icon_handle  =1;
+	    icon_set.eor	  =1<<23;
+	    icon_set.clear	  =1<<23;
+
+	    _swi(Wimp_SetIconState, _IN(1), &icon_set);
+	  }
+
+	  {
+	    block.window_handle=session->pane_handle;
+	    block.icon_handle  =1;
+
+	    _swi(Wimp_GetIconState, _IN(1), &block);
+
+	    force_redraw(session->pane_handle, block.minx, block.miny,
+					       block.maxx, block.maxy);
+	  }
+
+	  {
+	    struct wimp_getcaretposition_block caret_pos;
+
+	    _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
+
+	    if (caret_pos.window_handle==session->pane_handle)
+	    {
+	      set_caret_position(session->window_handle,-1,-1,-1);
+	    }
+	  }
+	}
+      }
+  }
+}
+
 
 /* Mouse click */
 
@@ -300,344 +630,38 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
 {
   if (window_handle==-2)
   {
-    if (icon_handle==iconbar_handle)
-    {
-       switch (buttons)
-       {
-         case 4: case 1:
-           open_open_window(true);
-           break;
-         case 2:
-           create_iconbar_menu();
-           break;
-       }
-    }
-    return;
+    iconbar_click(x,y,buttons,icon_handle);
   }
-
-  if (window_handle == win_open)
+  else if (window_handle == win_open)
   {
-    switch (icon_handle)
-    {
-      case 2:
-        close_window(win_open);
-        break;
-      case 3:
-        start_connection();
-        break;
-      case 5:
-        create_connection_menu();
-        break;
-      case 10:
-        create_terminal_type_menu();
-        break;
-    }
-    return;
+    win_open_click(x,y,buttons,icon_handle);
   }
-
-  if (window_handle == win_save)
+  else if (window_handle == win_save)
   {
-    switch (icon_handle)
-    {
-      case 0:
-        _swi(Wimp_CreateMenu, _IN(1), -1);
-        break;
-      case 1:
-        {
-          char save_data[1024];
-
-          read_icon_data(win_save, 2, save_data, sizeof(save_data));
-
-          if ((instr(save_data, ":")>=0))
-          {
-            struct wimp_geticonstate_block block;
-
-            block.window_handle= win_save;
-            block.icon_handle  =4;
-
-            _swi(Wimp_GetIconState, _IN(1), &block);
-
-            /* if selected bit is set, then we save with ANSI colour */
-            if (block.icon_flags & (1<<21))
-            {
-              save_selection(save_data, true);
-            }
-            else
-            {
-              save_selection(save_data, false);
-            }
-
-            if (buttons!=1)
-            {
-              _swi(Wimp_CreateMenu, _IN(1), -1);
-            }
-          }
-          else
-          {
-            generror("ToSaveDrag", true);
-          }
-        }
-        break;
-      case 3:
-        switch (buttons)
-        {
-          case 64: case 16:
-            /* Drag */
-            drag_start(win_save, 3);
-            break;
-        }
-        break;
-    }
-    return;
+    win_save_click(x,y,buttons,icon_handle);
   }
-
-  if (window_handle == win_resize)
+  else if (window_handle == win_resize)
   {
-    switch (icon_handle)
-    {
-      case 6:
-        _swi(Wimp_CreateMenu, _IN(1), -1);
-        break;
-      case 7:
-        {
-          char string[8];
-
-          resize_terminal(terminal_menu_session,
-                          atoi(read_icon_data(win_resize, 0, string, sizeof(string))),
-                          atoi(read_icon_data(win_resize, 2, string, sizeof(string))),
-                          atoi(read_icon_data(win_resize, 4, string, sizeof(string))),
-                          true);
-
-          if (buttons!=1)
-          {
-            _swi(Wimp_CreateMenu, _IN(1), -1);
-          }
-        }
-        break;
-    }
-    return;
+    win_resize_click(x,y,buttons,icon_handle);
   }
-
-  {
-    struct session_struct *session = sessions;
-    int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
-
-    /* find the session */
-
-    while (session && window_handle != session->window_handle)
-    {
-      session = session->next;
-    }
-
-    if (session)
-    {
-      int x_pos;
-      int y_pos;
-
-      /* if we're not pressing MENU */
-      if (buttons!=2 && buttons!=32)
-      {
-        /* set the caret to be in the window or line editor (depending if lineeditor is on) */
-        if (line_editor_active(session))
-        {
-          struct wimp_getcaretposition_block block;
-
-          _swi(Wimp_GetCaretPosition, _IN(1), &block);
-
-          if (block.window_handle!=session->pane_handle)
-          {
-            set_caret_position(session->pane_handle, 1, -1,
-              get_icon_data_length(session->pane_handle, 1));
-          }
-        }
-        else
-        {
-          set_caret_position(session->window_handle,-1,-1,-1);
-        }
-      }
-
-      {
-        struct wimp_getwindowstate_block block;
-
-        block.window_handle=window_handle;
-
-        _swi(Wimp_GetWindowState, _IN(1), &block);
-
-        x_pos=block.minx-block.scroll_x;
-        y_pos=block.maxy-block.scroll_y;
-      }
-
-      switch (buttons)
-      {
-        case 64:
-          /* if SELECT drag, then clear the selection and work out what where the selection */
-          /* start is */
-          refresh_selection_clear();
-
-          selection_session = session;
-          selection_start=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-          		   session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
-
-          if (selection_start > (selection_session->terminal_size_x*
-          			(selection_session->terminal_size_y+
-          				selection_session->scrollback)))
-          {
-            selection_start=(selection_session->terminal_size_x*
-          			(selection_session->terminal_size_y+
-          				selection_session->scrollback));
-          }
-
-          if (selection_start<0)
-          {
-            selection_start=0;
-          }
-
-          selection_end=selection_start;
-          selection_in_progress=true;
-          break;
-        case 16:
-          /* if ADJUST drag, then if there is no selection, then start one */
-          if (!selection_session || selection_session->window_handle != window_handle)
-          {
-            refresh_selection_clear();
-
-            selection_session = session;
-            selection_start=((-((y-y_pos)/redraw.r_charh/2/zap_yeig))*
-            		   session->terminal_size_x)+((x-x_pos)/redraw.r_charw/2);
-
-            if (selection_start>(selection_session->terminal_size_x*
-            			(selection_session->terminal_size_y+
-          				selection_session->scrollback)))
-            {
-              selection_start=(selection_session->terminal_size_x*
-          			(selection_session->terminal_size_y+
-          				selection_session->scrollback));
-            }
-
-            if (selection_start<0)
-            {
-              selection_start = 0;
-            }
-
-            selection_end=selection_start;
-            selection_in_progress=true;
-            selection_adjust_dragging=SELECTION_ADJUST_END;
-          }
-          else
-          {
-            selection_in_progress=true;
-          }
-          break;
-        case 4:
-          /* if SELECT click, then clear the selection */
-          if (selection_session)
-          {
-            refresh_selection_clear();
-            force_redraw(selection_session->window_handle,0,
-              (-selection_session->terminal_size_y-
-           	selection_session->scrollback)*
-           	redraw.r_charh*2*zap_yeig,
-                   selection_session->terminal_size_x*redraw.r_charw*2,0);
-            selection_session = NULL;
-          }
-          break;
-        case 2:
-          terminal_menu_session = session;
-          create_terminal_menu();
-          break;
-        case 1:
-          /* if ADJUST click, then extend the selection */
-          selection_adjust(x,x_pos,y,y_pos);
-          break;
-      }
-
-      return;
-    }
-  }
-
+  else
   {
     struct session_struct *session = sessions;
 
-    while (session && window_handle != session->pane_handle)
+    while (session)
     {
-      session = session->next;
-    }
-
-    if (session)
-    {
-      switch (icon_handle)
+      if (window_handle == session->window_handle)
       {
-        case 0:
-          {
-            struct wimp_geticonstate_block block;
-
-            block.window_handle=window_handle;
-            block.icon_handle  =icon_handle;
-
-            _swi(Wimp_GetIconState, _IN(1), &block);
-
-            if (block.icon_flags & (1<<21))
-            {
-              {
-                struct wimp_seticonstate_block icon_set;
-
-                icon_set.window_handle=session->pane_handle;
-                icon_set.icon_handle  =1;
-                icon_set.eor          =0;
-                icon_set.clear        =1<<23;
-
-                _swi(Wimp_SetIconState, _IN(1), &icon_set);
-              }
-
-              {
-                struct wimp_getcaretposition_block caret_pos;
-
-                _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
-
-                if (caret_pos.window_handle==session->window_handle)
-                {
-                  set_caret_position(session->pane_handle, 1, -1,
-                       get_icon_data_length(session->pane_handle, 1));
-                }
-              }
-            }
-            else
-            {
-              {
-                struct wimp_seticonstate_block icon_set;
-
-                icon_set.window_handle=session->pane_handle;
-                icon_set.icon_handle  =1;
-                icon_set.eor          =1<<23;
-                icon_set.clear        =1<<23;
-
-                _swi(Wimp_SetIconState, _IN(1), &icon_set);
-              }
-
-              {
-                block.window_handle=session->pane_handle;
-                block.icon_handle  =1;
-
-                _swi(Wimp_GetIconState, _IN(1), &block);
-
-                force_redraw(session->pane_handle, block.minx, block.miny,
-                                                   block.maxx, block.maxy);
-              }
-
-              {
-                struct wimp_getcaretposition_block caret_pos;
-
-                _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
-
-                if (caret_pos.window_handle==session->pane_handle)
-                {
-                  set_caret_position(session->window_handle,-1,-1,-1);
-                }
-              }
-            }
-          }
+        session_window_click(x,y,buttons,icon_handle,session);
+	return;
       }
-      return;
+      else if (line_editor && (window_handle == session->pane_handle))
+      {
+        session_pane_click(x,y,buttons,icon_handle,session);
+	return;
+      }
+
+      session = session->next;
     }
   }
 }
@@ -1352,6 +1376,21 @@ void mode_change(void)
 }
 
 
+void lose_bitmaps(void)
+{
+  if (dynamic_areas_available())
+  {
+    if (bitmaps_area_number!=0)
+    {
+      _swi(OS_DynamicArea, _INR(0,1), 1, bitmaps_area_number);
+    }
+  }
+  else
+  {
+    free(bitmaps_area);
+  }
+}
+
 
 /* Other Wimp related code */
 
@@ -1363,8 +1402,7 @@ void generror(const char *string, bool is_message)
   if (is_message)
     string = lookup(string, message, sizeof(message));
 
-  block.errno=0x52380; /* fill in the error number - error numbers aren't allocated the same */
-                       /* as SWIs, so this number is wrong... */
+  block.errno=255;
 
   strcpy(block.errmess, string);
 
@@ -1377,8 +1415,7 @@ static bool generror_question(char *string)
 {
   struct wimp_reporterror_block block;
 
-  block.errno=0x52380; /* fill in the error number - error numbers aren't allocated the same */
-                       /* as SWIs, so this number is wrong... */
+  block.errno=255;
 
   strcpy(block.errmess, string);
 
@@ -1441,7 +1478,7 @@ char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_l
 
   _swi(Wimp_GetIconState, _IN(1), &block);
 
-  if (block.icon_flags & (1 << 8))
+  if (block.icon_flags & WIMP_ICON_INDIRECTED_BIT)
   {
     read_mem(buffer, block.contents.it.text, buf_len);
   }
@@ -1467,7 +1504,7 @@ static int get_icon_data_length(int window_handle, int icon_handle)
 
   _swi(Wimp_GetIconState, _IN(1), &block);
 
-  if (block.icon_flags & (1 << 8))
+  if (block.icon_flags & WIMP_ICON_INDIRECTED_BIT)
   {
     char *data = block.contents.it.text;
 

@@ -21,31 +21,15 @@ int *messagetrans_buffer;
 char zap_font[256]="07x14";
 char zap_lowres_font[256]="08x08.0";
 
-int menu_data[64];
-int menu_data2[64];
-
 int *zap_font_area;
 int *zap_lowres_font_area;
 struct zapredraw_block redraw;
-int palette[16]={0x00000000, 0x0000D000, 0x00D00000, 0x00D0D000,
-  		 0xD0000000, 0xD000D000, 0xD0D00000, 0xD0D0D000,
-  		 0x40404000, 0x0000FF00, 0x00FF0000, 0x00FFFF00,
-  		 0xFF000000, 0xFF00FF00, 0xFFFF0000, 0xFFFFFF00};
 
-int zap_palette[16];
-
-int zapredraw_block[128];
 int *zapredraw_area=0;
 int size_of_zapredraw_area=0;
 
-int *bitmaps_area=0;
-int bitmaps_area_number=0;
-
-FILE *log_file;
-int log_file_time;
 int task_handle;
 int iconbar_handle;
-int menu_open;
 
 /* Template windows */
 int win_info;
@@ -67,12 +51,6 @@ struct session_struct *selection_session = NULL;
 int selection_start=0;
 int selection_end=0;
 int selection_adjust_dragging=0;
-
-struct session_struct *terminal_menu_session = NULL;
-int drag_window_handle;
-int drag_icon_handle;
-
-int pane_attached_session;
 
 char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};
 

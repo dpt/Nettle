@@ -11,11 +11,7 @@
 #include "misc.h"
 #include "nettle.h"
 #include "quit.h"
-
-void closedown_wimp(void)
-{
-  _swi(Wimp_CloseDown, _INR(0,1), task_handle, 0x4b534154);
-}
+#include "wimp.h"
 
 void closedown_application(void)
 {
@@ -28,26 +24,15 @@ void closedown_application(void)
 
   _swi(MessageTrans_CloseFile, _IN(0), messagetrans_area);
 
-  switch (dynamic_areas_available())
-  {
-    case true:
-      if (bitmaps_area_number!=0)
-      {
-        _swi(OS_DynamicArea, _INR(0,1), 1, bitmaps_area_number);
-      }
-      break;
-    case false:
-      free(bitmaps_area);
-      break;
-  }
-
+  lose_bitmaps();
+  
   free(messagetrans_buffer);
   free(sprite_area);
   free(zap_font_area);
   free(zap_lowres_font_area);
   free(zapredraw_area);
 
-  close_log();
+  close_log(true);
 
 #ifdef FORTIFY
   Fortify_LeaveScope();

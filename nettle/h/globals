@@ -22,31 +22,19 @@ extern bool quit_flag;
 extern char zap_font[256];
 extern char zap_lowres_font[256];
 
-extern int menu_data[64];
-extern int menu_data2[64];
-
 extern int *zap_font_area;
 extern int *zap_lowres_font_area;
 extern struct zapredraw_block redraw;
-extern int palette[16];
-extern int zap_palette[16];
 
-extern int zapredraw_block[128];
 extern int *zapredraw_area;
 extern int size_of_zapredraw_area;
-
-extern int *bitmaps_area;
-extern int bitmaps_area_number;
 
 extern struct os_spriteop_area *sprite_area;
 extern int messagetrans_area[4];
 extern int *messagetrans_buffer;
 
-extern FILE *log_file;
-extern int log_file_time;
 extern int task_handle;
 extern int iconbar_handle;
-extern int menu_open;
 
 extern int win_info;
 extern int win_choices;
@@ -125,11 +113,6 @@ extern struct session_struct *selection_session;
 extern int selection_start;
 extern int selection_end;
 extern int selection_adjust_dragging;
-
-extern struct session_struct *terminal_menu_session;
-
-extern int drag_window_handle;
-extern int drag_icon_handle;
 
 extern char terminal_name[8][6];
 
