@@ -483,8 +483,8 @@ void byte_linefeed(struct session_struct *session)
   /* LF,VT,FF */
   bool are_we_in_scroll_area=false;
 
-  if (session->pos.y>session->scroll_start+session->scrollback-1 &&
-      session->pos.y<session->scroll_end+session->scrollback-1)
+  if (session->pos.y>=session->scroll_start+session->scrollback-1 &&
+      session->pos.y<=session->scroll_end+session->scrollback-1)
   {
     are_we_in_scroll_area=true;
   }
