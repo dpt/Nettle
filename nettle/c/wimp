@@ -726,17 +726,21 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
                      (session->terminal_size.y + session->scrollback);
   
   logf("clicked on '%c'\n",session->assigned_area[char_offset*4+3]);
+  
+  if (isspace((int) session->assigned_area[char_offset*4+3]))
+    return;
+  
   /* go back to the start of the clicked on 'word' */
-  while (char_offset > 0 && isalpha(session->assigned_area[char_offset*4+3]))
+  while (char_offset > 0 && !isspace((int) session->assigned_area[char_offset*4+3]))
     char_offset--;
-  if (!isalpha(session->assigned_area[char_offset*4+3]))
+  if (!isalpha((int) session->assigned_area[char_offset*4+3]))
     char_offset++;
   
   /* go forward to the end of the form [ie. until we find whitespace] */
   urlptr = url;
   urlend = url + sizeof(url) - 8; /* leave space for a '\0', and 'http://' */
   while (char_offset < end_offset && urlptr < urlend &&
-         !isspace(session->assigned_area[char_offset*4+3]))
+         !isspace((int) session->assigned_area[char_offset*4+3]))
   {
     *urlptr++ = session->assigned_area[char_offset*4+3];
     char_offset++;
@@ -746,7 +750,7 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   
   /* we've got a url, check for full formedness */
   urlptr = url;
-  while (isalpha(*urlptr))
+  while (isalpha((int) (*urlptr)))
     urlptr++;
   if (*urlptr != ':')
   {
