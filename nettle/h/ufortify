@@ -7,6 +7,10 @@
  * recompiled, but nothing else.
  */
 
+#ifndef __UFORTIFY_H__
+#define __UFORTIFY_H__
+
+
 #define FORTIFY_STORAGE              /* storage for public functions   */
 
 #define FORTIFY_ALIGNMENT        sizeof(double) /* Byte alignment of all memory blocks */
@@ -61,3 +65,5 @@
     #define FORTIFY_FIRST_ERROR_FUNCTION    cout << "\a\a\aFortify Hit Generated!\n"
 
 #endif /* __cplusplus */
+
+#endif
