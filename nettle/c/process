@@ -22,6 +22,7 @@
 static struct session_struct *changedsession;
 static struct coordspair changedbox;
 
+static char csi_sequence[8];
 
 void changedbox_init (struct session_struct *session)
 {
@@ -1239,6 +1240,23 @@ static bool process_escape_length_3(struct session_struct *session)
     case 27:
       switch (session->escape_string[1])
       {
+        case ' ':
+          /* Set C1 Control Transmission */
+          if (session->terminal_type==2)
+          {
+            switch (session->escape_string[2])
+            {
+              case 'F':
+                /* 7-bit */
+                session->bit_controls=false;
+                break;
+              case 'G':
+                /* 8-bit */
+                session->bit_controls=true;
+                break;
+            }
+          }
+          break;
         case '(': case ')': case '*': case '+':
           determine_character_set(session);
           done=true;
@@ -1890,13 +1908,29 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 case '0': case 'c':
                   {
+                    /* Primary DA Request */
                     char block[16];
 
-                    strcpy(block,"\x1B[?6x;1;6c");
+                    sprintf(block,"%s?6x;1;6c",csi_sequence);
 
                     block[4]=session->terminal_mode+48;
 
                     nettle_senddata(session,block,strlen(block));
+                  }
+                  break;
+                case '>':
+                  switch (session->escape_string[3])
+                  {
+                    case '0': case 'c':
+                      {
+                        /* Secondary DA Request */
+                        char block[16];
+
+                        sprintf(block,"%s>1;10;0c",csi_sequence);
+
+                        nettle_senddata(session,block,strlen(block));
+                      }
+                      break;
                   }
                   break;
               }
@@ -2076,7 +2110,7 @@ static bool process_escape_length_x(struct session_struct *session)
               switch (session->escape_string[2])
               {
                 case '?':
-                  /* DIGITAL private modes */
+                  /* DIGITAL, xterm private modes */
                   {
                     int loop=3;
                     while (loop<session->escape_string_length-1)
@@ -2279,20 +2313,22 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 case '5':
                   {
-                    char block[4];
-                    block[0]=27;
-                    block[1]='[';
-                    block[2]='0'; /* terminal OK */
-                    block[3]='n';
-                    nettle_senddata(session,block,sizeof(block));
+                    char block[16];
+
+                    /* terminal OK */
+                    sprintf(block,"%s0n",csi_sequence);
+
+                    nettle_senddata(session,block,strlen(block));
                   }
                   break;
                 case '6':
                   {
                     char block[16];
-                    sprintf(block,"\x1B[%d;%dR",session->pos.y-
-                    				session->scrollback+1,
-                    				session->pos.x+1);
+
+                    sprintf(block,"%s%d;%dR",csi_sequence,
+                                             session->pos.y-session->scrollback+1,
+                     			     session->pos.x+1);
+
                     nettle_senddata(session,block,strlen(block));
                   }
                   break;
@@ -2301,10 +2337,11 @@ static bool process_escape_length_x(struct session_struct *session)
                   {
                     if (session->escape_string[4]=='5')
                     {
-                      char block[7];
+                      char block[16];
 
                       /* There is no printer */
-                      strcpy(block,"\x1B[?13n");
+                      sprintf(block,"%s?13n",csi_sequence);
+
                       nettle_senddata(session,block,strlen(block));
                     }
                   }
@@ -2577,6 +2614,13 @@ static bool process_escape(struct session_struct *session)
 void process_data(struct session_struct *session, char byte)
 {
   bool done=false;
+
+  if (session->bit_controls)
+    /* 8-bit */
+    strcpy(csi_sequence,"\x9B");
+  else
+    /* 7-bit */
+    strcpy(csi_sequence,"\x1B[");
 
   if (session->escape_state==NETTLE_ESCAPE_ESCAPE)
   {
