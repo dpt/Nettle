@@ -91,7 +91,8 @@ int main(void)
         /* key press, call with window handle, icon handle and key */
         key_pressed(wimp_block.key_pressed.window_handle,
                     wimp_block.key_pressed.icon_handle,
-                    wimp_block.key_pressed.code);
+                    wimp_block.key_pressed.code,
+                    wimp_block.key_pressed.extra);
         null_reason_code();
         break;
       case 9:

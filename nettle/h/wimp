@@ -24,7 +24,7 @@ extern void open_window(struct wimp_openwindow_block *, int);
 extern void close_window(int);
 extern void mouse_click(int, int, int, int, int);
 extern void drag_finished(void);
-extern void key_pressed(int, int, int);
+extern void key_pressed(int, int, int, int);
 extern void menu_choice(int *);
 extern void lose_caret(int);
 extern void gain_caret(int);

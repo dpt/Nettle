@@ -734,7 +734,7 @@ void drag_finished(void)
 
 /* Key pressed */
 
-void key_pressed(int window_handle, int icon_handle, int key)
+void key_pressed(int window_handle, int icon_handle, int key, int extra)
 {
   bool key_status=false;
   char message[MESSAGE_MAX_CONNECTION];
@@ -831,14 +831,14 @@ void key_pressed(int window_handle, int icon_handle, int key)
           {
             if (pass_f12)
             {
-              process_wimp_key(session, key);
+              process_wimp_key(session, key, extra);
               key_status=true;
             }
             else
             {
               if (key!=0x1CC && key!=0x1DC && key!=0x1EC && key!=0x1FC)
               {
-                process_wimp_key(session, key);
+                process_wimp_key(session, key, extra);
                 key_status=true;
               }
             }
