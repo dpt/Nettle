@@ -1911,7 +1911,9 @@ void gain_caret(int window_handle)
 
       _swi(Wimp_GetCaretPosition, _IN(1), &block);
 
-      if (block.window_handle!=session->pane_handle)
+      if (block.window_handle!=session->pane_handle &&
+          session->line_editor_type==LINEEDIT_CHECKBOX &&
+          block.index!=get_icon_data_length(session->pane_handle,1))
       {
         set_caret_position(session->pane_handle,1,-1,
                		   get_icon_data_length(session->pane_handle,1));

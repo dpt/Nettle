@@ -30,10 +30,13 @@ static struct session_struct *changedsession;
 static struct coordspair changedbox;
 
 static char csi_sequence[8];
-static void handle_iac_will(struct session_struct* session);
-static void handle_iac_wont(struct session_struct* session);
-static void handle_iac_do(struct session_struct* session);
-static void handle_iac_dont(struct session_struct* session);
+static void handle_iac_will(struct session_struct *session);
+static void handle_iac_wont(struct session_struct *session);
+static void handle_iac_do(struct session_struct *session);
+static void handle_iac_dont(struct session_struct *session);
+static void process_handle_buffer(struct session_struct *session,
+                                  struct paste_buffer *send_block,
+                                  int size_of_send_block);
 
 void changedbox_init (struct session_struct *session)
 {
@@ -2911,18 +2914,113 @@ static void append_paste_block (struct session_struct *session,
 void process_wimp_key(struct session_struct *session, int key, int extra)
 {
   char block[256];
+  struct paste_buffer *send_block=0;
+  int size_of_send_block=0;
+
+  size_of_send_block = decode_key (session, key, extra, block);
+
+  send_block=malloc(size_of_send_block);
+
+  memcpy(send_block->data, block, size_of_send_block);
+
+  process_handle_buffer(session, send_block, size_of_send_block);
+}
+
+void process_line_editor(struct session_struct *session)
+{
+  char *icon_text;
+  char data[512];
+  int line_editor_icon=(session->line_editor_type==LINEEDIT_CHECKBOX ? 1 : 0);
+
+  read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
+
+  icon_text = malloc(strlen(data) + 3);
+  assert(icon_text != NULL);
+
+  strcpy(icon_text, data);
+  strcat(icon_text, "\r");
+
+  process_data_transmission(session, icon_text, strlen(icon_text));
+
+  {
+    int loop;
+
+    for (loop=line_editor_size-1; loop>1; loop--)
+    {
+      strcpy(session->line_editor_history+(loop*512),
+                      session->line_editor_history+((loop-1)*512));
+    }
+  }
+
+  strcpy(session->line_editor_history+(1*512), icon_text);
+
+  set_icon_data(session->pane_handle,line_editor_icon,"");
+
+  set_caret_position(session->pane_handle, line_editor_icon, -1, 0);
+
+  session->line_editor_position=0;
+  session->line_editor_total++;
+
+  if (session->line_editor_total>line_editor_size)
+  {
+    session->line_editor_total=line_editor_size;
+  }
+
+  free(icon_text);
+}
+
+void process_data_transmission(struct session_struct *session,
+                               const char *icon_text, int size_of_data)
+{
+  char block[256];
   int size_of_block=0;
-  struct coords pos;
+  struct paste_buffer *send_block=0;
+  int size_of_send_block=0;
+  int allocated_send_size=0;
+  int loop;
+
+  for (loop=0; loop<size_of_data; loop++)
+  {
+    int key=icon_text[loop];
+
+    size_of_block = decode_key (session, key, 0, block);
+
+    if (size_of_send_block + size_of_block + offsetof (struct paste_buffer, data) > allocated_send_size)
+    {
+      allocated_send_size += 16384;
+      send_block = realloc (send_block, allocated_send_size);
+      if (!send_block)
+      {
+        generror ("CantAlloc", true);
+        return;
+      }
+    }
+    memcpy(send_block->data+size_of_send_block,block,size_of_block);
+    size_of_send_block+=size_of_block;
+  }
+
+  process_handle_buffer(session, send_block, size_of_send_block);
+}
+
+static void process_handle_buffer(struct session_struct *session,
+                                  struct paste_buffer *send_block,
+                                  int size_of_send_block)
+{
   char cursor_flags;
+  struct coords pos;
 
   if (session->other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
+    return;
+
+  /* Just for safety */
+  if (session->socket_state!=NETTLE_SESSION_CONNECTED)
     return;
 
   pos=get_cursor_position(session);
 
   /* get the cursor flags */
-  cursor_flags=read_assigned_flags(session, pos.x, pos.y) &
-                    (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
+  cursor_flags=read_assigned_flags(session, pos.x, pos.y)
+                    & (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
   cursor_flags |= NETTLE_FLAG_CURSOR;
@@ -2930,23 +3028,19 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
   /* remove the cursor from the position */
   changedbox_init (session);
   changedbox_update_char (pos.x, pos.y);
-  write_assigned_flags(session, pos.x, pos.y,
-                       read_assigned_flags(session, pos.x, pos.y)
-		            & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
-
+  write_assigned_flags(session, pos.x, pos.y, read_assigned_flags(session, pos.x, pos.y)
+						 & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
   force_redraw_changedbox ();
 
   changedbox_init (session);
-
-  size_of_block = decode_key (session, key, extra, block);
 
   if (session->local_echo == true) /* session->session_flags[1]==false) */
   {
     int loop;
 
-    for (loop=0; loop<size_of_block; loop++)
+    for (loop=0; loop<size_of_send_block; loop++)
     {
-      switch (block[loop])
+      switch (send_block->data[loop])
       {
         case 7: byte_bell                  (session); break;
         case 8: byte_backspace             (session);
@@ -2954,10 +3048,10 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
           changedbox_update_char (session->pos.x, session->pos.y);
           write_assigned(session, session->pos.x, session->pos.y,
                          session->current_fg,
-          		 session->current_bg,
-          		 session->current_flags,
-          		 32);
-         break;
+          	         session->current_bg,
+          	         session->current_flags,
+            		 32);
+          break;
 
         case 9:  byte_horizontal_tabulation(session); break;
         case 10: byte_linefeed             (session); break;
@@ -2970,14 +3064,15 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
         default:
           reprocess_position(session);
 
-          if (block[loop]<32)
+          if (send_block->data[loop]<32)
           {
             changedbox_update_char (session->pos.x, session->pos.y);
             write_assigned(session, session->pos.x, session->pos.y,
                            session->current_fg,
             		   session->current_bg,
-            		   session->current_flags,
-            		   '^');
+              		   session->current_flags,
+              		   '^');
+
             session->pos.x++;
             reprocess_position(session);
           }
@@ -2986,17 +3081,18 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
           changedbox_update_char (session->pos.x, session->pos.y);
           write_assigned(session, session->pos.x, session->pos.y,
                          session->current_fg,
-            		 session->current_bg,
-            		 session->current_flags,
-            		 '?');
+                         session->current_bg,
+              		 session->current_flags,
+              		 '?');
 
-          if (block[loop]<32)
+          if (send_block->data[loop]<32)
           {
-            write_assigned_character(session, session->pos.x, session->pos.y, block[loop]+64);
+            write_assigned_character(session, session->pos.x, session->pos.y,
+                                     send_block->data[loop]+64);
           }
           else
           {
-            write_assigned_character(session, session->pos.x, session->pos.y, block[loop]);
+            work_out_character(session, session->pos.x, session->pos.y, send_block->data[loop]);
           }
           session->pos.x++;
 
@@ -3028,216 +3124,10 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
     force_redraw_changedbox ();
   }
 
-  /* send it now unless data is alreeady queued (in which case queue it) */
-  if (session->paste)
-  {
-    struct paste_buffer *paste = malloc (size_of_block + offsetof (struct paste_buffer, data));
-    if (paste)
-    {
-      memcpy (paste->data, block, size_of_block);
-      append_paste_block (session, paste, size_of_block);
-    }
-    else
-      generror ("CantAlloc", true);
-  }
-  else
-    nettle_senddata(session,block,size_of_block);
-}
-
-void process_line_editor(struct session_struct *session)
-{
-  char *icon_text;
-  char data[512];
-  int line_editor_icon=(session->line_editor_type==LINEEDIT_CHECKBOX ? 1 : 0);
-
-  read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
-
-  icon_text = malloc(strlen(data) + 3);
-  assert(icon_text != NULL);
-
-  strcpy(icon_text, data);
-  strcat(icon_text, "\r");
-
-  process_data_transmission(session, icon_text, strlen(icon_text));
-
-  {
-    int loop;
-
-    for (loop=line_editor_size-1; loop>1; loop--)
-    {
-      strcpy(session->line_editor_history+(loop*512),
-        	   session->line_editor_history+((loop-1)*512));
-    }
-  }
-
-  strcpy(session->line_editor_history+(1*512),
-         icon_text);
-
-  set_icon_data(session->pane_handle,line_editor_icon,"");
-
-  set_caret_position(session->pane_handle, line_editor_icon, -1, 0);
-
-  session->line_editor_position=0;
-  session->line_editor_total++;
-
-  if (session->line_editor_total>line_editor_size)
-  {
-    session->line_editor_total=line_editor_size;
-  }
-
-  free(icon_text);
-}
-
-void process_data_transmission(struct session_struct *session,
-                               const char *icon_text, int size_of_data)
-{
-  char block[256];
-  int size_of_block=0;
-  struct coords pos;
-  char cursor_flags;
-  struct paste_buffer *send_block=0;
-  int size_of_send_block=0;
-  int allocated_send_size=0;
-  int icon_text_loop;
-
-  if (session->other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
-    return;
-
-  /* Just for safety */
-  if (session->socket_state!=NETTLE_SESSION_CONNECTED)
-    return;
-
-  pos=get_cursor_position(session);
-
-  /* get the cursor flags */
-  cursor_flags=read_assigned_flags(session, pos.x, pos.y)
-                    & (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
-
-  /* if the cursor flags don't have cursor set, make it so */
-  cursor_flags |= NETTLE_FLAG_CURSOR;
-
-  /* remove the cursor from the position */
-  changedbox_init (session);
-  changedbox_update_char (pos.x, pos.y);
-  write_assigned_flags(session, pos.x, pos.y, read_assigned_flags(session, pos.x, pos.y)
-						 & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
-  force_redraw_changedbox ();
-
-  changedbox_init (session);
-
-  for (icon_text_loop=0; icon_text_loop<size_of_data; icon_text_loop++)
-  {
-    int key=icon_text[icon_text_loop];
-
-    size_of_block = decode_key (session, key, 0, block);
-
-    if (session->local_echo == true) /* session->session_flags[1]==false) */
-    {
-      int loop;
-
-      for (loop=0; loop<size_of_block; loop++)
-      {
-        switch (block[loop])
-        {
-          case 7: byte_bell                  (session); break;
-          case 8: byte_backspace             (session);
-
-            changedbox_update_char (session->pos.x, session->pos.y);
-            write_assigned(session, session->pos.x, session->pos.y,
-                           session->current_fg,
-            		   session->current_bg,
-            		   session->current_flags,
-            		   32);
-            break;
-
-          case 9:  byte_horizontal_tabulation(session); break;
-          case 10: byte_linefeed             (session); break;
-          case 13: byte_carriage_return      (session);
-                   #ifdef KEYBOARD_RETURN_BODGE
-                   byte_linefeed(session);
-                   #endif
-                   break;
-
-          default:
-            reprocess_position(session);
-
-            if (block[loop]<32)
-            {
-              changedbox_update_char (session->pos.x, session->pos.y);
-              write_assigned(session, session->pos.x, session->pos.y,
-                             session->current_fg,
-              		     session->current_bg,
-              		     session->current_flags,
-              		     '^');
-
-              session->pos.x++;
-              reprocess_position(session);
-            }
-
-            /* write out the data */
-            changedbox_update_char (session->pos.x, session->pos.y);
-            write_assigned(session, session->pos.x, session->pos.y,
-                           session->current_fg,
-              		   session->current_bg,
-              		   session->current_flags,
-              		   '?');
-
-            if (block[loop]<32)
-            {
-              write_assigned_character(session, session->pos.x, session->pos.y ,block[loop]+64);
-            }
-            else
-            {
-              work_out_character(session, session->pos.x, session->pos.y, block[loop]);
-            }
-            session->pos.x++;
-
-            break;
-        }
-      }
-    }
-    if (size_of_send_block + size_of_block + offsetof (struct paste_buffer, data) > allocated_send_size)
-    {
-      allocated_send_size += 16384;
-      send_block = realloc (send_block, allocated_send_size);
-      if (!send_block)
-      {
-        generror ("CantAlloc", true);
-        return;
-      }
-    }
-    memcpy(send_block->data+size_of_send_block,block,size_of_block);
-    size_of_send_block+=size_of_block;
-  }
-
-  pos=get_cursor_position(session);
-
-  /* OR back in the cursor flags */
-  if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
-  {
-    write_assigned_flags(session, pos.x, pos.y,
-                         read_assigned_flags(session, pos.x, pos.y) | cursor_flags);
-  }
-
-  /* redraw the window */
-  force_redraw_changedbox ();
-
-  /* force the selection back on (it may have got overwritten by new data) */
-  force_redraw_selection();
-
-  /* redraw the cursor, in case it isn't in the main redraw block */
-  if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
-  {
-    changedbox_init (session);
-    changedbox_update_char (pos.x, pos.y);
-    force_redraw_changedbox ();
-  }
-
   /* queue the data for sending... */
   if (send_block)
     append_paste_block (session, send_block, size_of_send_block);
 }
-
 
 /* get the current cursor position */
 struct coords get_cursor_position(struct session_struct *session)
