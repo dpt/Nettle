@@ -56,7 +56,7 @@ static void create_terminal_menu(void);
 
 void open_window_centred (int window_handle)
 {
-  struct wimp_openwindow_block block;
+  struct wimp_getwindowstate_block block;
   struct coords screen_size;
 
   /* get the window state */
@@ -76,7 +76,7 @@ void open_window_centred (int window_handle)
   block.max.y += block.min.y;
   block.handle_behind = -1;	/* open on top of stack */
 
-  open_window(&block, window_handle);
+  open_window((struct wimp_openwindow_block *) &block, window_handle);
 }
 
 
@@ -409,7 +409,7 @@ void redraw_window(union wimp_poll_block *wimp_block)
 
 void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
 {
-  struct wimp_openwindow_block local_block, *block=&local_block;
+  struct wimp_getwindowstate_block local_block, *block=&local_block;
   struct session_struct *session = sessions;
 
   /* find out which session this window is - if any! */
@@ -422,7 +422,7 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
   if (wimp_block)
   {
     /* Called from Wimp_Poll, so use that block, which contains an OpenWindow struct */
-    block = wimp_block;
+    block = (struct wimp_getwindowstate_block *) wimp_block;
   }
   else
   {
@@ -563,7 +563,7 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     if (session->line_editor_type!=LINEEDIT_NONE)
     {
       /* open the pane window and set the 'behind' word to behind the pane */
-      open_pane_window(session, block);
+      open_pane_window(session, (struct wimp_openwindow_block *) block);
       block->handle_behind = session->pane_handle;
     }
   }

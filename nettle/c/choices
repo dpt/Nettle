@@ -529,12 +529,12 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
       set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
 
       {
-        struct wimp_openwindow_block block;
+        struct wimp_getwindowstate_block block;
 
         block.window_handle=win_choices;
         _swi(Wimp_GetWindowState, _IN(1), &block);
 
-        open_window(&block, win_choices);
+        open_window((struct wimp_openwindow_block *) &block, win_choices);
       }
 
       break;
@@ -551,12 +551,12 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
       set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
 
       {
-        struct wimp_openwindow_block block;
+        struct wimp_getwindowstate_block block;
 
         block.window_handle=win_choices;
         _swi(Wimp_GetWindowState, _IN(1), &block);
 
-        open_window(&block, win_choices);
+        open_window((struct wimp_openwindow_block *) &block, win_choices);
       }
 
       break;
@@ -573,12 +573,12 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
       set_icon_state(win_choices, icon_choices_hotlist, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
 
       {
-        struct wimp_openwindow_block block;
+        struct wimp_getwindowstate_block block;
 
         block.window_handle=win_choices;
         _swi(Wimp_GetWindowState, _IN(1), &block);
 
-        open_window(&block, win_choices);
+        open_window((struct wimp_openwindow_block *) &block, win_choices);
       }
 
       break;

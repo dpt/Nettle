@@ -1022,7 +1022,7 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     block.scroll.x=(block.scroll.x*redraw.r_charw/old_charw);
     block.scroll.y=(block.scroll.y*redraw.r_charh/old_charh);
 
-    /* wimp_openwindow_block is essentially the same as wimp_getwindowstate_block */
+    /* wimp_openwindow_block starts the same way as wimp_getwindowstate_block */
     _swi(Wimp_OpenWindow, _IN(1), &block);
 
     force_redraw(session->window_handle,0,
