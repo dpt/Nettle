@@ -54,11 +54,12 @@ void load_messages(void)
   sprintf(messages_file_name,"<%s$Dir>.Resources.%s.Messages",application_name,country);
 
   /* Now re-open it */
-  size_of_messagetrans_buffer=_swi(MessageTrans_FileInfo, _IN(1)|_RETURN(2), messages_file_name);
+  size_of_messagetrans_buffer=_swi(MessageTrans_FileInfo,_IN(1)|_RETURN(2), messages_file_name);
 
   messagetrans_buffer=malloc(size_of_messagetrans_buffer);
 
-  _swi(MessageTrans_OpenFile, _IN(0)|_IN(1)|_IN(2), messagetrans_area, messages_file_name,
+  _swi(MessageTrans_OpenFile, _IN(0)|_IN(1)|_IN(2), messagetrans_area,
+                                                    messages_file_name,
                                                     messagetrans_buffer);
 }
 
@@ -69,7 +70,7 @@ void load_sprites(void)
   FILE *file_handle;
 
   /* find out what sprites we need to load */
-  yeig=(int) pow(2, _swi(OS_ReadModeVariable, _IN(0)|_IN(1), -1, 5) );
+  yeig=(int) pow(2, _swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5) );
 
   sprintf(file_name,"<%s$Dir>.Resources.Sprites",application_name);
 
@@ -95,8 +96,8 @@ void load_sprites(void)
     sprite_area=malloc(size);
 
     /* set up the block */
-    sprite_area[0]=size;
-    sprite_area[2]=16;
+    sprite_area->total_size=size;
+    sprite_area->offset_to_1st_sprite=16;
 
     /* initialise area */
     _swi(OS_SpriteOp, _IN(0)|_IN(1), 256+9, sprite_area);
@@ -206,7 +207,7 @@ void open_template(void)
 int load_template(int *font_array,char *window_name,int *sprite_area)
 {
   char window_name_copy[12];
-  int *template_data;
+  struct wimp_createwindow_block *template_data;
   int *indirected_data;
   int size_of_template_data;
   int size_of_indirected_data;
@@ -230,7 +231,7 @@ int load_template(int *font_array,char *window_name,int *sprite_area)
                           font_array, window_name_copy, 0);
 
   /* set the sprite area pointer */
-  template_data[16]=(int) sprite_area;
+  template_data->sprite_area=(int) sprite_area;
 
   window_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), template_data);
 
@@ -371,17 +372,17 @@ int *load_font(char *zap_font)
 
 void create_icon_bar_icon(void)
 {
-  int block[9];
+  struct wimp_createicon_block block;
 
-  block[0]=-1; /* window handle */
-  block[1]=0;  /* min x */
-  block[2]=0;  /* min y */
-  block[3]=68; /* max x */
-  block[4]=68; /* max y */
-  block[5]=0x1700311a;
-  block[6]=(int) application_icon_name;
-  block[7]=(int) sprite_area;
-  block[8]=strlen(application_icon_name);
+  block.window_handle=-1; /* window handle */
+  block.minx         =0;  /* min x */
+  block.miny         =0;  /* min y */
+  block.maxx         =68; /* max x */
+  block.maxy         =68; /* max y */
+  block.icon_flags   =0x1700311a;
+  block.buffer       =application_icon_name;
+  block.validation   =(char *) sprite_area;
+  block.buffer_length=strlen(application_icon_name);
 
-  iconbar_handle=_swi(Wimp_CreateIcon, _IN(1)|_RETURN(0), block);
+  iconbar_handle=_swi(Wimp_CreateIcon, _IN(1)|_RETURN(0), &block);
 }

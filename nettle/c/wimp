@@ -183,7 +183,7 @@ void open_window(int window_handle, bool poll_flag)
         if (line_editor)
         {
           /* open the pane window and set the 'behind' word to behind the pane */
-          open_pane_window(session_handle, wimp_block);
+          open_pane_window(session_handle, (struct wimp_openwindow_block *) &wimp_block);
           wimp_block[7]=session[session_handle].pane_handle;
         }
       }
@@ -199,7 +199,7 @@ void open_window(int window_handle, bool poll_flag)
         if (line_editor)
         {
           /* open the pane window and set the 'behind' word to behind the pane */
-          open_pane_window(session_handle, block);
+          open_pane_window(session_handle, (struct wimp_openwindow_block *) &block);
           block[7]=session[session_handle].pane_handle;
         }
       }

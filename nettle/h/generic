@@ -12,7 +12,6 @@ typedef enum {
   false = 0, true = 1
 } bool;
 
-
 /* Standard includes */
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,5 +22,117 @@ typedef enum {
 /* RISC OS includes */
 #include "kernel.h"
 #include "swis.h"
+
+/* Structs */
+
+struct os_spriteop_area
+{
+  int total_size;
+  int number_of_sprites;
+  int offset_to_1st_sprite;
+  int offset_to_1st_free_word;
+  /* Remaining data */
+};
+
+struct wimp_createicon_block
+{
+  int window_handle;
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
+  int icon_flags;
+  char *buffer;
+  char *validation;
+  int buffer_length;
+};
+
+struct wimp_createwindow_block
+{
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
+  int scroll_x;
+  int scroll_y;
+  int handle_behind;
+  int window_flags;
+  unsigned char title_fg;
+  unsigned char title_bg;
+  unsigned char work_fg;
+  unsigned char work_bg;
+  unsigned char scroll_outer_colour;
+  unsigned char scroll_inner_colour;
+  unsigned char title_focus_colour;
+  unsigned char flags;
+  int work_minx;
+  int work_miny;
+  int work_maxx;
+  int work_maxy;
+  int icon_flags;
+  int workarea_flags;
+  int sprite_area;
+  int min_width;
+  int min_height;
+
+  /* NB - this is probably wrong as it depends on the settings of the flags */
+  char *title_text;
+  char *title_validation;
+  char *title_buffer_len;
+
+  int number_of_icons;
+  /* Icon definitions follow... */
+};
+
+struct wimp_getcaretposition_block
+{
+  int window_handle;
+  int icon_handle;
+  int x;
+  int y;
+  int height_and_flags;
+  int index;
+};
+
+struct wimp_deleteicon_block
+{
+  int window_handle;
+  int icon_handle;
+};
+
+struct wimp_geticonstate_block
+{
+  int window_handle;
+  int icon_handle;
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
+  int icon_flags;
+  char *buffer;
+  char *validation;
+  int buffer_length;
+};
+
+struct wimp_getwindowoutline_block
+{
+  int window_handle;
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
+};
+
+struct wimp_openwindow_block
+{
+  int window_handle;
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
+  int scroll_x;
+  int scroll_y;
+  int handle_behind;
+};
 
 #endif

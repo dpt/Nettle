@@ -14,7 +14,7 @@ bool quit_flag=false;
 /* _kernel_oserror *e; */
 
 int wimp_block[64];
-int *sprite_area;
+struct os_spriteop_area *sprite_area;
 int messagetrans_area[4];
 int *messagetrans_buffer;
 
