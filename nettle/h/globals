@@ -36,6 +36,7 @@ extern int size_of_zapredraw_area;
 extern int *bitmaps_area;
 
 extern int wimp_block[64];
+#define TEMP_BLOCK_SIZE 1024
 extern int temp_block[256];
 extern int *sprite_area;
 extern int messagetrans_area[4];

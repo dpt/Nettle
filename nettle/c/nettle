@@ -76,7 +76,7 @@ void start_connection(void)
     session[current_session].session_flags[loop]=false;
   }
 
-  strcpy(string,read_icon_data(open,4));
+  read_icon_data(open, 4, string, 1024);
 
   {
     char connection[20];
@@ -89,7 +89,7 @@ void start_connection(void)
       connection_type=NETTLE_TELNET;
   }
 
-  strcpy(string,read_icon_data(open,9));
+  read_icon_data(open, 9, string, 1024);
 
   terminal_type = NETTLE_TERMINAL_VT100;
   for (loop=0; loop<8; loop++)
@@ -104,7 +104,7 @@ void start_connection(void)
   switch (connection_type)
   {
     case NETTLE_TELNET:
-      strcpy(string,read_icon_data(open,0));
+      read_icon_data(open, 0, string, 1024);
 
       if (strlen(string)==0)
       {
@@ -181,7 +181,7 @@ void start_connection(void)
 
       break;
     case NETTLE_TASKWINDOW:
-      strcpy(string,read_icon_data(open,7));
+      read_icon_data(open, 7, string, 1024);
       if (strlen(string)==0)
       {
         generror("InvalidComm", true);
@@ -331,7 +331,7 @@ void start_connection(void)
   if (line_editor)
   {
     set_caret_position(session[current_session].pane_handle,1,-1,
-				strlen(read_icon_data(session[current_session].pane_handle,1)));
+				strlen(read_icon_data(session[current_session].pane_handle, 1, string, 1024)));
   }
   else
   {

@@ -1995,9 +1995,15 @@ void process_line_editor(int session_handle)
   _kernel_swi(OS_ReadModeVariable, &regs, &regs);
   zap_yeig=regs.r[2];
 
-  icon_text=malloc(strlen(read_icon_data(session[session_handle].pane_handle,1))+2);
-  strcpy(icon_text,read_icon_data(session[session_handle].pane_handle,1));
-  strcat(icon_text,"\r");
+  {
+    char data[512];
+
+    read_icon_data(session[session_handle].pane_handle, 1, data, 512);
+
+    icon_text = malloc(strlen(data) + 3);
+    strcpy(icon_text, data);
+    strcat(icon_text, "\r");
+  }
 
   if (session[session_handle].other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
     return;

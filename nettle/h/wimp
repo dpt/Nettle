@@ -30,7 +30,8 @@ extern bool generror_question(char *);
 extern void set_caret_position(int, int, int, int);
 extern void set_icon_data(int, int, char *);
 extern void set_icon_validation(int, int, char *);
-extern char *read_icon_data(int, int);
+extern char *read_icon_data(int, int, char *, int);
+extern int get_icon_data_length(int, int);
 
 extern void create_iconbar_menu(void);
 extern void create_terminal_menu(void);

@@ -43,11 +43,9 @@ void null_reason_code(void)
 
             if (session[current_socket].socket_handle!=-1)
             {
-              char ip_buffer[20];
-
               session[current_socket].socket_state = NETTLE_SESSION_CONNECT;
               write_out_string(current_socket, "nettle: Connecting to ");
-              write_out_string(current_socket, socket_ip_string(session[current_socket].socket_ip, ip_buffer));
+              write_out_string(current_socket, socket_ip_string(session[current_socket].socket_ip));
               write_out_string(current_socket, "...\r\n");
             }
             else
@@ -71,7 +69,7 @@ void null_reason_code(void)
           case 4:
             {
               char string[1024];
-              char ip_buffer[20];
+
               sprintf(string,"nettle/%s (%s,%d)",
                       terminal_name[session[current_socket].terminal_type],
                       session[current_socket].socket_host,
@@ -81,7 +79,7 @@ void null_reason_code(void)
 
               session[current_socket].socket_state = NETTLE_SESSION_CONNECTED;
               write_out_string(current_socket, "nettle: Connected to ");
-              write_out_string(current_socket, socket_ip_string(session[current_socket].socket_ip, ip_buffer));
+              write_out_string(current_socket, socket_ip_string(session[current_socket].socket_ip));
               write_out_string(current_socket, "\r\n");
               break;
            }
@@ -310,32 +308,38 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         _kernel_swi(Wimp_CreateMenu,&regs, &regs);
         break;
       case 1:
-        if ((instr(read_icon_data(save,2),":")>=0))
         {
-          int block[10];
+          char save_data[1024];
 
-          block[0]=save;
-          block[1]=4;
+          read_icon_data(save, 2, save_data, 1024);
 
-          regs.r[1]=(int) block;
-          _kernel_swi(Wimp_GetIconState,&regs, &regs);
-
-          // if selected bit is set, then we save with ANSI colour
-          if (block[6] & (1<<21))
+          if ((instr(save_data ,":")>=0))
           {
-            save_selection(read_icon_data(save,2),true);
+            int block[10];
+  
+            block[0]=save;
+            block[1]=4;
+  
+            regs.r[1]=(int) block;
+            _kernel_swi(Wimp_GetIconState,&regs, &regs);
+  
+            // if selected bit is set, then we save with ANSI colour
+            if (block[6] & (1<<21))
+            {
+              save_selection(save_data, true);
+            }
+            else
+            {
+              save_selection(save_data, false);
+            }
+  
+            regs.r[1]=-1;
+            _kernel_swi(Wimp_CreateMenu, &regs, &regs);
           }
           else
           {
-            save_selection(read_icon_data(save,2),false);
+            generror("To save, drag the icon to a directory display", false);
           }
-
-          regs.r[1]=-1;
-          _kernel_swi(Wimp_CreateMenu, &regs, &regs);
-        }
-        else
-        {
-          generror("To save, drag the icon to a directory display", false);
         }
         break;
       case 3:
@@ -386,7 +390,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
           if (block[0]!=session[loop].pane_handle)
           {
             set_caret_position(session[loop].pane_handle,1,-1,
-        			strlen(read_icon_data(session[loop].pane_handle,1)));
+        			get_icon_data_length(session[loop].pane_handle,1));
           }
         }
         else
@@ -534,7 +538,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
                 regs.r[2]=-1;
                 regs.r[3]=-1;
                 regs.r[4]=-1;
-                regs.r[5]=strlen(read_icon_data(session[loop].pane_handle,1));
+                regs.r[5]= get_icon_data_length(session[loop].pane_handle,1);
                 _kernel_swi(Wimp_SetCaretPosition,&regs, &regs);
               }
             }
@@ -586,8 +590,8 @@ void drag_finished(void)
     int block[64];
     int loop;
 
-    strcpy(string,read_icon_data(save,2));
-    loop=strlen(string);
+    read_icon_data(save, 2, string, 1024);
+    loop = strlen(string);
 
     while (loop>=0 && string[loop]!='.' && string[loop]!=':')
     {
@@ -629,7 +633,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
     char string[11];
     int connection_type;
 
-    strcpy(string,read_icon_data(open,4));
+    read_icon_data(open, 4, string, 11);
 
     if (strcmp(string, lookup("SSH", message, 20))==0)
       connection_type=NETTLE_SSH;
@@ -650,7 +654,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
                 start_connection();
                 break;
               case NETTLE_SSH:
-                set_caret_position(open,7,-1,strlen(read_icon_data(open,7)));
+                set_caret_position(open,7,-1, get_icon_data_length(open, 7));
                 break;
             }
             key_status=true;
@@ -741,15 +745,15 @@ void key_pressed(int window_handle, int icon_handle, int key)
               }
 
               set_icon_data(session[session_handle].pane_handle,1,
-              	      read_mem((char *) temp_block, session[session_handle].line_editor_history+
-                     		(session[session_handle].line_editor_position*512)));
+                    read_mem((char *) temp_block, session[session_handle].line_editor_history +
+                    (session[session_handle].line_editor_position * 512), TEMP_BLOCK_SIZE));
 
               regs.r[0]=session[session_handle].pane_handle;
               regs.r[1]=1;
               regs.r[2]=-1;
               regs.r[3]=-1;
               regs.r[4]=-1;
-              regs.r[5]=strlen(read_icon_data(session[session_handle].pane_handle,1));
+              regs.r[5]=get_icon_data_length(session[session_handle].pane_handle,1);
               _kernel_swi(Wimp_SetCaretPosition,&regs, &regs);
               break;
             case 0x18F: // Up arrow
@@ -769,15 +773,15 @@ void key_pressed(int window_handle, int icon_handle, int key)
               }
 
               set_icon_data(session[session_handle].pane_handle,1,
-              	      read_mem((char *) temp_block, session[session_handle].line_editor_history+
-                     		(session[session_handle].line_editor_position*512)));
+                    read_mem((char *) temp_block, session[session_handle].line_editor_history+
+                     (session[session_handle].line_editor_position * 512), TEMP_BLOCK_SIZE));
 
               regs.r[0]=session[session_handle].pane_handle;
               regs.r[1]=1;
               regs.r[2]=-1;
               regs.r[3]=-1;
               regs.r[4]=-1;
-              regs.r[5]=strlen(read_icon_data(session[session_handle].pane_handle,1));
+              regs.r[5]=get_icon_data_length(session[session_handle].pane_handle,1);
               _kernel_swi(Wimp_SetCaretPosition,&regs, &regs);
 
               break;
@@ -998,7 +1002,7 @@ void gain_caret()
       if (block[0]!=session[loop].pane_handle)
       {
         set_caret_position(session[loop].pane_handle,1,-1,
-  					strlen(read_icon_data(session[loop].pane_handle,1)));
+               get_icon_data_length(session[loop].pane_handle,1));
       }
     }
 
@@ -1034,7 +1038,7 @@ void gain_caret()
       if (block[0]!=session[loop].pane_handle)
       {
         set_caret_position(session[loop].pane_handle,1,-1,
-  					strlen(read_icon_data(session[loop].pane_handle,1)));
+           get_icon_data_length(session[loop].pane_handle,1));
       }
     }
 
@@ -1056,7 +1060,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         int block[10];
         char string[1024];
 
-	read_mem(string,((char *)wimp_block)+44);
+        read_mem(string, ((char *)wimp_block)+44, 1024);
 
         block[0]=drag_window_handle;
         block[1]=4;
@@ -1351,22 +1355,21 @@ void set_icon_validation(int window_handle, int icon_handle, char *contents)
   }
 }
 
-char *read_icon_data(int window_handle, int icon_handle)
+char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_len)
 {
   int block[11];
 
-  block[0]=window_handle;
-  block[1]=icon_handle;
+  block[0] = window_handle;
+  block[1] = icon_handle;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetIconState,&regs, &regs);
+  regs.r[1] = (int)block;
+  _kernel_swi(Wimp_GetIconState, &regs, &regs);
 
-  if (block[6] & (1<<8))
+  if (block[6] & (1 << 8))
   {
-    read_mem((char *)temp_block, (char *)block[7]);
-    return (char *)temp_block;
+    return read_mem(buffer, (char *)block[7], buf_len);
   }
-    else
+  else
   {
     char string[1024];
     sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
@@ -1374,6 +1377,36 @@ char *read_icon_data(int window_handle, int icon_handle)
   }
   return "";
 }
+
+
+int get_icon_data_length(int window_handle, int icon_handle) {
+  int block[11];
+  int length = 0;
+
+  block[0] = window_handle;
+  block[1] = icon_handle;
+
+  regs.r[1] = (int)block;
+  _kernel_swi(Wimp_GetIconState,&regs, &regs);
+
+  if (block[6] & (1 << 8))
+  {
+    char *data = (char *)block[7];
+
+    while (*data != '\0' && *data != '\x0d' && *data != '\x0a') {
+      length++;
+      data++;
+    }
+  }
+  else
+  {
+    char string[1024];
+    sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
+    generror(string, false);
+  }
+  return length;
+}
+
 
 // Create menu code
 
@@ -1797,7 +1830,7 @@ void drag_start(int window_handle, int icon_handle)
   block[8]=xsize;
   block[9]=ysize;
 
-  strcpy(string,read_icon_data(window_handle,icon_handle));
+  read_icon_data(window_handle,icon_handle, string, 256);
 
   regs.r[0]=161;
   regs.r[1]=28;
@@ -1825,7 +1858,7 @@ void open_open_window(bool open_window_flag)
   int connection_type;
   int block[4];
 
-  strcpy(string,read_icon_data(open,4));
+  read_icon_data(open, 4, string, 11);
 
   {
     char type[20];
@@ -1904,11 +1937,11 @@ void open_open_window(bool open_window_flag)
   {
     case NETTLE_TELNET:
     case NETTLE_SSH:
-      set_caret_position(open, 0, -1, strlen(read_icon_data(open, 0)));
+      set_caret_position(open, 0, -1, get_icon_data_length(open, 0));
       break;
 
     case NETTLE_TASKWINDOW:
-      set_caret_position(open, 7, -1, strlen(read_icon_data(open, 7)));
+      set_caret_position(open, 7, -1, get_icon_data_length(open, 7));
       break;
   }
 }

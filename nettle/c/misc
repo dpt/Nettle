@@ -2,6 +2,8 @@
 // by A. Macfarlane Smith
 // (C) Archifishal Software 2001
 
+#include <assert.h>
+
 #include "generic.h"
 #include "globals.h"
 
@@ -88,17 +90,20 @@ int esc_instr(char *string, char *test, int length)
 }
 
 // read a 'string'
-char *read_mem(char *dest, char *source)
+char *read_mem(char *dest, char *source, int max_length)
 {
-  int loop=0;
+  int loop = 0;
 
-  while (source[loop]!='\0' && source[loop]!='\x0A' && source[loop]!='\x0D')
+  assert(max_length > 0);
+
+  while (loop < max_length - 1 && source[loop] != '\0' &&
+        source[loop] != '\x0A' && source[loop] != '\x0D')
   {
-    dest[loop]=source[loop];
+    dest[loop] = source[loop];
     loop++;
   }
 
-  dest[loop]='\0';
+  dest[loop] = '\0';
 
   return dest;
 }
