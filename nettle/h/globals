@@ -10,6 +10,26 @@
 
 #include "nettle.h"
 
+/**** GLOBAL DEFAULT/OPTIONS ***************/
+
+#define APPLICATION_NAME        "Nettle"
+#define APPLICATION_ICON_NAME   "!nettle"
+
+#define ZAP_FONT                "07x14"
+#define ZAP_LOWRES_FONT         "08x08.0"
+
+#define LINE_EDITOR_SIZE        32
+#define TERMINAL_WIDTH          80
+#define TERMINAL_HEIGHT         24
+#define SCROLLBACK_LINES        95
+
+#define LOGGING                 false
+#define LINE_EDITOR             false
+#define PASS_F12                false
+
+
+/*******************************************/
+
 #define MAX_TAB_NUMBER		32
 
 #define min(x,y) ((x)<(y)?(x):(y))
