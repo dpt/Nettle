@@ -169,7 +169,6 @@ bool save_choices(void)
 {
   char choices_path[256];
   char string[512];
-  time_t current_time;
 
   get_system_variable(choices_path, "Choices$Write", sizeof(choices_path));
 
@@ -227,7 +226,7 @@ bool save_choices(void)
           error=true;
 
         file_handle=NULL;
-
+      }
     }
 
     while (error)
@@ -247,6 +246,7 @@ bool save_choices(void)
       {
         if (fclose(file_handle))
           error=true; /* Possible second I/O error */
+
         file_handle=NULL;
       }
 

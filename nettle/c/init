@@ -30,11 +30,14 @@ static int *indirected[MAX_TEMPLATES];
 
 static void initialise_wimp(void)
 {
-  static int messages[] =
+  static const int messages[] =
   {
     WIMP_MESSAGE_DATASAVEACK,
     WIMP_MESSAGE_MENUWARNING,
+    WIMP_MESSAGE_MENUSDELETED,
     WIMP_MESSAGE_MODECHANGE,
+    COLOURPICKER_COLOUR_CHOICE,
+    COLOURPICKER_CLOSE_REQUEST,
     WIMP_MESSAGE_TASKWINDOW_OUTPUT,
     WIMP_MESSAGE_TASKWINDOW_EGO,
     WIMP_MESSAGE_TASKWINDOW_MORIO,
@@ -232,6 +235,8 @@ static void load_templates(void)
 
   win_choices=load_template(LOAD_TEMPLATE_NO_FONTS,"choices",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
+  win_colours=load_template(LOAD_TEMPLATE_NO_FONTS,"colourpick",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+
   win_open=load_template(LOAD_TEMPLATE_NO_FONTS,"open",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
   set_icon_data(win_open,4,lookup("Telnet", info_data, sizeof(info_data)));
   set_icon_data(win_open,9,terminal_name[NETTLE_TERMINAL_VT220]);
@@ -325,8 +330,14 @@ static int *load_font(char *font)
 
   if (file_handle==0)
   {
-    /* if we didn't find a font, use Nettle's internal one */
-    strcpy(file_name,"<Nettle$Dir>.Fonts.08x16.Default.0");
+    /* if we didn't find a font, use Nettle's internal ones */
+    /* (This may not be necessary if it uses <Nettle$Dir>.Fonts from above, but leave it for */
+    /* now) */
+
+    if (eig.y >1)
+      strcpy(file_name,"<Nettle$Dir>.Fonts.08x08.System.0");
+    else
+      strcpy(file_name,"<Nettle$Dir>.Fonts.08x16.Default.0");
     file_handle=fopen(file_name,"rb");
   }
 
@@ -343,14 +354,8 @@ static int *load_font(char *font)
   fclose(file_handle);
 
   /* Set real character size (will be needed to implement graphics characters) */
-  if ((width % 8)==0)
-  {
-    char_size=width*height/8;
-  }
-  else
-  {
-    char_size=(width+(8-(width % 8)))*height/8;
-  }
+  char_size=((width+ 7) & ~7)*height/8;
+
   zap_load_area=malloc(char_size*(0x11D-first_char)+0x20);
   assert(zap_load_area != NULL);
 
