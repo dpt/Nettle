@@ -10,5 +10,6 @@
 #define CHOICES_H
 
 extern void load_choices(void);
+extern bool save_choices(void);
 
 #endif /* CHOICES_H */
