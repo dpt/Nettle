@@ -160,7 +160,7 @@ void close_log(void)
 }
 
 // Get what country we're in
-char *get_country(char *string)
+char *get_country(char *string, int size)
 {
   int country_number;
 
@@ -177,7 +177,7 @@ char *get_country(char *string)
     regs.r[2]=2;
     regs.r[3]=country_number;
     regs.r[4]=(int) string;
-    regs.r[5]=sizeof(string);
+    regs.r[5]=size;
 
     _kernel_swi(OS_ServiceCall,&regs, &regs);
   }
