@@ -25,6 +25,7 @@ void closedown_application(void)
   regs.r[0]=(int) messagetrans_area;
   _kernel_swi(MessageTrans_CloseFile, &regs, &regs);
 
+  free(message_list);
   free(bitmaps_area);
   free(messagetrans_buffer);
   free(sprite_area);

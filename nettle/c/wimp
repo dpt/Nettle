@@ -557,13 +557,8 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
 
               if (block[0]==session[session_handle].window_handle)
               {
-                regs.r[0]=session[session_handle].pane_handle;
-                regs.r[1]=1;
-                regs.r[2]=-1;
-                regs.r[3]=-1;
-                regs.r[4]=-1;
-                regs.r[5]=get_icon_data_length(session[session_handle].pane_handle,1);
-                _kernel_swi(Wimp_SetCaretPosition,&regs, &regs);
+                set_caret_position(session[session_handle].pane_handle,1,-1,
+				   get_icon_data_length(session[session_handle].pane_handle,1));
               }
             }
             else
@@ -589,13 +584,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
 
               if (block[0]==session[session_handle].pane_handle)
               {
-                regs.r[0]=session[session_handle].window_handle;
-                regs.r[1]=-1;
-                regs.r[2]=-1;
-                regs.r[3]=-1;
-                regs.r[4]=-1;
-                regs.r[5]=-1;
-                _kernel_swi(Wimp_SetCaretPosition, &regs, &regs);
+                set_caret_position(session[session_handle].window_handle,-1,-1,-1);
               }
             }
           }

@@ -16,7 +16,7 @@
 int *initialise_messages(void)
 {
   // Set up the messages we want to get
-  int *message_list=malloc(6*sizeof(int));
+  message_list=malloc(6*sizeof(int));
 
   message_list[0]=2;	   // DataSaveAck
   message_list[1]=0x400C1; // ModeChange

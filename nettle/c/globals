@@ -18,6 +18,8 @@ int *sprite_area;
 int messagetrans_area[4];
 int *messagetrans_buffer;
 
+int *message_list;
+
 char zap_font[256]="07x14";
 char zap_lowres_font[256]="08x08.0";
 
