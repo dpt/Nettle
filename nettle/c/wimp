@@ -448,14 +448,17 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     if (window_id_to_open!=0)
     {
       struct wimp_getwindowinfo_block window;
+      int width;
       window.window_handle=window_id_to_open;
 
       _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
-      window.min.x=block->min.x;
-      window.min.y=block->min.y;
-      window.max.x=block->min.x+640;
-      window.max.y=block->max.y;
+      width = window.max.x - window.min.x;
+
+      window.max.x += block->min.x - window.min.x;
+      window.min.x = block->min.x+4;
+      window.min.y = block->min.y+4;
+      window.max.y = block->max.y-4;
       window.handle_behind=block->handle_behind;
 
       _swi(Wimp_OpenWindow, _IN(1), &window);
@@ -2690,9 +2693,8 @@ static void open_choices_window(void)
     set_icon_data(win_paneterm, 16, lookup(string_lineedit, string, sizeof(string)));
   }
 
-  /* Set panefont type options */
-  set_icon_data(win_panefonts, 2, zap_font);
-  set_icon_data(win_panefonts, 5, zap_lowres_font);
+  set_icon_data(win_paneterm, 20, zap_font);
+  set_icon_data(win_paneterm, 23, zap_lowres_font);
 
   open_window_centred(win_choices);
   set_caret_position(win_paneterm, 2, -1, get_icon_data_length(win_paneterm, 2));

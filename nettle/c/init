@@ -239,7 +239,7 @@ static void load_templates(void)
 
   win_paneterm=load_template(LOAD_TEMPLATE_NO_FONTS,"paneterm",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
-  win_panefonts=load_template(LOAD_TEMPLATE_NO_FONTS,"panefonts",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+  win_panefonts=load_template(LOAD_TEMPLATE_NO_FONTS,"panecols",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   win_panehot=load_template(LOAD_TEMPLATE_NO_FONTS,"panehot",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
