@@ -1292,7 +1292,7 @@ static void wimp_initiatesave(const char *filename)
 
   block.user_message.length      =(48+strlen(filename)) & ~3;
   block.user_message.your_ref    =0;
-  block.user_message.message_code=1; /* DataSave */
+  block.user_message.message_code=WIMP_MESSAGE_DATASAVE;
 
   _swi(Wimp_SendMessage, _INR(0,3), 18, &block,
                          block.user_message.contents.data_save.window_handle,
@@ -2079,6 +2079,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
           _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
           msg_ref = wimp_block->user_message.my_ref;
       }
+      break;
 
     case WIMP_MESSAGE_DATASAVEACK:
       {
@@ -2092,28 +2093,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
         read_mem(string, wimp_block->user_message.contents.data_save_ack.file_name,
                  sizeof(string));
 
-        if (drag_window_handle == win_save ||
-            drag_window_handle == selection_session->window_handle)
-        {
-          switch (allow_ansi_colour)
-          {
-            case SAVE_NO_ANSI:
-              save_selection(string, false);
-              break;
-
-            case SAVE_FORCE_ANSI:
-              save_selection(string, true);
-              break;
-
-            default:
-              save_selection(string, read_icon_ticked(win_save, icon_save_ansi));
-              if (instr(string,"Wimp$Scrap")==-1 && drag_window_handle == win_save)
-              {
-                set_icon_data(drag_window_handle, icon_save_filename, string);
-              }
-          }
-        }
-        else if (drag_window_handle == win_spoolsave)
+        if (drag_window_handle == win_spoolsave)
         {
           if (wimp_block->user_message.contents.data_save_ack.size==-1)
           {
@@ -2131,6 +2111,27 @@ void wimp_message(union wimp_poll_block *wimp_block)
             }
           }
         }
+        else if (selection_session)
+        {
+          switch (allow_ansi_colour)
+          {
+            case SAVE_NO_ANSI:
+              save_selection(string, false);
+              break;
+
+            case SAVE_FORCE_ANSI:
+              save_selection(string, true);
+              break;
+
+            default:
+              save_selection(string, read_icon_ticked(win_save, icon_save_ansi));
+              if (instr(string,"Wimp$Scrap")==-1 && drag_window_handle == win_save)
+              {
+                set_icon_data(drag_window_handle, icon_save_filename, string);
+              }
+              break;
+          }
+        }
 
         wimp_block->user_message.your_ref    =my_ref;
         wimp_block->user_message.message_code=WIMP_MESSAGE_DATALOAD;
@@ -2145,7 +2146,9 @@ void wimp_message(union wimp_poll_block *wimp_block)
     case WIMP_MESSAGE_DATALOAD:
       if (msg_ref && wimp_block->user_message.your_ref != msg_ref)
         break;
+
       msg_ref = 0;
+
       switch (wimp_block->user_message.contents.data_save.filetype)
       {
         case 0xB28:
