@@ -2260,8 +2260,12 @@ void mode_change(void)
     {
       char string[]="Nettle bitmaps area";
 
+      /* Currently, in a 32bpp mode, with the biggest available ZapFont (14x12.Luc)
+         we can use up to 444K of space, so we set a 1MB max area size here.  If we
+	 don't, then the OS_ChangeDynamicArea below will die and we will all be upset */
+
       _swi(OS_DynamicArea, _INR(0,8)|_OUT(1)|_OUT(3), 0, -1, mem_required, -1, 0x80,
-                           (zap_font_used[2]*zap_font_used[3]*384*4),
+                           1024*1024 /* allow room for loading bigger fonts later */,
                            0, -1, string, &bitmaps_area_number, &bitmaps_area);
     }
     else
