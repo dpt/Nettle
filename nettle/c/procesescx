@@ -1,0 +1,1323 @@
+/**
+ * Processing code -- ESC sequence of length > 3
+ * (C) Nettle developers 2000-2002
+ *
+ * $Id$
+ */
+
+#include <stddef.h>
+
+#include "generic.h"
+#include "globals.h"
+#include "misc.h"
+#include "mouse.h"
+#include "wimputil.h"
+#include "process.h"
+
+bool process_escape_length_x(struct session_struct *session);
+extern char csi_sequence[8];
+
+bool process_escape_length_x(struct session_struct *session)
+{
+  bool done=false;
+
+  switch (session->escape_string[0])
+  {
+    case 27:
+      switch (session->escape_string[1])
+      {
+        case 'Y':
+          if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
+          {
+            if (session->escape_string_length==4)
+            {
+              session->pos.x=session->escape_string[3]-32;
+              session->pos.y=session->escape_string[2]-32+session->scrollback;
+              done=true;
+            }
+          }
+          break;
+        case '[':
+          switch (session->escape_string[session->escape_string_length-1])
+          {
+            case '?': case ';':
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
+              break;
+            case 'A':
+              /* Cursor up Pn lines */
+              if (session->escape_string[2]!='A')
+              {
+                int move=atoi(session->escape_string+2);
+                session->pos.y -= move ? move : 1;
+              }
+              else
+              {
+                session->pos.y--;
+              }
+              if (session->pos.y<session->scrollback+session->scroll_start-1)
+              {
+                session->pos.y=session->scrollback+session->scroll_start-1;
+              }
+              done=true;
+              break;
+            case 'B':
+              /* Cursor down Pn lines */
+              if (session->escape_string[2]!='B')
+              {
+                int move=atoi(session->escape_string+2);
+                session->pos.y += move ? move : 1;
+              }
+              else
+              {
+                session->pos.y++;
+              }
+              if (session->pos.y>session->scrollback+session->scroll_end-1)
+              {
+                session->pos.y=session->scrollback+session->scroll_end-1;
+              }
+              done=true;
+              break;
+            case 'C':
+            case 'a':
+              /* Cursor right Pn chars */
+              if (session->escape_string[2]!='C')
+              {
+                int move=atoi(session->escape_string+2);
+                session->pos.x += move ? move : 1;
+              }
+              else
+              {
+                session->pos.x++;
+              }
+              if (session->pos.x>session->terminal_size.x-1)
+              {
+                session->pos.x=session->terminal_size.x-1;
+              }
+              done=true;
+              break;
+            case 'D':
+            case 'j':
+              /* Cursor left Pn chars */
+              if (session->escape_string[2]!='D')
+              {
+                int move=atoi(session->escape_string+2);
+                session->pos.x -= move ? move : 1;
+              }
+              else
+              {
+                session->pos.x--;
+              }
+              if (session->pos.x<0)
+              {
+                session->pos.x=0;
+              }
+              done=true;
+              break;
+            case 'E':
+            /*case 'k':*/
+              /* Pn'th following line (no scroll) */
+              {
+                int move = atoi (session->escape_string + 2);
+                session->pos.y += (move < 1) ? 1 : move;
+              }
+              snap_cursor_to_terminal(session);
+              done=true;
+              break;
+            case 'F':
+            case 'e':
+              /* Pn'th preceding line (no scroll) */
+              {
+                int move = atoi (session->escape_string + 2);
+                session->pos.y -= (move < 1) ? 1 : move;
+              }
+              snap_cursor_to_terminal(session);
+              done=true;
+              break;
+            case 'G':
+            case '`':
+              /* Set cursor column */
+              session->pos.x = atoi (session->escape_string + 2) - 1;
+              snap_cursor_to_terminal(session);
+              done=true;
+              break;
+            case 'H': case 'f':
+              /* Direct cursor addressing */
+              if (esc_instr(session->escape_string,";", session->escape_string_length)>=0)
+              {
+                session->pos.x=atoi(session->escape_string+
+                                                esc_instr(session->escape_string,
+                                                ";",session->escape_string_length)
+                                                +1)-1;
+
+                if (session->other_session_flags & NETTLE_OTHER_ORIGIN_MODE)
+                {
+                  session->pos.y=session->scrollback+
+                   			       session->scroll_start-1+
+                                             atoi(session->escape_string+2)-1;
+                }
+                else
+                {
+                  session->pos.y=session->scrollback+atoi(session->escape_string+2)-1;
+                }
+              }
+              else
+              {
+                session->pos.x=0;
+
+                if (session->escape_string_length>3)
+                {
+                  if (session->other_session_flags & NETTLE_OTHER_ORIGIN_MODE)
+                  {
+                    session->pos.y=session->scrollback+
+                     			       session->scroll_start-1+
+                                               atoi(session->escape_string+2)-1;
+                  }
+                  else
+                  {
+                    session->pos.y=session->scrollback+atoi(session->escape_string+2)-1;
+                  }
+                }
+                else
+                {
+                  if (session->other_session_flags & NETTLE_OTHER_ORIGIN_MODE)
+                  {
+                    session->pos.y=session->scrollback+session->scroll_start-1;
+                  }
+                  else
+                  {
+                    session->pos.y=session->scrollback;
+                  }
+                }
+              }
+              snap_cursor_to_terminal(session);
+              done=true;
+              break;
+            case 'I':
+              /* Cursor forward Pn tabs */
+              {
+                int move = atoi (session->escape_string + 2);
+                if (move < 1)
+                  move = 1;
+                do {
+                  byte_horizontal_tabulation (session);
+                } while (--move);
+              }
+              done=true;
+              break;
+            case 'J':
+              {
+                int loop, limit = -1;
+                loop = atoi (session->escape_string + 2
+                             + (session->escape_string[2] == '?'));
+                switch (loop)
+                {
+                  /* Various clears, leaving attributes */
+                  case 0:
+                    /* Clear screen from cursor to end of screen */
+                    changedbox_update (0, session->pos.y,
+                                       session->terminal_size.x - 1,
+                                       session->scrollback
+                                       + session->terminal_size.y - 1);
+                    loop = (session->pos.y * session->terminal_size.x
+                            + session->pos.x),
+                    limit = session->terminal_size.x
+                            * (session->terminal_size.y + session->scrollback);
+                    break;
+                  case 1:
+                    /* Clear screen from beginning of screen to cursor */
+                    changedbox_update (0, 0, session->terminal_size.x - 1,
+                                       session->pos.y);
+                    loop = session->scrollback * session->terminal_size.x;
+                    limit = (session->pos.y * session->terminal_size.x
+                             + session->pos.x) + 1;
+                    break;
+                  case 2:
+                    /* Clear screen */
+                    changedbox_update_whole ();
+                    loop = session->scrollback * session->terminal_size.x;
+                    limit = session->terminal_size.x
+                            * (session->terminal_size.y + session->scrollback);
+                    break;
+               }
+                if (limit == -1)
+                  ;
+                else if (session->escape_string[2] == '?')
+                  for (; loop < limit; loop++)
+                    write_assigned_character (session,
+                                              loop % session->terminal_size.x,
+                                              loop / session->terminal_size.x,
+                                              ' ');
+                else
+                  clear_screen (session, loop, limit,
+                                session->current_fg,
+                                session->current_bg,
+                                session->current_flags,
+                                32);
+              }
+              done=true;
+              break;
+            case 'K':
+              {
+                int loop, limit = -1;
+                loop = atoi (session->escape_string + 2
+                             + (session->escape_string[2] == '?'));
+                switch (loop)
+                {
+                  /* Various clears, leaving attributes */
+                  case 0:
+                    /* Clear line from cursor to end */
+                    changedbox_update (session->pos.x, session->pos.y,
+                                       session->terminal_size.x - 1,
+                                       session->pos.y);
+                    loop = (session->pos.y * session->terminal_size.x
+                            + session->pos.x),
+                    limit = session->terminal_size.x * (session->pos.y + 1);
+                    break;
+                  case 1:
+                    /* Clear line from beginning to cursor */
+                    changedbox_update (0, session->pos.y,
+                                       session->pos.x, session->pos.y);
+                    loop = session->pos.y * session->terminal_size.x;
+                    limit = (session->pos.y * session->terminal_size.x
+                             + session->pos.x) + 1;
+                    break;
+                  case 2:
+                    /* Clear line */
+                    changedbox_update (0, session->pos.y,
+                                       session->terminal_size.x - 1,
+                                       session->pos.y);
+                    loop = session->pos.y * session->terminal_size.x;
+                    limit = loop + session->terminal_size.x;
+                    break;
+                }
+                if (limit == -1)
+                  ;
+                else if (session->escape_string[2] == '?')
+                  for (; loop < limit; loop ++)
+                    write_assigned_character (session,
+                                              loop % session->terminal_size.x,
+                                              loop / session->terminal_size.x,
+                                              ' ');
+                else
+                  clear_screen (session, loop, limit,
+                                session->current_fg,
+                                session->current_bg,
+                                session->current_flags,
+                                32);
+              }
+              done=true;
+              break;
+            case 'L':
+              /* Insert line(s) */
+              if (session->pos.y-session->scrollback<session->scroll_end-1
+                  &&
+                  session->pos.y-session->scrollback>=session->scroll_start-1)
+              {
+                int move=atoi(session->escape_string+2);
+
+                if (move==0)
+                  move=1;
+
+                if (move>session->scroll_end-(session->pos.y-session->scrollback))
+                {
+                  move=session->scroll_end-(session->pos.y-session->scrollback);
+                }
+
+                while (move>0)
+                {
+                  shuffle_down(session, session->pos.y,
+                                        session->scrollback+session->scroll_end-1);
+
+                  clear_screen(session,
+                               session->pos.y*session->terminal_size.x,
+                               (session->pos.y+1)*session->terminal_size.x,
+                               session->current_fg,
+                               session->current_bg,
+                               0,
+                               ' ');
+
+                  move--;
+                }
+
+                changedbox_update (0, session->pos.y,
+                                   session->terminal_size.x - 1,
+                                   session->scrollback + session->terminal_size.y - 1);
+              }
+              done=true;
+              break;
+            case 'M':
+              /* Delete line(s) */
+              if (session->pos.y-session->scrollback<session->scroll_end-1
+                  &&
+                  session->pos.y-session->scrollback>=session->scroll_start-1)
+              {
+                int move=atoi(session->escape_string+2);
+
+                if (move==0)
+                  move=1;
+
+                if (move>session->scroll_end-(session->pos.y-session->scrollback))
+                {
+                  move=session->scroll_end-(session->pos.y-session->scrollback);
+                }
+
+                while (move>0)
+                {
+                  shuffle_up(session, session->pos.y,
+                                        session->scrollback+session->scroll_end-1);
+
+                  clear_screen(session,
+                               (session->scrollback+session->scroll_end-1)*
+                                         session->terminal_size.x,
+                               (session->scrollback+session->scroll_end)*
+                                         session->terminal_size.x,
+                               session->current_fg,
+                               session->current_bg,
+                               0,
+                               ' ');
+
+                  move--;
+                }
+
+                changedbox_update (0, session->pos.y,
+                                   session->terminal_size.x - 1,
+                                   session->scrollback + session->terminal_size.y - 1);
+              }
+              done=true;
+              break;
+            case 'N':
+              /* Erase in field */
+              /* ... definition of "active field"? */
+              done = true;
+              break;
+            case 'O':
+              /* Erase in area */
+              /* ... definition of "active qualified area"? */
+              done = true;
+              break;
+            case 'P':
+              {
+                /* Delete character(s) */
+                int loop;
+                int move=atoi(session->escape_string+2);
+
+                if (move==0)
+                  move=1;
+
+                for (loop=session->pos.x; loop<session->terminal_size.x-move; loop++)
+                {
+                  session->assigned_area[session->pos.y][loop]=
+                           session->assigned_area[session->pos.y][loop+move];
+                }
+
+                changedbox_update (session->pos.x, session->pos.y,
+                                   session->terminal_size.x - 1, session->pos.y);
+
+                clear_screen(session,
+
+                             ((session->pos.y*session->terminal_size.x)+
+                              (session->terminal_size.x-move)),
+
+                              ((session->pos.y+1)*session->terminal_size.x),
+
+                              session->current_fg,
+                              NETTLE_COLOUR_NORMAL_BLACK,
+                              0,
+                              32);
+              }
+              done=true;
+              break;
+            case 'Q':
+              /* Select editing extent */
+              /* Affects various insert/delete commands */
+              done = true;
+              break;
+            case 'S':
+              /* Scroll up (with wraparound) */
+              {
+                int move=atoi(session->escape_string+2);
+                if (move < 1)
+                  move = 1;
+
+                /* limit things a little... */
+                if (session->scroll_start == 1 &&
+                    (session->other_session_flags & NETTLE_OTHER_SCREEN_MODE) == 0)
+                {
+                  if (move > session->scrollback + session->terminal_size.y)
+                    move = session->scrollback + session->terminal_size.y;
+                }
+                else
+                  if (move > session->terminal_size.y)
+                    move = session->terminal_size.y;
+
+                do
+                {
+                  scroll_up (session, true);
+                } while (--move);
+              }
+              done = true;
+              break;
+            case 'T':
+              /* Scroll down (with wraparound) */
+              {
+                int move=atoi(session->escape_string+2);
+                if (move < 1)
+                  move = 1;
+
+                /* limit things a little... */
+                if (move > session->terminal_size.y)
+                  move = session->terminal_size.y;
+
+                do
+                {
+                  scroll_down (session, true);
+                } while (--move);
+              }
+              done = true;
+              break;
+            case 'U':
+              /* Pn'th following page */
+              done = true;
+              break;
+            case 'V':
+              /* Pn'th preceding page */
+              done = true;
+              break;
+            case 'W':
+              /* tabulation control */
+              done = true;
+              break;
+            case '@':
+              {
+                /* Insert character(s) */
+                int move=atoi(session->escape_string+2);
+
+                row_shift_right (session, move < 1 ? 1 : move);
+
+                clear_screen(session,
+
+                             ((session->pos.y*session->terminal_size.x)+
+                              (session->pos.x)),
+
+                              ((session->pos.y*session->terminal_size.x)+
+                               (session->pos.x+(move < 1 ? 1 : move))),
+
+                              session->current_fg,
+                              session->current_bg,
+                              0,
+                              32);
+
+                done=true;
+              }
+              break;
+            case 'X':
+              /* Erase character(s) */
+              {
+                int move=atoi(session->escape_string+2);
+                if (move == 0)
+                  move = 1;
+                if (session->pos.x + move >= session->terminal_size.x)
+                  move = session->terminal_size.x - session->pos.x;
+
+                changedbox_update (session->pos.x, session->pos.y,
+                                   session->pos.x + move, session->pos.y);
+                clear_screen(session,
+              	       ((session->pos.y*session->terminal_size.x)+
+                       session->pos.x),
+
+              	       ((session->pos.y*session->terminal_size.x)+
+                        session->pos.x + move),
+
+                       session->current_fg,
+                       session->current_bg,
+                       0,
+                       32);
+              }
+              done=true;
+              break;
+            case 'Z':
+              /* Cursor backward Pn tabs */
+              {
+                int move = atoi (session->escape_string + 2);
+                if (move < 1)
+                  move = 1;
+                do {
+                  byte_reverse_horizontal_tabulation (session);
+                } while (--move);
+              }
+              done=true;
+              break;
+            case 'b':
+              /* Repeat preceding character Pn times */
+              done = true;
+              break;
+            case 'c':
+              done=true;
+              switch (session->escape_string[2])
+              {
+                case '0': case 'c':
+                  primary_da_request(session);
+                  done=true;
+                  break;
+                case '>':
+                  switch (session->escape_string[3])
+                  {
+                    case '0': case 'c':
+                      {
+                        /* Secondary DA Request */
+                        char block[16];
+
+                        sprintf(block,"%s>1;10;0c",csi_sequence);
+
+                        nettle_senddata(session,block,strlen(block));
+                      }
+                      break;
+                  }
+                  break;
+              }
+              break;
+            case 'd':
+              /* Set cursor row */
+              session->pos.y = session->scrollback + atoi (session->escape_string + 2) - 1;
+              snap_cursor_to_terminal(session);
+              done=true;
+              break;
+            case 'g':
+              done=true;
+              switch (session->escape_string[2])
+              {
+                case '0': case 'g':
+                  /* Clear tab in current xpos */
+                  {
+                    int loop=0;
+                    while (loop<session->number_of_tabs &&
+                           session->pos.x!=session->tabs[loop])
+                    {
+                      loop++;
+                    }
+
+                    if (session->pos.x==session->tabs[loop])
+                    {
+                      int loop2;
+                      for (loop2=loop+1; loop2<session->number_of_tabs; loop2++)
+                      {
+                        session->tabs[loop2-1]=session->tabs[loop2];
+                      }
+                      session->number_of_tabs--;
+                    }
+                  }
+                  break;
+                case '3':
+                  /* Clear all tabs */
+                  session->number_of_tabs=0;
+                  break;
+              }
+              break;
+            case 'h':
+              switch (session->escape_string[2])
+              {
+                case '?':
+                  /* DIGITAL, xterm private modes */
+                  {
+                    int loop=3;
+                    while (loop<session->escape_string_length-1)
+                    {
+                      char string[256]="";
+                      while(session->escape_string[loop]!=';' &&
+                            session->escape_string[loop]!='h')
+                      {
+                        string[strlen(string)+1]='\0';
+                        string[strlen(string)]=session->escape_string[loop];
+                        loop++;
+                      }
+                      loop++;
+
+                      switch (atoi(string))
+                      {
+                        case 1:
+                          /* Cause the cursor to generate "application" control functions */
+                          break;
+                        case 3:
+                          /* Selects 132 columns per line */
+                          if (!(session->other_session_flags & NETTLE_OTHER_COLUMN_MODE))
+                          {
+                            resize_terminal(session, 132,
+                                                     session->terminal_size.y,
+                                                     session->scrollback,
+                                                     false);
+                            session->other_session_flags |= NETTLE_OTHER_COLUMN_MODE;
+                          }
+                          break;
+                        case 4:
+                          /* Selects smooth scroll */
+                          break;
+                        case 5:
+                          /* Selects reverse video */
+                          session->other_session_flags |= NETTLE_OTHER_REVERSE_VIDEO;
+                          changedbox_update_whole();
+                          break;
+                        case 6:
+                          /* Home position based in scrolling region */
+                          session->other_session_flags |= NETTLE_OTHER_ORIGIN_MODE;
+
+                          session->pos.x=0;
+                          session->pos.y=session->scrollback+session->scroll_start-1;
+                          break;
+                        case 7:
+                          /* Autowrap */
+                          session->other_session_flags |= NETTLE_OTHER_WRAP_MODE;
+                          break;
+                        case 9:
+                          /* Send Mouse X & Y on button press */
+                          session->mouse_mode=MOUSE_MODE_CLICK;
+                          break;
+                        case 25:
+                          /* Make cursor visible */
+                          session->other_session_flags |= NETTLE_OTHER_CURSOR_VIS;
+                          break;
+                        case 47:
+                        case 1047:
+                          /* Alternate screen mode (xterm) */
+                          if (!(session->other_session_flags & NETTLE_OTHER_SCREEN_MODE))
+                          {
+                            swap_alternate_main (session);
+                            changedbox_update (0, session->scrollback,
+                                               session->terminal_size.x - 1,
+                                               session->scrollback +
+                                                        session->terminal_size.y - 1);
+                            session->other_session_flags |= NETTLE_OTHER_SCREEN_MODE;
+                          }
+                          break;
+                        case 67:
+                          /* Make Backspace send BS and Delete send DEL */
+                          session->other_session_flags |= NETTLE_OTHER_BACKSPACE_MODE;
+                          break;
+                        case 1000:
+                          /* Send mouse X & Y on button press and release */
+                          session->mouse_mode=MOUSE_MODE_CLICK_RELEASE;
+                          break;
+                        case 1001:
+                          /* Use hilite Mouse Tracking */
+                          session->mouse_mode=MOUSE_MODE_HILITE;
+                          break;
+                        case 1048:
+                          save_cursor_position (session);
+                          break;
+                        case 1049:
+                          /* Alternate screen, save cursor, clear (xterm) */
+                          if (!(session->other_session_flags & NETTLE_OTHER_SCREEN_MODE))
+                          {
+                            save_cursor_position (session);
+                            copy_main_alternate (session);
+                            clear_main_screen (session);
+                            changedbox_update (0, session->scrollback,
+                                               session->terminal_size.x - 1,
+                                               session->scrollback +
+                                                        session->terminal_size.y - 1);
+                            session->other_session_flags |= NETTLE_OTHER_SCREEN_MODE;
+                          }
+                          break;
+                      }
+                    }
+                  }
+                  break;
+                default:
+                  {
+                    int loop=2;
+                    while (loop<session->escape_string_length-1)
+                    {
+                      char string[256]="";
+                      while(session->escape_string[loop]!=';' &&
+                            session->escape_string[loop]!='h')
+                      {
+                        string[strlen(string)+1]='\0';
+                        string[strlen(string)]=session->escape_string[loop];
+                        loop++;
+                      }
+                      loop++;
+
+                      switch (atoi(string))
+                      {
+                        case 2:
+                          /* Turn on keyboard lock */
+                          session->other_session_flags |= NETTLE_OTHER_KEYLOCK_MODE;
+                          break;
+                        case 4:
+                          /* Turn on insert mode */
+                          session->other_session_flags |= NETTLE_OTHER_INSERT_MODE;
+                          break;
+                        case 8:
+                          /* Turn on auto repeat */
+                          break;
+                        case 12:
+                          /* Turn off local echo */
+                          /* session->session_flags[1]=true; */
+			  session->local_echo = false;
+                          break;
+                        case 20:
+                          /* Make LF,FF,VT move to first column of next line */
+                          session->other_session_flags |= NETTLE_OTHER_LINEFEED_MODE;
+                          break;
+                      }
+                    }
+                  }
+                  break;
+              }
+              done=true;
+              break;
+            case 'l':
+              switch (session->escape_string[2])
+              {
+                case '?':
+                  /* DIGITAL, xterm private modes */
+                  {
+                    int loop=3;
+                    while (loop<session->escape_string_length-1)
+                    {
+                      char string[256]="";
+                      while(session->escape_string[loop]!=';' &&
+                            session->escape_string[loop]!='l')
+                      {
+                        string[strlen(string)+1]='\0';
+                        string[strlen(string)]=session->escape_string[loop];
+                        loop++;
+                      }
+                      loop++;
+
+                      switch (atoi(string))
+                      {
+                        case 1:
+                          /* Cause the cursor to generate ANSI cursor control sequences */
+                          break;
+                        case 2:
+                          /* Sets the terminal to VT52 mode */
+                          session->other_session_flags |= NETTLE_OTHER_VT52_MODE;
+                          break;
+                        case 3:
+                          /* Selects 80 columns per line */
+                          if (session->other_session_flags & NETTLE_OTHER_COLUMN_MODE)
+                          {
+                            resize_terminal(session, 80,
+                                                     session->terminal_size.y,
+                                                     session->scrollback,
+                                                     false);
+                            session->other_session_flags &= ~NETTLE_OTHER_COLUMN_MODE;
+                          }
+                          break;
+                        case 4:
+                          /* Selects jump scroll */
+                          break;
+                        case 5:
+                          /* Selects normal video */
+                          session->other_session_flags &= ~NETTLE_OTHER_REVERSE_VIDEO;
+                          changedbox_update_whole();
+                          break;
+                        case 6:
+                          /* Home position based in top-left of screen */
+                          session->other_session_flags &= ~NETTLE_OTHER_ORIGIN_MODE;
+                          break;
+                        case 7:
+                          /* No autowrap */
+                          session->other_session_flags &= ~NETTLE_OTHER_WRAP_MODE;
+                          break;
+                        case 8:
+                          /* Turn off auto repeat */
+                          break;
+                        case 9:
+                          /* Don't send Mouse X & Y on button press */
+                          session->mouse_mode=MOUSE_MODE_OFF;
+                          break;
+                        case 25:
+                          /* Make cursor invisible */
+                          session->other_session_flags &= ~NETTLE_OTHER_CURSOR_VIS;
+                          break;
+                        case 47:
+                        case 1049:
+                          /* Primary screen mode (xterm) */
+                          if (session->other_session_flags & NETTLE_OTHER_SCREEN_MODE)
+                          {
+                            swap_alternate_main (session);
+                            restore_cursor_position (session);
+                            changedbox_update (0, session->scrollback,
+                                               session->terminal_size.x - 1,
+                                               session->scrollback +
+                                                        session->terminal_size.y - 1);
+                            session->other_session_flags &= ~NETTLE_OTHER_SCREEN_MODE;
+                          }
+                          break;
+                        case 67:
+                          /* Make Backspace send Delete and Delete send ESC '[3~' */
+                          /* (requires DeepKeys) */
+                          session->other_session_flags &= ~NETTLE_OTHER_BACKSPACE_MODE;
+                          break;
+                        case 1000:
+                          /* Don't send mouse X & Y on button press and release */
+                          session->mouse_mode=MOUSE_MODE_OFF;
+                          break;
+                        case 1001:
+                          /* Don't use hilite Mouse Tracking */
+                          session->mouse_mode=MOUSE_MODE_OFF;
+                          break;
+                        case 1047:
+                          /* Primary screen, clear, restore cursor (xterm) */
+                          if (session->other_session_flags & NETTLE_OTHER_SCREEN_MODE)
+                          {
+                            copy_alternate_main (session);
+                            clear_alternate_screen (session);
+                            changedbox_update (0, session->scrollback,
+                                               session->terminal_size.x - 1,
+                                               session->scrollback +
+                                                        session->terminal_size.y - 1);
+                            session->other_session_flags &= ~NETTLE_OTHER_SCREEN_MODE;
+                          }
+                          break;
+                        case 1048:
+                          /* Restore cursor position */
+                          restore_cursor_position (session);
+                          break;
+                      }
+                    }
+                  }
+                  break;
+                default:
+                  {
+                    int loop=2;
+                    while (loop<session->escape_string_length-1)
+                    {
+                      char string[256]="";
+                      while(session->escape_string[loop]!=';' &&
+                            session->escape_string[loop]!='l')
+                      {
+                        string[strlen(string)+1]='\0';
+                        string[strlen(string)]=session->escape_string[loop];
+                        loop++;
+                      }
+                      loop++;
+
+                      switch (atoi(string))
+                      {
+                        case 2:
+                          /* Turn off keyboard lock */
+                          session->other_session_flags &= ~NETTLE_OTHER_KEYLOCK_MODE;
+                          break;
+                        case 4:
+                          /* Turn off insert mode */
+                          session->other_session_flags &= ~NETTLE_OTHER_INSERT_MODE;
+                          break;
+                        case 12:
+                          /* Turn on local echo */
+                          /* session->session_flags[1]=false; */
+                          session->local_echo = true;
+                          break;
+                        case 20:
+                          /* Make LF,FF,VT move to next line (normal behaviour) */
+                          session->other_session_flags &= ~NETTLE_OTHER_LINEFEED_MODE;
+                          break;
+                      }
+                    }
+                  }
+                  break;
+              }
+              done=true;
+              break;
+            case 'm':
+              {
+                bool status=false;
+                int loop=2;
+
+                if (session->current_fg & 8)
+                {
+                  status=true;
+                }
+
+                while (loop<session->escape_string_length)
+                {
+                  char string[256]="";
+                  while(session->escape_string[loop]!=';' &&
+                        session->escape_string[loop]!='m')
+                  {
+                    string[strlen(string)+1]='\0';
+                    string[strlen(string)]=session->escape_string[loop];
+                    loop++;
+                  }
+                  loop++;
+
+	          switch (atoi(string))
+	          {
+	            case 0:
+                      /* Clear all attributes */
+                      status=false;
+                      session->current_fg=7;
+                      session->current_bg=0;
+                      session->current_flags=NETTLE_FLAG_VALID;
+                      break;
+                    case 1:
+                      /* Bold */
+                      session->current_fg |= 8;
+                      status=true;
+                      break;
+                    case 4:
+                      /* Underline */
+                      session->current_flags |= NETTLE_FLAG_UNDERLINE;
+                      status=true;
+                      break;
+                    case 5:
+                      /* Blink */
+                      session->current_flags |= NETTLE_FLAG_BLINK;
+                      session->want_blink = true;
+                      want_blink = true; /* Don't need to call rehash_blink() here */
+                      break;
+                    case 24:
+                      /* Cancel underline */
+                      session->current_flags &= ~NETTLE_FLAG_UNDERLINE;
+                      break;
+                    case 25:
+                      /* Cancel blink */
+                      session->current_flags &= ~NETTLE_FLAG_BLINK;
+                      break;
+                    case 27:
+                      /* Cancel invert */
+                      session->current_flags &= ~NETTLE_FLAG_INVERTED;
+                     break;
+                    case 30: case 31: case 32: case 33: case 34: case 35: case 36: case 37:
+                      /* Foreground */
+                      session->current_fg=atoi(string)-30;
+                      if (status)
+                      {
+                        session->current_fg |= 8;
+                      }
+                      break;
+                    case 39:
+                      session->current_fg=7;
+                      break;
+                    case 40: case 41: case 42: case 43: case 44: case 45: case 46: case 47:
+                      /* Background */
+                      session->current_bg=atoi(string)-40;
+                      break;
+                    case 49:
+                      session->current_bg=0;
+                      break;
+                    case 7:
+                      /* Invert */
+                      session->current_flags |= NETTLE_FLAG_INVERTED;
+                      break;
+                  }
+                }
+              }
+              done=true;
+              break;
+            case 'n':
+              switch (session->escape_string[2])
+              {
+                case '5':
+                  {
+                    char block[16];
+
+                    /* terminal OK */
+                    sprintf(block,"%s0n",csi_sequence);
+
+                    nettle_senddata(session,block,strlen(block));
+                  }
+                  break;
+                case '6':
+                  {
+                    char block[16];
+
+                    sprintf(block,"%s%d;%dR",csi_sequence,
+                                             session->pos.y-session->scrollback+1,
+                     			     session->pos.x+1);
+
+                    nettle_senddata(session,block,strlen(block));
+                  }
+                  break;
+                case '?':
+                  if (session->escape_string[3]=='1')
+                  {
+                    if (session->escape_string[4]=='5')
+                    {
+                      char block[16];
+
+                      /* There is no printer */
+                      sprintf(block,"%s?13n",csi_sequence);
+
+                      nettle_senddata(session,block,strlen(block));
+                    }
+                  }
+                  break;
+              }
+              done=true;
+              break;
+            case 'o':
+              /* define area qualification */
+              done = true;
+              break;
+            case 'p':
+              switch (session->escape_string[session->escape_string_length-2])
+              {
+                case '!':
+                  /* Soft Reset terminal */
+                  reset_terminal(session);
+                  break;
+                case '\"':
+                  {
+                    int loop=2;
+                    while (loop<session->escape_string_length-1)
+                    {
+                      char string[256]="";
+                      while(session->escape_string[loop]!=';' &&
+                            session->escape_string[loop]!='\"')
+                      {
+                        string[strlen(string)+1]='\0';
+                        string[strlen(string)]=session->escape_string[loop];
+                        loop++;
+                      }
+                      loop++;
+
+                      switch (atoi(string))
+                      {
+                        case 61:
+                          /* Set terminal to level 1 compatibility (VT100 mode) */
+                          session->terminal_mode=1;
+                          break;
+                        case 62:
+                          /* Set terminal to level 2 compatibility (VT200 mode) */
+                          session->terminal_mode=2;
+                          break;
+                        case 0: case 2:
+                          /* Set terminal to 8-bit mode */
+                          session->bit_controls=true;
+                          break;
+                        case 1:
+                          /* Set terminal to 7-bit mode */
+                          session->bit_controls=false;
+                          break;
+                      }
+                    }
+                  }
+                  break;
+              }
+              done=true;
+              break;
+            case 'r':
+              if (session->escape_string[2] == '?')
+              {
+                /* restore DEC private mode */
+                done = true;
+                break;
+              }
+
+              /* Specify scrolling region */
+              if (esc_instr(session->escape_string,";",session->escape_string_length)>=0)
+              {
+                session->scroll_start=atoi(session->escape_string+2);
+
+                session->scroll_end=atoi(session->escape_string+
+                                                esc_instr(session->escape_string,
+                                                ";",session->escape_string_length)
+                                                +1);
+              }
+              else
+              {
+                session->scroll_start=1;
+                session->scroll_end=session->terminal_size.y;
+              }
+
+              if (session->scroll_start<1)
+                session->scroll_start=1;
+
+              if (session->scroll_end>session->terminal_size.y)
+                session->scroll_end=session->terminal_size.y;
+
+              if (session->pos.y<session->scrollback+session->scroll_start-1)
+              {
+                session->pos.y=session->scrollback+session->scroll_start-1;
+              }
+
+              if (session->pos.y>session->scrollback+session->scroll_end-1)
+              {
+                session->pos.y=session->scrollback+session->scroll_end-1;
+              }
+
+              done=true;
+              break;
+            case 's':
+              if (session->escape_string[2] == '?')
+              {
+                /* save DEC private mode */
+              }
+              else
+              {
+                if (esc_instr(session->escape_string,";",session->escape_string_length)>=0)
+                {
+                  /* set left, right margins */
+                }
+                else
+                {
+                  /* Save cursor location */
+                  session->old_pos.x=session->pos.x;
+                  session->old_pos.y=session->pos.y-session->scrollback;
+                  session->position_saved=true;
+                }
+              }
+              done = true;
+              break;
+            case 'u':
+              if (session->escape_string_length>3)
+              {
+                /* DEC set htabs */
+              }
+              else
+              {
+                /* Restore cursor location */
+                session->pos.x=session->old_pos.x;
+                session->pos.y=session->old_pos.y+session->scrollback;
+                session->position_saved=false;
+              }
+              done = true;
+              break;
+            case 'x':
+              /* DEC VT100 request terminal parameters */
+              if (session->terminal_type == NETTLE_TERMINAL_VT100)
+              {
+                static const char response[] = "\x1B[2;1;1;120;120;1;0x";
+                nettle_senddata (session, response, sizeof (response) - 1);
+              }
+              done = true;
+              break;
+            default:
+              /* catch-all */
+              done = true;
+          }
+          break;
+        case ']':
+          if (session->escape_string[session->escape_string_length-1]==7)
+          {
+            switch (atoi(session->escape_string+2))
+            {
+              case 0:
+                /* Change Icon Name and Window Title to Pt */
+		/* Fall through */
+              case 1:
+                /* Change Icon Name to Pt */
+                {
+                  char string[256];
+                  int loop=esc_instr(session->escape_string,
+                                     ";", session->escape_string_length)+1;
+                  int counter=0;
+
+                  while (session->escape_string[loop]!=7 && counter<sizeof(string)-1)
+                  {
+                    string[counter++]=session->escape_string[loop++];
+                  }
+                  string[counter]='\0';
+
+                  strcpy(session->icon_name, string);
+                }
+                if (atoi(session->escape_string+2)!=0)
+                  break;
+	      case 2:
+                /* Change Window Title to Pt */
+                {
+                  char string[256];
+                  int loop=esc_instr(session->escape_string,
+                                     ";", session->escape_string_length)+1;
+                  int counter=0;
+
+                  while (session->escape_string[loop]!=7 && counter<sizeof(string)-1)
+                  {
+                    string[counter++]=session->escape_string[loop++];
+                  }
+                  string[counter]='\0';
+                  set_title_bar(session->window_handle, string);
+                }
+                break;
+            }
+
+            done=true;
+          }
+          break;
+      }
+      break;
+    case TELNET_IAC:
+      switch (session->escape_string[1])
+      {
+        case TELNET_SB:
+          if (session->escape_string[session->escape_string_length-2]==TELNET_IAC
+              &&
+              session->escape_string[session->escape_string_length-1]==TELNET_SE)
+          {
+            switch (session->escape_string[2])
+            {
+              case TELOPT_TERMINAL_TYPE:
+                if (session->escape_string[3]==TELOPT_SUB_SEND)
+                {
+                  char block[256];
+                  block[0]=TELNET_IAC;
+                  block[1]=TELNET_SB;
+                  block[2]=TELOPT_TERMINAL_TYPE;
+                  block[3]=TELOPT_SUB_IS;
+                  strcpy(block+4,terminal_name[session->terminal_type]);
+                  block[4+strlen(terminal_name[session->terminal_type])]=TELNET_IAC;
+                  block[5+strlen(terminal_name[session->terminal_type])]=TELNET_SE;
+                  nettle_senddata(session,block,6+strlen(terminal_name[session->terminal_type]));
+                  done=true;
+                }
+                break;
+              case TELOPT_TERMINAL_SPEED:
+                if (session->escape_string[3]==TELOPT_SUB_SEND)
+                {
+                  char block[256], len;
+                  block[0]=TELNET_IAC;
+                  block[1]=TELNET_SB;
+                  block[2]=TELOPT_TERMINAL_SPEED;
+                  block[3]=TELOPT_SUB_IS;
+                  sprintf(block+4,"%d,%d", TERMINAL_SPEED, TERMINAL_SPEED);
+	                len=strlen(block+4);
+                  block[4+len]=TELNET_IAC;
+                  block[5+len]=TELNET_SE;
+                  nettle_senddata(session,block,6+len);
+                  done=true;
+                }
+                break;
+              case TELOPT_XDISPLOC:
+                if (session->escape_string[3]==TELOPT_SUB_SEND)
+                {
+                  char block[256];
+                  char name[256];
+
+                  strcpy(name, getenv("Inet$HostName"));
+                  if (strncmp(name,".",1)!=0)
+                  {
+                    if (getenv("Inet$LocalDomain")!=NULL)
+                    {
+                      strcat(name, ".");
+                      strcat(name, getenv("Inet$LocalDomain"));
+                    }
+                  }
+
+                  block[0]=TELNET_IAC;
+                  block[1]=TELNET_SB;
+                  block[2]=TELOPT_XDISPLOC;
+                  block[3]=TELOPT_SUB_IS;
+
+                  strcpy(block+4, name);
+                  strcpy(block+4+strlen(name), ":0.0");
+                  block[8+strlen(name)]=TELNET_IAC;
+                  block[9+strlen(name)]=TELNET_SE;
+
+                  block[10+strlen(name)]='\0';
+
+                  nettle_senddata(session,block,10+strlen(name));
+                  done=true;
+                }
+                break;
+            }
+          }
+          break;
+      }
+      break;
+  }
+  return done;
+}
+
