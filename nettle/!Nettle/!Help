@@ -1,7 +1,7 @@
 Nettle - Telnet and terminal emulation for RISC OS
 ==================================================
 
-Version : 0.2032 : December 7th, 2002.
+Version : 0.2032r : December 7th, 2002.
 
 Nettle is *the* terminal emulator and telnet client for the RISC OS
 operating system. It utilises the ZapRedraw module for speedy display and
