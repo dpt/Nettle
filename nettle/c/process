@@ -16,15 +16,54 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
-
-static bool work_out_flag(int iac_type)
+static char status_positive(char iac_type)
 {
-  if (iac_type % 2 != 0)
+  switch (iac_type)
   {
-    return true;
+    case 251: /* WILL */
+      return 253; /* DO */
+      break;
+
+    case 252: /* WONT */
+      return 254; /* DONT */
+      break;
+
+    case 253: /* DO */
+      return 251; /* WILL */
+      break;
+
+    case 254: /* DONT */
+      return 252; /* WONT */
+      break;
   }
 
-  return false;
+  generror("Invalid IAC type",false);
+  return 0;
+}
+
+static int status_negative(int iac_type)
+{
+  switch (iac_type)
+  {
+    case 251: /* WILL */
+      return 254; /* DONT */
+      break;
+
+    case 252: /* WONT */
+      return 254; /* DONT */
+      break;
+
+    case 253: /* DO */
+      return 252; /* WONT */
+      break;
+
+    case 254: /* DONT */
+      return 252; /* WONT */
+      break;
+  }
+
+  generror("Invalid IAC type",false);
+  return 0;
 }
 
 static void reprocess_position_scroll(struct session_struct *session)
@@ -502,65 +541,8 @@ static void byte_default(struct session_struct *session, char byte)
   session->xpos++;
 }
 
-
-static int status_positive(int value)
-{
-  switch (value)
-  {
-    case 251: /* receive WILL, return DO */
-      return 253;
-      break;
-    case 252: /* receive WONT, return DONT */
-      return 254;
-      break;
-    case 253: /* receive DO, return WILL */
-      return 251;
-      break;
-    case 254: /* receive DONT, return WONT */
-      return 252;
-      break;
-  }
-
-  {
-    char string[256];
-    sprintf(string,"Unexpected IAC type received %d",value);
-    log_string(string);
-  }
-
-  return 0;
-}
-
-
-static int status_negative(int value)
-{
-  switch (value)
-  {
-    case 251: /* receive WILL, return DONT */
-      return 254;
-      break;
-    case 252: /* receive WONT, return DONT */
-      return 254;
-      break;
-    case 253: /* receive DO, return WONT */
-      return 252;
-      break;
-    case 254: /* receive DONT, return WONT */
-      return 252;
-      break;
-  }
-
-  {
-    char string[256];
-    sprintf(string,"Unexpected IAC type received %d",value);
-    log_string(string);
-  }
-
-  return 0;
-}
-
-
-static void clear_screen(struct session_struct *session, int calc, int calc2, char fg, char bg, char flags,
-                  char character)
+static void clear_screen(struct session_struct *session, int calc, int calc2, char fg, char bg,
+                         char flags, char character)
 {
   int loop;
 
@@ -953,43 +935,35 @@ static bool process_escape_length_3(struct session_struct *session)
         {
           case 251: /* WILL */
           case 253: /* DO */
-          case 252: /* WONT */
-          case 254: /* DONT */
-
-            /* NB - test */
-
             done=true;
 
             switch (session->escape_string[2])
             {
-              case 1: /* ECHO */
+              case 1:
+              case 24:
+              case 31:
+                if (session->session_flags[session->escape_string[2]]==false)
                 {
                   char block[3];
-                  session->session_flags[1]=work_out_flag(iac_type);
+
                   block[0]=255; /* IAC */
                   block[1]=status_positive(iac_type);
-                  block[2]=1;   /* ECHO */
+                  block[2]=session->escape_string[2];
                   nettle_senddata(session,block,3);
+
+                  {
+                    char string[256];
+
+                    sprintf(string, "<<Sending positive response %d to positive request %d, %d>>", status_positive(iac_type), iac_type, session->escape_string[2]);
+                    log_string(string);
+                  }
                 }
-                break;
-              case 24: /* TERMINAL-TYPE */
-                {
-                  char block[3];
-                  session->session_flags[24]=work_out_flag(iac_type);
-                  block[0]=255; /* IAC */
-                  block[1]=status_positive(iac_type);
-                  block[2]=24;  /* TERMINAL-TYPE */
-                  nettle_senddata(session,block,3);
-                }
-                break;
-              case 31: /* NAWS */
+
+                session->session_flags[session->escape_string[2]]=true;
+
+                if (session->escape_string[2]==31)
                 {
                   char block[9];
-                  session->session_flags[31]=work_out_flag(iac_type);;
-                  block[0]=255; /* IAC */
-                  block[1]=status_positive(iac_type);
-                  block[2]=31;  /* NAWS */
-                  nettle_senddata(session,block,3);
 
                   block[0]=255; /* IAC */
                   block[1]=250; /* SB */
@@ -1002,19 +976,50 @@ static bool process_escape_length_3(struct session_struct *session)
                   block[8]=240; /* SE */
                   nettle_senddata(session,block,9);
                 }
+
                 break;
               default:
+                /* if (session->session_flags[session->escape_string[2]]==true) */
                 {
                   char block[3];
-                  session->session_flags[(unsigned char)session->escape_string[2]]=false;
 
                   block[0]=255; /* IAC */
                   block[1]=status_negative(iac_type);
                   block[2]=session->escape_string[2];
                   nettle_senddata(session,block,3);
+
+                  {
+                    char string[256];
+
+                    sprintf(string, "<<Sending negative response %d to positive request %d, %d>>", status_negative(iac_type), iac_type, session->escape_string[2]);
+                    log_string(string);
+                  }
                 }
+                session->session_flags[session->escape_string[2]]=false;
                 break;
             }
+            break;
+          case 252: /* WON'T */
+          case 254: /* DON'T */
+            done=true;
+
+            if (session->session_flags[session->escape_string[2]]==true)
+            {
+              char block[3];
+
+              block[0]=255; /* IAC */
+              block[1]=status_negative(iac_type);
+              block[2]=session->escape_string[2];
+              nettle_senddata(session,block,3);
+
+              {
+                char string[256];
+
+                sprintf(string, "<<Sending negative response %d to negative request %d, %d>>", status_negative(iac_type), iac_type, session->escape_string[2]);
+                log_string(string);
+              }
+            }
+            session->session_flags[session->escape_string[2]]=false;
             break;
         }
       }
