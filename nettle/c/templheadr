@@ -230,7 +230,7 @@ static int template2header(char *templatefile, char *headerfile)
   fprintf(file_header, "/*\n");
   fprintf(file_header, " * AUTO GENERATED CODE - DO NOT EDIT BY HAND!\n");
   fprintf(file_header, " *\n");
-  fprintf(file_header, " * (C) Copyright,  Nettle Developers 2001\n");
+  fprintf(file_header, " * (C) Copyright,  Nettle developers 2001\n");
   fprintf(file_header, " */\n\n\n");
 
   /* Now the index entries. */

@@ -7,7 +7,10 @@
 
 #include "generic.h"
 #include "globals.h"
+#include "messages.h"
+#include "misc.h"
 #include "nettle.h"
+#include "wimp.h"
 #include "zapredraw.h"
 
 struct term_char
@@ -45,45 +48,55 @@ struct term_char
 
 char *
 zapgen_code (int *output_buffer, const char *input_buffer,
-	     int width, int height, int session_flags)
+	     int width, int first_line, int last_line, int session_flags)
 {
   int *line_offsets = output_buffer;
-  char *write = (char *)(line_offsets + height + 1);
-  const struct term_char *input = (const struct term_char *)(const void *) input_buffer;
+  char *write = (char *)(line_offsets + last_line + 1);
+  const struct term_char *input = (struct term_char *) input_buffer;
+  int line_number = 0;
 
-  /* offsets -> list of offsets of lines (in the data block) */
+  /* line_offsets -> list of offsets of lines (in the data block) */
   /* write -> next location at which to place data in the output buffer */
 
-  for (; height; --height)
+  if (first_line)
+  {
+    *write++ = 0;
+    *write++ = 2;
+  }
+
+  for (; line_number < last_line; line_number++)
   {
     int loop = width;
-    int current_bg = -1;
-    int current_fg = -1;
-    int current_flags = 0;
+    int current_fg = redraw.r_for;
+    int current_bg = redraw.r_bac;
+
+    if (line_number < first_line)
+    {
+      /* if not in the window, mark the line as blank and move on */
+      *line_offsets++ = write - 2 - (char *) output_buffer;
+      input += width;
+      continue;
+    }
 
     *line_offsets++ = write - ((char *) output_buffer);
 
     for (; loop; --loop)
     {
-      if (input->fg != current_fg || input->bg != current_bg ||
-        (input->flags & REDRAW_FLAGS_MASK) != current_flags)
+      register char colour_type;
+      char fg = input->fg;
+      char bg = input->bg;
+
+      /* swap foreground and background if inverted or selected, not both */
+      if (((input->flags & NETTLE_FLAG_INVERTED) != 0) ^
+          ((input->flags & NETTLE_FLAG_SELECTED) != 0))
       {
-        /* yes, I'd like this to be an inline function, but Norcroft can't do it!! */
+        fg ^= bg;
+        bg ^= fg;
+        fg ^= bg;
+      }
 
-        register char colour_type;
-        char fg = input->fg;
-        char bg = input->bg;
-        char flags = input->flags & REDRAW_FLAGS_MASK;
-
-        if (((input->flags & NETTLE_FLAG_INVERTED) != 0) ^
-            ((input->flags & NETTLE_FLAG_SELECTED) != 0))
-        {
-          /* swap foreground and background if inverted or selected, not both */
-          fg ^= bg;
-          bg ^= fg;
-          fg ^= bg;
-        }
-
+      if (fg != current_fg || bg != current_bg)
+      {
         *write++ = 0;
         colour_type = (fg == current_fg) ? 7 /* bg only if fg unchanged */
         	    : (bg == current_bg) ? 6 /* fg only if bg unchanged */
@@ -99,16 +112,21 @@ zapgen_code (int *output_buffer, const char *input_buffer,
         /* save the current settings */
         current_fg = fg;
         current_bg = bg;
-        current_flags = flags;
       }
 
       if (input->flags & NETTLE_FLAG_CURSOR)
       {
 	/* drawing the cursor... */
+	int blink;
+	if (cursor_blink)
+	  blink = (cursor_state || input->flags & NETTLE_FLAG_NO_INPUT) ? bg : fg;
+	else
+	  blink = bg;
+
 	*write++ = 0;
 	*write++ = 8;		/* cursor merge */
-	*write++ = input->bg;   /* foreground colour */
-	*write++ = ((input->bg & 2) ? 0 : 7) | (8 & ~input->bg);
+	*write++ = blink;       /* foreground colour */
+	*write++ = ((blink & 2) ? 0 : 7) | (8 & ~blink);
 				/* contrasting background, inverted bright */
 	ZAP_WRITE_CHAR(write, input);
 
@@ -131,4 +149,283 @@ zapgen_code (int *output_buffer, const char *input_buffer,
   *line_offsets = 0;
 
   return write;			/* return ptr to the first unused byte */
+}
+
+
+
+/***************************
+ * Zap fonts menu creation *
+ ***************************/
+
+static int zapfont_depth = 0;			/* Nesting level */
+static int *zapfont_menu[8] = {0};		/* Menu data */
+static char *zapfont_menu_entries[8] = {0};	/* Menu data */
+
+static char font_path[512];
+static int font_path_base;
+
+
+bool
+read_zap_font_selection (const int *selection, char *string, int length)
+{
+  /* returns true if the object is a file or contains a file named "0" */
+  int loop = 0;
+  int sum = 0;
+  int type;
+  int reason;
+
+  *string = 0;
+  for (;;)
+  {
+    const char *item = (char *) zapfont_menu[loop][7+3+6*selection[loop]];
+    sum += strlen (item) + (sum > 0);
+    if (sum >= length - 2)
+      break;			/* silently truncate */
+    strcat (string, item);
+    if (selection[++loop] == -1)
+      break;
+    strcat (string, ".");	/* more to do... */
+  }
+
+  if (string != font_path + font_path_base)
+  {
+    font_path[font_path_base] = '\0';
+    reason = 13;
+  }
+  else
+  {
+    string = font_path;
+    reason = 17;
+  }
+
+  /* Return true if the extracted name points to a file */
+  if (_swix (OS_File, _INR(0,1) | _IN(4) | _OUT(0),
+	     reason, string, font_path, &type))
+      return false;
+
+  if (type == 1)
+    return true;
+
+  /* Append ".0" and return true if it points to a file; else return false */
+  strcat (string, ".0");
+  if (_swix (OS_File, _INR(0,1) | _IN(4) | _OUT(0),
+	     reason, string, font_path, &type))
+    type = 0;
+
+  string[strlen (string) - 2] = '\0';
+  return (type == 1) ? true : false;
+}
+
+
+static int
+menu_strcoll (const void *s1, const void *s2)
+{
+  return strcoll ((const char *)s1 + 3, (const char *)s2 + 3);
+}
+
+
+static bool
+create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
+			       bool root_menu)
+{
+  int *menu_block = 0;
+  char *menu_entries;
+  int allocated = 1024;
+  int items = 0;
+  int entry_offset = 0;
+  int dir_offset = 0;
+
+  /* Hit the maximum menu depth? */
+  if (zapfont_depth == 8)
+    return false;
+
+  menu_entries = malloc (allocated);
+  if (!menu_entries)
+    return false;
+
+  /* Build the menu... */
+  do
+  {
+    struct {
+      int load, exec, length, attr, object_type;
+      char name[256];
+    } dir_entry;
+    int count;
+    _kernel_oserror *error;
+
+    error = _swix (OS_GBPB, _INR(0,6) | _OUTR(3,4),
+		   10, font_path, &dir_entry, 1, dir_offset, sizeof (dir_entry), 0,
+		   &count, &dir_offset);
+    if (error)
+    {
+      generror (error->errmess, false);
+      goto done;
+    }
+
+    /* if we have an object and it's a directory (root menu) or a directory
+     * or a file (submenu), process it */
+    if (count && (dir_entry.object_type & (root_menu ? 2 : 3)))
+    {
+      /* got a directory entry - buffer it */
+      if (entry_offset + strlen (dir_entry.name) + 2 >= allocated)
+      {
+        menu_entries = realloc (menu_entries, allocated += 1024);
+        if (!menu_entries)
+          goto done;
+      }
+      menu_entries[entry_offset++] = (char) dir_entry.object_type;
+      strcpy (menu_entries + entry_offset, dir_entry.name);
+      entry_offset += strlen (menu_entries + entry_offset) + 1;
+      items++;
+    }
+  } while (dir_offset != -1);
+
+  if (items)
+  {
+    /* we know how much memory we need - now build the menu */
+    int index = 7;
+    int loop;
+
+    /* free up a small amount of memory */
+    menu_entries = realloc (menu_entries, entry_offset);
+
+    /* claim space for the menu */
+    menu_block = malloc (28 + 24 * items);
+    if (!menu_block)
+      goto done;
+
+    /* set up the menu header */
+    if (root_menu)
+      lookup ("ZapFont", (char *) menu_block, 12);
+    else
+    {
+      /* use the leafname as the title */
+      char *dot = strrchr (font_path, '.');
+      if (!dot)
+        dot = strrchr (font_path, ':');
+      strcpy ((char *) menu_block, dot + 1);
+    }
+    menu_block[3] = 0x70207; /* standard menu colours */
+    menu_block[4] = 0;
+    menu_block[5] = 44;
+    menu_block[6] = 0;
+
+    /* now add the menu items */
+    entry_offset = 0;
+    for (loop = 0; loop < items; ++loop)
+    {
+      int length = strlen (menu_entries + entry_offset + 1);
+
+      if (menu_entries[entry_offset++] & 2)
+      {
+	menu_block[index++] = 8;		/* menu warn bit */
+	menu_block[index++] = MENU_ZAPFONTLIST;
+      }
+      else
+      {
+	menu_block[index++] = 0;
+	menu_block[index++] = -1;
+      }
+
+      menu_block[index++] = WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT |
+			    WIMP_ICON_FILLED_BIT | WIMP_ICON_TEXT_BIT |
+			    WIMP_ICON_INDIRECTED_BIT;
+      menu_block[index++] = (int) (menu_entries + entry_offset);
+      menu_block[index++] = (int) (menu_entries + entry_offset + length);
+      menu_block[index++] = length + 1;
+      entry_offset += length + 1;
+    }
+
+    /* sort the entries (in case the list was read from, e.g., NFS) */
+    qsort (menu_block + 7, (index - 7) / 6, 6 * sizeof (int), menu_strcoll);
+
+    menu_block[index - 6] |= 128;	/* last entry */
+
+    /* done: return the pointers */
+    *menu_block_p = menu_block;
+    *menu_entries_p = menu_entries;
+
+    return true;
+  }
+
+  /* Error or no menu entries */
+done:
+  free (menu_block);
+  free (menu_entries);
+  return false;
+}
+
+
+bool
+create_zap_font_menu (int window_handle, int icon_handle)
+{
+  get_system_variable ("ZapFonts$Path", font_path, sizeof (font_path));
+  strcpy (font_path, font_path ? "ZapFonts:" : "<Nettle$Dir>.Fonts ");
+  font_path_base = strlen (font_path);
+
+  if (create_zap_font_menu_internal (zapfont_menu, zapfont_menu_entries, true))
+  {
+    zapfont_depth = 1;
+    create_menu_by_icon (zapfont_menu[0], window_handle, icon_handle);
+    return true;
+  }
+  return false;
+}
+
+
+void
+create_zap_font_submenu (const int *selection, struct coords open_at)
+{
+  int loop;
+
+  /* get the directory path (from the menu) */
+  if (font_path[font_path_base - 1] == ' ')
+    font_path[font_path_base - 1] = '.';
+  read_zap_font_selection (selection, font_path + font_path_base,
+			   sizeof (font_path) - font_path_base);
+
+  loop = 0;
+  while (selection[loop] != -1)
+    loop++;
+
+  zapfont_depth = loop;
+  while (loop < 8)
+  {
+    free (zapfont_menu[loop]);
+    free (zapfont_menu_entries[loop]);
+    zapfont_menu[loop] = 0;
+    zapfont_menu_entries[loop] = 0;
+    loop++;
+  }
+
+  if (create_zap_font_menu_internal (zapfont_menu + zapfont_depth,
+				     zapfont_menu_entries + zapfont_depth,
+				     false))
+  {
+    _swi(Wimp_CreateSubMenu, _INR(1,3), zapfont_menu[zapfont_depth++],
+					open_at.x, open_at.y);
+  }
+}
+
+
+void
+reopen_zap_font_menu (void)
+{
+  _swi (Wimp_CreateMenu, _INR(1,3), zapfont_menu[0], 0, 0);
+}
+
+
+void
+delete_zap_font_menu (void)
+{
+  int loop;
+  /* make sure that we've freed any memory that we may have allocated */
+  for (loop = 7; loop >= 0; loop--)
+  {
+    free (zapfont_menu[loop]);
+    free (zapfont_menu_entries[loop]);
+    zapfont_menu[loop] = 0;
+    zapfont_menu_entries[loop] = 0;
+  }
+  zapfont_depth = 0;
 }

@@ -68,6 +68,12 @@ struct zapredraw_block
   int r_mode          /*=0*/;    /* screen mode */
 };
 
-extern char *zapgen_code(int *, const char *, int, int, int);
+extern char *zapgen_code(int *, const char *, int, int, int, int);
+
+extern bool read_zap_font_selection (const int *, char *, int);
+extern bool create_zap_font_menu (int, int);
+extern void create_zap_font_submenu (const int *, struct coords);
+extern void reopen_zap_font_menu (void);
+extern void delete_zap_font_menu (void);
 
 #endif

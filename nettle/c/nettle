@@ -507,6 +507,9 @@ void remove_session(struct session_struct *session)
     selection_session = NULL;
   }
 
+  if (cursor_session == session)
+    cursor_session = NULL;
+
   free(session);
 }
 

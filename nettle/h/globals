@@ -36,6 +36,7 @@
 #define LINE_EDITOR             0
 #define PASS_F12                false
 
+#define CURSOR_BLINK            false
 #define CURSOR_BLINK_DELAY      50
 
 /*******************************************/
@@ -80,7 +81,7 @@ extern int iconbar_handle;
 extern int win_info;
 extern int win_choices;
 extern int win_paneterm;
-extern int win_panefonts;
+extern int win_panecols;
 extern int win_panehot;
 extern int win_open;
 extern int win_resize;
@@ -90,6 +91,7 @@ extern int menu_open;
 extern bool logging;
 extern char line_editor;
 extern bool pass_f12;
+extern bool cursor_blink;
 extern int line_editor_size;
 extern enum nettle_terminal default_terminal;
 extern struct coords defaultsize;
@@ -294,6 +296,19 @@ union wimp_poll_block
         struct coords pos;
         int selection[56];
       } menu_warning;
+
+      struct
+      {
+        int picker_handle;
+        int flags;
+        colour_t colour;
+        /* extension data - ignored */
+      } colourpicker_choice;
+
+      struct
+      {
+        int picker_handle;
+      } colourpicker_close;
 
       struct
       {

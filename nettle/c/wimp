@@ -24,6 +24,7 @@
 
 #include "choices.h"
 #include "hotlist.h"
+#include "keyboard.h"
 #include "lineedit.h"
 #include "messages.h"
 #include "main.h"
@@ -53,12 +54,15 @@ static int colourpicker_handle;
 
 static bool generror_question(char *string);
 static void create_iconbar_menu(void);
+static void create_lineeditor_type_menu(void);
 static void open_open_window(bool open_window_flag);
 static void open_choices_window(void);
+static void set_colour_icon(int, colour_t, bool);
+static colour_t get_colour_icon(int);
 static int get_icon_data_length(int window_handle, int icon_handle);
 static void create_terminal_menu(void);
 static void create_connection_menu(void);
-static void create_terminal_type_menu(void);
+static void create_terminal_type_menu(int, int, int);
 static void drag_start(int, int);
 static bool win_choices_read(int save);
 
@@ -80,8 +84,8 @@ static void close_choices_window(void)
   if (win_is_open(win_paneterm))
     close_window(win_paneterm);
 
-  if (win_is_open(win_panefonts))
-    close_window(win_panefonts);
+  if (win_is_open(win_panecols))
+    close_window(win_panecols);
 
   if (win_is_open(win_panehot))
     close_window(win_panehot);
@@ -117,6 +121,30 @@ void open_window_centred (int window_handle)
   block.handle_behind = -1;	/* open on top of stack */
 
   open_window(&block, window_handle);
+}
+
+/* Dunno what this is needed for really... or it should also */
+/* encompass the code currently in mode_change */
+static void redraw_all_sessions(bool font_change)
+{
+  struct session_struct *session = sessions;
+
+  /* Eventually, also resize the terminals if the current font has been
+   * changed. Which is why no use of terminal_size is made here. */
+
+  while (session)
+  {
+    struct wimp_getwindowstate_block block;
+
+    block.window_handle = session->window_handle;
+    _swi (Wimp_GetWindowState, _IN(1), &block);
+
+    force_redraw (block.window_handle,
+                  block.scroll.x, block.scroll.y + block.min.y - block.max.y,
+                  block.scroll.x + block.max.x - block.min.x, block.scroll.y);
+
+    session = session->next;
+  }
 }
 
 static void wimp_pollresolve(struct session_struct *session)
@@ -337,6 +365,21 @@ void wimp_nullreasoncode(void)
 
   if (selection_in_progress)
     handle_selection_drag();
+
+  if (cursor_session)
+  {
+    int now = _swi (OS_ReadMonotonicTime, 0);
+    if (now - nextcursortime >= 0)
+    {
+      nextcursortime = now + CURSOR_BLINK_DELAY;
+      cursor_state = cursor_state ? false : true;
+      force_redraw (cursor_session->window_handle,
+                    cursor_session->pos.x * redraw.r_charw << eig.x,
+                    (-cursor_session->pos.y - 1) * redraw.r_charh << eig.y,
+                    (cursor_session->pos.x + 1) * redraw.r_charw << eig.x,
+                     -cursor_session->pos.y * redraw.r_charh << eig.y);
+    }
+  }
 }
 
 
@@ -355,18 +398,25 @@ void redraw_window(union wimp_poll_block *wimp_block)
 
   if (session)
   {
+    struct wimp_getwindowstate_block block;
+    block.window_handle = wimp_block->redraw_window.window_handle;
+    _swi (Wimp_GetWindowState, _IN(1), &block);
+
     zapgen_code(zapredraw_area,
                 session->assigned_area,
                 session->terminal_size.x,
-                session->terminal_size.y + session->scrollback,
+		-(block.scroll.y >> eig.y) / redraw.r_charh,
+		(((block.max.y - block.min.y- block.scroll.y) >> eig.y) + redraw.r_charh - 1)
+		  / redraw.r_charh,
                 session->other_session_flags);
 
     redraw.r_data = zapredraw_area;
 
     _swi(ZapRedraw_RedrawWindow, _INR(0,1), wimp_block, &redraw);
   }
-  else
+  else if (colourpicker_handle == 0 || window_handle != menu_window)
   {
+    /* *DON'T* redraw the ColourPicker window */
     int more;
 
     more = _swi(Wimp_RedrawWindow, _IN(1)|_RETURN(0), wimp_block);
@@ -429,7 +479,7 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
 
         case icon_choices_colour:
           if (window_id_to_open==0)
-            window_id_to_open=win_panefonts;
+            window_id_to_open=win_panecols;
           else
             generror("More than one 'window' icon set in choices.", false);
           break;
@@ -473,7 +523,7 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     window.window_handle = block->window_handle;
     _swi (Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
-    if (_swi (OS_Byte, _INR(0,2) | _RETURN(1), 129, 254, 255))
+    if (inkey (-2))
     {
       /* Ctrl pressed - allow dynamic resizing */
       /* if the v scrollbar was at the bottom and its vpos is unchanged,
@@ -615,7 +665,7 @@ static void win_open_click(int x, int y, int buttons, int icon_handle)
       break;
 
     case icon_open_termtypebut:
-      create_terminal_type_menu();
+      create_terminal_type_menu(win_open, icon_open_termtype, icon_open_termtypebut);
       break;
   }
 }
@@ -711,8 +761,8 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
   switch (icon_handle)
   {
     case icon_choices_size:
-      if (win_is_open(win_panefonts))
-        close_window(win_panefonts);
+      if (win_is_open(win_panecols))
+        close_window(win_panecols);
 
       if (win_is_open(win_panehot))
         close_window(win_panehot);
@@ -758,8 +808,8 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
       if (win_is_open(win_paneterm))
         close_window(win_paneterm);
 
-      if (win_is_open(win_panefonts))
-        close_window(win_panefonts);
+      if (win_is_open(win_panecols))
+        close_window(win_panecols);
 
       set_icon_state(win_choices, icon_choices_size, 0, WIMP_ICON_SELECTED_BIT);
       set_icon_state(win_choices, icon_choices_colour, 0, WIMP_ICON_SELECTED_BIT);
@@ -795,6 +845,84 @@ static void win_choices_click (int x, int y, int buttons, int icon_handle)
   }
 }
 
+static void win_paneterm_click(int x, int y, int buttons, int icon_handle)
+{
+  switch (icon_handle)
+  {
+    case icon_paneterm_termtypebut:
+      create_terminal_type_menu(win_paneterm, icon_paneterm_termtype, icon_paneterm_termtypebut);
+      break;
+    case icon_paneterm_lineeditbut:
+      create_lineeditor_type_menu();
+      break;
+    case icon_paneterm_hifontbut:
+    case icon_paneterm_lofontbut:
+      if (create_zap_font_menu (win_paneterm, icon_handle))
+      {
+        menu_window = win_paneterm;
+
+        if (icon_handle==icon_paneterm_hifontbut)
+          menu_icon = icon_paneterm_hifont;
+        else
+          menu_icon = icon_paneterm_lofont;
+
+        menu_open = MENU_ZAPFONTLIST;
+      }
+      break;
+  }
+}
+
+
+static void win_panecols_click(int x, int y, int buttons, int icon_handle)
+{
+  /* Not terribly optimal */
+  if ((icon_handle>=icon_panecols_col0but  && icon_handle<=icon_panecols_col7but) ||
+      (icon_handle>=icon_panecols_bold0but && icon_handle<=icon_panecols_bold7but))
+  {
+    /* open a ColourPicker window (as a menu) */
+    static char title[64];
+    struct colourpicker_block block;
+    struct wimp_geticonstate_block icon;
+    struct wimp_getwindowstate_block window;
+
+    strcpy(title, "Select colour");
+
+    window.window_handle = win_panecols;
+    icon.window_handle = win_panecols;
+    icon.icon_handle = icon_handle;
+    _swi (Wimp_GetWindowState, _IN(1), &window);
+    _swi (Wimp_GetIconState, _IN(1), &icon);
+
+    block.flags = 0;
+    block.title = title;
+    block.bl.x = window.min.x + icon.max.x;
+    block.bl.y = 0x80000000;
+    block.tr.x = 0x7FFFFFFF;
+    block.tr.y = window.max.y + icon.max.y;
+    block.zero1 = block.zero0 = 0;
+    block.colour = palette[icon_handle-8]; /* icon_handle-8 may change... */
+    block.extsize = block.exttype = 0;
+    colourpicker_handle = _swi (ColourPicker_OpenDialogue,
+                          _INR(0,1) | _OUT(1), 1, &block, &menu_window);
+
+    menu_icon = icon_handle-8; /* icon_handle-8 may change */
+    menu_open = MENU_NONE;
+  }
+
+  if (icon_handle==icon_panecols_default)
+  {
+    int loop;
+    for (loop=15; loop>=0; loop--)
+    {
+      set_colour_icon (loop, default_palette[loop], false);
+    }
+  }
+}
+
+
+static void win_panehot_click(int x, int y, int buttons, int icon_handle)
+{
+}
 
 /** Button enumeration for a click/drag/double click icon */
 enum
@@ -930,6 +1058,11 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 {
   int x_pos;
   int y_pos;
+  struct wimp_getcaretposition_block caret;
+
+  _swi (Wimp_GetCaretPosition, _IN(1), &caret);
+
+  /* Darren wanted to add some code to not claim caret on CTRL-press - don't know why */
 
   /* if we're not pressing MENU */
   if (buttons != ClickMenu && buttons != DragMenu)
@@ -952,6 +1085,7 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       /* if SELECT drag, then clear the selection and work out what where the selection */
       /* start is */
       refresh_selection_clear();
+      force_redraw_selection();
 
       selection_session = session;
       selection_start = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
@@ -981,6 +1115,7 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       if (!selection_session)
       {
 	refresh_selection_clear();
+	force_redraw_selection();
 
 	selection_session = session;
         selection_start = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
@@ -1016,15 +1151,13 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       break;
 
     case ClickSelect:
-      /* if SELECT click, then clear the selection */
-      if (selection_session)
+      /* if SELECT click, then clear the selection if the caret is already in the window */
+      if (selection_session &&
+          (caret.window_handle == session->window_handle ||
+           caret.window_handle == session->pane_handle))
       {
 	refresh_selection_clear();
-	force_redraw(selection_session->window_handle,0,
-	  (-selection_session->terminal_size.y-
-	    selection_session->scrollback)*
-	    redraw.r_charh << eig.y,
-	       selection_session->terminal_size.x*redraw.r_charw << eig.x,0);
+	force_redraw_selection();
 	selection_session = NULL;
       }
       break;
@@ -1036,7 +1169,8 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 
     case ClickAdjust:
       /* if ADJUST click, then extend the selection */
-      selection_adjust(x,x_pos,y,y_pos);
+      if (selection_session == session)
+        selection_adjust(x,x_pos,y,y_pos);
       break;
   }
 }
@@ -1126,6 +1260,18 @@ void wimp_mouseclick(int x, int y, int buttons, int window_handle, int icon_hand
   else if (window_handle == win_choices)
   {
     win_choices_click(x, y, buttons, icon_handle);
+  }
+  else if (window_handle == win_paneterm)
+  {
+    win_paneterm_click(x, y, buttons, icon_handle);
+  }
+  else if (window_handle == win_panecols)
+  {
+    win_panecols_click(x, y, buttons, icon_handle);
+  }
+  else if (window_handle == win_panehot)
+  {
+    win_panehot_click(x, y, buttons, icon_handle);
   }
   else
   {
@@ -1252,8 +1398,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
         break;
     }
   }
-
-  if (window_handle==win_resize)
+  else if (window_handle==win_resize)
   {
     switch (icon_handle)
     {
@@ -1276,6 +1421,11 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
         }
         break;
     }
+  }
+  else if (colourpicker_handle && window_handle == menu_window)
+  {
+    /* Keypresses in the ColourPicker window have already been handled */
+    key_status = true;
   }
 
   if (key_status==false)
@@ -1431,6 +1581,7 @@ void wimp_menuchoice(int *selection)
 
         case 3:
           /* Bring a session window to the front */
+          if (selection[1] >= 0)
           {
             struct session_struct *session = get_termlist_entry(selection[1]);
             if (session)
@@ -1464,12 +1615,7 @@ void wimp_menuchoice(int *selection)
               {
                 /* Clear selection */
                 refresh_selection_clear();
-                force_redraw(selection_session->window_handle,0,
-               			(-selection_session->terminal_size.y-
-               			selection_session->scrollback)*
-               			redraw.r_charh << eig.y,
-                      		selection_session->terminal_size.x*redraw.r_charw << eig.x,0);
-
+                force_redraw_selection();
                 selection_session = NULL;
               }
               break;
@@ -1499,12 +1645,12 @@ void wimp_menuchoice(int *selection)
       break;
 
     case MENU_TERMINAL_TYPE:
+      if (selection[0] != -1)
       {
-        char terminal[MESSAGE_MAX_TERMINAL];
         char string[6];
         sprintf(string, "Term%d", selection[0]);
 
-        set_icon_data(win_open, icon_open_termtype, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
+        set_icon_data(menu_window, menu_icon, lookup_static (string));
       }
       break;
 
@@ -1545,6 +1691,22 @@ void wimp_menuchoice(int *selection)
 */
       }
       break;
+    case MENU_LINEED_TYPE:
+      if (selection[0] != -1)
+      {
+        char string[8];
+        sprintf(string, "LineEd%d", selection[0]);
+	set_icon_data(win_paneterm, icon_paneterm_lineedittype, lookup_static (string));
+      }
+      break;
+
+    case MENU_ZAPFONTLIST:
+      if (selection[0] != -1)
+      {
+	char string[256];
+	if (read_zap_font_selection (selection, string, sizeof (string)))
+	  set_icon_data (win_paneterm, menu_icon, string);
+      }
   }
 
   {
@@ -1570,12 +1732,20 @@ void wimp_menuchoice(int *selection)
           break;
 
         case MENU_TERMINAL_TYPE:
-          create_terminal_type_menu();
+          create_terminal_type_menu(menu_window, menu_icon, menu_icon);
           break;
 
         case MENU_HOTLIST:
           create_hotlist_menu();
           break;
+
+	case MENU_LINEED_TYPE:
+	  create_lineeditor_type_menu();
+	  break;
+
+	case MENU_ZAPFONTLIST:
+	  reopen_zap_font_menu();
+	  break;
       }
     }
   }
@@ -1608,6 +1778,7 @@ void lose_caret(int window_handle)
       calc=get_cursor_position(session);
       write_assigned_flags(session, calc,
       			   read_assigned_flags(session, calc) | NETTLE_FLAG_NO_INPUT);
+      cursor_session = NULL;
 
       force_redraw(session->window_handle,
       		   session->pos.x*redraw.r_charw << eig.x,
@@ -1631,6 +1802,7 @@ void lose_caret(int window_handle)
     calc=get_cursor_position(session);
     write_assigned_flags(session, calc,
     			 read_assigned_flags(session, calc) | NETTLE_FLAG_NO_INPUT);
+    cursor_session = NULL;
 
     force_redraw(session->window_handle,
     		 session->pos.x*redraw.r_charw << eig.x,
@@ -1640,6 +1812,15 @@ void lose_caret(int window_handle)
   }
 }
 
+static void set_cursor_session (const struct session_struct *session)
+{
+  if (cursor_blink)
+  {
+    cursor_session = session;
+    nextcursortime = _swi (OS_ReadMonotonicTime, 0) + CURSOR_BLINK_DELAY;
+    cursor_state = true;
+  }
+}
 
 
 /* Gain caret */
@@ -1657,6 +1838,7 @@ void gain_caret(int window_handle)
   if (session)
   {
     /* if the handle is the window handle, get input back for the cursor */
+    set_cursor_session (session);
     calc=get_cursor_position(session);
 
     write_assigned_flags(session, calc,
@@ -1694,6 +1876,7 @@ void gain_caret(int window_handle)
 
   if (session)
   {
+    set_cursor_session (session);
     calc=get_cursor_position(session);
 
     /* unset no input flag again */
@@ -1855,6 +2038,36 @@ void wimp_message(union wimp_poll_block *wimp_block)
                     wimp_block->user_message.contents.menu_warning.pos.x,
                     wimp_block->user_message.contents.menu_warning.pos.y);
           }
+          break;
+
+        case MENU_ZAPFONTLIST:
+          create_zap_font_submenu (wimp_block->user_message.contents.menu_warning.selection,
+                                    wimp_block->user_message.contents.menu_warning.pos);
+	  break;
+      }
+      break;
+
+    case WIMP_MESSAGE_MENUSDELETED:
+      switch (menu_open)
+      {
+	case MENU_ZAPFONTLIST:
+	  delete_zap_font_menu ();
+	  break;
+      }
+      menu_open = MENU_NONE;
+      colourpicker_handle = 0;
+      break;
+
+    case COLOURPICKER_COLOUR_CHOICE:
+      if (wimp_block->user_message.contents.colourpicker_choice.picker_handle == colourpicker_handle)
+        set_colour_icon (menu_icon, wimp_block->user_message.contents.colourpicker_choice.colour, true);
+      break;
+
+    case COLOURPICKER_CLOSE_REQUEST:
+      if (wimp_block->user_message.contents.colourpicker_close.picker_handle == colourpicker_handle)
+      {
+        _swi (ColourPicker_CloseDialogue, _INR(0,1), 0, colourpicker_handle);
+        colourpicker_handle = 0;
       }
       break;
   }
@@ -2020,6 +2233,22 @@ static bool generror_question(char *string)
 
 void set_caret_position(int window_handle, int icon_handle, int flags, int string_index)
 {
+  struct session_struct *session = sessions;
+
+  if (cursor_blink)
+  {
+    while (session)
+    {
+      if (window_handle == session->window_handle ||
+          window_handle == session->pane_handle)
+      {
+        cursor_session = session;
+        break;
+      }
+      session = session->next;
+    }
+  }
+
   _swi(Wimp_SetCaretPosition, _INR(0,5), window_handle, icon_handle, -1, -1, flags, string_index);
 }
 
@@ -2073,7 +2302,7 @@ void set_icon_data(int window_handle, int icon_handle, const char *contents)
   }
   else
   {
-    char string[1024];
+    char string[6];
     sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
     generror(string, false);
   }
@@ -2096,10 +2325,13 @@ char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_l
   }
   else
   {
-    char string[1024];
-    sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
-    generror(string, false);
-    buffer[0] = '\0';
+    int len = (buf_len > 12) ? 12 : (buf_len - 1);
+    assert (len >= 0);
+    memcpy (buffer, block.contents.t.text, len);
+    buffer[len] = '\0';
+    while (--len >= 0)
+      if (buffer[len] < 32)
+        buffer[len] = '\0';
   }
   return buffer;
 }
@@ -2127,11 +2359,41 @@ static int get_icon_data_length(int window_handle, int icon_handle)
   }
   else
   {
-    char string[1024];
+    char string[64];
     sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
     generror(string, false);
   }
   return length;
+}
+
+
+static char *get_icon_validation (int window_handle, int icon_handle)
+{
+  struct wimp_geticonstate_block block;
+
+  block.window_handle = window_handle;
+  block.icon_handle = icon_handle;
+  _swi (Wimp_GetIconState, _IN(1), &block);
+
+  if ((block.icon_flags & WIMP_ICON_INDIRECTED_BIT) == 0)
+  {
+    char string[64];
+    sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
+    generror(string, false);
+    return 0;
+  }
+
+  if ((block.icon_flags & WIMP_ICON_TEXT_BIT) == 0 ||
+      block.contents.it.validation == 0 ||
+      block.contents.it.validation == (char *)-1)
+  {
+    char string[64];
+    sprintf(string,"Icon %d in window %X has no validation string.",icon_handle,window_handle);
+    generror(string, false);
+    return 0;
+  }
+
+  return block.contents.it.validation;
 }
 
 
@@ -2143,10 +2405,10 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
   va_list args;
   int window_handle;
   char *item;
-  bool exit_loop=false;
+  bool last_item=false;
   int position=7;
   char *pos;
-  bool shaded,dotted,ticked,send_message,last_item;
+  int menu_flags = 0;
 
   if (strlen(title)<12)
   {
@@ -2154,8 +2416,17 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
   }
   else
   {
-    generror("Title string too long (can be fixed, but not important right now)", false);
-    return 0;
+    int length = strlen (title);
+
+    assert (indirected);
+
+    strcpy (indirected, title);
+    menu_defn[0] = (int) indirected;
+    menu_defn[1] = (int) indirected + length;
+    menu_defn[2] = length + 1;
+    indirected += length + 1;
+
+    menu_flags = 1 << 8;	/* indirected menu title */
   }
 
   menu_defn[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
@@ -2167,87 +2438,61 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
 
   item=entries;
 
-  while (!exit_loop)
+  while (!last_item)
   {
-    ticked=false; dotted=false; shaded=false; send_message=false; last_item=false;
+    int icon_flags = WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT |
+		     WIMP_ICON_FILLED_BIT | WIMP_ICON_TEXT_BIT;
+    /* menu_flags is reset at the *end* of the loop -
+     * first time round, there may be an 'indirected title' flag */
+
     window_handle=-1;
     {
       menu_defn[position]=0;
-      while ((*item=='#') || (*item=='.') || (*item=='/') || (*item=='['))
+      item--;
+      for (;;)
       {
-        switch (*item)
+        switch (*++item)
         {
           case '#':
-            shaded=true;
-            break;
+            icon_flags |= WIMP_ICON_SHADED_BIT;
+            continue; /* the for loop */
           case '.':
-            dotted=true;
-            break;
+            menu_flags |= 1 << 1; /* dotted line follows */
+            continue;
           case '/':
-            ticked=true;
-            break;
+            menu_flags |= 1 << 0; /* ticked */
+            continue;
           case '[':
-            send_message=true;
-            break;
+            menu_flags |= 1 << 3; /* submenu => menu warning message */
+            continue;
         }
-        item++;
+        break; /* didn't match anything - exit the loop */
       }
     }
 
-    pos=item+strlen(item)-1;
-    while ((*pos==']') || (*pos=='>') || (*pos=='\\'))
+    pos=item+strlen(item);
+    for (;;)
     {
-      switch (*pos)
+      switch (*--pos)
       {
-        case ']':
-          menu_defn[position] |= 1 << 3;
         case '>':
           window_handle=va_arg(args,int);
-          break;
+          continue;
         case '\\':
           last_item=true;
-          exit_loop=true;
-          break;
+          menu_flags |= 1 << 7;
+          continue;
       }
-      pos--;
+      break;
     }
 
-    if (ticked)
-    {
-      menu_defn[position] |= (1<<0);
-    }
-    if (dotted)
-    {
-      menu_defn[position] |= (1<<1);
-    }
-    if (send_message)
-    {
-      menu_defn[position] |= (1<<3);
-    }
-    if (last_item)
-    {
-      menu_defn[position] |= (1<<7);
-    }
-
-    position++;
-    menu_defn[position]=window_handle;
-    position++;
-
-    menu_defn[position]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | WIMP_ICON_TEXT_BIT;
-    if (strlen(item)>13)
-    {
-      menu_defn[position] |= WIMP_ICON_INDIRECTED_BIT;
-    }
-
-    if (shaded)
-    {
-      menu_defn[position] |= WIMP_ICON_SHADED_BIT;
-    }
-
-    position++;
+    menu_defn[position++] = menu_flags;
+    menu_defn[position++] = window_handle;
 
     if (strlen(item)<13)
     {
+      menu_defn[position++] = icon_flags;
+
       strncpy(((char *) menu_defn)+(position*4),item,pos-item+1);
 
       {
@@ -2259,17 +2504,23 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
     }
     else
     {
+      int length = pos - item + 1;
+
+      menu_defn[position++] = icon_flags | WIMP_ICON_INDIRECTED_BIT;
+
       assert(indirected);
 
-      strncpy(indirected, item, pos-item+1);
-      indirected[pos-item+1]='\0';
+      strncpy(indirected, item, length);
+      indirected[length]='\0';
       menu_defn[position++]=(int) indirected;
-      menu_defn[position++]=(int) indirected+strlen(indirected);
-      menu_defn[position++]=strlen(indirected)+1;
-      indirected+=strlen(indirected)+1;
+      menu_defn[position++]=(int) indirected+length;
+      menu_defn[position++]=length+1;
+      indirected+=length+1;
     }
 
     item=va_arg(args,char *);
+
+    menu_flags=0;
   }
 
   va_end(args);
@@ -2390,7 +2641,7 @@ static void create_terminal_menu(void)
   char *menu_save	    =get_menu_item("Save");
   char *menu_launch_url     =get_grey_menu_item("LaunchURL");
   char *menu_send           =get_menu_item("Send");
-  char *menu_clear          =get_grey_last_menu_item("Clear");
+  char *menu_clear          =get_last_menu_item("Clear");
 
   set_termsize_icons(win_resize, icon_resize_width, icon_resize_height, icon_resize_scroll,\
           terminal_menu_session->terminal_size, terminal_menu_session->scrollback);
@@ -2457,7 +2708,7 @@ static void create_connection_menu(void)
 
 
 
-static void create_terminal_type_menu(void)
+static void create_terminal_type_menu(int window_handle, int text_icon, int by_icon)
 {
   struct wimp_getpointerinfo_block block;
 
@@ -2477,7 +2728,7 @@ static void create_terminal_type_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    create_menu_by_icon (menu_data, win_open, icon_open_termtypebut);
+    create_menu_by_icon (menu_data, window_handle, by_icon);
   }
 
   free(menu_title);
@@ -2492,6 +2743,34 @@ static void create_terminal_type_menu(void)
   free(menu_term8);
 
   menu_open=MENU_TERMINAL_TYPE;
+  menu_window = window_handle;
+  menu_icon = text_icon;
+}
+
+
+
+static void create_lineeditor_type_menu(void)
+{
+  struct wimp_getpointerinfo_block block;
+
+  char *menu_title = get_menu_item("LineEd");
+  char *menu_line0 = get_menu_item("LineEd0");
+  char *menu_line1 = get_menu_item("LineEd1");
+  char *menu_line2 = get_last_menu_item("LineEd2");
+
+  if (create_menu (menu_data, 0, menu_title, menu_line0, menu_line1, menu_line2))
+  {
+    _swi(Wimp_GetPointerInfo, _IN(1), &block);
+
+    create_menu_by_icon (menu_data, win_paneterm, 17);
+  }
+
+  free (menu_title);
+  free (menu_line0);
+  free (menu_line1);
+  free (menu_line2);
+
+  menu_open=MENU_LINEED_TYPE;
 }
 
 
@@ -2594,6 +2873,8 @@ static void open_open_window(bool open_window_flag)
 {
   char string[MESSAGE_MAX_CONNECTION];
   int connection_type;
+
+  set_icon_data(win_open, icon_open_termtype, terminal_name[default_terminal]);
 
   read_icon_data(win_open, icon_open_contype, string, MESSAGE_MAX_CONNECTION);
 
@@ -2705,11 +2986,26 @@ static void open_choices_window(void)
     set_icon_data(win_paneterm, icon_paneterm_lineedittype, lookup(string_lineedit, string, sizeof(string)));
   }
 
+  /* Set panecol type options */
+  {
+    int loop;
+
+    for (loop = 15; loop >= 0; --loop)
+      set_colour_icon (loop, palette[loop], false);
+  }
+
+  /* Set panehot type options */
+
   set_icon_data(win_paneterm, icon_paneterm_hifont, zap_font);
   set_icon_data(win_paneterm, icon_paneterm_lofont, zap_lowres_font);
 
-  open_window_centred(win_choices);
-  set_caret_position(win_paneterm, icon_paneterm_termwidth, -1, get_icon_data_length(win_paneterm, icon_paneterm_termwidth));
+  if (win_is_open(win_choices))
+    open_window(NULL, win_choices);
+  else
+  {
+    open_window_centred(win_choices);
+    set_caret_position(win_paneterm, icon_paneterm_termwidth, -1, get_icon_data_length(win_paneterm, icon_paneterm_termwidth));
+  }
 }
 
 static bool win_choices_read(int save)
@@ -2750,23 +3046,6 @@ static bool win_choices_read(int save)
 
   new_line_editor_size = atoi (read_icon_data (win_paneterm, icon_paneterm_lineeditor, string, sizeof (string)));
 
-  if (new_termsize.x < MIN_TERMINAL_WIDTH || new_termsize.x > MAX_TERMINAL_WIDTH)
-  {
-    generror("BadTermSize", true);
-    return false;
-  }
-
-  if (new_termsize.y < MIN_TERMINAL_HEIGHT || new_termsize.y > MAX_TERMINAL_HEIGHT)
-  {
-    generror("BadTermSize", true);
-    return false;
-  }
-
-  if (new_scrollback < 1 || new_scrollback > MAX_SCROLLBACK_SIZE)
-  {
-    generror("BadTermSize", true);
-    return false;
-  }
 
   if (new_line_editor_size < 1 || new_line_editor_size > MAX_LINE_EDITOR_SIZE)
   {
@@ -2778,6 +3057,18 @@ static bool win_choices_read(int save)
   strcpy(zap_lowres_font, read_icon_data(win_paneterm, icon_paneterm_lofont, string, sizeof(string)));
 
   /* Read panecols type options */
+  {
+    int loop;
+    for (loop=15; loop>=0; loop--)
+    {
+      palette[loop] = get_colour_icon(loop);
+    }
+
+    _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette, zap_palette, 16);
+    redraw_all_sessions(false);
+  }
+
+  /* Read panehot type options */
 
 
   /* make the choices in the new_* variables permanent */
@@ -2787,6 +3078,68 @@ static bool win_choices_read(int save)
 
   /* if we're saving, save now */
   return save ? save_choices () : true;
+}
+
+static void set_colour_icon(int colour_handle, colour_t colour, bool is_an_icon)
+{
+  int icon_handle=-1;
+  char *validation;
+
+  if (is_an_icon)
+  {
+    icon_handle=colour_handle;
+  }
+  else
+  {
+    if (colour_handle>=0 && colour_handle<=7)
+      icon_handle=colour_handle;
+
+    if (colour_handle>=8 && colour_handle<=15)
+      icon_handle=colour_handle-8+icon_panecols_bold0;
+  }
+
+  if (icon_handle==-1)
+  {
+    char string[64];
+
+    sprintf(string,"Failed to set icon handle for set_colour_icon (colour_handle %d)",colour_handle);
+    generror(string,false);
+    return;
+  }
+
+  validation = get_icon_validation (win_panecols, icon_handle);
+
+  /* Get around different lengths of initial validation strings */
+  if (colour_handle<8)
+    sprintf (validation + 11, "%6lX", colour >> 8);
+  else
+    sprintf (validation + 12, "%6lX", colour >> 8);
+
+  set_icon_state (win_panecols, icon_handle, 0, 0);
+}
+
+static colour_t get_colour_icon(int colour_handle)
+{
+  int icon_handle=-1;
+  const char *validation;
+  colour_t colour;
+
+  if (colour_handle>=0 && colour_handle<=7)
+    icon_handle=colour_handle;
+
+  if (colour_handle>=8 && colour_handle<=15)
+    icon_handle=colour_handle-8+icon_panecols_bold0;
+
+  if (icon_handle==-1)
+  {
+    generror("Failed to set icon handle for get_colour_icon",false);
+    return (colour_t) 0;
+  }
+
+  validation = get_icon_validation (win_panecols, icon_handle);
+  colour = 0;
+  sscanf (validation + 5, "%6X", &colour);
+  return (colour << 8);
 }
 
 void create_menu_by_icon (int *menu, int window, int icon)
@@ -2846,9 +3199,9 @@ bool read_termsize_icons (int window_handle, int xicon, int yicon, int sicon,
   tmpsize.y = atoi (read_icon_data (window_handle, yicon, string, sizeof (string)));
   tmpscroll = atoi (read_icon_data (window_handle, sicon, string, sizeof (string)));
 
-  if (tmpsize.x < 1 || tmpsize.x > 512 ||
-      tmpsize.y < 1 || tmpsize.y > 512 ||
-      tmpscroll < 0 || tmpscroll > 65535)
+  if (tmpsize.x < MIN_TERMINAL_WIDTH || tmpsize.x > MAX_TERMINAL_WIDTH ||
+      tmpsize.y < MIN_TERMINAL_HEIGHT || tmpsize.y > MAX_TERMINAL_HEIGHT ||
+      tmpscroll < 0 || tmpscroll > MAX_SCROLLBACK_SIZE)
   {
     generror ("BadTermSize", true);
     return false;
@@ -2857,6 +3210,22 @@ bool read_termsize_icons (int window_handle, int xicon, int yicon, int sicon,
   *size = tmpsize;
   *scrollback = tmpscroll;
   return true;
+}
+
+int read_lineeditor_type (int window_handle, int icon_handle)
+{
+  char string[32]; /* overkill */
+  char token[] = "LineEd0";
+  int loop;
+
+  read_icon_data (window_handle, icon_handle, string, sizeof (string));
+  for (loop = 0; loop < LINEEDIT_NUM_TYPES; loop++)
+  {
+    token[6] = '0' + loop;
+    if (! strcmp (string, lookup_static (token)))
+      return loop;
+  }
+  return LINEEDIT_NONE;
 }
 
 enum nettle_terminal read_terminal_type (int window_handle, int icon_handle)

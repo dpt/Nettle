@@ -235,18 +235,16 @@ static void load_templates(void)
   set_icon_data(win_info,icon_info_purpose,lookup("AppPurpose", info_data, sizeof(info_data)));
 
   win_choices=load_template(LOAD_TEMPLATE_NO_FONTS,"choices",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
-  set_icon_state(win_choices, icon_choices_colour, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
   set_icon_state(win_choices, icon_choices_hotlist, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
 
   win_paneterm=load_template(LOAD_TEMPLATE_NO_FONTS,"paneterm",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
-  win_panefonts=load_template(LOAD_TEMPLATE_NO_FONTS,"panecols",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+  win_panecols=load_template(LOAD_TEMPLATE_NO_FONTS,"panecols",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   win_panehot=load_template(LOAD_TEMPLATE_NO_FONTS,"panehot",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   win_open=load_template(LOAD_TEMPLATE_NO_FONTS,"open",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
   set_icon_data(win_open,icon_open_contype,lookup("Telnet", info_data, sizeof(info_data)));
-  /* set_icon_data(win_open,icon_open_termtype,terminal_name[default_terminal]);*/
 
   win_resize=load_template(LOAD_TEMPLATE_NO_FONTS,"resize",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 

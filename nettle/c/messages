@@ -67,10 +67,6 @@ char *lookup(const char *token, char *buffer, int buf_size)
   assert(buffer != NULL);
   assert(buf_size > 0);
 
-  /*_swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer, buf_size);*/
-
-  /* Not quite sure what this is doing, but if it's doing what I think it's doing, I don't */
-  /* see why it's doing it... */
   if (_swix(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer, buf_size))
     strncpy(buffer, token, buf_size - 1); /* error trap */
 
@@ -85,9 +81,6 @@ const char *lookup_static(const char *token)
   static char buffer[256];
   assert(token != NULL);
 
-  /*_swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer,
-                                                         sizeof (buffer));*/
-  /* Again here */
   if (_swix(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer, sizeof (buffer)))
     strncpy (buffer, token, sizeof (buffer) - 1); /* error trap */
 

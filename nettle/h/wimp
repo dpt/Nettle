@@ -54,7 +54,7 @@ extern void force_redraw(int,int,int,int,int);
 extern void create_menu_by_icon(int *menu, int window, int icon);
 extern void set_termsize_icons(int, int, int, int, struct coords, int);
 extern bool read_termsize_icons(int, int, int, int, struct coords *, int *);
-
+extern int read_lineeditor_type (int, int);
 extern enum nettle_terminal read_terminal_type (int, int);
 
 #endif
