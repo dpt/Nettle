@@ -34,7 +34,9 @@ void closedown_application(void)
 
   close_log();
 
+#ifdef FORTIFY
   Fortify_LeaveScope();
+#endif
 
   _kernel_swi(Wimp_CloseDown, &regs, &regs);
 
