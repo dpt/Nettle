@@ -74,10 +74,6 @@ int drag_icon_handle;
 
 int pane_attached_session;
 
-const char *line_editor_buffer_indirected="Pptr_write";
-const char *line_editor_icon_text="";
-const char *line_editor_icon_sprite="Soptoff,opton";
-
 char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};
 
 union wimp_poll_block wimp_block;

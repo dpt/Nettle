@@ -12,6 +12,9 @@
 
 #define MAX_TAB_NUMBER		32
 
+#define min(x,y) ((x)<(y)?(x):(y))
+#define max(x,y) ((x)>(y)?(x):(y))
+
 extern const char *application_name;
 extern const char *application_icon_name;
 extern bool quit_flag;
@@ -127,11 +130,6 @@ extern struct session_struct *terminal_menu_session;
 
 extern int drag_window_handle;
 extern int drag_icon_handle;
-
-extern char line_editor_buffer[512];
-extern const char *line_editor_buffer_indirected;
-extern const char *line_editor_icon_text;
-extern const char *line_editor_icon_sprite;
 
 extern char terminal_name[8][6];
 

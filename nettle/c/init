@@ -20,12 +20,12 @@ void initialise_wimp(void)
 {
   static int messages[] =
   {
-    2,       /* DataSaveAck */
-    0x400c1, /* ModeChange */
-    0x808c1, /* TW_Output */
-    0x808c2, /* TW_Ego */
-    0x808c3, /* TW_Morio */
-    0        /* Quit */
+    WIMP_MESSAGE_DATASAVEACK,
+    WIMP_MESSAGE_MODECHANGE,
+    WIMP_MESSAGE_TASKWINDOW_OUTPUT,
+    WIMP_MESSAGE_TASKWINDOW_EGO,
+    WIMP_MESSAGE_TASKWINDOW_MORIO,
+    WIMP_MESSAGE_QUIT
   };
 
   _swi(Wimp_Initialise, _INR(0,3)|_OUT(1), 310, 0x4b534154,
@@ -93,7 +93,7 @@ void load_sprites(void)
   _swi(OS_File, _INR(0,1)|_OUT(0)|_OUT(4), 17, file_name, &obj_type, &obj_size);
   if (obj_type == 1)
   {
-    obj_size += 64;
+    obj_size += 16;
 
     /* malloc a block big enough for it */
     sprite_area = malloc(obj_size);
@@ -397,7 +397,8 @@ void create_icon_bar_icon(void)
   block.miny         =0;  /* min y */
   block.maxx         =68; /* max x */
   block.maxy         =68; /* max y */
-  block.icon_flags   =0x1700301a;
+  block.icon_flags   =WIMP_ICON_BGCOL(1) | WIMP_ICON_FGCOL(7) | WIMP_ICON_TYPE(3) | \
+                      WIMP_ICON_VCENT_BIT | WIMP_ICON_HCENT_BIT | WIMP_ICON_SPRITE_BIT ;
 
   strcpy(block.contents.t.text, application_icon_name);
 

@@ -6,6 +6,7 @@
  */
 
 #include <assert.h>
+#include <math.h>
 
 #include "generic.h"
 #include "globals.h"
@@ -14,6 +15,10 @@
 #include "misc.h"
 #include "wimp.h"
 
+
+static char line_editor_buffer_indirected[]="Pptr_write";
+static char line_editor_icon_text[]="";
+static char line_editor_icon_sprite[]="Soptoff,opton";
 
 static void create_line_editor_icons(struct session_struct *session, int width)
 {
@@ -43,7 +48,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
 
     _swi(Wimp_GetIconState, _IN(1), &block);
 
-    if (block.icon_flags & (1<<23))
+    if (block.icon_flags & WIMP_ICON_DELETED_BIT)
     {
       old_width=0;
       selected=true;
@@ -55,7 +60,7 @@ static void create_line_editor_icons(struct session_struct *session, int width)
       if (width==old_width)
         return;
 
-      if (block.icon_flags & (1<<21))
+      if (block.icon_flags & WIMP_ICON_SELECTED_BIT)
         selected=true;
       else
         selected=false;
@@ -80,18 +85,15 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     block.miny         =-48;
     block.maxx         =width;
     block.maxy         =0;
-
+    block.icon_flags   =WIMP_ICON_BGCOL(1) | WIMP_ICON_TYPE(11) | WIMP_ICON_INDIRECTED_BIT | \
+                        WIMP_ICON_VCENT_BIT | WIMP_ICON_TEXT_BIT | WIMP_ICON_SPRITE_BIT;
     if (selected)
     {
-      block.icon_flags =0x1720B113;
+      block.icon_flags |= WIMP_ICON_SELECTED_BIT;
     }
-    else
-    {
-      block.icon_flags =0x1700B113;
-    }
-    block.contents.it.text         =(char *) line_editor_icon_text;
-    block.contents.it.validation   =(char *) line_editor_icon_sprite;
-    block.contents.it.text_len     =1;
+    block.contents.it.text         =line_editor_icon_text;
+    block.contents.it.validation   =line_editor_icon_sprite;
+    block.contents.it.text_len     =sizeof(line_editor_icon_text);
 
     _swi(Wimp_CreateIcon, _IN(1), &block);
 
@@ -100,29 +102,24 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     block.miny         =-52;
     block.maxx         =width-54;
     block.maxy         =4;
-    if (selected)
+    block.icon_flags   =WIMP_ICON_FGCOL(7) | WIMP_ICON_TYPE(15) | \
+                        WIMP_ICON_INDIRECTED_BIT | WIMP_ICON_FILLED_BIT | \
+		        WIMP_ICON_VCENT_BIT | WIMP_ICON_BORDER_BIT | WIMP_ICON_TEXT_BIT;
+    if (selected==false)
     {
-      block.icon_flags =0x0700f135;
+    	block.icon_flags |= WIMP_ICON_DELETED_BIT;
     }
-    else
-    {
-      block.icon_flags =0x0780f135;
-    }
+
     block.contents.it.text      =session->line_editor_buffer;
-    block.contents.it.validation=(char *) line_editor_buffer_indirected;
-    block.contents.it.text_len  =512;
+    block.contents.it.validation=line_editor_buffer_indirected;
+    block.contents.it.text_len  =sizeof(session->line_editor_buffer);
 
     _swi(Wimp_CreateIcon, _IN(1), &block);
   }
 
-  if (width<old_width)
+  if (width != old_width)
   {
-    force_redraw(session->pane_handle,width-56,-48,old_width,0);
-  }
-
-  if (width>old_width)
-  {
-    force_redraw(session->pane_handle,old_width-56,-48,width,0);
+    force_redraw(session->pane_handle, min(width,old_width)-56, -48, max(width,old_width), 0);
   }
 
   if (caret_window_handle==session->pane_handle)

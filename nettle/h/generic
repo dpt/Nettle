@@ -265,4 +265,33 @@ struct wimp_seticonstate_block
   int clear;
 };
 
+#define WIMP_ICON_TEXT_BIT       (1<<0)
+#define WIMP_ICON_SPRITE_BIT     (1<<1)
+#define WIMP_ICON_BORDER_BIT     (1<<2)
+#define WIMP_ICON_HCENT_BIT      (1<<3)
+#define WIMP_ICON_VCENT_BIT      (1<<4)
+#define WIMP_ICON_FILLED_BIT     (1<<5)
+#define WIMP_ICON_FONT_BIT       (1<<6)
+#define WIMP_ICON_HELP_BIT       (1<<7)
+#define WIMP_ICON_INDIRECTED_BIT (1<<8)
+#define WIMP_ICON_RJUSTIFY_BIT   (1<<9)
+#define WIMP_ICON_ADJUST_BIT     (1<<10)
+#define WIMP_ICON_HALFSIZE_BIT   (1<<11)
+#define WIMP_ICON_TYPE(x)        ((x)<<12)
+#define WIMP_ICON_ESG(x)         ((x)<<16)
+#define WIMP_ICON_SELECTED_BIT   (1<<21)
+#define WIMP_ICON_SHADED_BIT     (1<<22)
+#define WIMP_ICON_DELETED_BIT    (1<<23)
+#define WIMP_ICON_FGCOL(x)       ((x)<<24)
+#define WIMP_ICON_BGCOL(x)       ((x)<<28)
+#define WIMP_ICON_FHANDLE(x)     ((x)<<24)
+
+#define WIMP_MESSAGE_QUIT                    0
+#define WIMP_MESSAGE_DATASAVEACK             2
+#define WIMP_MESSAGE_MODECHANGE        0x400c1
+#define WIMP_MESSAGE_TASKWINDOW_OUTPUT 0x808c1
+#define WIMP_MESSAGE_TASKWINDOW_EGO    0x808c2
+#define WIMP_MESSAGE_TASKWINDOW_MORIO  0x808c3
+
+
 #endif

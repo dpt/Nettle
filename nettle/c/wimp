@@ -1138,10 +1138,11 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
 {
   switch (message_number)
   {
-    case 0: /* Quit */
+    case WIMP_MESSAGE_QUIT:
       quit_flag=true;
       break;
-    case 2: /* DataSaveAck */
+
+    case WIMP_MESSAGE_DATASAVEACK:
       {
         char string[1024];
 
@@ -1178,10 +1179,12 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         _swi(Wimp_CreateMenu, _IN(1), -1);
       }
       break;
-    case 0x400C1: /* Mode change */
+
+    case WIMP_MESSAGE_MODECHANGE:
       mode_change();
       break;
-    case 0x808C1: /* Task window data */
+
+    case WIMP_MESSAGE_TASKWINDOW_OUTPUT:
       {
         struct session_struct *session = sessions;
 
@@ -1204,7 +1207,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         _swi(Wimp_SendMessage, _INR(0,2), 19, &wimp_block, sender_ref);
       }
       break;
-    case 0x808C2: /* Task window started */
+    case WIMP_MESSAGE_TASKWINDOW_EGO:
       {
         struct session_struct *session = sessions;
         int s_count = 0;
@@ -1223,7 +1226,8 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         }
       }
       break;
-    case 0x808C3: /* Task window terminated */
+
+    case WIMP_MESSAGE_TASKWINDOW_MORIO:
       {
         struct session_struct *session = sessions;
 
@@ -1491,7 +1495,7 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
   int window_handle;
   char *item;
   bool exit_loop=false;
-  int position=28;
+  int position=7;
   char *pos;
   bool shaded,dotted,ticked,send_message,last_item;
 
@@ -1505,7 +1509,7 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
     return 0;
   }
 
-  menu_defn[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24);
+  menu_defn[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
   menu_defn[4]=0;
   menu_defn[5]=44;
   menu_defn[6]=0;
@@ -1519,7 +1523,7 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
     ticked=false; dotted=false; shaded=false; send_message=false; last_item=false;
     window_handle=-1;
     {
-      menu_defn[position/4]=0;
+      menu_defn[position]=0;
       while ((*item=='#') || (*item=='.') || (*item=='/') || (*item=='['))
       {
         switch (*item)
@@ -1559,62 +1563,59 @@ static int *create_menu(int *menu_defn, char *indirected, char *title, char *ent
 
     if (ticked)
     {
-      menu_defn[position/4]=menu_defn[position/4] | (1<<0);
+      menu_defn[position] |= (1<<0);
     }
     if (dotted)
     {
-      menu_defn[position/4]=menu_defn[position/4] | (1<<1);
+      menu_defn[position] |= (1<<1);
     }
     if (send_message)
     {
-      menu_defn[position/4]=menu_defn[position/4] | (1<<3);
+      menu_defn[position] |= (1<<3);
     }
     if (last_item)
     {
-      menu_defn[position/4]=menu_defn[position/4] | (1<<7);
+      menu_defn[position] |= (1<<7);
     }
 
-    position+=4;
-    menu_defn[position/4]=window_handle;
-    position+=4;
+    position++;
+    menu_defn[position]=window_handle;
+    position++;
 
-    if (strlen(item)<13)
+    menu_defn[position]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | WIMP_ICON_TEXT_BIT;
+    if (strlen(item)>13)
     {
-      menu_defn[position/4]=0x7000031;
-    }
-    else
-    {
-      menu_defn[position/4]=0x7000131;
+      menu_defn[position] |= WIMP_ICON_INDIRECTED_BIT;
     }
 
     if (shaded)
     {
-      menu_defn[position/4]=menu_defn[position/4] | (1<<22);
+      menu_defn[position] |= WIMP_ICON_SHADED_BIT;
     }
 
-    position+=4;
+    position++;
 
     if (strlen(item)<13)
     {
-      strncpy((char *) menu_defn+position,item,pos-item+1);
+      strncpy((char *) menu_defn+(position*4),item,pos-item+1);
 
       {
         char *menu_data_char=(char *) menu_defn;
-        menu_data_char[position+pos-item+1]='\0';
+        menu_data_char[(position*4)+pos-item+1]='\0';
       }
 
-      position+=4;
+      position++;
     }
     else
     {
       strncpy(indirected, item, pos-item+1);
       indirected[pos-item+1]='\0';
-      menu_defn[position/4]=(int) indirected;
-      position+=4;
-      menu_defn[position/4]=strlen(indirected);
+      menu_defn[position]=(int) indirected;
+      position++;
+      menu_defn[position]=strlen(indirected);
       indirected+=strlen(indirected);
     }
-    position+=8;
+    position+=2;
 
     item=va_arg(args,char *);
   }
@@ -1955,14 +1956,14 @@ static void open_open_window(bool open_window_flag)
     case NETTLE_TELNET:
       block.window_handle=win_open;
       block.icon_handle  =7; /* Command icon */
-      block.eor          =1<<22;
-      block.clear        =1<<22;
+      block.eor          =WIMP_ICON_SHADED_BIT;
+      block.clear        =WIMP_ICON_SHADED_BIT;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
       block.window_handle=win_open;
       block.icon_handle  =0; /* Host icon */
       block.eor          =0;
-      block.clear        =1<<22;
+      block.clear        =WIMP_ICON_SHADED_BIT;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
       break;
@@ -1971,13 +1972,13 @@ static void open_open_window(bool open_window_flag)
       block.window_handle=win_open;
       block.icon_handle  =7; /* Command icon */
       block.eor          =0;
-      block.clear        =1<<22;
+      block.clear        =WIMP_ICON_SHADED_BIT;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
       block.window_handle=win_open;
       block.icon_handle  =0; /* Host icon */
       block.eor          =0;
-      block.clear        =1<<22;
+      block.clear        =WIMP_ICON_SHADED_BIT;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
       break;
@@ -1986,13 +1987,13 @@ static void open_open_window(bool open_window_flag)
       block.window_handle=win_open;
       block.icon_handle  =7; /* Command icon */
       block.eor          =0;
-      block.clear        =1<<22;
+      block.clear        =WIMP_ICON_SHADED_BIT;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
       block.window_handle=win_open;
       block.icon_handle  =0;     /* Host icon */
-      block.eor          =1<<22;
-      block.clear        =1<<22;
+      block.eor          =WIMP_ICON_SHADED_BIT;
+      block.clear        =WIMP_ICON_SHADED_BIT;
       _swi(Wimp_SetIconState, _IN(1), &block);
 
       break;
