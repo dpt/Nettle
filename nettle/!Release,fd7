@@ -30,6 +30,7 @@ NukeCvs Resources.UK
 
 X Wipe <DestApp>.Fonts.08x16.Default ~CFR~V
 X Wipe <DestApp>.Fonts.08x08.System  ~CFR~V
+X Wipe <DestApp>./cvsignore ~CF~R~V
 
 |Oh this is horrible...
 sed -e "s/><Nettle$Dir>.stdout/>null:/" -e "s/2><Nettle$Dir>.stderr/2>null:/" <This$Dir>.!Nettle.!Run > <DestApp>.!Run
