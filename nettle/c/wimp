@@ -383,6 +383,17 @@ void wimp_nullreasoncode(void)
 
   close_log(false);
 
+  if (resize_handle)
+  {
+    int buttons;
+    _swi(OS_Mouse,_OUT(2),&buttons);
+    if( !buttons )
+    {
+      resize_handle = 0;
+      _swi(Wimp_CloseWindow,_IN(1),&win_sizebar);
+    }
+  }
+
   if (selection_in_progress)
     handle_selection_drag();
 
@@ -427,8 +438,8 @@ void wimp_nullreasoncode(void)
 
         for(;session;session=session->next)
         {
-	  if (session->want_blink)
-	  {
+          if (session->want_blink)
+          {
             force_redraw (session->window_handle,
                         0,
                         (-session->terminal_size.y-session->scrollback) * redraw.r_charh <<eig.y,
@@ -633,32 +644,28 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
 
     if (session->window_needs_resized)
     {
-      /* If we need resized, do it here - opening also happens here, can probably be improved
+      /* If we need to be resized, do it here - opening also happens here
        * -NB this function is also used by the font change code */
       reopen_and_size_window(session, session->terminal_size.x, session->terminal_size.y,
                              session->scrollback, old_charw, old_charh);
       session->window_needs_resized=false;
-      return;
+
+      /* We might need to show the resizer here?  Unsure. */
+      /* resize_handle = block->window_handle; */
     }
 
     /* This is a main "session" window, so handle the pane, if any */
     window.window_handle = block->window_handle;
     _swi (Wimp_GetWindowInfo, _IN(1), 1 + (int) &window); /* no icons */
 
-    if (inkey (KEYBOARD_CTRL) || dont_require_ctrl)
+    if (dont_require_ctrl || inkey(KEYBOARD_CTRL) )
     {
       /* Ctrl pressed (or not) - allow dynamic resizing */
-      int new_x=(block->max.x-block->min.x)/(redraw.r_charw << eig.x);
-      int new_y=(block->max.y-block->min.y)/(redraw.r_charh << eig.y);
+      int new_x=((block->max.x-block->min.x)>>eig.x)/redraw.r_charw;
+      int new_y=((block->max.y-block->min.y)>>eig.y)/redraw.r_charh;
 
-      if ((block->max.x-block->min.x!=session->terminal_size.x*redraw.r_charw << eig.x)
-          || (block->max.y-block->min.y!=session->terminal_size.y*redraw.r_charh << eig.y))
+      if ( (session->terminal_size.x != new_x) || (session->terminal_size.y != new_y) )
       {
-        /* Open the window now, so that when reopen_and_size_window reads the
-         * position, we get the new size
-         */
-        /*_swi(Wimp_OpenWindow, _IN(1), block);*/
-
         resize_terminal(session, new_x, new_y, session->scrollback, true);
 
         /* Refetch the window state as the Wimp may have changed it if it
@@ -666,12 +673,14 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
          */
         _swi(Wimp_GetWindowState, _IN(1), block);
 
-/*#if 0*/
-        block->max.x = block->min.x+(session->terminal_size.x)*(redraw.r_charw << eig.x);
-        block->min.y = block->max.y-(session->terminal_size.y)*(redraw.r_charh << eig.y);
-        block->scroll.y =-(session->terminal_size.y+session->scrollback)*(redraw.r_charh << eig.y);
-/*#endif*/
+        resize_handle = block->window_handle;
       }
+
+      block->max.x = block->min.x+(session->terminal_size.x)*(redraw.r_charw << eig.x);
+      block->min.y = block->max.y-(session->terminal_size.y)*(redraw.r_charh << eig.y);
+
+      /*  Why did we do this?  */
+      /* block->scroll.y =-(session->terminal_size.y+session->scrollback)*(redraw.r_charh << eig.y); */
     }
     else
     {
@@ -702,6 +711,29 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
       open_pane_window(session, (struct wimp_openwindow_block *) block);
       block->handle_behind = session->pane_handle;
     }
+       
+    _swi(Wimp_OpenWindow, _IN(1), block);
+
+    if ( block->window_handle == resize_handle )
+    {
+       struct wimp_getwindowstate_block bar;
+       char size[16];
+
+       sprintf(size, "%dx%d", session->terminal_size.x, session->terminal_size.y);
+       set_icon_data(win_sizebar, icon_sizebar_size, size);
+
+       bar.window_handle = win_sizebar;
+       _swi (Wimp_GetWindowState, _IN(1), &bar);
+       
+       bar.min.x = block->max.x - ( bar.max.x - bar.min.x );
+       bar.max.x = block->max.x;
+       bar.min.y = block->min.y - ( bar.max.y - bar.min.y );
+       bar.max.y = block->min.y;
+       
+       _swi(Wimp_OpenWindow, _INR(1,4), &bar, 0x4b534154 /* "TASK" */, resize_handle, 1<<24 );
+    }
+    
+    return;
   }
 
   _swi(Wimp_OpenWindow, _IN(1), block);
