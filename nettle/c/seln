@@ -8,12 +8,13 @@
 #include "generic.h"
 #include "globals.h"
 
+#include "messages.h"
 #include "misc.h"
 #include "nettle.h"
 #include "seln.h"
+#include "socket.h"
 #include "wimp.h"
 #include "zapredraw.h"
-#include "messages.h"
 
 void refresh_selection_set(void)
 {
@@ -375,5 +376,59 @@ void force_redraw_selection (void)
   	          (-bottom - 1) * redraw.r_charh << eig.y,
     		  selection_session->terminal_size.x * redraw.r_charw << eig.x,
 		  -top * redraw.r_charh << eig.y);
+  }
+}
+
+
+
+void selection_paste(void)
+{
+  char    buffer[1024];
+  char   *bufferptr;
+  int     loop_start;
+  int     loop_end;
+  int     loop;
+  
+  if (selection_session == NULL)
+    return;
+  
+  loop_start = MIN(selection_start, selection_end);
+  loop_end   = MAX(selection_start, selection_end);
+  
+  bufferptr = buffer;
+  
+  for (loop=loop_start*4; loop<loop_end*4; loop+=4)
+  {
+    if (loop!=loop_start*4)
+    {
+      if ((loop % (selection_session->terminal_size.x*4))==0)
+      {
+        *bufferptr++ = '\r';
+        *bufferptr++ = '\n';
+      }
+    }
+    
+    *bufferptr++ = read_assigned_character(selection_session,loop);
+    if (bufferptr - buffer >= sizeof(buffer) - 3)
+    {
+      /* less than three characters spare in the buffer, flush it */
+      if (socket_senddata(selection_session->socket_handle,
+                          buffer,
+                          bufferptr - buffer) != bufferptr - buffer)
+      {
+        generror("Socket error writing selection", false);
+        return;
+      }
+      bufferptr = buffer;
+    }
+  }
+  
+  /* flush any data left in the buffer */
+  if (socket_senddata(selection_session->socket_handle,
+                      buffer,
+                      bufferptr - buffer) != bufferptr - buffer)
+  {
+    generror("Socket error writing selection", false);
+    return;
   }
 }

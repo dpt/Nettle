@@ -106,7 +106,7 @@ int main(void)
         break;
       case 9:
         /* menu selection */
-        menu_choice(wimp_block.menu_selection.menu);
+        wimp_menuchoice(wimp_block.menu_selection.menu);
         break;
       case 11:
         /* lose caret */

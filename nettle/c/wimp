@@ -1141,7 +1141,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
 
 /* Menu selection */
 
-void menu_choice(int *selection)
+void wimp_menuchoice(int *selection)
 {
   switch (menu_open)
   {
@@ -1172,9 +1172,19 @@ void menu_choice(int *selection)
     case MENU_TERMINAL:
       switch (selection[0])
       {
-        case 0:
+        case 0: /* selection menu */
           switch (selection[1])
           {
+            case 0: /* save selection */
+              break;
+            
+            case 1: /* launch url */
+              break;
+              
+            case 2: /* send */
+              selection_paste();
+              break;
+              
             case 3:
               {
                 /* Clear selection */
@@ -2100,7 +2110,7 @@ static void create_terminal_menu(void)
   char *menu_selection_title=get_menu_item("Selection");
   char *menu_save	    =get_menu_item("Save");
   char *menu_launch_url     =get_grey_menu_item("LaunchURL");
-  char *menu_send           =get_grey_menu_item("Send");
+  char *menu_send           =get_menu_item("Send");
   char *menu_clear          =get_grey_last_menu_item("Clear");
 
   set_termsize_icons(win_resize, 0, 2, 4, terminal_menu_session->terminal_size,
