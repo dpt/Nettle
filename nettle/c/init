@@ -36,7 +36,7 @@ void load_messages(void)
   int size_of_messagetrans_buffer;
 
   // Get the country - if it has null length, then default to UK
-  if (strlen(get_country(country))==0)
+  if (strlen(get_country(country, sizeof(country)))==0)
     strcpy(country,"UK");
 
   // put together filename
@@ -167,7 +167,7 @@ void open_template(void)
     use_3d_templates=true;
 
   // Again, set country to UK if we don't know
-  if (strlen(get_country(country))==0)
+  if (strlen(get_country(country, sizeof(country)))==0)
     strcpy(country,"UK");
 
   // Put together filename
