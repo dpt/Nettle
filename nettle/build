@@ -30,9 +30,9 @@ else
 fi
 
 
-rm *.[chs] 2>/dev/null
+rm *.[ch] 2>/dev/null
 
-for i in c h s
+for i in c h
 do
   cd $i
   for j in *
@@ -47,5 +47,5 @@ done
 
 
 make -f MakeCross GCCDIR=$cross_path NETLIB=$INTERNET_PATH LIB=$library && rm *.o
-rm *.[chs]
+rm *.[ch]
 rm ./templheadr
