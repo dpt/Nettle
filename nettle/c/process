@@ -75,7 +75,6 @@ void force_redraw_changedbox (void)
                 -changedbox.tl.y * redraw.r_charh << eig.y);
 }
 
-
 static char status_positive(char iac_type)
 {
   switch (iac_type)
@@ -291,61 +290,101 @@ static void row_shift_right (struct session_struct *session, int chars)
   MEMMOVE (start, start + 4 * chars, end - start - 4 * chars);
 }
 
-
-static void work_out_character(struct session_struct *session, int data, unsigned char byte)
+static void work_out_character_character_set(struct session_struct *session,int character_set,
+                                             int data, unsigned char byte)
 {
-  int character_set;
-
-  switch (session->character_set)
-  {
-    case NETTLE_CHSET_G0:
-    default:
-      character_set=session->character_set_g0;
-      break;
-
-    case NETTLE_CHSET_G1:
-      character_set=session->character_set_g1;
-      break;
-
-    case NETTLE_CHSET_G2:
-      character_set=session->character_set_g2;
-      break;
-
-    case NETTLE_CHSET_G3:
-      character_set=session->character_set_g3;
-      break;
-  }
-
   switch (character_set)
   {
-    case NETTLE_CHSET_GRAPHICS:
+    case NETTLE_CHSET_ASCII:
+      write_assigned_character(session, data, byte);
+      break;
+    case NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS:
+      write_assigned_character(session, data, byte | 0x80);
+      break;
+    case NETTLE_CHSET_UK_NATIONAL:
+      if (byte!='#')
+      {
+        write_assigned_character(session, data, byte);
+      }
+      else
+      {
+        write_assigned_character(session, data, '£');
+      }
+      break;
+    case NETTLE_CHSET_DEC_SPECIAL_GRAPHICS:
       {
         int graphics_byte=dec_graphics_table[byte];
 
         if (graphics_byte<0x100)
         {
-          write_assigned_character(session,data,(char) graphics_byte);
+          write_assigned_character(session, data, (char) graphics_byte);
         }
         else
         {
-          write_assigned_flags(session,data,read_assigned_flags(session,data) | NETTLE_FLAG_PLUS100);
-          write_assigned_character(session,data,(char) graphics_byte-0x100);
+          write_assigned_flags(session, data, read_assigned_flags(session,data) |
+                                                                          NETTLE_FLAG_PLUS100);
+          write_assigned_character(session, data, (char) graphics_byte-0x100);
         }
       }
       break;
-    case NETTLE_CHSET_UK:
-      if (byte!='#')
-      {
-        write_assigned_character(session,data,byte);
-      }
-      else
-      {
-        write_assigned_character(session,data,'£');
-      }
+    case NETTLE_CHSET_DOWNLINE_LOADABLE:
+      write_assigned_character(session, data, byte);
       break;
-    case NETTLE_CHSET_US: case NETTLE_CHSET_ALTROMSTD: case NETTLE_CHSET_ALTROMSPC:
-      write_assigned_character(session,data,byte);
+  }
+}
+
+static void work_out_character(struct session_struct *session, int data, unsigned char byte)
+{
+  int character_set_gl;
+  int character_set_gr;
+
+  switch (session->character_set_gl)
+  {
+    case NETTLE_CHSET_G0:
+    default:
+      character_set_gl=session->character_set_g0;
       break;
+
+    case NETTLE_CHSET_G1:
+      character_set_gl=session->character_set_g1;
+      break;
+
+    case NETTLE_CHSET_G2:
+      character_set_gl=session->character_set_g2;
+      break;
+
+    case NETTLE_CHSET_G3:
+      character_set_gl=session->character_set_g3;
+      break;
+  }
+
+  switch (session->character_set_gr)
+  {
+    case NETTLE_CHSET_G0:
+    default:
+      character_set_gr=session->character_set_g0;
+      break;
+
+    case NETTLE_CHSET_G1:
+      character_set_gr=session->character_set_g1;
+      break;
+
+    case NETTLE_CHSET_G2:
+      character_set_gr=session->character_set_g2;
+      break;
+
+    case NETTLE_CHSET_G3:
+      character_set_gr=session->character_set_g3;
+      break;
+  }
+
+  if (byte<0x80)
+  {
+    work_out_character_character_set(session, character_set_gl, data, byte);
+  }
+  else
+  {
+    work_out_character_character_set(session, character_set_gr, data, byte & 0x7f);
   }
 }
 
@@ -418,12 +457,12 @@ static void byte_carriage_return(struct session_struct *session)
 
 static void byte_shift_out(struct session_struct *session)
 {
-  session->character_set=NETTLE_CHSET_G1;
+  session->character_set_gl=NETTLE_CHSET_G1;
 }
 
 static void byte_shift_in(struct session_struct *session)
 {
-  session->character_set=NETTLE_CHSET_G0;
+  session->character_set_gl=NETTLE_CHSET_G0;
 }
 
 static void byte_device_control_1(struct session_struct *session)
@@ -711,7 +750,8 @@ static bool process_escape_length_2(struct session_struct *session)
             session->old_current_fg=session->current_fg;
             session->old_current_bg=session->current_bg;
             session->old_other_session_flags=session->other_session_flags;
-            session->old_character_set=session->character_set;
+            session->old_character_set_gl=session->character_set_gl;
+            session->old_character_set_gr=session->character_set_gr;
             session->old_character_set_g0=session->character_set_g0;
             session->old_character_set_g1=session->character_set_g1;
             session->old_character_set_g2=session->character_set_g2;
@@ -729,7 +769,8 @@ static bool process_escape_length_2(struct session_struct *session)
             session->current_fg=session->old_current_fg;
             session->current_bg=session->old_current_bg;
             session->other_session_flags=session->old_other_session_flags;
-            session->character_set=session->old_character_set;
+            session->character_set_gl=session->old_character_set_gl;
+            session->character_set_gr=session->old_character_set_gr;
             session->character_set_g0=session->old_character_set_g0;
             session->character_set_g1=session->old_character_set_g1;
             session->character_set_g2=session->old_character_set_g2;
@@ -918,6 +959,9 @@ static bool process_escape_length_2(struct session_struct *session)
         case TELNET_DATAMARK:
           done=true;
           break;
+        case TELNET_GA:
+          done=true;
+          break;
         case TELNET_IAC:
           done=true;
           byte_default(session, 255);
@@ -929,6 +973,96 @@ static bool process_escape_length_2(struct session_struct *session)
   return done;
 }
 
+static void determine_character_set(struct session_struct *session)
+{
+  switch (session->escape_string[2])
+  {
+    case 'B':
+      /* ASCII */
+      switch (session->escape_string[1])
+      {
+        case '(':
+          session->character_set_g0=NETTLE_CHSET_ASCII;
+          break;
+        case ')':
+          session->character_set_g1=NETTLE_CHSET_ASCII;
+          break;
+        case '*':
+          if (session->terminal_mode==2)
+          {
+            session->character_set_g2=NETTLE_CHSET_ASCII;
+          }
+          break;
+        case '+':
+          if (session->terminal_mode==2)
+          {
+            session->character_set_g3=NETTLE_CHSET_ASCII;
+          }
+          break;
+      }
+      break;
+    case '<':
+      /* DEC Supplemental graphics */
+      if (session->terminal_mode==2)
+      {
+        switch (session->escape_string[2])
+        {
+          case '(':
+            session->character_set_g0=NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS;
+            break;
+          case ')':
+            session->character_set_g1=NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS;
+            break;
+          case '*':
+            session->character_set_g2=NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS;
+            break;
+          case '+':
+            session->character_set_g3=NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS;
+            break;
+        }
+      }
+      break;
+    case 'A':
+      /* UK National */
+      if (session->terminal_mode==1)
+      {
+        switch (session->escape_string[1])
+        {
+          case '(':
+            session->character_set_g0=NETTLE_CHSET_UK_NATIONAL;
+            break;
+          case ')':
+            session->character_set_g1=NETTLE_CHSET_UK_NATIONAL;
+            break;
+        }
+      }
+      break;
+    case '0':
+      /* DEC Special Graphics */
+      switch (session->escape_string[1])
+      {
+        case '(':
+          session->character_set_g0=NETTLE_CHSET_DEC_SPECIAL_GRAPHICS;
+          break;
+        case ')':
+          session->character_set_g1=NETTLE_CHSET_DEC_SPECIAL_GRAPHICS;
+          break;
+        case '*':
+          if (session->terminal_mode==2)
+          {
+            session->character_set_g2=NETTLE_CHSET_DEC_SPECIAL_GRAPHICS;
+          }
+          break;
+        case '+':
+          if (session->terminal_mode==2)
+          {
+            session->character_set_g3=NETTLE_CHSET_DEC_SPECIAL_GRAPHICS;
+          }
+          break;
+      }
+      break;
+  }
+}
 
 static bool process_escape_length_3(struct session_struct *session)
 {
@@ -939,20 +1073,8 @@ static bool process_escape_length_3(struct session_struct *session)
     case 27:
       switch (session->escape_string[1])
       {
-        case '(':
-          session->character_set_g0=session->escape_string[2];
-          done=true;
-          break;
-        case ')':
-          session->character_set_g1=session->escape_string[2];
-          done=true;
-          break;
-        case '*':
-          session->character_set_g2=session->escape_string[2];
-          done=true;
-          break;
-        case '+':
-          session->character_set_g3=session->escape_string[2];
+        case '(': case ')': case '*': case '+':
+          determine_character_set(session);
           done=true;
           break;
         case '#':
@@ -1501,14 +1623,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                     strcpy(block,"\x1B[?6x;1;6c");
 
-                    if (session->terminal_type<2)
-                    {
-                      block[4]='1';
-                    }
-                    else
-                    {
-                      block[4]='2';
-                    }
+                    block[4]=session->terminal_mode+48;
 
                     nettle_senddata(session,block,strlen(block));
                   }
@@ -1534,8 +1649,7 @@ static bool process_escape_length_x(struct session_struct *session)
                       int loop2;
                       for (loop2=loop+1; loop2<session->number_of_tabs; loop2++)
                       {
-                        session->tabs[loop2-1]=
-                        				     session->tabs[loop2];
+                        session->tabs[loop2-1]=session->tabs[loop2];
                       }
                       session->number_of_tabs--;
                     }
@@ -1865,11 +1979,48 @@ static bool process_escape_length_x(struct session_struct *session)
               break;
             case 'p':
               done=true;
-              switch (session->escape_string[2])
+              switch (session->escape_string[session->escape_string_length-2])
               {
                 case '!':
                   /* Soft Reset terminal */
                   reset_terminal(session);
+                  break;
+                case '\"':
+                  {
+                    int loop=2;
+                    while (loop<session->escape_string_length-1)
+                    {
+                      char string[256]="";
+                      while(session->escape_string[loop]!=';' &&
+                            session->escape_string[loop]!='\"')
+                      {
+                        string[strlen(string)+1]='\0';
+                        string[strlen(string)]=session->escape_string[loop];
+                        loop++;
+                      }
+                      loop++;
+
+                      switch (atoi(string))
+                      {
+                        case 61:
+                          /* Set terminal to level 1 compatibility (VT100 mode) */
+                          session->terminal_mode=1;
+                          break;
+                        case 62:
+                          /* Set terminal to level 2 compatibility (VT200 mode) */
+                          session->terminal_mode=2;
+                          break;
+                        case 0: case 2:
+                          /* Set terminal to 8-bit mode */
+                          session->bit_controls=true;
+                          break;
+                        case 1:
+                          /* Set terminal to 7-bit mode */
+                          session->bit_controls=false;
+                          break;
+                      }
+                    }
+                  }
                   break;
               }
               break;
@@ -2082,6 +2233,10 @@ void process_data(struct session_struct *session, char byte)
     {
       /* VT codes */
       case 0:   byte_null                  (session); break;
+      case 1:                                         break;
+      case 2:                                         break;
+      case 3:                                         break;
+      case 4:                                         break;
       case 5:   byte_enquiry               (session); break;
       case 7:   byte_bell                  (session); break;
       case 8:   byte_backspace             (session); break;
@@ -2092,23 +2247,58 @@ void process_data(struct session_struct *session, char byte)
       case 13:  byte_carriage_return       (session); break;
       case 14:  byte_shift_out             (session); break;
       case 15:  byte_shift_in              (session); break;
+      case 16:                                        break;
       case 17:  byte_device_control_1      (session); break;
+      case 18:                                        break;
       case 19:  byte_device_control_3      (session); break;
+      case 20:                                        break;
+      case 21:                                        break;
+      case 22:                                        break;
+      case 23:                                        break;
       case 24:  byte_cancel                (session); break;
+      case 25:                                        break;
       case 26:  byte_substitute            (session); break;
       case 27:  byte_escape                (session); break;
+      case 28:                                        break;
+      case 29:                                        break;
+      case 30:                                        break;
+      case 31:                                        break;
       case 127: byte_delete                (session); break;
 
       /* VT C1 codes */
+      case 128:                                       break;
+      case 129:                                       break;
+      case 130:                                       break;
+      case 131:                                       break;
       case 132: byte_index		   (session); break;
       case 133: byte_next_line		   (session); break;
+      case 134:                                       break;
+      case 135:                                       break;
       case 136: byte_horizontal_tab_set    (session); break;
+      case 137:                                       break;
+      case 138:                                       break;
+      case 139:                                       break;
+      case 140:                                       break;
       case 141: byte_reverse_index         (session); break;
       case 142: byte_single_shift_g2       (session); break;
       case 143: byte_single_shift_g3       (session); break;
       case 144: byte_device_control_string (session); break;
+      case 145:                                       break;
+      case 146:                                       break;
+      case 147:                                       break;
+      case 148:                                       break;
+      case 149:                                       break;
+      case 150:                                       break;
+      case 151:                                       break;
+      case 152:                                       break;
+      case 153:                                       break;
+      case 154:                                       break;
       case 155: byte_control_sequence_intro(session); break;
       case 156: byte_string_terminator     (session); break;
+      case 157:                                       break;
+      case 158:                                       break;
+      case 159:                                       break;
+      case 160:                                       break;
 
       /* Telnet codes */
       case 255: byte_telnet                (session); break;

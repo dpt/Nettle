@@ -124,23 +124,27 @@ struct session_struct
   char old_current_bg;		/* old bg colour */
   int old_current_flags;	/* old current flags */
   int old_other_session_flags;  /* old other session flags */
-  char old_character_set;	/* old character set */
-  char old_character_set_g0;	/* old character set G0 */
-  char old_character_set_g1;	/* old character set G1 */
-  char old_character_set_g2;	/* old character set G2 */
-  char old_character_set_g3;	/* old character set G3 */
+  int old_character_set_gl;	/* old character set GL */
+  int old_character_set_gr;     /* old character set GR */
+  int old_character_set_g0;	/* old character set G0 */
+  int old_character_set_g1;	/* old character set G1 */
+  int old_character_set_g2;	/* old character set G2 */
+  int old_character_set_g3;	/* old character set G3 */
 
+  int terminal_mode;            /* terminal mode */
+  bool bit_controls;            /* bit controls (false = 7-bit, true = 8-bit) */
   char line_editor_type;        /* line editor type */
   char *line_editor_history;    /* line editor history */
   int line_editor_position;	/* current position in the line editor */
   int line_editor_total;	/* total number of items in the history */
   char line_editor_buffer[512]; /* line editor buffer */
 
-  char character_set;		/* currently selected character set */
-  char character_set_g0;	/* character set G0 */
-  char character_set_g1;	/* character set G1 */
-  char character_set_g2;	/* character set G2 */
-  char character_set_g3;	/* character set G3 */
+  int character_set_gl;		/* currently selected character set GL */
+  int character_set_gr;         /* currently selected character set GR */
+  int character_set_g0;	        /* character set G0 */
+  int character_set_g1;	        /* character set G1 */
+  int character_set_g2;	        /* character set G2 */
+  int character_set_g3;	        /* character set G3 */
 
   int tabs[MAX_TAB_NUMBER];	/* tab positions */
   int number_of_tabs;		/* number of tabs */

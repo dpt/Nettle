@@ -541,8 +541,7 @@ void nettle_senddata(struct session_struct *session, char *data, int length)
 
 void reset_terminal(struct session_struct *session)
 {
-  session->other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE
-  						/*| NETTLE_OTHER_LINEFEED_MODE*/;
+  session->other_session_flags=NETTLE_OTHER_CURSOR_VIS | NETTLE_OTHER_WRAP_MODE;
   session->current_fg=7;
   session->current_bg=0;
   session->current_flags=0;
@@ -550,12 +549,16 @@ void reset_terminal(struct session_struct *session)
   session->escape_state=NETTLE_ESCAPE_NONE;
   session->scroll_start=1;
   session->scroll_end=session->terminal_size.y;
-  session->character_set=NETTLE_CHSET_G0;
+  session->character_set_gl=NETTLE_CHSET_G0;
+  session->character_set_gr=NETTLE_CHSET_G1;
 
-  session->character_set_g0=NETTLE_CHSET_US;
-  session->character_set_g1=NETTLE_CHSET_US;
-  session->character_set_g2=NETTLE_CHSET_US;
-  session->character_set_g3=NETTLE_CHSET_US;
+  session->character_set_g0=NETTLE_CHSET_ASCII;
+  session->character_set_g1=NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS;
+  session->character_set_g2=NETTLE_CHSET_ASCII;
+  session->character_set_g3=NETTLE_CHSET_ASCII;
+
+  session->terminal_mode=2;
+  session->bit_controls=false;
 }
 
 void write_assigned(struct session_struct *session ,int pointer, char fg, char bg, char flags, char character)

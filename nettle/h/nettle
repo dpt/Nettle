@@ -54,11 +54,11 @@ enum nettle_terminal {
 #define NETTLE_CHSET_G2	2
 #define NETTLE_CHSET_G3	3
 
-#define NETTLE_CHSET_GRAPHICS	48
-#define NETTLE_CHSET_ALTROMSTD	49
-#define NETTLE_CHSET_ALTROMSPC	50
-#define NETTLE_CHSET_UK		65
-#define NETTLE_CHSET_US		66
+#define NETTLE_CHSET_ASCII	                1
+#define NETTLE_CHSET_DEC_SUPPLEMENTAL_GRAPHICS	2
+#define NETTLE_CHSET_UK_NATIONAL           	3
+#define NETTLE_CHSET_DEC_SPECIAL_GRAPHICS       4
+#define NETTLE_CHSET_DOWNLINE_LOADABLE          5
 
 /* Maximum length for connection type - telnet, ssh, etc */
 #define MESSAGE_MAX_CONNECTION  20
