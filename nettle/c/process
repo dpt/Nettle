@@ -80,20 +80,20 @@ static char status_positive(char iac_type)
 {
   switch (iac_type)
   {
-    case 251: /* WILL */
-      return 253; /* DO */
+    case TELNET_WILL:
+      return TELNET_DO;
       break;
 
-    case 252: /* WONT */
-      return 254; /* DONT */
+    case TELNET_WONT:
+      return TELNET_DONT;
       break;
 
-    case 253: /* DO */
-      return 251; /* WILL */
+    case TELNET_DO:
+      return TELNET_WILL;
       break;
 
-    case 254: /* DONT */
-      return 252; /* WONT */
+    case TELNET_DONT:
+      return TELNET_WONT;
       break;
   }
 
@@ -105,20 +105,20 @@ static int status_negative(int iac_type)
 {
   switch (iac_type)
   {
-    case 251: /* WILL */
-      return 254; /* DONT */
+    case TELNET_WILL:
+      return TELNET_DONT;
       break;
 
-    case 252: /* WONT */
-      return 254; /* DONT */
+    case TELNET_WONT:
+      return TELNET_DONT;
       break;
 
-    case 253: /* DO */
-      return 252; /* WONT */
+    case TELNET_DO:
+      return TELNET_WONT;
       break;
 
-    case 254: /* DONT */
-      return 252; /* WONT */
+    case TELNET_DONT:
+      return TELNET_WONT;
       break;
   }
 
@@ -680,22 +680,19 @@ static bool process_escape_length_2(struct session_struct *session)
       {
         case '=':
           /* Selects application keypad mode */
-          session->other_session_flags=
-          		session->other_session_flags | NETTLE_OTHER_APPLI_MODE;
+          session->other_session_flags=session->other_session_flags | NETTLE_OTHER_APPLI_MODE;
           done=true;
           break;
         case '>':
           /* Selects numeric keypad mode */
-          session->other_session_flags=
-          		session->other_session_flags & ~NETTLE_OTHER_APPLI_MODE;
+          session->other_session_flags=session->other_session_flags & ~NETTLE_OTHER_APPLI_MODE;
           done=true;
           break;
         case '<':
           /* Enter ANSI mode */
           if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
-            session->other_session_flags=
-          		session->other_session_flags & ~NETTLE_OTHER_VT52_MODE;
+            session->other_session_flags=session->other_session_flags & ~NETTLE_OTHER_VT52_MODE;
             done=true;
           }
           break;
@@ -709,22 +706,16 @@ static bool process_escape_length_2(struct session_struct *session)
           if (!(session->other_session_flags & NETTLE_OTHER_VT52_MODE))
           {
             session->old_pos.x=session->pos.x;
-            session->old_pos.y=session->pos.y-
-       						session->scrollback;
+            session->old_pos.y=session->pos.y-session->scrollback;
             session->old_current_flags=session->current_flags;
             session->old_current_fg=session->current_fg;
             session->old_current_bg=session->current_bg;
-            session->old_other_session_flags=
-       					     session->other_session_flags;
+            session->old_other_session_flags=session->other_session_flags;
             session->old_character_set=session->character_set;
-            session->old_character_set_g0=
-            						session->character_set_g0;
-            session->old_character_set_g1=
-            						session->character_set_g1;
-            session->old_character_set_g2=
-            						session->character_set_g2;
-            session->old_character_set_g3=
-            						session->character_set_g3;
+            session->old_character_set_g0=session->character_set_g0;
+            session->old_character_set_g1=session->character_set_g1;
+            session->old_character_set_g2=session->character_set_g2;
+            session->old_character_set_g3=session->character_set_g3;
             done=true;
           }
           break;
@@ -733,22 +724,16 @@ static bool process_escape_length_2(struct session_struct *session)
           if (!(session->other_session_flags & NETTLE_OTHER_VT52_MODE))
           {
             session->pos.x=session->old_pos.x;
-            session->pos.y=session->old_pos.y+
-      						session->scrollback;
+            session->pos.y=session->old_pos.y+session->scrollback;
             session->current_flags=session->old_current_flags;
             session->current_fg=session->old_current_fg;
             session->current_bg=session->old_current_bg;
-            session->other_session_flags=
-      					session->old_other_session_flags;
+            session->other_session_flags=session->old_other_session_flags;
             session->character_set=session->old_character_set;
-            session->character_set_g0=
-            					session->old_character_set_g0;
-            session->character_set_g1=
-            					session->old_character_set_g1;
-            session->character_set_g2=
-            					session->old_character_set_g2;
-            session->character_set_g3=
-            					session->old_character_set_g3;
+            session->character_set_g0=session->old_character_set_g0;
+            session->character_set_g1=session->old_character_set_g1;
+            session->character_set_g2=session->old_character_set_g2;
+            session->character_set_g3=session->old_character_set_g3;
             snap_cursor_to_terminal(session);
             done=true;
           }
@@ -767,8 +752,7 @@ static bool process_escape_length_2(struct session_struct *session)
           /* Cursor down (in VT52 mode) */
           if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
-            if (session->pos.y<session->terminal_size.y+
-                                             session->scrollback+1)
+            if (session->pos.y<session->terminal_size.y+session->scrollback+1)
               session->pos.y++;
 
             done=true;
@@ -835,8 +819,8 @@ static bool process_escape_length_2(struct session_struct *session)
             /* Set tab (non-VT52 mode) */
             if (session->number_of_tabs<MAX_TAB_NUMBER)
             {
-              session->tabs[session->number_of_tabs]=
-		            					session->pos.x;
+              session->tabs[session->number_of_tabs]=session->pos.x;
+              session->number_of_tabs++;
             }
             else
             {
@@ -931,10 +915,10 @@ static bool process_escape_length_2(struct session_struct *session)
     case 255:
       switch (session->escape_string[1])
       {
-        case 242:
+        case TELNET_DATAMARK:
           done=true;
           break;
-        case 255:
+        case TELNET_IAC:
           done=true;
           byte_default(session, 255);
           break;
@@ -1007,20 +991,21 @@ static bool process_escape_length_3(struct session_struct *session)
 
         switch (iac_type)
         {
-          case 251: /* WILL */
-          case 253: /* DO */
+          case TELNET_WILL:
+          case TELNET_DO:
             done=true;
 
             switch (session->escape_string[2])
             {
-              case 1:
-              case 24:
-              case 31:
+              case TELOPT_ECHO:
+              case TELOPT_TERMINAL_TYPE:
+              case TELOPT_NAWS:
+              case TELOPT_TERMINAL_SPEED:
                 if (session->session_flags[(unsigned char) session->escape_string[2]]==false)
                 {
                   char block[3];
 
-                  block[0]=255; /* IAC */
+                  block[0]=TELNET_IAC;
                   block[1]=status_positive(iac_type);
                   block[2]=session->escape_string[2];
                   nettle_senddata(session,block,3);
@@ -1033,44 +1018,43 @@ static bool process_escape_length_3(struct session_struct *session)
                 {
                   char block[9];
 
-                  block[0]=255; /* IAC */
-                  block[1]=250; /* SB */
-                  block[2]=31;  /* NAWS */
+                  block[0]=TELNET_IAC;
+                  block[1]=TELNET_SB;
+                  block[2]=TELOPT_NAWS;
                   block[3]=session->terminal_size.x / 256;
                   block[4]=session->terminal_size.x % 256;
                   block[5]=session->terminal_size.y / 256;
                   block[6]=session->terminal_size.y % 256;
-                  block[7]=255; /* IAC */
-                  block[8]=240; /* SE */
+                  block[7]=TELNET_IAC;
+                  block[8]=TELNET_SE;
                   nettle_senddata(session,block,9);
                 }
 
                 break;
               default:
-                /* if (session->session_flags[(unsigned char) session->escape_string[2]]==true) */
                 {
                   char block[3];
 
-                  block[0]=255; /* IAC */
+                  block[0]=TELNET_IAC;
                   block[1]=status_negative(iac_type);
                   block[2]=session->escape_string[2];
                   nettle_senddata(session,block,3);
 
-                  printf("For information: Telnet option %d not supported\n",session->escape_string[2]);
+                  printf("For information: Telnet option %d, %d not supported\n",iac_type, session->escape_string[2]);
                 }
                 session->session_flags[(unsigned char) session->escape_string[2]]=false;
                 break;
             }
             break;
-          case 252: /* WON'T */
-          case 254: /* DON'T */
+          case TELNET_WONT:
+          case TELNET_DONT:
             done=true;
 
             if (session->session_flags[(unsigned char) session->escape_string[2]]==true)
             {
               char block[3];
 
-              block[0]=255; /* IAC */
+              block[0]=TELNET_IAC;
               block[1]=status_negative(iac_type);
               block[2]=session->escape_string[2];
               nettle_senddata(session,block,3);
@@ -1978,32 +1962,45 @@ static bool process_escape_length_x(struct session_struct *session)
           break;
       }
       break;
-    case 255:
+    case TELNET_IAC:
       switch (session->escape_string[1])
       {
-        case 250: /* SB */
-          if (session->escape_string[session->escape_string_length-2]==255
+        case TELNET_SB:
+          if (session->escape_string[session->escape_string_length-2]==TELNET_IAC
               &&
-              session->escape_string[session->escape_string_length-1]==240)
+              session->escape_string[session->escape_string_length-1]==TELNET_SE)
           {
             switch (session->escape_string[2])
             {
-              case 24: /* TERMINAL-TYPE */
+              case TELOPT_TERMINAL_TYPE:
                 if (session->escape_string[3]==1)
                 {
-                  /* SEND */
                   char block[256];
-                  block[0]=255; /* IAC */
-                  block[1]=250; /* SB */
-                  block[2]=24;  /* TERMINAL-TYPE */
-                  block[3]=0;   /* IS */
+                  block[0]=TELNET_IAC;
+                  block[1]=TELNET_SB;
+                  block[2]=TELOPT_TERMINAL_TYPE;
+                  block[3]=TELOPT_SUB_IS;
                   strcpy(block+4,terminal_name[session->terminal_type]);
-                  block[4+strlen(terminal_name[session->terminal_type])]=255; /* IAC */
-                  block[5+strlen(terminal_name[session->terminal_type])]=240; /* SE */
+                  block[4+strlen(terminal_name[session->terminal_type])]=TELNET_IAC;
+                  block[5+strlen(terminal_name[session->terminal_type])]=TELNET_SE;
                   nettle_senddata(session,block,6+strlen(terminal_name[session->terminal_type]));
                   done=true;
                 }
                 break;
+              case TELOPT_TERMINAL_SPEED:
+                if (session->escape_string[3]==1)
+                {
+                  char block[256];
+                  block[0]=TELNET_IAC;
+                  block[1]=TELNET_SB;
+                  block[2]=TELOPT_TERMINAL_SPEED;
+                  block[3]=TELOPT_SUB_IS;
+                  strcpy(block+4,"9600");
+                  block[4+strlen("9600")]=TELNET_IAC;
+                  block[5+strlen("9600")]=TELNET_SE;
+                  nettle_senddata(session,block,6+strlen("9600"));
+                  done=true;
+                }
             }
           }
           break;
@@ -2073,7 +2070,7 @@ void process_data(struct session_struct *session, char byte)
 
   if (session->escape_state==NETTLE_ESCAPE_ESCAPE)
   {
-    if (session->escape_string[0]==255)
+    if (session->escape_string[0]==TELNET_IAC)
     {
       return;
     }

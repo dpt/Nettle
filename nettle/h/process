@@ -8,6 +8,30 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
+#define TELNET_SE       240
+#define TELNET_NOP      241
+#define TELNET_DATAMARK 242
+#define TELNET_BRK      243
+#define TELNET_IP       244
+#define TELNET_AO       245
+#define TELNET_AYT      246
+#define TELNET_EC       247
+#define TELNET_EL       248
+#define TELNET_GA       249
+#define TELNET_SB       250
+#define TELNET_WILL     251
+#define TELNET_WONT     252
+#define TELNET_DO       253
+#define TELNET_DONT     254
+#define TELNET_IAC      255
+
+#define TELOPT_ECHO            1
+#define TELOPT_TERMINAL_TYPE   24
+#define TELOPT_NAWS            31
+#define TELOPT_TERMINAL_SPEED  32
+
+#define TELOPT_SUB_IS   0
+
 extern void changedbox_init (struct session_struct *);
 extern void changedbox_update (int, int, int, int); /* tl, br */
 extern void changedbox_update_char (int, int);

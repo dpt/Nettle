@@ -178,11 +178,11 @@ static void wimp_pollsocket(struct session_struct *session)
 
   packet_length = recv(session->socket_handle, receive_block,
                        RECEIVE_BLOCK_LENGTH, 0);
-  
+
   if (packet_length == -1 && errno == EWOULDBLOCK)
     /* we've read all the available data */
     return;
-  
+
   if (packet_length == 0 || packet_length == -1)
   {
     /* EOF or error condition */
@@ -200,12 +200,12 @@ static void wimp_pollsocket(struct session_struct *session)
       write_out_strings(session, "\r\n", "Nettle: Socket error ", errorstr,
                         " occurred", 0);
     }
-  
+
     write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
     socket_close(session->socket_handle);
     session->socket_handle=0;
     session->socket_state=NETTLE_SESSION_NONE;
-    
+
     return;
   }
 
@@ -1177,14 +1177,14 @@ void wimp_menuchoice(int *selection)
           {
             case 0: /* save selection */
               break;
-            
+
             case 1: /* launch url */
               break;
-              
+
             case 2: /* send */
               selection_paste();
               break;
-              
+
             case 3:
               {
                 /* Clear selection */
@@ -2183,14 +2183,14 @@ static void create_terminal_type_menu(void)
   struct wimp_getpointerinfo_block block;
 
   char *menu_title     =get_menu_item("Terminal");
-  char *menu_term0     =get_grey_menu_item("Term0");
-  char *menu_term1     =get_grey_menu_item("Term1");
+  char *menu_term0     =get_menu_item("Term0");
+  char *menu_term1     =get_menu_item("Term1");
   char *menu_term2     =get_menu_item("Term2");
   char *menu_term3     =get_grey_menu_item("Term3");
   char *menu_term4     =get_grey_menu_item("Term4");
   char *menu_term5     =get_grey_menu_item("Term5");
   char *menu_term6     =get_grey_menu_item("Term6");
-  char *menu_term7     =get_grey_last_menu_item("Term7");
+  char *menu_term7     =get_last_menu_item("Term7");
 
   if (create_menu(menu_data,0,menu_title,menu_term0,menu_term1,menu_term2,menu_term3,
     		  menu_term4,menu_term5,menu_term6,menu_term7))
