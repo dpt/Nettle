@@ -3,7 +3,7 @@
 # (C) Archifishal Software 2001
 
 CC = gcc
-CFLAGS = -mstubs
+CFLAGS = -mstubs -Wall -mthrowback -O2
 
 LINK = gcc
 LINKFLAGS = -mstubs -debug
@@ -11,17 +11,18 @@ LINKFLAGS = -mstubs -debug
 WIPE = wipe
 WIPEFLAGS = ~CFR~V
 
-OBJASM = as
-OBJASMFLAGS =
+OBJASM = gcc
+OBJASMFLAGS = -c
 
-# also o.fortify, but not just now
+OBJS = o.chardefn o.choices o.globals o.init o.lineedit o.main o.misc \
+       o.nettle o.process o.quit o.seln o.socket o.wimp o.zapgen o.fortify
 
-all:	o.chardefn o.choices o.globals o.init o.lineedit o.main o.misc o.nettle \
-	o.process o.quit o.seln o.socket o.wimp o.zapgen o.fortify
-	$(LINK) $(LINKFLAGS) NetLib:o.NetLib o.chardefn o.choices o.globals \
-	o.init o.lineedit o.main o.misc o.nettle o.process o.quit o.seln o.socket o.wimp \
-	o.zapgen o.fortify \
-	-o !Nettle.!RunImage
+RUNIMAGE = !Nettle.!RunImage
+
+all: $(RUNIMAGE)
+
+$(RUNIMAGE): $(OBJS)
+	$(LINK) $(LINKFLAGS) NetLib:o.NetLib $(OBJS) -o $(RUNIMAGE)
 
 clean:
 	$(WIPE) o.* $(WIPEFLAGS)
@@ -38,24 +39,26 @@ o.fortify:	c.fortify h.fortify h.ufortify
 o.globals:	c.globals h.generic h.globals h.zapredraw
 		$(CC) $(CFLAGS) -c c.globals
 	
-o.init:		c.init h.generic h.globals h.chardefn h.init h.misc h.nettle h.quit h.wimp \
-		h.zapredraw
+o.init:		c.init h.generic h.globals h.chardefn h.init h.misc \
+		h.nettle h.quit h.wimp h.zapredraw
 		$(CC) $(CFLAGS) -c c.init
 
 o.lineedit:	c.lineedit h.generic h.globals h.lineedit h.misc h.wimp
 		$(CC) $(CFLAGS) -c c.lineedit
 
-o.main:		c.main h.generic h.globals h.choices h.init h.main h.misc h.quit h.wimp
+o.main:		c.main h.generic h.globals h.choices h.init h.main h.misc \
+		h.quit h.wimp
 		$(CC) $(CFLAGS) -c c.main
 
 o.misc:		c.misc h.generic h.globals h.misc
 		$(CC) $(CFLAGS) -c c.misc
 
-o.nettle:	c.nettle h.generic h.globals h.misc h.nettle h.seln h.socket h.wimp h.zapredraw
+o.nettle:	c.nettle h.generic h.globals h.misc h.nettle h.seln h.socket \
+                h.wimp h.zapredraw
 		$(CC) $(CFLAGS) -c c.nettle
 
-o.process:	c.process h.generic h.globals h.graphics h.misc h.nettle h.process h.seln \
-		h.wimp h.zapredraw
+o.process:	c.process h.generic h.globals h.graphics h.misc h.nettle \
+                h.process h.seln h.wimp h.zapredraw
 		$(CC) $(CFLAGS) -c c.process
 
 o.quit:		c.quit h.generic h.globals h.misc h.nettle h.quit
@@ -67,8 +70,8 @@ o.seln:		c.seln h.generic h.globals h.nettle h.seln h.wimp h.zapredraw
 o.socket:	c.socket h.generic h.globals h.socket
 		$(CC) $(CFLAGS) -INetLib: -c c.socket
 
-o.wimp:		c.wimp h.generic h.globals h.misc h.nettle h.process h.seln h.socket h.wimp \
-		h.zapredraw
+o.wimp:		c.wimp h.generic h.globals h.misc h.nettle h.process h.seln \
+		h.socket h.wimp h.zapredraw
 		$(CC) $(CFLAGS) -c c.wimp
 
 o.zapgen:	s.zapgengc
