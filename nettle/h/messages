@@ -1,0 +1,16 @@
+/*
+ * Nettle messagetrans  headers
+ * (C) Nettle Developers 2001
+ *
+ * $Id$
+ */
+
+#ifndef MESSAGES_H
+#define MESSAGES_H
+
+extern void load_messages(void);
+extern void lose_messages(void);
+extern char *lookup(const char *, char *, int);
+extern const char *lookup_static(const char *);
+
+#endif /* MESSAGES_H */

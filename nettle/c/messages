@@ -1,0 +1,89 @@
+/*
+ * Message trans handling
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+ 
+#include "generic.h"
+#include "globals.h"
+#include "messages.h"
+#include "misc.h"
+
+static int messagetrans_area[4];
+static int *messagetrans_buffer;
+
+void load_messages(void)
+{
+  char country[16];
+  char messages_file_name[1024];
+  FILE *file_handle;
+  int size_of_messagetrans_buffer;
+
+  /* Get the country - if it has null length, then default to UK */
+  if (strlen(get_country(country, sizeof(country))) == 0)
+    strcpy(country, "UK");
+
+  /* put together filename */
+  sprintf(messages_file_name, "<%s$Dir>.Resources.%s.Messages",
+    application_name, country);
+
+  /* open the file */
+  file_handle = fopen(messages_file_name, "r");
+
+  /* if we don't open it, then definitely set country to UK */
+  if (file_handle == 0)
+    strcpy(country,"UK");
+  else
+    fclose(file_handle);
+
+  sprintf(messages_file_name, "<%s$Dir>.Resources.%s.Messages",
+    application_name, country);
+
+  /* Now re-open it */
+  size_of_messagetrans_buffer = _swi(MessageTrans_FileInfo,
+    _IN(1)|_RETURN(2), messages_file_name);
+
+  messagetrans_buffer = malloc(size_of_messagetrans_buffer);
+  assert(messagetrans_buffer != NULL);
+
+  _swi(MessageTrans_OpenFile, _INR(0,2), messagetrans_area,
+    messages_file_name, messagetrans_buffer);
+}
+
+
+void lose_messages(void)
+{
+  _swi(MessageTrans_CloseFile, _IN(0), messagetrans_area);
+  free(messagetrans_buffer);
+}
+
+
+/* Looks up a messagetrans token */
+
+char *lookup(const char *token, char *buffer, int buf_size)
+{
+  assert(token != NULL);
+  assert(buffer != NULL);
+  assert(buf_size > 0);
+
+  _swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer,
+                                                         buf_size);
+
+  return buffer;
+}
+
+
+/* Looks up a messagetrans token and puts it in a static buffer*/
+
+const char *lookup_static(const char *token)
+{
+  static char buffer[256];
+  assert(token != NULL);
+
+  _swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer,
+                                                         sizeof (buffer));
+
+  return buffer;
+}
+
