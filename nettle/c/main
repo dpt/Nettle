@@ -15,8 +15,10 @@
 #include "quit.h"
 #include "wimp.h"
 
+#ifdef __GNUC__
 /* GCC build work-around */
 FILE *__stderr = stderr;
+#endif
 
 int main(void)
 {
