@@ -53,7 +53,7 @@ typedef struct tagICON
 
 /****************************************************************************
  *
- * Locate a "N" tag in an icon validation string, and return it's value
+ * Locate a "N" tag in an icon validation string, and return its value
  *
 \***************************************************************************/
 
