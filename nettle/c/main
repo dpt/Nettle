@@ -63,7 +63,7 @@ int main(void)
     time = _swi(OS_ReadMonotonicTime, _RETURN(0));
 
     /* Ignore Pointer Enter/Leave events */
-    event = _swi(Wimp_PollIdle, _IN(0)|_IN(1)|_IN(2)|_RETURN(0), (1<<4)|(1<<5), wimp_block,
+    event = _swi(Wimp_PollIdle, _IN(0)|_IN(1)|_IN(2)|_RETURN(0), (1<<4)|(1<<5), &wimp_block,
                                                                                 time+5);
 
     switch (event)
@@ -74,20 +74,24 @@ int main(void)
         break;
       case 1:
         /* redraw request */
-        redraw_window();
+        redraw_window(wimp_block.redraw_window.window_handle);
         break;
       case 2:
         /* open window request - call with window handle and whether this */
         /* is a wimp poll or not */
-        open_window(wimp_block[0], true);
+        open_window(wimp_block.open_window.window_handle, true);
         break;
       case 3:
         /* close window request - call with window handle  */
-        close_window(wimp_block[0]);
+        close_window(wimp_block.close_window.window_handle);
         break;
       case 6:
         /* mouse click request, call with x, y, buttons, window handle and icon_handle */
-        mouse_click(wimp_block[0], wimp_block[1], wimp_block[2], wimp_block[3], wimp_block[4]);
+        mouse_click(wimp_block.mouse_click.x,
+                    wimp_block.mouse_click.y,
+                    wimp_block.mouse_click.buttons,
+                    wimp_block.mouse_click.window_handle,
+                    wimp_block.mouse_click.icon_handle);
         break;
       case 7:
         /* drag finished */
@@ -95,7 +99,9 @@ int main(void)
         break;
       case 8:
         /* key press, call with window handle, icon handle and key */
-        key_pressed(wimp_block[0], wimp_block[1], wimp_block[6]);
+        key_pressed(wimp_block.key_pressed.window_handle,
+                    wimp_block.key_pressed.icon_handle,
+                    wimp_block.key_pressed.code);
         break;
       case 9:
         /* menu selection */
@@ -112,7 +118,9 @@ int main(void)
       case 17:
       case 18:
         /* wimp message */
-        wimp_message(wimp_block[4],wimp_block[1],wimp_block[2]);
+        wimp_message(wimp_block.user_message.message_code,
+                     wimp_block.user_message.sender_ref,
+                     wimp_block.user_message.my_ref);
         break;
     }
   }

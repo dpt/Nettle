@@ -13,7 +13,7 @@
 #define RECEIVE_BLOCK_LENGTH	0x400
 
 extern void null_reason_code(void);
-extern void redraw_window(void);
+extern void redraw_window(int);
 extern void open_window(int, bool);
 extern void close_window(int);
 extern void mouse_click(int, int, int, int, int);

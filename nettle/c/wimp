@@ -125,12 +125,9 @@ void null_reason_code(void)
 
 /* Redraw window */
 
-void redraw_window(void)
+void redraw_window(int window_handle)
 {
   int session_handle;
-  int window_handle;
-
-  window_handle=wimp_block[0];
 
   session_handle=0;
   while (session_handle<current_session && window_handle!=session[session_handle].window_handle)
@@ -148,16 +145,16 @@ void redraw_window(void)
 
     redraw.r_data=zapredraw_area;
 
-    _swi(ZapRedraw_RedrawWindow, _IN(0)|_IN(1), wimp_block, &redraw);
+    _swi(ZapRedraw_RedrawWindow, _IN(0)|_IN(1), &wimp_block, &redraw);
   }
   else
   {
     bool redraw_flag;
 
-    redraw_flag = (bool)(_swi(Wimp_RedrawWindow, _IN(1)|_RETURN(0), wimp_block) != 0);
+    redraw_flag = (bool)(_swi(Wimp_RedrawWindow, _IN(1)|_RETURN(0), &wimp_block) != 0);
     while (redraw_flag)
     {
-      redraw_flag = (bool)(_swi(Wimp_GetRectangle, _IN(1)|_RETURN(0), wimp_block) != 0);
+      redraw_flag = (bool)(_swi(Wimp_GetRectangle, _IN(1)|_RETURN(0), &wimp_block) != 0);
     }
   }
 }
@@ -166,7 +163,7 @@ void redraw_window(void)
 
 void open_window(int window_handle, bool poll_flag)
 {
-  int block[9];
+  struct wimp_openwindow_block block;
   int session_handle=0;
 
   /* find out which session this window is */
@@ -184,23 +181,23 @@ void open_window(int window_handle, bool poll_flag)
         {
           /* open the pane window and set the 'behind' word to behind the pane */
           open_pane_window(session_handle, (struct wimp_openwindow_block *) &wimp_block);
-          wimp_block[7]=session[session_handle].pane_handle;
+          wimp_block.open_window.handle_behind=session[session_handle].pane_handle;
         }
       }
       break;
     default:
-      block[0]=window_handle;
+      block.window_handle=window_handle;
 
-      _swi(Wimp_GetWindowState, _IN(1), block);
+      _swi(Wimp_GetWindowState, _IN(1), &block);
 
-      block[7]=-1;
+      block.handle_behind=-1;
       if (session[session_handle].window_handle==window_handle)
       {
         if (line_editor)
         {
           /* open the pane window and set the 'behind' word to behind the pane */
-          open_pane_window(session_handle, (struct wimp_openwindow_block *) &block);
-          block[7]=session[session_handle].pane_handle;
+          open_pane_window(session_handle, &block);
+          block.handle_behind=session[session_handle].pane_handle;
         }
       }
       break;
@@ -210,10 +207,10 @@ void open_window(int window_handle, bool poll_flag)
   switch (poll_flag)
   {
     case true:
-      _swi(Wimp_OpenWindow, _IN(1), wimp_block);
+      _swi(Wimp_OpenWindow, _IN(1), &wimp_block);
       break;
     default:
-      _swi(Wimp_OpenWindow, _IN(1), block);
+      _swi(Wimp_OpenWindow, _IN(1), &block);
       break;
   }
 }
@@ -785,12 +782,10 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
 void menu_selection()
 {
-  int block[5];
-
   switch (menu_open)
   {
     case MENU_ICONBAR:
-      switch (wimp_block[0])
+      switch (wimp_block.menu_selection.menu[0])
       {
         case 2:
           /* Quit */
@@ -798,10 +793,10 @@ void menu_selection()
       }
       break;
     case MENU_TERMINAL:
-      switch (wimp_block[0])
+      switch (wimp_block.menu_selection.menu[0])
       {
         case 0:
-          switch (wimp_block[1])
+          switch (wimp_block.menu_selection.menu[1])
           {
             case 3:
               {
@@ -826,7 +821,7 @@ void menu_selection()
       {
         char connection[MESSAGE_MAX_CONNECTION];
 
-        switch (wimp_block[0])
+        switch (wimp_block.menu_selection.menu[0])
         {
           case 0:
             set_icon_data(open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
@@ -845,32 +840,36 @@ void menu_selection()
       {
         char terminal[MESSAGE_MAX_TERMINAL];
         char string[6];
-        sprintf(string, "Term%d", wimp_block[0]);
+        sprintf(string, "Term%d", wimp_block.menu_selection.menu[0]);
 
-        set_icon_data(open,9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
+        set_icon_data(open, 9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
       }
       break;
   }
 
-  _swi(Wimp_GetPointerInfo, _IN(1), block);
-
-  /* If ADJUST, then re-open  menu where it was before */
-  if (block[2]==1)
   {
-    switch (menu_open)
+    struct wimp_getpointerinfo_block block;
+
+    _swi(Wimp_GetPointerInfo, _IN(1), &block);
+
+    /* If ADJUST, then re-open  menu where it was before */
+    if (block.buttons==1)
     {
-      case MENU_ICONBAR:
-        create_iconbar_menu();
-        break;
-      case MENU_TERMINAL:
-        create_terminal_menu();
-        break;
-      case MENU_CONNECTION:
-        create_connection_menu();
-        break;
-      case MENU_TERMINAL_TYPE:
-        create_terminal_type_menu();
-        break;
+      switch (menu_open)
+      {
+        case MENU_ICONBAR:
+          create_iconbar_menu();
+          break;
+        case MENU_TERMINAL:
+          create_terminal_menu();
+          break;
+        case MENU_CONNECTION:
+          create_connection_menu();
+          break;
+        case MENU_TERMINAL_TYPE:
+          create_terminal_type_menu();
+          break;
+      }
     }
   }
 }
@@ -881,22 +880,25 @@ void lose_caret()
 {
   int session_handle=0;
   int calc;
-  int block[6];
   int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   /* get session */
-  while (wimp_block[0]!=session[session_handle].window_handle && session_handle<current_session)
+  while (wimp_block.caret.window_handle!=session[session_handle].window_handle &&
+         session_handle<current_session)
   {
     session_handle++;
   }
 
-  if (wimp_block[0]==session[session_handle].window_handle)
+  if (wimp_block.caret.window_handle==session[session_handle].window_handle)
   {
-    _swi(Wimp_GetCaretPosition, _IN(1), block);
+    struct wimp_getcaretposition_block block;
+
+    _swi(Wimp_GetCaretPosition, _IN(1), &block);
 
     /* if lineeditor is off, or the caret isn't in the pane, then make the cursor look like */
     /* we have no input */
-    if (!(line_editor_active(session_handle)) || block[0]!=session[session_handle].pane_handle)
+    if (!(line_editor_active(session_handle)) ||
+        block.window_handle!=session[session_handle].pane_handle)
     {
       calc=get_cursor_position(session_handle);
       write_assigned_flags(session_handle, calc,
@@ -912,12 +914,13 @@ void lose_caret()
   }
 
   session_handle=0;
-  while (wimp_block[0]!=session[session_handle].pane_handle && session_handle<current_session)
+  while (wimp_block.caret.window_handle!=session[session_handle].pane_handle &&
+         session_handle<current_session)
   {
     session_handle++;
   }
 
-  if (wimp_block[0]==session[session_handle].pane_handle)
+  if (wimp_block.caret.window_handle==session[session_handle].pane_handle)
   {
     /* if the caret is being lost from the pane, then deselect the cursor too */
     calc=get_cursor_position(session_handle);
@@ -940,12 +943,13 @@ void gain_caret()
   int calc;
   int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
-  while (wimp_block[0]!=session[session_handle].window_handle && session_handle<current_session)
+  while (wimp_block.caret.window_handle!=session[session_handle].window_handle &&
+         session_handle<current_session)
   {
     session_handle++;
   }
 
-  if (wimp_block[0]==session[session_handle].window_handle)
+  if (wimp_block.caret.window_handle==session[session_handle].window_handle)
   {
     /* if the handle is the window handle, get input back for the cursor */
     calc=get_cursor_position(session_handle);
@@ -962,11 +966,11 @@ void gain_caret()
     if (line_editor_active(session_handle))
     {
       /* if line editor and doesn't already have caret, then set the caret in pane */
-      int block[6];
+      struct wimp_getcaretposition_block block;
 
-      _swi(Wimp_GetCaretPosition, _IN(1), block);
+      _swi(Wimp_GetCaretPosition, _IN(1), &block);
 
-      if (block[0]!=session[session_handle].pane_handle)
+      if (block.window_handle!=session[session_handle].pane_handle)
       {
         set_caret_position(session[session_handle].pane_handle,1,-1,
                		   get_icon_data_length(session[session_handle].pane_handle,1));
@@ -977,12 +981,13 @@ void gain_caret()
   }
 
   session_handle=0;
-  while (wimp_block[0]!=session[session_handle].pane_handle && session_handle<current_session)
+  while (wimp_block.caret.window_handle!=session[session_handle].pane_handle &&
+         session_handle<current_session)
   {
     session_handle++;
   }
 
-  if (wimp_block[0]==session[session_handle].pane_handle)
+  if (wimp_block.caret.window_handle==session[session_handle].pane_handle)
   {
     calc=get_cursor_position(session_handle);
 
@@ -997,12 +1002,12 @@ void gain_caret()
 		 (-session[session_handle].ypos)*redraw.r_charh*2*zap_yeig);
 
     {
-      int block[6];
+      struct wimp_getcaretposition_block block;
 
-      _swi(Wimp_GetCaretPosition, _IN(1), block);
+      _swi(Wimp_GetCaretPosition, _IN(1), &block);
 
       /* again, set caret if it's not already in the pane */
-      if (block[0]!=session[session_handle].pane_handle)
+      if (block.window_handle!=session[session_handle].pane_handle)
       {
         set_caret_position(session[session_handle].pane_handle,1,-1,
            		   get_icon_data_length(session[session_handle].pane_handle,1));
@@ -1022,25 +1027,28 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
     case 0: /* Quit */
       quit_flag=true;
       break;
-    case 2: /* DataSave */
+    case 2: /* DataSaveAck */
       {
-        int block[10];
         char string[1024];
 
-        read_mem(string, ((char *)wimp_block)+44, 1024);
+        read_mem(string, wimp_block.user_message.contents.data_save_ack.file_name, 1024);
 
-        block[0]=drag_window_handle;
-        block[1]=4;
-
-        _swi(Wimp_GetIconState, _IN(1), block);
-
-        if (block[6] & (1<<21))
         {
-          save_selection(string,true);
-        }
-        else
-        {
-          save_selection(string,false);
+          struct wimp_geticonstate_block block;
+
+          block.window_handle=drag_window_handle;
+          block.icon_handle  =4;
+
+          _swi(Wimp_GetIconState, _IN(1), &block);
+
+          if (block.icon_flags & (1<<21))
+          {
+            save_selection(string,true);
+          }
+          else
+          {
+            save_selection(string,false);
+          }
         }
 
         if (instr(string,"Wimp$Scrap")==-1)
@@ -1048,10 +1056,10 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
           set_icon_data(drag_window_handle,2,string);
         }
 
-        wimp_block[3]=my_ref;
-        wimp_block[4]=3;
+        wimp_block.user_message.sender_ref  =my_ref;
+        wimp_block.user_message.message_code=3;
 
-        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, wimp_block, sender_ref);
+        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, &wimp_block, sender_ref);
 
         _swi(Wimp_CreateMenu, _IN(1), -1);
       }
@@ -1066,25 +1074,31 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         if (current_session==0)
           return;
 
-        while (session[session_handle].socket_handle!=wimp_block[1] &&
+        while (session[session_handle].socket_handle!=wimp_block.user_message.sender_ref &&
                session_handle<current_session)
         {
           session_handle++;
         }
 
-        if (session[session_handle].socket_handle==wimp_block[1])
+        if (session[session_handle].socket_handle==wimp_block.user_message.sender_ref)
         {
-          write_out_data(session_handle,((char *) wimp_block)+24,wimp_block[5]);
+          write_out_data(session_handle,
+                         wimp_block.user_message.contents.task_window_output.data,
+                         wimp_block.user_message.contents.task_window_output.size);
         }
-        wimp_block[4]=my_ref;
+        wimp_block.user_message.sender_ref=my_ref;
 
-        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 19, wimp_block, sender_ref);
+        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 19, &wimp_block, sender_ref);
       }
       break;
     case 0x808C2: /* Task window started */
-      session[wimp_block[5]].socket_state=NETTLE_SESSION_CONNECTED;
-      session[wimp_block[5]].socket_handle=wimp_block[1];
-      set_title_bar(session[wimp_block[5]].window_handle,"nettle (Open)");
+      {
+        int txt_handle=wimp_block.user_message.contents.task_window_ego.txt_handle;
+
+        session[txt_handle].socket_state=NETTLE_SESSION_CONNECTED;
+        session[txt_handle].socket_handle=wimp_block.user_message.sender_ref;
+        set_title_bar(session[txt_handle].window_handle,"nettle (Open)");
+      }
       break;
     case 0x808C3: /* Task window terminated */
       {
@@ -1093,13 +1107,13 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         if (current_session==0)
           return;
 
-        while (session[session_handle].socket_handle!=wimp_block[1] &&
+        while (session[session_handle].socket_handle!=wimp_block.user_message.sender_ref &&
                session_handle<current_session)
         {
           session_handle++;
         }
 
-        if (session[session_handle].socket_handle==wimp_block[1])
+        if (session[session_handle].socket_handle==wimp_block.user_message.sender_ref)
         {
           set_title_bar(session[session_handle].window_handle,"nettle (Closed)");
           session[session_handle].socket_state=NETTLE_SESSION_NONE;

@@ -84,6 +84,12 @@ struct wimp_createwindow_block
   /* Icon definitions follow... */
 };
 
+struct wimp_deleteicon_block
+{
+  int window_handle;
+  int icon_handle;
+};
+
 struct wimp_getcaretposition_block
 {
   int window_handle;
@@ -92,12 +98,6 @@ struct wimp_getcaretposition_block
   int y;
   int height_and_flags;
   int index;
-};
-
-struct wimp_deleteicon_block
-{
-  int window_handle;
-  int icon_handle;
 };
 
 struct wimp_geticonstate_block
@@ -112,6 +112,15 @@ struct wimp_geticonstate_block
   char *buffer;
   char *validation;
   int buffer_length;
+};
+
+struct wimp_getpointerinfo_block
+{
+  int x;
+  int y;
+  int buttons;
+  int window_handle;
+  int icon_handle;
 };
 
 struct wimp_getwindowoutline_block

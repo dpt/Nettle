@@ -13,7 +13,6 @@ bool quit_flag=false;
 
 /* _kernel_oserror *e; */
 
-int wimp_block[64];
 struct os_spriteop_area *sprite_area;
 int messagetrans_area[4];
 int *messagetrans_buffer;
@@ -81,3 +80,5 @@ char *line_editor_icon_text="";
 char *line_editor_icon_sprite="Soptoff,opton";
 
 char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};
+
+union wimp_poll_block wimp_block;

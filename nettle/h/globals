@@ -35,7 +35,6 @@ extern int size_of_zapredraw_area;
 
 extern int *bitmaps_area;
 
-extern int wimp_block[64];
 extern struct os_spriteop_area *sprite_area;
 extern int messagetrans_area[4];
 extern int *messagetrans_buffer;
@@ -137,5 +136,140 @@ extern char *line_editor_icon_text;
 extern char *line_editor_icon_sprite;
 
 extern char terminal_name[8][6];
+
+extern union wimp_poll_block
+{
+  struct
+  {
+    int window_handle;
+  } redraw_window;
+
+  struct
+  {
+    int window_handle;
+    int minx;
+    int miny;
+    int maxx;
+    int maxy;
+    int scroll_x;
+    int scroll_y;
+    int handle_behind;
+  } open_window;
+
+  struct
+  {
+    int window_handle;
+  } close_window;
+
+  struct
+  {
+    int window_handle;
+  } pointer_leaving_window;
+
+  struct
+  {
+    int window_handle;
+  } pointer_entering_window;
+
+  struct
+  {
+    int x;
+    int y;
+    int buttons;
+    int window_handle;
+    int icon_handle;
+  } mouse_click;
+
+  struct
+  {
+    int minx;
+    int miny;
+    int maxx;
+    int maxy;
+  } user_drag_box;
+
+  struct
+  {
+    int window_handle;
+    int icon_handle;
+    int x;
+    int y;
+    int height_and_flags;
+    int index;
+    int code;
+  } key_pressed;
+
+  struct
+  {
+    int menu[64];
+  } menu_selection;
+
+  struct
+  {
+    int window_handle;
+    int minx;
+    int miny;
+    int maxx;
+    int maxy;
+    int scroll_x;
+    int scroll_y;
+    int handle_behind;
+    int scroll_x_dir;
+    int scroll_y_dir;
+  } scroll_request;
+
+  struct
+  {
+    int window_handle;
+    int icon_handle;
+    int x;
+    int y;
+    int height_and_flags;
+    int index;
+  } caret;
+
+  struct
+  {
+    int *address_poll_word;
+    int contents_poll_word;
+  } pollword_non_zero;
+
+  struct
+  {
+    int length;
+    int sender_handle;
+    int my_ref;
+    int sender_ref;
+    int message_code;
+
+    union
+    {
+      struct
+      {
+        int window_handle;
+        int icon_handle;
+        int x;
+        int y;
+        int size;
+        int filetype;
+        char file_name[212];
+      } data_save_ack;
+
+      struct
+      {
+        int size;
+        char data[232];
+      } task_window_output;
+
+      struct
+      {
+        int txt_handle;
+      } task_window_ego;
+
+    } contents;
+
+  } user_message;
+
+} wimp_block;
 
 #endif
