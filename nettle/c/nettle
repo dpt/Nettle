@@ -713,23 +713,13 @@ static void start_connection_int (struct connection_params *params )
 
   switch (session->line_editor_type)
   {
-    case LINEEDIT_NONE: case LINEEDIT_CHECKBOX_OFF:
+    case LINEEDIT_CHECKBOX_ON:
+    case LINEEDIT_ANTTERM:
+      set_caret_position(session->pane_handle,0,-1,get_icon_data_length(session->pane_handle, 0));
+      break;
+    default:
       set_caret_position(session->window_handle,-1,-1,-1);
       break;
-    case LINEEDIT_CHECKBOX_ON:
-    {
-      char string[1024];
-      set_caret_position(session->pane_handle,1,-1,
-                         strlen(read_icon_data(session->pane_handle, 1, string, sizeof(string))));
-      break;
-    }
-    case LINEEDIT_ANTTERM:
-    {
-      char string[1024];
-      set_caret_position(session->pane_handle,0,-1,
-			 strlen(read_icon_data(session->pane_handle, 0, string, sizeof(string))));
-      break;
-    }
   }
 
   switch (params->connection_type)
