@@ -65,6 +65,8 @@ bool logging                         =LOGGING;
 char line_editor                     =LINE_EDITOR;
 bool pass_f12                        =PASS_F12;
 bool cursor_blink                    =CURSOR_BLINK;
+bool blinking                        =BLINKING;
+
 int line_editor_size                 =LINE_EDITOR_SIZE;
 enum nettle_terminal default_terminal=NETTLE_TERMINAL_VT220;
 struct coords defaultsize            ={TERMINAL_WIDTH, TERMINAL_HEIGHT};

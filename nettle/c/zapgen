@@ -151,6 +151,9 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
         fg ^= bg;
       }
 
+      if ((input->flags & NETTLE_FLAG_BLINK) && blinking && cursor_state)
+        fg = bg;
+
       if (fg != current_fg || bg != current_bg)
       {
         *write++ = ZR_CTRL;

@@ -36,6 +36,7 @@
 #define LOGGING                 false
 #define LINE_EDITOR             0
 #define PASS_F12                false
+#define BLINKING                true
 
 #define CURSOR_BLINK            false
 #define CURSOR_BLINK_DELAY      50
@@ -100,6 +101,8 @@ extern bool logging;
 extern char line_editor;
 extern bool pass_f12;
 extern bool cursor_blink;
+extern bool blinking;
+
 extern int line_editor_size;
 extern enum nettle_terminal default_terminal;
 extern struct coords defaultsize;

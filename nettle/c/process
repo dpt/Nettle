@@ -2334,10 +2334,18 @@ static bool process_escape_length_x(struct session_struct *session)
                       session->current_bg=0;
                       session->current_flags=0;
                       break;
-                    case 1: case 5:
-                      /* Bold, Blink */
+                    case 1:
+                      /* Bold */
                       session->current_fg |= 8;
                       status=true;
+                      break;
+                    case 5:
+                      /* Blink */
+                      session->current_flags |= NETTLE_FLAG_BLINK;
+                      break;
+                    case 25:
+                      /* Cancel blink */
+                      session->current_flags &= ~NETTLE_FLAG_BLINK;
                       break;
                     case 27:
                       /* Cancel invert */

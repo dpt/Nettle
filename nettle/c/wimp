@@ -390,18 +390,38 @@ void wimp_nullreasoncode(void)
     main_requirenull = true;
   }
 
-  if (cursor_session)
+  if (cursor_session || blinking)
   {
     int now = _swi (OS_ReadMonotonicTime, 0);
     if (now - nextcursortime >= 0)
     {
       nextcursortime = now + CURSOR_BLINK_DELAY;
       cursor_state = cursor_state ? false : true;
-      force_redraw (cursor_session->window_handle,
-                    cursor_session->pos.x * redraw.r_charw << eig.x,
-                    (-cursor_session->pos.y - 1) * redraw.r_charh << eig.y,
-                    (cursor_session->pos.x + 1) * redraw.r_charw << eig.x,
-                     -cursor_session->pos.y * redraw.r_charh << eig.y);
+
+      if (cursor_session)
+      {
+        force_redraw (cursor_session->window_handle,
+                      cursor_session->pos.x * redraw.r_charw << eig.x,
+                      (-cursor_session->pos.y - 1) * redraw.r_charh << eig.y,
+                      (cursor_session->pos.x + 1) * redraw.r_charw << eig.x,
+                       -cursor_session->pos.y * redraw.r_charh << eig.y);
+      }
+
+      if (blinking)
+      {
+        struct session_struct *session = sessions;
+
+        while (session)
+        {
+          force_redraw (session->window_handle,
+                        0,
+                        (-session->terminal_size.y-session->scrollback) * redraw.r_charh <<eig.y,
+                        session->terminal_size.x * redraw.r_charw << eig.x,
+                         -session->scrollback * redraw.r_charh << eig.y);
+
+          session=session->next;
+        }
+      }
     }
   }
 }
