@@ -176,6 +176,6 @@ code_next_stage
 
 	MOV	r0, r4			; put last addr written to in R0
 
-	LDMFD	r13!, {r4-r10, r14}
+	LDMFD	r13!, {r4-r10, pc}
 
 	END
