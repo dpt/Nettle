@@ -18,16 +18,10 @@ RMEnsure ZapRedraw 0.39 RMLoad <Nettle$ZapRedrawPath>
 RMEnsure ZapRedraw 0.39 RMLoad <Nettle$Dir>.Resources.ZapRedraw
 Unset Nettle$ZapRedrawPath
 
-| Get SocketWatch -- if the OS can't cope
-Set Nettle$NeedSockWatch No
-
-| This sets Nettle$SelectPollword to 1 if the OS has FIOPOLLWORD
+| PollTest sets Nettle$NeedSockWatch to 1 if the OS has Internet but no FIOPOLLWORD
 Run <Nettle$Dir>.Resources.PollTest
-If "<Nettle$SelectPollword>"="0" Then Set Nettle$NeedSockWatch Yes
-Unset Nettle$SelectPollword
-
-If "<Nettle$NeedSockWatch>"="Yes" Then RMEnsure SocketWatch 0.04 RMLoad System:Modules.Network.SockWatch
-If "<Nettle$NeedSockWatch>"="Yes" Then RMEnsure SocketWatch 0.04 Error Nettle requires SocketWatch 0.04 or later
+If "<Nettle$NeedSockWatch>"="1" Then RMEnsure SocketWatch 0.04 RMLoad System:Modules.Network.SockWatch
+If "<Nettle$NeedSockWatch>"="1" Then RMEnsure SocketWatch 0.04 Error Nettle requires SocketWatch 0.04 or later
 Unset Nettle$NeedSockWatch
 
 RMEnsure ColourPicker 0.31 RMLoad System:Modules.Picker
