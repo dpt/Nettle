@@ -1006,7 +1006,7 @@ void process_data(struct session_struct *session, char byte)
   {
     if (session->escape_string_length==255)
     {
-      generror(lookup_static ("esctoolong"), false);
+      printf("%s\n",lookup_static ("esctoolong"));
       session->escape_state=NETTLE_ESCAPE_NONE;
       session->escape_string_length=0;
     }
@@ -1227,15 +1227,19 @@ void process_data_transmission(struct session_struct *session,
 
     size_of_block = decode_key (session, key, 0, block);
 
-    if (size_of_send_block + size_of_block + offsetof (struct paste_buffer, data) > allocated_send_size)
+    while (size_of_send_block + size_of_block + offsetof (struct paste_buffer, data) > allocated_send_size)
     {
+      struct paste_buffer *new_send_block;
+
       allocated_send_size += 16384;
-      send_block = realloc (send_block, allocated_send_size);
-      if (!send_block)
+      new_send_block = realloc (send_block, allocated_send_size);
+      if (!new_send_block)
       {
+        free(send_block);
         generror ("CantAlloc", true);
         return;
       }
+      send_block=new_send_block;
     }
     memcpy(send_block->data+size_of_send_block,block,size_of_block);
     size_of_send_block+=size_of_block;
