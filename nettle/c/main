@@ -72,6 +72,8 @@ int main(int argc, char *argv[])
       else if (selection_in_progress)
         nextpolltime += 5; /* reasonable number of updates required to redraw
                             * selection as mouse moves */
+      else if (resize_handle)
+        nextpolltime += min(CURSOR_BLINK_DELAY,10);
       else if (((cursor_blink || !cursor_state) && cursor_session) || (blinking && want_blink) )
       {
         if (nextcursortime - nextpolltime < 0)
