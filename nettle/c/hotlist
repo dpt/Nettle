@@ -1140,27 +1140,27 @@ void win_hotpane_click(int x, int y, int buttons, int icon_handle)
         struct wimp_dragbox_block dragblock;
         struct wimp_autoscroll_block scrollblock;
 
-	dragblock.window_handle = win_hotpane;
-	dragblock.drag_type = 5; /* Fixed size box */
-	dragblock.parent_min.x = gwsblock.min.x;
-	dragblock.parent_min.y = gwsblock.min.y - ENTRYHEIGHT;
-	dragblock.parent_max.x = gwsblock.max.x;
-	dragblock.parent_max.y = gwsblock.max.y + ENTRYHEIGHT;
-	dragblock.min.x = gwsblock.min.x ;
-	dragblock.min.y = gwsblock.max.y -(item * ENTRYHEIGHT) - 4 - ENTRYHEIGHT - gwsblock.scroll.y;
-	dragblock.max.y = dragblock.min.y + ENTRYHEIGHT;
-	dragblock.max.x = dragblock.min.x + (gwsblock.max.x - gwsblock.min.x );
+        dragblock.window_handle = win_hotpane;
+        dragblock.drag_type = 5; /* Fixed size box */
+        dragblock.parent_min.x = gwsblock.min.x;
+        dragblock.parent_min.y = gwsblock.min.y - ENTRYHEIGHT;
+        dragblock.parent_max.x = gwsblock.max.x;
+        dragblock.parent_max.y = gwsblock.max.y + ENTRYHEIGHT;
+        dragblock.min.x = gwsblock.min.x ;
+        dragblock.min.y = gwsblock.max.y -(item * ENTRYHEIGHT) - 4 - ENTRYHEIGHT - gwsblock.scroll.y;
+        dragblock.max.y = dragblock.min.y + ENTRYHEIGHT;
+        dragblock.max.x = dragblock.min.x + (gwsblock.max.x - gwsblock.min.x );
 
-	_swi(Wimp_DragBox, _INR(1,3), &dragblock, 0x4b534154, 3);
-	drag_window_handle = win_hotpane;
+        _swi(Wimp_DragBox, _INR(1,3), &dragblock, 0x4b534154, 3);
+        drag_window_handle = win_hotpane;
 
-	scrollblock.window_handle = win_hotpane;
-	scrollblock.left_pause = 0;
-	scrollblock.right_pause = 0;
-	scrollblock.bottom_pause = ENTRYHEIGHT*2;
-	scrollblock.top_pause = ENTRYHEIGHT*2;
-	scrollblock.pause_duration = 0; /* no pause time */
-	scrollblock.statechange_handler = -1; /* Use Wimp pointer shape routine */
+        scrollblock.window_handle = win_hotpane;
+        scrollblock.left_pause = 0;
+        scrollblock.right_pause = 0;
+        scrollblock.bottom_pause = ENTRYHEIGHT*2;
+        scrollblock.top_pause = ENTRYHEIGHT*2;
+        scrollblock.pause_duration = 0; /* no pause time */
+        scrollblock.statechange_handler = 1; /* Use Wimp pointer shape routine */
         _swix(Wimp_AutoScroll, _INR(0,1), 2, &scrollblock);
       }
       break;
