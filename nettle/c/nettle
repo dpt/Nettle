@@ -728,7 +728,6 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   char *old_assigned_area=session->assigned_area;
   int old_terminal_size_x=session->terminal_size_x;
   int old_terminal_size_y=session->terminal_size_y;
-  int old_scrollback     =session->scrollback;
 
   session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
   session->terminal_size_x=terminal_size_x;
@@ -836,7 +835,7 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
                  (-session->terminal_size_y-session->scrollback)*
                  redraw.r_charh*2*zap_yeig,
                         session->terminal_size_x*redraw.r_charw*2,0);
-
-    open_pane_window(session, (struct wimp_openwindow_block *) &block);
+    if (line_editor)
+      open_pane_window(session, (struct wimp_openwindow_block *) &block);
   }
 }
