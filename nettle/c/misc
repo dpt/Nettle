@@ -300,30 +300,12 @@ char *strdup(const char *s)
 #endif
 
 
-
-char *strndup(const char *s, size_t len)
-{
-  char    *t;
-
-  if (s == NULL)
-    return NULL;
-
-  t = malloc(len + 1);
-  if (t == NULL)
-    return NULL;
-
-  memcpy(t, s, len);
-  t[len] = '\0';
-
-  return t;
-}
-
-
 char *misc_string_lower(char *string)
 {
   int loop;
+  int len=strlen(string);
 
-  for (loop=0; loop<strlen(string); loop++)
+  for (loop=0; loop<len; loop++)
   {
     if (string[loop]>='A' && string[loop]<='Z')
       string[loop]+=32;
@@ -335,8 +317,9 @@ char *misc_string_lower(char *string)
 char *misc_string_upper(char *string)
 {
   int loop;
+  int len=strlen(string);
 
-  for (loop=0; loop<strlen(string); loop++)
+  for (loop=0; loop<len; loop++)
   {
     if (string[loop]>='a' && string[loop]<='z')
       string[loop]-=32;

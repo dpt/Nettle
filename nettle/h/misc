@@ -30,20 +30,6 @@ char *strdup(const char *s);
 
 
 /**
- * Make copy given number of characters from start of string
- *
- * @param s    String to copy characters from
- * @param len  Number of characters to copy
- *
- * @warning s should be at least 'len' characters long
- *
- * @return copy of characters, or NULL if memory allocation failed
- */
-char *strndup(const char *s, size_t len);
-
-
-
-/**
  * printf like function for writing to the log file
  *
  * @param format  printf() style format string
