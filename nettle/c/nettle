@@ -965,7 +965,7 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
       {
         /* send a WIMP message */
         union wimp_poll_block block;
-        int copy = (length > 63) ? 63 : length;
+        int copy = (length > 223) ? 223 : length;
 
         memcpy (block.user_message.contents.task_window_input.data, data, copy);
 
@@ -1566,10 +1566,18 @@ void nettle_reconnect(struct session_struct *session)
   switch (session->connection_type)
   {
     case NETTLE_TELNET:
+    {
       /* This is probably nasty for anything but telnet */
+      int i;
+
       if (session->socket_handle!=-1)
       {
         socket_close(session->socket_handle);
+      }
+
+      for (i=0; i<256; i++)
+      {
+        session->session_flags[i]=false;
       }
 
       session->socket_state=NETTLE_SESSION_RESOLVE;
@@ -1589,5 +1597,6 @@ void nettle_reconnect(struct session_struct *session)
       main_requirenull = true;
 
       break;
+    }
   }
 }
