@@ -43,9 +43,9 @@ zapgen_code
 ;    Can corrupt R1-R3, R12, (R14)
 ;    Must preserve R4-R11
 
-	STMFD	r13!, {r4-r10}
+	STMFD	r13!, {r4-r10, r14}
 
-	LDR	r12, [r13, #28]		; get session flags from stack
+	LDR	r12, [r13, #32]		; get session flags from stack
 					; Note that this will change if
 					; function entry stack use is
 					; changed.
@@ -61,106 +61,57 @@ code_y_loop
 	MUL	r7, r2, r5		; y_loop*terminal_size_x
 	MOV	r7, r7, LSL #2		; *4
 	ADD	r7, r7, r1
+
+	STMFD	r13!, {r0-r3}		; scratch space
+
+	MOV	r2, #&100
+	MOV	r3, #&100		; initial colour information
+
 code_x_loop
-	LDRB	r10, [r7, #2]
+	LDRB	r0, [r7], #1		; foreground
+	LDRB	r1, [r7], #1		; background
+	LDRB	r10, [r7], #1		; flags
+	BL	colour_change
+
 	TST	r10, #1			; cursor bit
 	BNE	code_draw_cursor	; branch if bit 0 is set
 
-	MOV	r8, #0
-	STRB	r8, [r9], #1		; 0
-
-	MOV	r8, #1
-	STRB	r8, [r9], #1		; 1
-
-	AND	r8, r12, #128		; reverse video
-	TST	r10, #4			; invert bit
-	EORNE	r8, r8, #128
-	TST	r10, #16		; selected bit
-	EORNE	r8, r8, #128
-	TST	r8, #128		; are we inverted?
-	LDRB	r8, [r7], #1
-	STRNEB  r8, [r9, #1]		; foreground
-	STREQB  r8, [r9], #1		; foreground inverted
-	LDRB	r8, [r7], #1
-	STRNEB  r8, [r9], #2		; background
-	STREQB  r8, [r9], #1		; background inverted
-
-	LDRB	r8, [r7], #1		; flags (dealt with elsewhere)
-
-	TST	r10, #8			; set if +&100
-
-	; if not set
-	LDREQB  r8, [r7], #1
-	STREQB  r8, [r9], #1		; byte
-	ADDEQ	r4, r4, #5
-
-	; if set
-
-	MOVNE	r8, #0
-	STRNEB  r8, [r9], #1		; 0
-	MOVNE	r8, #3
-	STRNEB  r8, [r9], #1		; 3
-
-	LDRNE	r8, [r7], #1
-	STRNEB  r8, [r9], #1		; byte
-	MOVNE	r8, #&01
-	STRNEB  r8, [r9], #1		; &100+
-	ADDNE	r4, r4, #8
-
-	B	code_next_stage
-
-code_draw_cursor
-
-	MOV	r8, #0
-	STRB	r8, [r9], #1		; 0
-
-	MOV	r8, #4
-	STRB	r8, [r9], #1		; 4
-
-	LDRB	r8, [r7], #1
-	STRB	r8, [r9, #1]		; foreground
-
-	LDRB	r8, [r7], #1
-	STRB	r8, [r9], #2		; background
-
-	LDRB	r8, [r7], #1		; flags (dealt with elsewhere)
-
-	TST	r10, #8			; +&100 bit
-	LDREQB  r8, [r7], #1
-	STREQB  r8, [r9], #1		; character
-	ADDEQ	r4, r4, #9
-
-	MOVNE	r8, #0
-	STRNEB  r8, [r9], #1		; 0
-	MOVNE	r8, #3
-	STRNEB  r8, [r9], #1		; 3
-
-	LDRNE	r8, [r7], #1
-	STRNEB  r8, [r9], #1		; byte
-	MOVNE	r8, #&01
-	STRNEB  r8, [r9], #1		; &100+
-	ADDNE	r4, r4, #12
-
-	MOV	r8, #0
-	STRB	r8, [r9], #1		; 0
-	MOV	r8, #3
-	STRB	r8, [r9], #1		; 3
-
-	TST	r10, #2			; got cursor bit
-	MOVEQ	r8, #&00
-	STREQB  r8, [r9], #1		; &100
-	MOVEQ	r8, #&01
-	STREQB  r8, [r9], #1		;
-
-	MOVNE	r8, #&01
-	STRNEB  r8, [r9], #1		; &101
-	MOVNE	r8, #&01
-	STRNEB  r8, [r9], #1		;
-
-code_next_stage
+	BL	write_character
 
 	SUBS	r6, r6, #1
 	BNE	code_x_loop
+	B	code_next_stage
+
+code_draw_cursor
+	MOV	r8, #0
+	STRB	r8, [r9], #1		; 0
+
+	MOV	r8, #8
+	STRB	r8, [r9], #1		; 8
+
+	STRB	r1, [r9], #1		; foreground (well, background)
+
+	TST	r1, #2			; select contrasting background
+	MOVEQ	r8, #7
+	MOVNE	r8, #0
+	TST	r1, #8
+	ORREQ	r8, r8, #8		; set bright if bg *not* bright
+	STRB	r8, [r9], #1
+
+	BL	write_character		; the charadcter under the cursor
+
+	TST	r10, #2			; test cursor bit
+	MOVEQ	r8, #&7F
+	STREQB	r8, [r9], #1		; 0: write &7F
+	MOVNE	r8, #1
+	BLNE	multibyte		; 1: write &101
+
+	SUBS	r6, r6, #1
+	BNE	code_x_loop
+
+code_next_stage
+
+	LDMFD	r13!, {r0-r3}
 
 	MOV	r8, #0
 	STRB	r8, [r9], #1
@@ -168,7 +119,7 @@ code_next_stage
 	MOV	r8, #2
 	STRB	r8, [r9], #1
 
-	ADD	r4, r4, #2
+	SUB	r4, r9, r0		; update R4
 
 	ADD	r5, r5, #1
 	CMP	r5, r3
@@ -180,9 +131,95 @@ code_next_stage
 
 	MOV	r0, r4			; put last addr written to in R0
 
-	LDMFD	r13!, {r4-r10}
+	LDMFD	r13!, {r4-r10, pc}
+
+
+colour_change
+;
+; On entry
+;	R0 = new foreground
+;	R1 = new background
+;	R2 = old foreground
+;	R3 = old background
+;	R9 -> Zap data buffer
+;	R10 = character flags
+;	R12 = session flags
+;
+; On exit
+;	R2, R3, R9 updated & colour control written if needed
+;	Can corrupt R0, R1, R8
+
+	TEQ	r0, r2
+	TEQEQ	r1, r3
+	MOVEQ	pc, r14			; quick abort
+
+	MOV	r8, #0			; control prefix
+	STRB	r8, [r9], #1
+
+	AND	r8, r12, #128		; reverse video
+	TST	r10, #4			; invert bit
+	EORNE	r8, r8, #128
+	TST	r10, #16		; selected bit
+	EORNE	r8, r8, #128
+	TST	r8, #128		; are we inverted?
+	EORNE	r0, r0, r1
+	EORNE	r1, r0, r1
+	EORNE	r0, r0, r1		; exchange colours if so
+
+	MOV	r8, #1			; change both colours
+	TEQ	r0, r2
+	MOVEQ	r8, #7			; or just the background (fg same)
+	TEQ	r1, r3
+	MOVEQ	r8, #6			; or just the foreground (bg same)
+	STRB	r8, [r9], #1
+
+	TEQ	r8, #1
+	TEQNE	r8, #6
+	STREQB	r0, [r9], #1		; changing the foreground
+
+	TEQ	r8, #1
+	TEQNE	r8, #7
+	STREQB	r1, [r9], #1		; changing the background
+
+	MOV	r2, r0			; update foreground
+	MOV	r3, r1			; update background
 
 	MOV	pc, r14
+
+
+write_character
+;
+; On entry
+;	R7 -> character
+;	R9 -> Zap data buffer
+;	R10 = character flags
+;
+; On exit
+;	R7 += 1
+;	R9 updated, character stored
+;	Will corrupt R8
+
+	LDRB	r8, [r7], #1
+	TST	r10, #8			; set if +&100
+	BNE	multibyte
+
+	; if not set
+	STRB	r8, [r9], #1		; byte
+	TEQ	r8, #0
+	STREQB	r8, [r9], #1		; extra byte if NUL
+	MOV	pc, r14
+
+multibyte
+	; if set
+	STRB	r8, [r9, #2]		; byte
+	MOV	r8, #0
+	STRB	r8, [r9], #1		; 0
+	MOV	r8, #3
+	STRB	r8, [r9], #2		; 3  (& skip byte)
+	MOV	r8, #&01
+	STRB	r8, [r9], #1		; &100+
+	MOV	pc, r14
+
 
 
 	END
