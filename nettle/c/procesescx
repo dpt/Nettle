@@ -969,6 +969,10 @@ bool process_escape_length_x(struct session_struct *session)
                       session->want_blink = true;
                       want_blink = true; /* Don't need to call rehash_blink() here */
                       break;
+                    case 7:
+                      /* Invert */
+                      session->current_flags |= NETTLE_FLAG_INVERTED;
+                      break;
                     case 21:
                       /* Normal intensity (bold off) [Linux only] -- standard is "Double underlined" */
                       session->current_fg &= ~8;
@@ -1009,10 +1013,6 @@ bool process_escape_length_x(struct session_struct *session)
                       break;
                     case 49:
                       session->current_bg=0;
-                      break;
-                    case 7:
-                      /* Invert */
-                      session->current_flags |= NETTLE_FLAG_INVERTED;
                       break;
                   }
                 }
