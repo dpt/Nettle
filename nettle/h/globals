@@ -125,8 +125,8 @@ struct session_struct
   int window_handle;		/* window handle */
   int pane_handle;		/* pane window handle */
 
-  int **assigned_area;           /* pointer to list of pointers for each line in terminal */
-  int **alternate_area;          /* ditto, alternate (no scrollback) */
+  struct term_char **assigned_area;  /* pointer to list of pointers for each line in terminal */
+  struct term_char **alternate_area; /* ditto, alternate (no scrollback) */
 
   enum nettle_terminal terminal_type; /* terminal type */
   struct coords pos;		/* current position */

@@ -379,7 +379,7 @@ static void start_connection_int (struct connection_params *params )
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
   clear_screen(session,
                0,
-               session->terminal_size.x*(session->terminal_size.y+session->scrollback)*4,
+               session->terminal_size.x*(session->terminal_size.y+session->scrollback),
                7,
                0,
                0,
@@ -776,10 +776,10 @@ void write_assigned(struct session_struct *session, int xpos, int ypos,
 {
   if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    *((char *)(session->assigned_area[ypos]+xpos)+0)=fg;
-    *((char *)(session->assigned_area[ypos]+xpos)+1)=bg;
-    *((char *)(session->assigned_area[ypos]+xpos)+2)=flags;
-    *((char *)(session->assigned_area[ypos]+xpos)+3)=character;
+    session->assigned_area[ypos][xpos].fg = fg;
+    session->assigned_area[ypos][xpos].bg = bg;
+    session->assigned_area[ypos][xpos].flags = flags;
+    session->assigned_area[ypos][xpos].chr = character;
   }
 }
 
@@ -788,10 +788,10 @@ void write_alt_assigned(struct session_struct *session, int xpos, int ypos,
 {
   if (valid_x(session, xpos) && valid_alt_y(session, ypos))
   {
-    *((char *)(session->alternate_area[ypos]+xpos)+0)=fg;
-    *((char *)(session->alternate_area[ypos]+xpos)+1)=bg;
-    *((char *)(session->alternate_area[ypos]+xpos)+2)=flags;
-    *((char *)(session->alternate_area[ypos]+xpos)+3)=character;
+    session->alternate_area[ypos][xpos].fg = fg;
+    session->alternate_area[ypos][xpos].bg = bg;
+    session->alternate_area[ypos][xpos].flags = flags;
+    session->alternate_area[ypos][xpos].chr = character;
   }
 }
 
@@ -799,7 +799,7 @@ char read_assigned_fg(struct session_struct *session, int xpos, int ypos)
 {
   if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    return *((char *)(session->assigned_area[ypos]+xpos)+0);
+    return session->assigned_area[ypos][xpos].fg;
   }
 
   return 0;
@@ -809,7 +809,7 @@ char read_assigned_bg(struct session_struct *session, int xpos, int ypos)
 {
   if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    return *((char *)(session->assigned_area[ypos]+xpos)+1);
+    return session->assigned_area[ypos][xpos].bg;
   }
 
   return 0;
@@ -819,7 +819,7 @@ char read_assigned_flags(struct session_struct *session, int xpos, int ypos)
 {
   if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    return *((char *)(session->assigned_area[ypos]+xpos)+2);
+    return session->assigned_area[ypos][xpos].flags;
   }
 
   return 0;
@@ -829,7 +829,7 @@ char read_assigned_character(struct session_struct *session, int xpos, int ypos)
 {
   if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    return *((char *)(session->assigned_area[ypos]+xpos)+3);
+    return session->assigned_area[ypos][xpos].chr;
   }
 
   return 0;
@@ -839,7 +839,7 @@ char read_alt_assigned_fg(struct session_struct *session, int xpos, int ypos)
 {
   if (valid_x(session, xpos) && valid_alt_y(session, ypos))
   {
-    return *((char *)(session->alternate_area[ypos]+xpos)+0);
+    return session->alternate_area[ypos][xpos].fg;
   }
 
   return 0;
@@ -849,7 +849,7 @@ char read_alt_assigned_bg(struct session_struct *session, int xpos, int ypos)
 {
   if (valid_x(session, xpos) && valid_alt_y(session, ypos))
   {
-    return *((char *)(session->alternate_area[ypos]+xpos)+1);
+    return session->alternate_area[ypos][xpos].bg;
   }
 
   return 0;
@@ -859,7 +859,7 @@ char read_alt_assigned_flags(struct session_struct *session, int xpos, int ypos)
 {
   if (valid_x(session, xpos) && valid_alt_y(session, ypos))
   {
-    return *((char *)(session->alternate_area[ypos]+xpos)+2);
+    return session->alternate_area[ypos][xpos].flags;
   }
 
   return 0;
@@ -869,7 +869,7 @@ char read_alt_assigned_character(struct session_struct *session, int xpos, int y
 {
   if (valid_x(session, xpos) && valid_alt_y(session, ypos))
   {
-    return *((char *)(session->alternate_area[ypos]+xpos)+3);
+    return session->alternate_area[ypos][xpos].chr;
   }
 
   return 0;
@@ -879,7 +879,7 @@ void write_assigned_flags(struct session_struct *session, int xpos, int ypos, ch
 {
   if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    *((char *)(session->assigned_area[ypos]+xpos)+2)=flags;
+    session->assigned_area[ypos][xpos].flags = flags;
   }
 }
 
@@ -887,7 +887,7 @@ void write_assigned_character(struct session_struct *session, int xpos, int ypos
 {
   if (valid_x(session, xpos) && valid_y(session, ypos))
   {
-    *((char *)(session->assigned_area[ypos]+xpos)+3)=character;
+    session->assigned_area[ypos][xpos].chr = character;
   }
 }
 
@@ -896,22 +896,22 @@ void create_terminal(struct session_struct *session, struct coords terminal_size
 {
   int loop;
 
-  session->assigned_area=malloc((terminal_size.y+scrollback)*4);
+  session->assigned_area=malloc((terminal_size.y+scrollback)*sizeof (int *));
   assert(session->assigned_area);
 
   for (loop=0; loop<terminal_size.y+scrollback; loop++)
   {
-    session->assigned_area[loop]=malloc(terminal_size.x*4);
+    session->assigned_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
     assert(session->assigned_area[loop]);
   }
 
-  session->alternate_area=malloc(terminal_size.y*4);
+  session->alternate_area=malloc(terminal_size.y*sizeof (int *));
 
   if (session->alternate_area)
   {
     for (loop=0; loop<terminal_size.y; loop++)
     {
-      session->alternate_area[loop]=malloc(terminal_size.x*4);
+      session->alternate_area[loop]=malloc(terminal_size.x*sizeof (struct term_char));
       assert(session->alternate_area[loop]);
     }
   }
@@ -980,7 +980,7 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     /* clear out the assigned area with black bg, white fg, no flags and ' ' */
     clear_screen(session,
                  0,
-                 session->terminal_size.x*(session->terminal_size.y+session->scrollback)*4,
+                 session->terminal_size.x*(session->terminal_size.y+session->scrollback),
                  7,
                  0,
                  0,

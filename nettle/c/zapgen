@@ -54,7 +54,7 @@
 
 
 char *
-zapgen_code (int *output_buffer, int **input_line_offsets,
+zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
 	     int width, int first_line, int last_line, int session_flags,
 	     int selection_start_line, int selection_start_x,
 	     int selection_end_line, int selection_end_x)
@@ -64,7 +64,7 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
   const struct term_char *input;
   int line_number = 0;
   bool selected = false;
-  int *startoffset, *endoffset;
+  const struct term_char *startoffset, *endoffset;
 
   /* line_offsets -> list of offsets of lines (in the data block) */
   /* write -> next location at which to place data in the output buffer */
@@ -112,7 +112,7 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
     int current_fg = redraw.r_for;
     int current_bg = redraw.r_bac;
 
-    input=(struct term_char *) input_line_offsets[line_number];
+    input=input_line_offsets[line_number];
 
     if (line_number < first_line)
     {
@@ -135,7 +135,7 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
       if (input->flags & NETTLE_FLAG_INVERTED)
         invert=NOT(invert);
 
-      if ((const int*)input == startoffset || (const int*)input == endoffset)
+      if (input == startoffset || input == endoffset)
         selected=NOT(selected);
 
       if (selected)
