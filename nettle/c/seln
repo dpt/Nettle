@@ -288,7 +288,7 @@ void save_selection(char *filename, bool ansi_colour)
     if (xpos<=last_valid_char)
       fputc(read_assigned_character(selection_session, xpos, ypos), file_handle);
 
-    if (xpos>last_valid_char)
+    if (xpos==last_valid_char)
       fputc('\n', file_handle);
 
     if (ferror(file_handle))
