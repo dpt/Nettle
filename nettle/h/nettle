@@ -36,6 +36,7 @@
 #define NETTLE_OTHER_REVERSE_VIDEO  (1<<7)
 #define NETTLE_OTHER_APPLI_MODE	    (1<<8)
 #define NETTLE_OTHER_BACKSPACE_MODE (1<<9)
+#define NETTLE_OTHER_SCREEN_MODE    (1<<10)
 
 enum nettle_terminal {
   NETTLE_TERMINAL_VT100,
@@ -75,13 +76,13 @@ struct session_struct;
 int get_host_port (char *string, int *port);
 void start_connection(void);
 void start_connection_int (int connection_type, enum nettle_terminal terminal_type,
-			   char *host, int port, char *command);
+			   const char *host, int port, const char *command);
 void write_out_string(struct session_struct *, const char *);
 void write_out_strings(struct session_struct *, ...); /* term with NUL ptr */
 void write_out_data(struct session_struct *, const char *, int);
 
 void remove_session(struct session_struct *);
-void nettle_senddata(struct session_struct *, char *, int);
+void nettle_senddata(struct session_struct *, const char *, int);
 void reset_terminal(struct session_struct *);
 
 void write_assigned(struct session_struct *, int, char, char, char, char);

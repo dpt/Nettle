@@ -49,6 +49,13 @@ int main(void)
       else if (selection_in_progress)
         nextpolltime += 5; /* reasonable number of updates required to redraw
                             * selection as mouse moves */
+      else if (cursor_session)
+      {
+        if (nextcursortime - nextpolltime < 0)
+          nextpolltime += CURSOR_BLINK_DELAY;
+        else
+          nextpolltime = nextcursortime;
+      }
       else
         nextpolltime += 500; /* otherwise, wait 5 seconds between nulls */
     }

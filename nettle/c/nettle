@@ -126,17 +126,7 @@ void start_connection(void)
       connection_type=NETTLE_TELNET;
   }
 
-  read_icon_data(win_open, 9, string, sizeof(string));
-
-  terminal_type = NETTLE_TERMINAL_VT100;
-  for (loop=0; loop<8; loop++)
-  {
-    char type[MESSAGE_MAX_TERMINAL];
-    char term[7];
-    sprintf(term,"Term%d",loop);
-    if (strcmp(string,lookup(term, type, MESSAGE_MAX_TERMINAL))==0)
-      terminal_type = (enum nettle_terminal)loop;
-  }
+  terminal_type = read_terminal_type (win_open, 9);
 
   switch (connection_type)
   {
@@ -171,7 +161,7 @@ void start_connection(void)
 
 
 void start_connection_int (int connection_type, enum nettle_terminal terminal_type,
-			   char *host, int port, char *command)
+			   const char *host, int port, const char *command)
 {
 #define INITIAL_MAX_Y (1088)
   static int max_y = INITIAL_MAX_Y; /* the top of the next window to be opened */
@@ -235,6 +225,8 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
   session->assigned_area=malloc(session->terminal_size.x*
                                                 (session->terminal_size.y+
                                                  session->scrollback)*4);
+  session->alternate_area=malloc(session->terminal_size.x*
+                                 session->terminal_size.y*4);
   assert(session->assigned_area);
   session->pos.x=0;
   session->pos.y=session->scrollback;
@@ -252,6 +244,9 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
     {
       write_assigned(session,loop,7,0,0,32);
     }
+
+    memcpy(session->alternate_area, session->assigned_area,
+           session->terminal_size.x * session->terminal_size.y * 4);
   }
 
   /* create tabs */
@@ -438,6 +433,9 @@ void write_out_data(struct session_struct *session, const char *data, int length
     changedbox_update_offset (calc);
     force_redraw_changedbox ();
   }
+
+  nextcursortime = _swi (OS_ReadMonotonicTime, 0) + CURSOR_BLINK_DELAY;
+  cursor_state = true;
 }
 
 
@@ -483,6 +481,7 @@ void remove_session(struct session_struct *session)
 
   /* free the assigned area and title */
   free(session->assigned_area);
+  free(session->alternate_area);
   free(session->title);
 
   if (session->prev)
@@ -508,7 +507,7 @@ void remove_session(struct session_struct *session)
   free(session);
 }
 
-void nettle_senddata(struct session_struct *session, char *data, int length)
+void nettle_senddata(struct session_struct *session, const char *data, int length)
 {
   switch (session->connection_type)
   {
@@ -659,6 +658,7 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
                      int scrollback, bool use_naws)
 {
   char *old_assigned_area=session->assigned_area;
+  char *old_alternate_area=session->alternate_area;
   struct coords old_terminal_size;
 
   old_terminal_size.x = session->terminal_size.x;
@@ -668,7 +668,9 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
       old_terminal_size.y || scrollback != session->scrollback)
   {
     session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
+    session->alternate_area =malloc(terminal_size_x*terminal_size_y*4);
     assert(session->assigned_area != NULL);
+    assert(session->alternate_area != NULL);
     session->scroll_start   = 1;
     session->scroll_end     = terminal_size_y;
     session->terminal_size.x=terminal_size_x;
@@ -684,12 +686,16 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
       {
         write_assigned(session, loop, 7, 0, 0, 32);
       }
+
+      memcpy(session->alternate_area, session->assigned_area,
+             session->terminal_size.x * session->terminal_size.y * 4);
     }
 
     /* move old data to new area */
     /* Implement... */
 
     free(old_assigned_area);
+    free(old_alternate_area);
 
     allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
   }

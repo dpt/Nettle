@@ -8,12 +8,17 @@
 #ifndef WIMP_H
 #define WIMP_H
 
+#include "nettle.h"
+
+#define MENU_NONE          0
 #define MENU_ICONBAR       1
 #define MENU_TERMINAL      2
 #define MENU_CONNECTION    3
 #define MENU_TERMINAL_TYPE 4
 #define MENU_HOTLIST       5
 #define MENU_TERMLIST      6
+#define MENU_LINEED_TYPE   7
+#define MENU_ZAPFONTLIST   8
 
 #define RECEIVE_BLOCK_LENGTH	0x400
 
@@ -49,5 +54,7 @@ extern void force_redraw(int,int,int,int,int);
 extern void create_menu_by_icon(int *menu, int window, int icon);
 extern void set_termsize_icons(int, int, int, int, struct coords, int);
 extern bool read_termsize_icons(int, int, int, int, struct coords *, int *);
+
+extern enum nettle_terminal read_terminal_type (int, int);
 
 #endif

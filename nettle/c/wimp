@@ -2842,3 +2842,17 @@ bool read_termsize_icons (int window_handle, int xicon, int yicon, int sicon,
   *scrollback = tmpscroll;
   return true;
 }
+
+enum nettle_terminal read_terminal_type (int window_handle, int icon_handle)
+{
+  char string[32];
+  int loop = -1;
+
+  read_icon_data (window_handle, icon_handle, string, sizeof(string));
+
+  while (++loop < NO_OF_TERMINAL_TYPES)
+    if (! strcmp(string, terminal_name[loop]))
+      return (enum nettle_terminal) loop;
+
+  return default_terminal;
+}

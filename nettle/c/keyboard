@@ -12,6 +12,12 @@
 #include "keyboard.h"
 
 
+bool inkey (int key)
+{
+  return _swi(OS_Byte, _INR(0,2)|_RETURN(1), 129, key & 255, key >> 8)
+    ? true : false;
+}
+
 
 int
 decode_key (struct session_struct *session, int key, int extra, char *block)
@@ -32,6 +38,9 @@ decode_key (struct session_struct *session, int key, int extra, char *block)
 	(((session->other_session_flags & NETTLE_OTHER_APPLI_MODE) != 0) ^
 	 ((extra & 0x3) != 0)))
       SETBLOCK (3, "\x1BOM")	/* Enter */
+
+      /* Darren reckons this is wrong - I'm not convinced (and don't know why */
+      /* bash should be turning on LINEFEED_MODE anyway) */
     else if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
       SETBLOCK (3, "\r\n\n")
     else

@@ -8,6 +8,7 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+bool inkey (int key);
 int decode_key (struct session_struct *, int key, int extra, char *block);
 
 #endif
