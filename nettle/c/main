@@ -65,6 +65,9 @@ int main(void)
     nextpolltime = _swi(OS_ReadMonotonicTime, _RETURN(0)) + 5;
 #endif /*SOCKETWATCH*/
 
+    /* Provide a suitable default in case DeepKeys isn't available */
+    wimp_block.key_pressed.extra = 0;
+
     event = _swi(Wimp_PollIdle, _INR(0,2) | _RETURN(0),
                  mask, &wimp_block, nextpolltime, socketwatch_pollword);
 
