@@ -163,7 +163,7 @@ void set_icon_data(int window_handle, int icon_handle, const char *contents)
   }
   else
   {
-    char string[6];
+    char string[60];
     sprintf(string,"Icon %d in window %X is not indirected.",icon_handle,window_handle);
     generror(string, false);
   }
