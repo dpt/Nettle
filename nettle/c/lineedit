@@ -282,9 +282,14 @@ void lineedit_free_space(struct session_struct *session)
   /* Note - this *must* be called if the lineeditor is turned off at any point */
   struct wimp_deletewindow_block block;
 
+  if (session->line_editor_type == LINEEDIT_NONE)
+    return;
+
   block.window_handle=session->pane_handle;
 
-  _swi(Wimp_DeleteWindow, _IN(1), &block);
+  _swix(Wimp_DeleteWindow, _IN(1), &block);
+  session->pane_handle = 0;
 
   free(session->line_editor_history);
+  session->line_editor_history = NULL;
 }

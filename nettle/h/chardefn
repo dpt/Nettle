@@ -8,6 +8,7 @@
 #ifndef CHARDEFN_H
 #define CHARDEFN_H
 
-extern void define_zap_chars(int *, int, int, int, const int *);
+extern void define_zap_chars(int *, int, int, int);
+extern void define_zap_undef_chars(int *, int, int, int, int, int);
 
 #endif

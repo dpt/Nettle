@@ -683,12 +683,14 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   char *old_assigned_area=session->assigned_area;
   char *old_alternate_area=session->alternate_area;
   struct coords old_terminal_size;
+  int old_scrollback;
 
   old_terminal_size.x = session->terminal_size.x;
   old_terminal_size.y = session->terminal_size.y;
+  old_scrollback      = session->scrollback;
 
   if (terminal_size_x != old_terminal_size.x || terminal_size_y !=
-      old_terminal_size.y || scrollback != session->scrollback)
+      old_terminal_size.y || old_scrollback != scrollback)
   {
     session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
     session->alternate_area =malloc(terminal_size_x*terminal_size_y*4);
@@ -710,7 +712,8 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
         write_assigned(session, loop, 7, 0, 0, 32);
       }
 
-      memcpy(session->alternate_area, session->assigned_area,
+      memcpy(session->alternate_area,
+             session->assigned_area+(session->terminal_size.x*session->scrollback*4),
              session->terminal_size.x * session->terminal_size.y * 4);
     }
 
@@ -723,32 +726,33 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
     allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
   }
 
-  reopen_and_size_window(session, old_terminal_size.x, old_terminal_size.y,
+  reopen_and_size_window(session, old_terminal_size.x, old_terminal_size.y, old_scrollback,
                          redraw.r_charw, redraw.r_charh);
 
   if (use_naws)
   {
-    if (session->session_flags[31])
+    if (session->session_flags[TELOPT_NAWS])
     {
       /* NAWS is on */
       char block[9];
 
-      block[0]=255; /* IAC */
-      block[1]=250; /* SB */
-      block[2]=31;  /* NAWS */
+      block[0]=TELNET_IAC;
+      block[1]=TELNET_SB;
+      block[2]=TELOPT_NAWS;
       block[3]=session->terminal_size.x / 256;
       block[4]=session->terminal_size.x % 256;
       block[5]=session->terminal_size.y / 256;
       block[6]=session->terminal_size.y % 256;
-      block[7]=255; /* IAC */
-      block[8]=240; /* SE */
+      block[7]=TELNET_IAC;
+      block[8]=TELNET_SE;
       nettle_senddata(session, block, 9);
     }
   }
 }
 
 void reopen_and_size_window(struct session_struct *session, int old_terminal_size_x,
-                            int old_terminal_size_y, int old_charw, int old_charh)
+                            int old_terminal_size_y, int old_scrollback,
+                            int old_charw, int old_charh)
 {
   {
     struct wimp_setextent_block block;
@@ -788,6 +792,24 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
       block.min.y=block.max.y-(session->terminal_size.y*redraw.r_charh << eig.y);
     }
 
+    /* If terminal is bigger than fullsize in the new font shrink it down to fullsize */
+    if ((block.max.x-block.min.x)>(session->terminal_size.x*redraw.r_charw << eig.x))
+    {
+      block.max.x=block.min.x+(session->terminal_size.x*redraw.r_charw << eig.x);
+    }
+    if ((block.max.y-block.min.y)>(session->terminal_size.y*redraw.r_charh << eig.y))
+    {
+      block.min.y=block.max.y-(session->terminal_size.y*redraw.r_charh << eig.y);
+    }
+
+    /* If scrollback has changed, then shift the scroll offset */
+    if (old_scrollback!=session->scrollback)
+    {
+      printf("block.scroll.y is %d\n",block.scroll.y);
+      block.scroll.y-=(session->scrollback-old_scrollback)*old_charh << eig.y;
+      printf("block.scroll.y is now %d\n",block.scroll.y);
+    }
+
     /* Scale the scroll offset according to the old font size/new font size */
     block.scroll.x=(block.scroll.x*redraw.r_charw/old_charw);
     block.scroll.y=(block.scroll.y*redraw.r_charh/old_charh);
@@ -799,7 +821,8 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
                  (-session->terminal_size.y-session->scrollback)*
                  redraw.r_charh << eig.y,
                         session->terminal_size.x*redraw.r_charw << eig.x,0);
-    if (line_editor)
+
+    if (session->line_editor_type!=LINEEDIT_NONE)
       open_pane_window(session, (struct wimp_openwindow_block *) &block);
   }
 }

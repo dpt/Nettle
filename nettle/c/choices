@@ -364,15 +364,16 @@ bool win_choices_read(int save)
   enum nettle_terminal new_default_terminal;
   char new_zap_font[256];
   char new_zap_lowres_font[256];
-  int new_line_editor;
   char string[32];
+  bool changed = false;
 
   /* Read paneterm type options */
   {
-    char terminal_type_string[32];
+    char terminal_type_string[MESSAGE_MAX_TERMINAL];
     int counter=0;
 
-    strcpy(terminal_type_string, read_icon_data(win_paneterm, icon_paneterm_termtype, string, sizeof(string)));
+    read_icon_data(win_paneterm, icon_paneterm_termtype, terminal_type_string,
+                   MESSAGE_MAX_TERMINAL);
 
     while (counter<NO_OF_TERMINAL_TYPES &&
            strcmp(terminal_type_string, terminal_name[counter]))
@@ -407,32 +408,19 @@ bool win_choices_read(int save)
   strcpy(new_zap_font, read_icon_data(win_paneterm, icon_paneterm_hifont, string, sizeof(string)));
   strcpy(new_zap_lowres_font, read_icon_data(win_paneterm, icon_paneterm_lofont, string, sizeof(string)));
 
-  new_line_editor=LINEEDIT_NONE;
-  {
-    char string_lineedit[32];
-    int loop=0;
-
-    read_icon_data(win_paneterm, icon_paneterm_lineedittype, string_lineedit, sizeof(string_lineedit));
-
-    while (loop<LINEEDIT_NUM_TYPES)
-    {
-      sprintf(string,"LineEd%d",loop);
-
-      if (strcmp(string_lineedit, lookup_static(string))==0)
-        new_line_editor=loop;
-
-      loop++;
-    }
-  }
-
-  line_editor=new_line_editor;
+  line_editor=read_lineeditor_type(win_paneterm, icon_paneterm_lineedittype);
 
   /* Read panecols type options */
   {
     int loop;
     for (loop=15; loop>=0; loop--)
     {
-      palette[loop] = get_colour_icon(loop, false);
+      colour_t colour = get_colour_icon (loop, false);
+      if (colour != palette[loop])
+      {
+        palette[loop] = colour;
+        changed=true;
+      }
     }
 
   }
@@ -445,15 +433,13 @@ bool win_choices_read(int save)
   defaultsize = new_termsize;
   defaultscroll = new_scrollback;
 
-  /* Set new palette */
-  _swi(ZapRedraw_CreatePalette, _INR(0,4), 2, &redraw, palette, zap_palette, 16);
-
   /* Load in new zap fonts */
   if (strcmp(zap_font, new_zap_font)!=0)
   {
     free(zap_font_area);
     strcpy(zap_font, new_zap_font);
     zap_font_area=load_font(zap_font);
+    changed = true;
   }
 
   if (strcmp(zap_lowres_font, new_zap_lowres_font)!=0)
@@ -461,9 +447,12 @@ bool win_choices_read(int save)
     free(zap_lowres_font_area);
     strcpy(zap_lowres_font, new_zap_lowres_font);
     zap_lowres_font_area=load_font(zap_lowres_font);
+    changed = true;
   }
 
-  mode_change();
+  /* Resize & redraw; also updates the palette */
+  if (changed)
+    mode_change();
 
   /* if we're saving, save now */
   return save ? save_choices () : true;
@@ -665,7 +654,7 @@ void win_panecols_click(int x, int y, int buttons, int icon_handle)
     struct wimp_geticonstate_block icon;
     struct wimp_getwindowstate_block window;
 
-    strcpy(title, "Select colour");
+    strcpy(title, lookup_static("SelColour"));
 
     window.window_handle = win_panecols;
     icon.window_handle = win_panecols;

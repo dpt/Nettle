@@ -56,14 +56,14 @@ static void make_underline (char *area, int step, int height)
 }
 
 
-void define_zap_chars(int *int_area, int char_size, int width, int height,
-                      const int *int_base)
+void define_zap_chars(int *int_area, int char_size, int width, int height)
 {
   int loop;
   int step=char_size/height;
   char *area=(char *) int_area;
-  const char *base = (const char *) int_base;
+  const char *base = area;
   /* define characters */
+  area += 0x100 * char_size;
 
   /* currently defining 0x100 - 0x11C - initialise this area to 0 */
   memset (area, 0, 0x1D * char_size);
@@ -269,4 +269,48 @@ void define_zap_chars(int *int_area, int char_size, int width, int height,
       area[loop] = ptr1[loop] | ptr2[loop];
   }
   area+=char_size;
+}
+
+
+void define_zap_undef_chars(int *int_area, int first_char, int last_char,
+                            int char_size, int width, int height)
+{
+  char *area = (char *)int_area;
+
+  if (width == 8 && (height == 8 || height == 16))
+  {
+    /* System font size - fill in blanks from there */
+    int chr = (first_char < 32) ? (last_char - 1) : 31;
+    char def[9];
+    while (++chr < 0x100)
+    {
+      if (chr == first_char)
+      {
+        /* skip the defined characters */
+        chr = last_char - 1;
+        continue;
+      }
+
+      /* undefined character - fill in the definition */
+      def[0] = chr;
+      _kernel_osword (10, (int *)def);
+      if (height == 8)
+        memcpy (area + chr * char_size, def + 1, 8);
+      else
+      {
+        int i;
+        char *ptr = area + chr * char_size;
+        for (i = 7; i >= 0; --i)
+          ptr[i*2 + 1] = ptr[i*2] = def[i + 1];
+      }
+    }
+  }
+
+  {
+    /* Now do the control characters */
+    int chr;
+    int step=char_size/height;
+    for (chr = 0; chr < 32 && chr < first_char; chr++)
+      copypair (area + chr * char_size, step, height, area, chr | 64, '-');
+  }
 }

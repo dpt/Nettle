@@ -16,11 +16,6 @@
 #include "wimputil.h"
 #include "zapredraw.h"
 
-struct term_char
-{
-  char fg, bg, flags, chr;
-};
-
 #define REDRAW_FLAGS_MASK (NETTLE_FLAG_INVERTED | NETTLE_FLAG_SELECTED)
 
 /* These used to be functions, and were fine in gcc... */
@@ -263,18 +258,24 @@ int *load_font(char *font)
   zap_load_area=malloc(char_size*0x11D+0x20);
   assert(zap_load_area != NULL);
 
+  memset (zap_load_area, 0, char_size*0x11D + 0x20);
   _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);
 
   {
     char *area=(char *) zap_load_area;
 
+    /* Actually, if the 1st arg is the destination for the move and the 2nd is the source, */
+    /* I have no idea why this works... */
     MEMMOVE(area+0x20, area+0x20+(first_char*char_size),
             (last_char-first_char)*char_size);
   }
 
   /* fill in graphics chars */
-  define_zap_chars(zap_load_area+8+(char_size*0x40),
-                   char_size, width, height, zap_load_area+8);
+  define_zap_chars(zap_load_area+8, char_size, width, height);
+
+  /* fill in some undefined characters in range 0x00-0xFF*/
+  define_zap_undef_chars (zap_load_area+8, first_char, last_char,
+                          char_size, width, height);
 
   zap_load_area[4]=0;
   zap_load_area[5]=0x11D;

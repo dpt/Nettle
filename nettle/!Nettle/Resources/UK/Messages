@@ -46,13 +46,15 @@ InvalidAddr:The remote address you entered is invalid. Please check and try agai
 InvalidPort:The port you entered was either malformed or too large.
 InvalidComm:You must enter a command to start a Nettle task window.
 BadTermType:The requested terminal type is not recognised as being valid.
+BadLineEdType:The requested line editor type is not recognised as being valid.
 BadTermSize:The requested terminal dimensions are either zero or too large. Please check and try again.
 BadLineEdSize:The requested line editor length is either zero or too large. Please check and try again.
 TooMany:There are too many telnet sessions already open.
+ToSaveDrag:To save, drag the icon to a directory display.
 
 Telnet:Telnet
 SSH:SSH
-Taskwindow:Task window
+Taskwindow:ANSI task
 
 Term0:vt100
 Term1:vt102
@@ -64,11 +66,12 @@ Term6:rxvt
 Term7:xterm
 Term8:xterm-color
 
+SelColour:Select colour
+
 # Title bar
 title_conn:Nettle (Connecting)
 title_disconnect:Nettle (Disconnected)
 title_noconn:Nettle (Connection refused)
-title_open:Nettle (Open)
 title_closed:Nettle (Closed)
 
 # Session messages
@@ -86,6 +89,6 @@ twclosed:Nettle: Task window has been closed
 # Errors
 DeleteHot:Are you sure you wish to delete this hotlist entry?
 BadHotlist:Error in hotlist file. Has it been mis-edited by hand?
-nocreate:Couldn't create file.  Is the disc write-protected?
-CantSaveChoices:Nettle was unable to save its Choices file:
+nocreate:Couldn't create file. Is the disc write-protected?
+CantSaveChoices:Nettle was unable to save its Choices file: 
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.

@@ -53,6 +53,11 @@
 # define MEMMOVE(src,dest,len) _swi(ZapRedraw_MoveBytes, _INR(1,3), (int)(src), (int)(dest), (len))
 #endif
 
+struct term_char
+{
+  char fg, bg, flags, chr;
+};
+
 extern const char *application_name;
 extern const char *application_icon_name;
 extern bool quit_flag;
@@ -194,7 +199,7 @@ typedef struct user_message
   union
   {
     char                      bytes[236];
-    
+
     struct
     {
       int window_handle;
@@ -343,7 +348,7 @@ union wimp_poll_block
     int *address_poll_word;
     int contents_poll_word;
   } pollword_non_zero;
-  
+
   user_message user_message;
 };
 

@@ -29,11 +29,11 @@ extern void redraw_window(union wimp_poll_block *);
 extern void open_window(struct wimp_openwindow_block *, int);
 extern void open_window_centred(int);
 extern void close_window(int);
-extern void wimp_mouseclick(int /*x*/, int /*y*/, int /*buttons*/,
+extern void wimp_mouse_click(int /*x*/, int /*y*/, int /*buttons*/,
                             int /*window*/, int /*icon*/);
 extern void drag_finished(void);
 extern void key_pressed(int, int, int, int);
-extern void wimp_menuchoice(int */*selection*/);
+extern void wimp_menu_selection(int */*selection*/);
 extern void lose_caret(int);
 extern void gain_caret(int);
 extern void wimp_message(union wimp_poll_block *);
