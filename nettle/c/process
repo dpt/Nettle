@@ -2188,7 +2188,7 @@ static bool process_escape_length_x(struct session_struct *session)
                           /* Turn on auto repeat */
                           break;
                         case 12:
-                          /* Turn off local echo (NB. just using telnet's local echo stuff) */
+                          /* Turn off local echo */
                           /* session->session_flags[1]=true; */
 			  session->local_echo = false;
                           break;
@@ -2284,7 +2284,8 @@ static bool process_escape_length_x(struct session_struct *session)
                           }
                           break;
                         case 67:
-                          /* Make Backspace send Delete and Delete send ESC '[3~' (requires DeepKeys) */
+                          /* Make Backspace send Delete and Delete send ESC '[3~' */
+                          /* (requires DeepKeys) */
                           session->other_session_flags &= ~NETTLE_OTHER_BACKSPACE_MODE;
                           break;
                         case 1000:
@@ -2309,6 +2310,7 @@ static bool process_escape_length_x(struct session_struct *session)
                           }
                           break;
                         case 1048:
+                          /* Restore cursor position */
                           restore_cursor_position (session);
                           break;
                       }
@@ -2341,7 +2343,7 @@ static bool process_escape_length_x(struct session_struct *session)
                           session->other_session_flags &= ~NETTLE_OTHER_INSERT_MODE;
                           break;
                         case 12:
-                          /* Turn on local echo (NB. just using telnet's echo stuff) */
+                          /* Turn on local echo */
                           /* session->session_flags[1]=false; */
 		          session->local_echo = true;
                           break;
@@ -2624,6 +2626,24 @@ static bool process_escape_length_x(struct session_struct *session)
               case 0:
                 /* Change Icon Name and Window Title to Pt */
 		/* Fall through */
+              case 1:
+                /* Change Icon Name to Pt */
+                {
+                  char string[256];
+                  int loop=esc_instr(session->escape_string,
+                                     ";", session->escape_string_length)+1;
+                  int counter=0;
+
+                  while (session->escape_string[loop]!=7 && counter<sizeof(string)-1)
+                  {
+                    string[counter++]=session->escape_string[loop++];
+                  }
+                  string[counter]='\0';
+
+                  strcpy(session->icon_name, string);
+                }
+                if (atoi(session->escape_string+2)!=0)
+                  break;
 	      case 2:
                 /* Change Window Title to Pt */
                 {
@@ -2632,26 +2652,14 @@ static bool process_escape_length_x(struct session_struct *session)
                                      ";", session->escape_string_length)+1;
                   int counter=0;
 
-                  while (session->escape_string[loop]!=7 && counter < sizeof(string) - 1)
+                  while (session->escape_string[loop]!=7 && counter<sizeof(string)-1)
                   {
                     string[counter++]=session->escape_string[loop++];
                   }
                   string[counter]='\0';
-                  set_title_bar(session->window_handle,string);
+                  set_title_bar(session->window_handle, string);
                 }
                 break;
-/*
-              case 1:
-*/              /* Change Icon Name to Pt */
-/*              break;
-              case 46:
-*/              /* Change Log File to Pt */
-/*              break;
-              case 50:
-*/              /* Set Font to Pt */
-/*              break;
-
-*/
             }
 
             done=true;
@@ -2687,12 +2695,12 @@ static bool process_escape_length_x(struct session_struct *session)
               case TELOPT_TERMINAL_SPEED:
                 if (session->escape_string[3]==TELOPT_SUB_SEND)
                 {
-                  char block[256],len;
+                  char block[256], len;
                   block[0]=TELNET_IAC;
                   block[1]=TELNET_SB;
                   block[2]=TELOPT_TERMINAL_SPEED;
                   block[3]=TELOPT_SUB_IS;
-                  sprintf(block+4,"%d,%d",TERMINAL_SPEED, TERMINAL_SPEED);
+                  sprintf(block+4,"%d,%d", TERMINAL_SPEED, TERMINAL_SPEED);
 	                len=strlen(block+4);
                   block[4+len]=TELNET_IAC;
                   block[5+len]=TELNET_SE;
@@ -2706,13 +2714,13 @@ static bool process_escape_length_x(struct session_struct *session)
                   char block[256];
                   char name[256];
 
-                  strcpy(name,getenv("Inet$HostName"));
+                  strcpy(name, getenv("Inet$HostName"));
                   if (strncmp(name,".",1)!=0)
                   {
                     if (getenv("Inet$LocalDomain")!=NULL)
                     {
-                      strcat(name,".");
-                      strcat(name,getenv("Inet$LocalDomain"));
+                      strcat(name, ".");
+                      strcat(name, getenv("Inet$LocalDomain"));
                     }
                   }
 
@@ -2721,23 +2729,13 @@ static bool process_escape_length_x(struct session_struct *session)
                   block[2]=TELOPT_XDISPLOC;
                   block[3]=TELOPT_SUB_IS;
 
-                  strcpy(block+4,name);
-                  strcpy(block+4+strlen(name),":0.0");
+                  strcpy(block+4, name);
+                  strcpy(block+4+strlen(name), ":0.0");
                   block[8+strlen(name)]=TELNET_IAC;
                   block[9+strlen(name)]=TELNET_SE;
 
                   block[10+strlen(name)]='\0';
-/*
-                  printf("TELOPT_XDISPLOC: ");
-                  {
-                    int loop;
-                    for (loop=0; loop<11+strlen(name); loop++)
-                    {
-                      printf("%c",block[loop]);
-                    }
-                    printf("\n");
-                  }
-*/
+
                   nettle_senddata(session,block,10+strlen(name));
                   done=true;
                 }

@@ -366,6 +366,10 @@ static void start_connection_int (struct connection_params *params )
   assert(session->title != NULL);
   strcpy(session->title,"");
 
+  session->icon_name=malloc(256);
+  assert(session->icon_name != NULL);
+  strcpy(session->icon_name,"");
+
   create_terminal(session, session->terminal_size, session->scrollback);
 
   session->pos.x=0;
@@ -683,8 +687,6 @@ void remove_session(struct session_struct *session)
 
 int nettle_senddata(struct session_struct *session, const char *data, int length)
 {
-  /*int ret = length;*/
-
   switch (session->connection_type)
   {
     case NETTLE_TELNET:
@@ -692,7 +694,6 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
       return socket_senddata(session->socket_handle,data,length);
       break;
     case NETTLE_TASKWINDOW:
-      /*while (length)*/
       {
         /* send a WIMP message */
         union wimp_poll_block block;
@@ -700,18 +701,15 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
 
         memcpy (block.user_message.contents.task_window_input.data, data, copy);
 
-        block.user_message.length                         =(27+copy) & ~3;
+        block.user_message.length                         =(28+copy) & ~3;
         block.user_message.my_ref                         =0;
         block.user_message.message_code                   =WIMP_MESSAGE_TASKWINDOW_INPUT;
         block.user_message.contents.task_window_input.size=length;
 
         _swi(Wimp_SendMessage, _INR(0,2), 17, &block, session->socket_handle);
 
-        /*data += copy;*/
-        /*length -= copy;*/
         return copy;
       }
-      /*return ret;*/
       break;
   }
   return 0;

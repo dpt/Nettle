@@ -145,6 +145,7 @@ struct session_struct
   char current_bg;		/* current background colour */
   int current_flags;		/* current flags */
   char *title;			/* titlebar contents */
+  char *icon_name;              /* icon contents (when pinned) */
   char label[150];              /* Menu label (hostname/command/hotlist label) */
   char escape_string[256];	/* Escape array */
   int escape_string_length;	/* length of escape array so far */

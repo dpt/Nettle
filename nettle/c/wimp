@@ -2460,17 +2460,27 @@ void wimp_message(union wimp_poll_block *wimp_block)
           int counter=0;
 
           wimp_block->user_message.your_ref    =my_ref;
+
           strcpy(wimp_block->user_message.contents.window_info.icon_string, "nettle");
 
-          /* Copy (at most) first 10 characters of session label */
-          while (counter<10 && session->label[counter]!='\0')
+          if (session->icon_name==NULL || strlen(session->icon_name)==0)
           {
-            wimp_block->user_message.contents.window_info.title[counter]=session->label[counter];
-            counter++;
-          }
+            /* Copy session label */
+            while (counter<220 && session->label[counter]!='\0')
+            {
+              wimp_block->user_message.contents.window_info.title[counter]=session->label[counter];
+              counter++;
+            }
 
-          wimp_block->user_message.contents.window_info.title[counter]='\0';
-          wimp_block->user_message.length = (36+10+3) & ~3; /* more efficient way? */
+            wimp_block->user_message.contents.window_info.title[counter]='\0';
+            wimp_block->user_message.length = (40+counter) & ~3;
+          }
+          else
+          {
+            /* Copy icon name */
+            strcpy(wimp_block->user_message.contents.window_info.title, session->icon_name);
+            wimp_block->user_message.length = (40+strlen(session->icon_name)) & ~3;
+          }
 
           _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
         }
