@@ -1,3 +1,7 @@
+30/07/2001
+
+Testing CVS commit e-mail code.
+
 20/07/2001
 
 Problems with NETTLE_OTHER_LINEFEED_MODE - if it is off, then RETURN just sends a CR, not CR LF... is this right? And if it is on, then LF moves to left margin of next line, which would be wrong by default I think... Thoughts? Either that, or the spec is wrong...

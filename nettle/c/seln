@@ -272,7 +272,7 @@ void save_selection(char *filename, bool ansi_colour)
 
 void handle_selection_drag(void)
 {
-  int block[22];
+  int block[23];
   int x,y,buttons,window_handle,icon_handle;
   int x_pos,y_pos,zap_yeig;
 
