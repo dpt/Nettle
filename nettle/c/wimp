@@ -39,6 +39,8 @@ static void create_terminal_menu(void);
 static void create_connection_menu(void);
 static void create_terminal_type_menu(void);
 static void drag_start(int, int);
+static void create_menu_by_icon (int *menu, int window, int icon);
+
 
 
 void closedown_wimp(void)
@@ -247,10 +249,10 @@ void open_window(int window_handle, bool poll_flag)
     if (_swi (OS_Byte, _INR(0,2) | _RETURN(1), 129, 254, 255))
     {
       /* Ctrl pressed - limit to the number of rows */
-      int height = block->maxy - block->miny;
+      int height = block->max.y - block->min.y;
       int maxheight = (session->terminal_size.y * redraw.r_charh) << eig.y;
       if (height > maxheight)
-        block->miny = block->maxy - maxheight;
+        block->min.y = block->max.y - maxheight;
     }
   }
 
@@ -475,8 +477,8 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 
     _swi(Wimp_GetWindowState, _IN(1), &block);
 
-    x_pos=block.minx-block.scroll_x;
-    y_pos=block.maxy-block.scroll_y;
+    x_pos=block.min.x-block.scroll.x;
+    y_pos=block.max.y-block.scroll.y;
   }
 
   switch (buttons)
@@ -623,8 +625,8 @@ static void session_pane_click(int x, int y, int buttons, int icon_handle, struc
 
 	    _swi(Wimp_GetIconState, _IN(1), &block);
 
-	    force_redraw(session->pane_handle, block.minx, block.miny,
-					       block.maxx, block.maxy);
+	    force_redraw(session->pane_handle, block.min.x, block.min.y,
+					       block.max.x, block.max.y);
 	  }
 
 	  {
@@ -711,8 +713,8 @@ void drag_finished(void)
 
     block.user_message.contents.data_save.window_handle=gpi_block.window_handle;
     block.user_message.contents.data_save.icon_handle  =gpi_block.icon_handle;
-    block.user_message.contents.data_save.x            =gpi_block.x;
-    block.user_message.contents.data_save.y            =gpi_block.y;
+    block.user_message.contents.data_save.pos.x        =gpi_block.pos.x;
+    block.user_message.contents.data_save.pos.y        =gpi_block.pos.y;
     block.user_message.contents.data_save.size         =selection_end-selection_start;
     block.user_message.contents.data_save.filetype     =0xFFF;
 
@@ -1813,7 +1815,7 @@ static void create_iconbar_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.x-64, 252);
+    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.pos.x-64, 252);
   }
 
   free(menu_title);
@@ -1869,7 +1871,7 @@ static void create_terminal_menu(void)
     {
       _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-      _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.x-64, block.y);
+      _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.pos.x-64, block.pos.y);
     }
   }
 
@@ -1901,7 +1903,7 @@ static void create_connection_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.x-64, block.y);
+    create_menu_by_icon (menu_data, win_open, 5);
   }
 
   free(menu_title);
@@ -1933,7 +1935,7 @@ static void create_terminal_type_menu(void)
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-    _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.x-64, block.y);
+    create_menu_by_icon (menu_data, win_open, 10);
   }
 
   free(menu_title);
@@ -2000,8 +2002,8 @@ static void drag_start(int window_handle, int icon_handle)
 
     _swi(Wimp_GetWindowState, _IN(1), &block);
 
-    xstart=block.minx-block.scroll_x;
-    ystart=block.maxy-block.scroll_y;
+    xstart=block.min.x-block.scroll.x;
+    ystart=block.max.y-block.scroll.y;
   }
 
   xsize=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 11);
@@ -2021,20 +2023,20 @@ static void drag_start(int window_handle, int icon_handle)
 
     block.window_handle=window_handle;
     block.drag_type    =5;
-    block.minx         =gis_block.minx+xstart;
-    block.miny         =gis_block.miny+ystart;
-    block.maxx         =gis_block.maxx+xstart;
-    block.maxy         =gis_block.maxy+ystart;
-    block.parent_minx  =0;
-    block.parent_miny  =0;
-    block.parent_maxx  =xsize;
-    block.parent_maxy  =ysize;
+    block.min.x         =gis_block.min.x+xstart;
+    block.min.y         =gis_block.min.y+ystart;
+    block.max.x         =gis_block.max.x+xstart;
+    block.max.y         =gis_block.max.y+ystart;
+    block.parent_min.x =0;
+    block.parent_min.y =0;
+    block.parent_max.x =xsize;
+    block.parent_max.y =ysize;
 
     read_icon_data(window_handle, icon_handle, string, sizeof(string));
 
     if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & 1)
     {
-      _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, string, &block.minx, 0);
+      _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, string, &block.min.x, 0);
     }
     else
     {
@@ -2121,17 +2123,17 @@ static void open_open_window(bool open_window_flag)
     wowb.handle_behind = -1;  /* Open on top of stack */
 
     {
-      int width = wowb.maxx - wowb.minx;
-      int height = wowb.maxy - wowb.miny;
+      int width = wowb.max.x - wowb.min.x;
+      int height = wowb.max.y - wowb.min.y;
 
       struct wimp_getpointerinfo_block wgpib;
       _swi(Wimp_GetPointerInfo, _IN(1), &wgpib);
 
-      wowb.minx = (wgpib.x - width) + 64;
-      wowb.maxx = wowb.minx + width;
+      wowb.min.x = (wgpib.pos.x - width) + 64;
+      wowb.max.x = wowb.min.x + width;
 
-      wowb.miny = 96;
-      wowb.miny = wowb.miny + height;
+      wowb.min.y = 96;
+      wowb.min.y = wowb.min.y + height;
     }
 
     _swi(Wimp_OpenWindow, _IN(1), &wowb);
@@ -2148,4 +2150,22 @@ static void open_open_window(bool open_window_flag)
       set_caret_position(win_open, 7, -1, get_icon_data_length(win_open, 7));
       break;
   }
+}
+
+
+static void create_menu_by_icon (int *menu, int window, int icon)
+{
+  /* open the menu in the proper place next to a menu icon */
+  int ib[10]; /* quick and nasty */
+
+  ib[0] = window;
+  ib[1] = icon;
+  _swi (Wimp_GetIconState, _IN(1), (int) ib);
+
+  wimp_block.open_window.window_handle = window;
+  _swi (Wimp_GetWindowState, _IN(1), (int) &wimp_block);
+
+  _swi(Wimp_CreateMenu, _INR(1,3), menu,
+       wimp_block.open_window.min.x + wimp_block.open_window.scroll.x + ib[4],
+       wimp_block.open_window.max.y + wimp_block.open_window.scroll.y + ib[5]);
 }
