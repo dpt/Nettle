@@ -1,0 +1,182 @@
+Nettle - Telnet and terminal emulation for RISC OS
+==================================================
+
+Version : 0.2000r : September 1st, 2001.
+
+Nettle is *the* terminal emulator and telnet client for the RISC OS
+operating system. It utilises the ZapRedraw module for speedy display and
+is a fast, clean native implementation.
+
+Nettle's aim is to be the definitive terminal emulator and telnet client
+for RISC OS.  A range of terminal emulation options will be supported,
+along with full colour and graphics.  An ANSI task window is provided, so
+that ports of unix programs which provide ANSI output can be run on RISC
+OS in full colour and form.  (Programs such as ncftp2, BitchX, nano, lynx).
+Other highlights include an optional line editor with history, hotlisting,
+multiple terminal support and URL launching.  Eventually, Nettle will also
+contain Secure Shell (SSH) support.
+
+
+Requirements
+============
+
+Nettle uses the ZapRedraw module for display.  If !Zap or !ZapFonts have
+been "seen" on your system (often by virtue of having !ZapFonts in the
+!Boot.Resources directory) then you will have a wide variety of fonts
+to choose from within Nettle.  If Nettle cannot find any fonts, then it
+will fall back to using two contained inside its own structure.
+
+Nettle currently requires Wimp 3.50 or better.  All versions of RISC OS
+can have at least Wimp 3.98 ("Nested Wimp") loaded, however, users of
+RISC OS 3.1 may not have this installed and see some reduction in
+functionality.  This will be addressed in the next release where we
+intend to directly support older WIMP versions.
+
+In common with other RISC OS internet access software, to connect to
+other machines, either !Internet or !FreeNet must be operational on your
+computer.  The Acorn/ANT 'Resolver' module is also required. Nettle also
+makes use of the "SocketWatch" module for improved performance - an
+installer is provided.   Note that if you only wish to use the ANSI
+task window facilities of Nettle, then Internet/FreeNet is not required.
+
+Finally, Nettle makes use of the ColourPicker module.  This must be
+present in your !System folder.
+
+
+"Dummies guide" to using Nettle
+===============================
+
+Unpack !Nettle to your harddrive and doubleclick on it - an icon will
+appear on the right hand side of your iconbar.  Clicking SELECT on this
+icon will open the connection window.  Enter an internet host name in
+to the "Host" icon, optionally supplying a port number after a colon.
+Click to "Connect" button and a connection will be attempted - a larger
+terminal window will appear, showing connection status.  If all goes
+will, you will be able to use the service you requested.   Once finished,
+simply close the window.
+
+
+Using Nettle
+============
+
+Creating connections
+
+Clicking on the Nettle iconbar icon will display the connection dialog.
+From here you may choose the connection type (Telnet/SSH/ANSI task)
+and terminal emulation desired (vt100/vt102/vt220/xterm).  The hostname
+and port ("host.name:port") can be entered below for telnet and ssh
+connections.  For ssh and TaskWindow connections, the command icon will
+be available to supply a default command to run (eg "bash").
+
+
+Using the terminal
+
+Once a connection is made, the terminal can be used as normal.  If a
+line editor has been enabled (the initial default is "off") then the
+input will be line-buffered locally and up/down cursors will scroll
+through a history.  This may be undesirable for interactive programs
+running via the terminal or for password entry.  Nettle will print a
+message in the window when the session has ended.
+
+During use of the terminal, the mouse can be used to select areas of
+text in the usual RISC OS manner.  An application menu (click the
+middle mouse button in the terminal window) will allow the selection
+to be cleared, transmitted via the terminal, or saved to disc in either
+plain text or full ANSI format.   The menu also gives access to a resize
+dialog allowing the terminal size and scrollback to be changed.
+
+
+Tailoring Nettle's defaults
+
+The default terminal size, font, colours, scrollback size and so on can
+all be modified from within Nettle:  Choose the "Choices..." option from
+Nettle's iconbar menu and the main Choices window will appear.  Choices
+are split in to several categories (Size/Colour/Hotlist...) and clicking
+on the radio buttons at the top right will display choices for that
+category.  Update the choices as you desire, then click "Set" to set
+them for the current run only, or click "Save" to save them as defaults
+which are reloaded the next time Nettle is run.
+
+
+Hotlist
+
+Nettle has a hotlist feature, similar to most web browsers.  Sites that
+you connect to regularly, and terminal settings for those sites, can be
+defined as a hotlist item and saved to disc for quick access.  The
+hotlist editor can be seen by selecting the "hotlist" option in Nettle's
+choices window.  From here a new hotlist item can be created, existing
+items may be edited or deleted, and the list can be reordered by dragging
+items around.  To select an item for edit/delete, just click on it.
+Doubleclicking will go straight in to the item edit mode.  The hotlist
+is saved to disc when you select "Save" from the Choices window and
+loaded when Nettle is loaded.  You can access the hotlist by clicking
+ADJUST on the Nettle iconbar icon or from the "Hotlist" iconbar submenu.
+
+
+ANSI task
+=========
+
+Nettle provides a ANSI task, primarily to allow ported Unix programs
+which have ANSI output to be run on RISC OS.  The task window operates
+slightly differently from other task window implementations (eg Zap/Edit)
+to allow for this ANSI emulation.  Don't expect to run "normal" interactive
+RISC OS programs in here (e.g. BASIC, gos) because they will not function
+in the way you expect - ANSI terminal control is quite different to
+RISC OS.   Programs which are intended to be run in Nettle's taskwindow
+include nano (pico), tinyfuge, lynx, BitchX, ncftp2 and so on.  Nettle
+is the only RISC OS program that we know of that provides this kind of
+functionality and allows these unix ports to be run at their best.
+
+
+Project background
+==================
+
+Alex Macfarlane Smith started the project, initially writing a very well
+featured version of Nettle in BBC BASIC. Unfortunately, this was rather
+too slow to be really useful, so after some encouragement, the move was
+made to a C-language based development. This is when the other developers
+started work. 
+
+Nettle currently supports vt100, vt102, vt220 and xterm terminal
+emulation. This is now fairly fully fledged and working well - support
+for other common terminal standards (vt320, vt52) is planned for later. 
+
+For various reasons, Nettle can be built on RISC OS (with gcc / Norcroft)
+and on Linux, with gcc. Either UnixLib or the standard shared C library
+can be used! None of this makes much odds to the workings of Nettle, but
+provides a nice variety of choice for build environment. (Nightly Linux-
+based snapshot builds will be undertaken soon). Current releases are
+built in traditional fashion with "Norcroft" CC and Shared C Library
+stubs, due to stability problems with gcc's output. 
+
+Opensource development is managed via SourceForge - feel free to submit
+patches and bug reports via that system: http://nettle.sourceforge.net/
+
+
+Main developers (sourceforge id)
+================================
+
+Alex Macfarlane Smith ("archifishal") - project lead / telnet guru
+Peter Naulls ("pnaulls")              - unixlib/gcc specialist
+Ian Jeffray ("ijeffray")              - gui/ui/wimp/stubs
+Joseph Heenan ("jogu")                - url/general os expert
+David Thomas ("spanners")             - performance tweaks
+
+Contributions, assistance and patches have also been received from
+Darren Salt and Justin Fletcher.
+
+
+Release History
+===============
+
+0.2000r : September 1st, 2001
+          First public release
+           - Recoded in C
+           - supports vt100, vt102, vt220, xterm emulations
+           - Telnet and ANSI task connections
+
+
+(C) Nettle Developers, September 1st, 2001. 
+
+
+
