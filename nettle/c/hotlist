@@ -1,6 +1,6 @@
 /**
  * Nettle Hotlist code
- * (C) Nettle developers 2000-2002
+ * (C) Nettle developers 2000-2003
  *
  * $Id$
  */
@@ -60,7 +60,7 @@ static int *menublock = NULL;
 static void int_lose_hotlist(hotlistnode **head);
 static void addnodetolist(hotlistnode **head, hotlistnode **tail, hotlistnode *node);
 static hotlistnode *hotlist_createnew(void);
-static int hotlist_populate_selected(void);
+static int hotlist_populate_selected(bool);
 static void hotlist_clear_states(void);
 static hotlistnode *hotlist_createnew(void);
 
@@ -922,10 +922,14 @@ static void do_grey_hotedit(int contype)
 
 /******************************************************************************/
 
-static int hotlist_populate_selected(void)
+static int hotlist_populate_selected(bool get_selected)
 {
   char tmp[20];
-  selectednode = hotlist_get_selected();
+
+  if (get_selected)
+  {
+    selectednode = hotlist_get_selected();
+  }
 
   if(!selectednode)
     return 0;
@@ -1006,7 +1010,7 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
         hotlist_clear_states();
         node->internal_state |= 1;
       }
-      hotlist_populate_selected();
+      hotlist_populate_selected(true);
       open_window_centred(win_hotedit);
       do_grey_hotedit(selcon);
       _swi(Wimp_SetCaretPosition, _INR(0,5), win_hotedit, icon_hotedit_label, \
@@ -1023,7 +1027,7 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
       break;
 
     case icon_panehot_edit:
-      if (hotlist_populate_selected())
+      if (hotlist_populate_selected(true))
       {
         open_window_centred(win_hotedit);
         do_grey_hotedit(selcon);
@@ -1034,7 +1038,7 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
 
     case icon_panehot_copy:
       close_window(win_hotedit);
-      if (hotlist_populate_selected())
+      if (hotlist_populate_selected(true))
       {
         hotlist_copy_selected();
     	resize_hotpane();
@@ -1051,7 +1055,7 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
 
     case icon_panehot_delete:
       close_window(win_hotedit);
-      if (hotlist_populate_selected())
+      if (hotlist_populate_selected(true))
       {
         if (generror_question("DeleteHotButtons","DeleteHot",0))
         {
@@ -1249,13 +1253,23 @@ void win_hotedit_click(int x, int y, int buttons, int icon_handle)
   switch(icon_handle)
   {
   case icon_hotedit_cancel:
-    close_window(win_hotedit);
+    if (buttons==1)
+    {
+      hotlist_populate_selected(false);
+    }
+    else
+    {
+      close_window(win_hotedit);
+    }
     break;
 
   case icon_hotedit_update:
     if(copy_hotedit_to_selected())
     {
-      close_window(win_hotedit);
+      if (buttons==4)
+      {
+        close_window(win_hotedit);
+      }
       force_redraw(win_hotpane,0,-(1<<28),1024,0);
     }
     break;
