@@ -36,7 +36,7 @@ clean:
 	$(WIPE) o.* $(WIPEFLAGS)
 
 templ.h: templheadr $(TEMPLATES)
-	@.templheadr $(TEMPLATES) $@
+	<Prefix$Dir>.templheadr $(TEMPLATES) $@
 
 .SUFFIXES: .o .s .c
 
