@@ -153,14 +153,11 @@ static void wimp_pollconnect(struct session_struct *session)
 
     default:
     {
-      char string[1024];
       /* error, retval contains errno */
       set_title_bar(session->window_handle,
                      lookup_static("title_noconn"));
       write_out_strings(session, lookup_static("noconn"), "\r\n", 0);
-      sprintf(string, "errno = %d", errno);
-      write_out_strings(session, string, "\r\n", 0);
-      /*FIXME: convert errno to proper string */
+      write_out_strings(session, socket_strerror(retval), "\r\n", 0);
       socket_close(session->socket_handle);
 
       session->socket_handle=0;
@@ -196,10 +193,8 @@ static void wimp_pollsocket(struct session_struct *session)
     }
     else
     {
-      char errorstr[16];
-      sprintf(errorstr, "%d", errno);
-      write_out_strings(session, "\r\n", "Nettle: Socket error ", errorstr,
-                        " occurred", 0);
+      write_out_strings(session, "\r\n", "Nettle: Socket error '",
+                        socket_strerror(errno), "' occurred", 0);
     }
 
     write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
