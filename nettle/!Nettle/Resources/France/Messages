@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Client telnet arachnéen
 AppAuthor:© Développeurs de Nettle, 2000-2003
-AppVersion:v0.2034 (22 Jan 2003)
+AppVersion:v0.2040pre (20 Oct 2003)
 
 Info:Info>
 Choices:Préférences...
@@ -22,13 +22,13 @@ Resize:Redimensionner>
 PasteClip:Coller
 Options:Options...
 Spool>:Journal>
-Reconnect:Reconnect
+Reconnect:Se reconnecter
 
 Selection:Sélection
 Save:Sauver>
 LaunchURL:Lancer URL
 Send:Envoyer
-CopyClip:.Copier vers presse-papiers
+CopyClip:.Copier vers le presse-papiers
 Clear:Effacer
 
 Spool:Journal
@@ -138,9 +138,12 @@ SpoolAlreadyOpen:Il y a déjà un journal ouvert pour cette session. (NB ceci ne d
 SpoolFailedToOpen:Échec d'ouverture d'un journal à ce nom
 SpoolFailNonPermanent:Impossible d'ouvrir des journaux à des endroits non permanents (p.ex. d'autres applications)
 
+NoAppForURL:Aucune application capable de lancer cette URL n'a été vue.
+
 # Match details for Login
 LoginMatch_User:ogin:
 LoginMatch_Pass:assword:
 
 # Characters for URL characters
 URL_Chars:'"< >
+
