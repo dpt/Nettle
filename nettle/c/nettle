@@ -275,6 +275,11 @@ static void start_connection_int (struct connection_params *params )
       /* start the task window */
       {
         char temp_string[1024];
+        
+        sprintf(temp_string, "%d", params->height);
+        _swi(OS_SetVarVal, _INR(0,4), "ROWS", temp_string, strlen(temp_string)+1, 0, 4);
+        sprintf(temp_string, "%d", params->width);
+        _swi(OS_SetVarVal, _INR(0,4), "COLUMNS", temp_string, strlen(temp_string)+1, 0, 4);
 
         if (params->command && params->command[0]!='\0')
         {
@@ -305,6 +310,8 @@ static void start_connection_int (struct connection_params *params )
           sprintf (temp_string, "%%TaskWindow -ctrl -name \"Nettle task\"" \
                      " -task &%X -txt &%X", task_handle, (int)session);
         }
+
+        
 
         _swi(Wimp_StartTask, _IN(0), temp_string);
       }
