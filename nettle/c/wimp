@@ -81,22 +81,17 @@ static bool paste_text_file (union wimp_poll_block *);
 void open_window_centred (int window_handle)
 {
   struct wimp_getwindowstate_block block;
-  struct coords screen_size;
 
   /* get the window state */
   block.window_handle = window_handle;
   _swi (Wimp_GetWindowState, _IN(1), &block);
 
-  /* get screen size (pixels) */
-  screen_size.x = _swi (OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 11);
-  screen_size.y = _swi (OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 12);
-
   /* calculate position */
   block.max.x -= block.min.x;
-  block.min.x = ((screen_size.x + 1) << eig.x) /2 - block.max.x / 2;
+  block.min.x = screensize.x / 2 - block.max.x / 2;
   block.max.x += block.min.x;
   block.max.y -= block.min.y;
-  block.min.y = ((screen_size.y + 1) << eig.y) / 2 - block.max.y / 2;
+  block.min.y = screensize.y / 2 - block.max.y / 2;
   block.max.y += block.min.y;
   block.handle_behind = -1;	/* open on top of stack */
 
@@ -661,8 +656,8 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     if (dont_require_ctrl || inkey(KEYBOARD_CTRL) )
     {
       /* Ctrl pressed (or not) - allow dynamic resizing */
-      int new_x=((block->max.x-block->min.x)>>eig.x)/redraw.r_charw;
-      int new_y=((block->max.y-block->min.y)>>eig.y)/redraw.r_charh;
+      int new_x=(((block->max.x-block->min.x)>>eig.x) + redraw.r_charw/2)/redraw.r_charw;
+      int new_y=(((block->max.y-block->min.y)>>eig.y) + redraw.r_charh/2)/redraw.r_charh;
 
       if ( (session->terminal_size.x != new_x) || (session->terminal_size.y != new_y) )
       {
@@ -718,18 +713,21 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
     {
        struct wimp_getwindowstate_block bar;
        char size[16];
+       int barwidth;
 
        sprintf(size, "%dx%d", session->terminal_size.x, session->terminal_size.y);
        set_icon_data(win_sizebar, icon_sizebar_size, size);
 
        bar.window_handle = win_sizebar;
        _swi (Wimp_GetWindowState, _IN(1), &bar);
+       barwidth = bar.max.x - bar.min.x ;
        
-       bar.min.x = block->max.x - ( bar.max.x - bar.min.x );
+       bar.min.x = block->max.x - barwidth;
        bar.max.x = block->max.x;
-       bar.min.y = block->min.y - ( bar.max.y - bar.min.y );
-       bar.max.y = block->min.y;
+       bar.min.y = block->min.y - toolheight;
+       bar.max.y = block->min.y - ( 2<<eig.y ) ;
        
+       _swix(Wimp_ResizeIcon, _INR(0,5), win_sizebar, icon_sizebar_size, 0, -(toolheight - (2<<eig.y)), barwidth, 0);
        _swi(Wimp_OpenWindow, _INR(1,4), &bar, 0x4b534154 /* "TASK" */, resize_handle, 1<<24 );
     }
     
@@ -2658,9 +2656,75 @@ void wimp_message_ack (union wimp_poll_block *wimp_block)
 void mode_change(void)
 {
   struct session_struct *session = sessions;
+  struct wimp_gadgetsizes sizes;
 
   eig.x = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 4);
   eig.y = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 5);
+
+  screensize.x = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 11);
+  screensize.y = _swi (OS_ReadModeVariable, _INR (0,1) | _RETURN (2), -1, 12);
+
+  screensize.x++;
+  screensize.y++;
+
+  screensize.x <<= eig.x;
+  screensize.y <<= eig.y;
+
+  /* Work out the height of toolbars - 40 is a nominal default */
+  toolheight = 40;
+
+  sizes.window_handle = win_furniture;
+  if (_swix(Wimp_Extend, _INR(0,1), 11 /* Read furniture sizes */, &sizes)==NULL)
+  {
+    /* Great we're running on a WIMP that can tell us toolsizes cleanly (RISC OS 4) */
+    toolheight = sizes.bottom_border;
+  }
+  else
+  {
+    /* Fall back to reading the tool heights */
+    int spr_area;
+    if (_swix(Wimp_ReadSysInfo, _IN(0)|_OUT(0), 9 /* Read toolsprites area */, &spr_area)==NULL)
+    {
+      /* We have the tools sprite area */
+      char sprite[16];
+      char *suffix;
+      if (_swix(Wimp_ReadSysInfo, _IN(0)|_OUT(0), 2 /* Read sprite suffix */, &suffix)==NULL)
+      {
+        /* We know what the suffix is on sprites */
+        int mode,height;
+        sprintf(sprite,"sicon%s",suffix);
+        if (_swix(OS_SpriteOp,_INR(0,2)|_OUT(4)|_OUT(6),
+                               256+40 /* Read sprite info */,
+                               spr_area,
+                               sprite,
+                               &height,
+                               &mode))
+        {
+           /* Didn't find a tool specific to this mode, so try generic */
+           if (_swix(OS_SpriteOp,_INR(0,2)|_OUT(4)|_OUT(6),
+                               256+40 /* Read sprite info */,
+                               spr_area,
+                               "sicon",
+                               &height,
+                               &mode))
+           {
+             height = -1;
+           }
+        }
+
+        if (height > 0)
+        {
+          /* The sprite was found and we have its size */
+          int yeig;
+          if (_swix(OS_ReadModeVariable,_INR(0,1)|_OUT(2),mode,5,&yeig)==NULL)
+          {
+            /* And (finally) we can work out the height of the toolbar! */
+            toolheight = height<<yeig;
+          }
+        }
+      }
+    }
+  }
 
   old_charw=redraw.r_charw;
   old_charh=redraw.r_charh;
