@@ -272,7 +272,6 @@ void start_connection(void)
   /* if line editor is turned on, allocate all the lineeditor space */
   if (line_editor)
   {
-    int loop;
     session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
     session->line_editor_position=0;
     session->line_editor_total=1;

@@ -39,8 +39,6 @@ extern struct os_spriteop_area *sprite_area;
 extern int messagetrans_area[4];
 extern int *messagetrans_buffer;
 
-extern int *message_list;
-
 extern FILE *log_file;
 extern int log_file_time;
 extern int task_handle;

@@ -22,7 +22,7 @@ extern void close_window(int);
 extern void mouse_click(int, int, int, int, int);
 extern void drag_finished(void);
 extern void key_pressed(int, int, int);
-extern void menu_selection(void);
+extern void menu_choice(void);
 extern void lose_caret(void);
 extern void gain_caret(void);
 extern void wimp_message(int, int, int);

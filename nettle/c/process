@@ -2375,7 +2375,6 @@ void process_line_editor(struct session_struct *session)
 
     if (session->session_flags[1]==false)
     {
-      int loop;
       int data;
 
       for (loop=0; loop<size_of_block; loop++)

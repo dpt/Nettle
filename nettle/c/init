@@ -183,7 +183,7 @@ static void open_template(void)
 }
 
 
-static int load_template(int *font_array,char *window_name,int *sprite_area)
+static int load_template(int *font_array,char *window_name, int *templ_sprites)
 {
   char window_name_copy[12];
   struct wimp_createwindow_block *template_data;
@@ -210,7 +210,7 @@ static int load_template(int *font_array,char *window_name,int *sprite_area)
                           font_array, window_name_copy, 0);
 
   /* set the sprite area pointer */
-  template_data->sprite_area=(int) sprite_area;
+  template_data->sprite_area= (int)templ_sprites;
 
   window_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), template_data);
 
@@ -256,7 +256,7 @@ void load_templates(void)
 }
 
 
-static int *load_font(char *zap_font)
+static int *load_font(char *font)
 {
   char string[5]="ZFLK";
   char character;
@@ -282,7 +282,7 @@ static int *load_font(char *zap_font)
     strcpy(file_start,"<Nettle$Dir>.Fonts.");
   }
 
-  strcpy(file_end,zap_font);
+  strcpy(file_end, font);
 
   /* if string is ZFLK, then this is a redirection font */
   while (strcmp(string,"ZFLK")==0)

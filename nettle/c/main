@@ -110,7 +110,7 @@ int main(void)
         break;
       case 9:
         /* menu selection */
-        menu_selection();
+        menu_choice();
         break;
       case 11:
         /* lose caret */

@@ -579,44 +579,42 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
             if (block.icon_flags & (1<<21))
             {
               {
-                struct wimp_seticonstate_block block;
+                struct wimp_seticonstate_block icon_set;
 
-                block.window_handle=session->pane_handle;
-                block.icon_handle  =1;
-                block.eor          =0;
-                block.clear        =1<<23;
+                icon_set.window_handle=session->pane_handle;
+                icon_set.icon_handle  =1;
+                icon_set.eor          =0;
+                icon_set.clear        =1<<23;
 
-                _swi(Wimp_SetIconState, _IN(1), &block);
+                _swi(Wimp_SetIconState, _IN(1), &icon_set);
               }
 
               {
-                struct wimp_getcaretposition_block block;
+                struct wimp_getcaretposition_block caret_pos;
 
-                _swi(Wimp_GetCaretPosition, _IN(1), &block);
+                _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
 
-                if (block.window_handle==session->window_handle)
+                if (caret_pos.window_handle==session->window_handle)
                 {
                   set_caret_position(session->pane_handle, 1, -1,
-  				     get_icon_data_length(session->pane_handle, 1));
+                       get_icon_data_length(session->pane_handle, 1));
                 }
               }
             }
             else
             {
               {
-                struct wimp_seticonstate_block block;
+                struct wimp_seticonstate_block icon_set;
 
-                block.window_handle=session->pane_handle;
-                block.icon_handle  =1;
-                block.eor          =1<<23;
-                block.clear        =1<<23;
+                icon_set.window_handle=session->pane_handle;
+                icon_set.icon_handle  =1;
+                icon_set.eor          =1<<23;
+                icon_set.clear        =1<<23;
 
-                _swi(Wimp_SetIconState, _IN(1), &block);
+                _swi(Wimp_SetIconState, _IN(1), &icon_set);
               }
 
               {
-                struct wimp_geticonstate_block block;
-
                 block.window_handle=session->pane_handle;
                 block.icon_handle  =1;
 
@@ -627,11 +625,11 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
               }
 
               {
-                struct wimp_getcaretposition_block block;
+                struct wimp_getcaretposition_block caret_pos;
 
-                _swi(Wimp_GetCaretPosition, _IN(1), &block);
+                _swi(Wimp_GetCaretPosition, _IN(1), &caret_pos);
 
-                if (block.window_handle==session->pane_handle)
+                if (caret_pos.window_handle==session->pane_handle)
                 {
                   set_caret_position(session->window_handle,-1,-1,-1);
                 }
@@ -895,7 +893,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
 /* Menu selection */
 
-void menu_selection()
+void menu_choice()
 {
   switch (menu_open)
   {
@@ -1409,14 +1407,14 @@ void set_icon_data(int window_handle, int icon_handle, char *contents)
       strcpy(block.contents.it.text, contents);
 
       {
-        struct wimp_seticonstate_block block;
+        struct wimp_seticonstate_block icon_set;
 
-        block.window_handle=window_handle;
-        block.icon_handle  =icon_handle;
-        block.eor          =0;
-        block.clear        =0;
+        icon_set.window_handle=window_handle;
+        icon_set.icon_handle  =icon_handle;
+        icon_set.eor          =0;
+        icon_set.clear        =0;
 
-        _swi(Wimp_SetIconState, _IN(1), &block);
+        _swi(Wimp_SetIconState, _IN(1), &icon_set);
       }
     }
   }
@@ -1486,7 +1484,7 @@ static int get_icon_data_length(int window_handle, int icon_handle)
 
 /* Create menu code */
 
-static int *create_menu(int *menu_data, char *indirected, char *title, char *entries, ... )
+static int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, ... )
 {
   va_list args;
   int window_handle;
@@ -1498,7 +1496,7 @@ static int *create_menu(int *menu_data, char *indirected, char *title, char *ent
 
   if (strlen(title)<12)
   {
-    strcpy((char *)menu_data, title);
+    strcpy((char *)menu_defn, title);
   }
   else
   {
@@ -1506,10 +1504,10 @@ static int *create_menu(int *menu_data, char *indirected, char *title, char *ent
     return 0;
   }
 
-  menu_data[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24);
-  menu_data[4]=0;
-  menu_data[5]=44;
-  menu_data[6]=0;
+  menu_defn[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24);
+  menu_defn[4]=0;
+  menu_defn[5]=44;
+  menu_defn[6]=0;
 
   va_start(args, entries);
 
@@ -1520,7 +1518,7 @@ static int *create_menu(int *menu_data, char *indirected, char *title, char *ent
     ticked=false; dotted=false; shaded=false; send_message=false; last_item=false;
     window_handle=-1;
     {
-      menu_data[position/4]=0;
+      menu_defn[position/4]=0;
       while ((*item=='#') || (*item=='.') || (*item=='/') || (*item=='['))
       {
         switch (*item)
@@ -1560,47 +1558,47 @@ static int *create_menu(int *menu_data, char *indirected, char *title, char *ent
 
     if (ticked)
     {
-      menu_data[position/4]=menu_data[position/4] | (1<<0);
+      menu_defn[position/4]=menu_defn[position/4] | (1<<0);
     }
     if (dotted)
     {
-      menu_data[position/4]=menu_data[position/4] | (1<<1);
+      menu_defn[position/4]=menu_defn[position/4] | (1<<1);
     }
     if (send_message)
     {
-      menu_data[position/4]=menu_data[position/4] | (1<<3);
+      menu_defn[position/4]=menu_defn[position/4] | (1<<3);
     }
     if (last_item)
     {
-      menu_data[position/4]=menu_data[position/4] | (1<<7);
+      menu_defn[position/4]=menu_defn[position/4] | (1<<7);
     }
 
     position+=4;
-    menu_data[position/4]=window_handle;
+    menu_defn[position/4]=window_handle;
     position+=4;
 
     if (strlen(item)<13)
     {
-      menu_data[position/4]=0x7000031;
+      menu_defn[position/4]=0x7000031;
     }
     else
     {
-      menu_data[position/4]=0x7000131;
+      menu_defn[position/4]=0x7000131;
     }
 
     if (shaded)
     {
-      menu_data[position/4]=menu_data[position/4] | (1<<22);
+      menu_defn[position/4]=menu_defn[position/4] | (1<<22);
     }
 
     position+=4;
 
     if (strlen(item)<13)
     {
-      strncpy((char *) menu_data+position,item,pos-item+1);
+      strncpy((char *) menu_defn+position,item,pos-item+1);
 
       {
-        char *menu_data_char=(char *) menu_data;
+        char *menu_data_char=(char *) menu_defn;
         menu_data_char[position+pos-item+1]='\0';
       }
 
@@ -1610,9 +1608,9 @@ static int *create_menu(int *menu_data, char *indirected, char *title, char *ent
     {
       strncpy(indirected, item, pos-item+1);
       indirected[pos-item+1]='\0';
-      menu_data[position/4]=(int) indirected;
+      menu_defn[position/4]=(int) indirected;
       position+=4;
-      menu_data[position/4]=strlen(indirected);
+      menu_defn[position/4]=strlen(indirected);
       indirected+=strlen(indirected);
     }
     position+=8;
@@ -1622,7 +1620,7 @@ static int *create_menu(int *menu_data, char *indirected, char *title, char *ent
 
   va_end(args);
 
-  return menu_data;
+  return menu_defn;
 }
 
 

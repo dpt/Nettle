@@ -62,12 +62,12 @@ static void create_line_editor_icons(struct session_struct *session, int width)
 
       for (loop=0; loop<2; loop++)
       {
-        struct wimp_deleteicon_block block;
+        struct wimp_deleteicon_block delete_icon;
 
-        block.window_handle=session->pane_handle;
-        block.icon_handle  =loop;
+        delete_icon.window_handle=session->pane_handle;
+        delete_icon.icon_handle  =loop;
 
-        _swi(Wimp_DeleteIcon, _IN(1), &block);
+        _swi(Wimp_DeleteIcon, _IN(1), &delete_icon);
       }
     }
   }
