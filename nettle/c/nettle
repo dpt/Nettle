@@ -374,6 +374,8 @@ static void start_connection_int (struct connection_params *params )
 
   session->line_editor_type=params->line_editor_type;
 
+  session->spool_file_name=NULL; /* make sure filename is undefined */
+
   /* if line editor is turned on, allocate all the lineeditor space */
   if (session->line_editor_type==LINEEDIT_NONE)
     session->pane_handle=0;

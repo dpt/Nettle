@@ -92,6 +92,8 @@ extern int win_hotedit;
 extern int win_open;
 extern int win_resize;
 extern int win_save;
+extern int win_spoolsave;
+
 extern int menu_open;
 
 extern bool logging;
@@ -166,6 +168,9 @@ struct session_struct
 
   int tabs[MAX_TAB_NUMBER];	/* tab positions */
   int number_of_tabs;		/* number of tabs */
+
+  char *spool_file_name;        /* pointer to spool filename */
+  FILE *spool_file_handle;      /* spool file handle */
 };
 
 extern struct session_struct *sessions;

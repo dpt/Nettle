@@ -45,6 +45,7 @@
 
 static int menu_data[96];
 static int menu_data2[96];
+static int menu_data3[96];
 static char indirected[1024];
 static int *bitmaps_area=0;
 static int bitmaps_area_number=0;
@@ -659,6 +660,10 @@ static void win_info_click(int x, int y, int buttons, int icon_handle)
   {
     case icon_info_website:
       url_launch(NETTLE_HOME_PAGE);
+
+      if ((buttons & 1)==0)
+        _swi(Wimp_CreateMenu, _IN(1), -1);
+
       break;
   }
 }
@@ -1789,9 +1794,9 @@ static int wimp_handletelneturl(const char *url)
   hostptr = url;
   while (*hostptr == '/')
     hostptr++;
-  
+
   port = 23;
-  
+
   hostend = strchr(hostptr, ':');
   if (hostend != NULL)
   {
@@ -1811,11 +1816,11 @@ static int wimp_handletelneturl(const char *url)
   hostcopy = strndup(hostptr, hostend - hostptr);
   if (hostcopy == NULL)
     return 0;
-  
+
   retval = nettle_start_telnet_connection(hostcopy, port);
-  
+
   free(hostcopy);
-  
+
   return retval;
 }
 
@@ -1834,7 +1839,7 @@ static int wimp_handleansiurl(const char *url)
 int wimp_handleurl(const char *url, int checkonly)
 {
   int (*handler)(const char *);
-  
+
   if (strncmp(url, "telnet:", strlen("telnet:")) == 0)
   {
     url += strlen("telnet:");
@@ -1851,13 +1856,13 @@ int wimp_handleurl(const char *url, int checkonly)
   {
     handler = NULL;
   }
-  
+
   if (handler == NULL)
     return 0;
 
   if (checkonly != 0)
     return 1;
-  
+
   return handler(url);
 }
 
@@ -2026,7 +2031,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
     case URI_MReturnResult:
       url_bounce(&wimp_block->user_message);
       break;
-    
+
     case Wimp_MOpenUrl:
     case URI_MProcess:
       url_recvbroadcast(&wimp_block->user_message, wimp_handleurl);
@@ -2211,6 +2216,16 @@ static void create_iconbar_menu(void)
   char *menu_hotlist;
   char *menu_quit    = get_last_menu_item("Quit");
 
+  const int *hotlist_menu=create_hotlist_menu();
+  const int *termlist_menu=create_termlist_menu();
+
+  /* Just so it points somewhere (so the arrow doesn't disppear) */
+  if (hotlist_menu==NULL)
+    hotlist_menu=menu_data2;
+
+  if (termlist_menu==NULL)
+    termlist_menu=menu_data2;
+
   if (sessions)
     menu_session = get_menu_item("Session]");
   else
@@ -2225,8 +2240,8 @@ static void create_iconbar_menu(void)
                   menu_info, win_info,
                   menu_choices,
                   menu_connect,
-                  menu_hotlist, create_hotlist_menu(),
-                  menu_session, create_termlist_menu(),
+                  menu_hotlist, hotlist_menu,
+                  menu_session, termlist_menu,
                   menu_quit))
   {
     _swi(Wimp_GetPointerInfo, _IN(1), &block);
@@ -2256,7 +2271,8 @@ static void create_terminal_menu(void)
   char *menu_selection;
   char *menu_resize         =get_menu_item("Resize");
   char *menu_paste_clipboard=get_grey_menu_item("PasteClip");
-  char *menu_options        =get_grey_last_menu_item("Options");
+  char *menu_options        =get_grey_menu_item("Options");
+  char *menu_spool          =get_last_menu_item("Spool>");
 
   char *menu_selection_title=get_menu_item("Selection");
   char *menu_save	    =get_menu_item("Save");
@@ -2264,6 +2280,21 @@ static void create_terminal_menu(void)
   char *menu_send           =get_menu_item("Send");
   char *menu_copy_clipboard =get_grey_menu_item("CopyClip");
   char *menu_clear          =get_last_menu_item("Clear");
+
+  char *menu_spool_title    =get_menu_item("Spool");
+  char *menu_open_right;
+  char *menu_close;
+
+  if (terminal_menu_session->spool_file_name==NULL)
+  {
+    menu_open_right=get_menu_item("Open>");
+    menu_close     =get_grey_last_menu_item("Close");
+  }
+  else
+  {
+    menu_open_right=get_grey_menu_item("Open>");
+    menu_close     =get_last_menu_item("Close");
+  }
 
   set_termsize_icons(win_resize, icon_resize_width, icon_resize_height, icon_resize_scroll,\
           terminal_menu_session->terminal_size, terminal_menu_session->scrollback);
@@ -2277,15 +2308,31 @@ static void create_terminal_menu(void)
     menu_selection=get_menu_item("Selection>");
   }
 
-  if (create_menu(menu_data, indirected, menu_title, menu_selection, menu_data2, menu_resize,
-                  win_resize, menu_paste_clipboard, menu_options))
+  if (create_menu(menu_data, indirected,
+                  menu_title,
+                  menu_selection, menu_data2,
+                  menu_resize, win_resize,
+                  menu_paste_clipboard,
+                  menu_options,
+                  menu_spool, menu_data3))
   {
-    if (create_menu(menu_data2, indirected+256, menu_selection_title, menu_save, win_save,
-                    menu_launch_url, menu_send, menu_copy_clipboard, menu_clear))
+    if (create_menu(menu_data2, indirected+256,
+                    menu_selection_title,
+                    menu_save, win_save,
+                    menu_launch_url,
+                    menu_send,
+                    menu_copy_clipboard,
+                    menu_clear))
     {
-      _swi(Wimp_GetPointerInfo, _IN(1), &block);
+      if (create_menu(menu_data3, indirected+512,
+                      menu_spool_title,
+                      menu_open_right, win_spoolsave,
+                      menu_close))
+      {
+        _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
-      _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.pos.x-64, block.pos.y);
+        _swi(Wimp_CreateMenu, _INR(1,3), menu_data, block.pos.x-64, block.pos.y);
+      }
     }
   }
 
@@ -2294,12 +2341,18 @@ static void create_terminal_menu(void)
   free(menu_resize);
   free(menu_paste_clipboard);
   free(menu_options);
+  free(menu_spool);
+
   free(menu_selection_title);
   free(menu_save);
   free(menu_launch_url);
   free(menu_send);
   free(menu_copy_clipboard);
   free(menu_clear);
+
+  free(menu_spool_title);
+  free(menu_open_right);
+  free(menu_close);
 
   menu_open=MENU_TERMINAL;
 }
@@ -2432,25 +2485,25 @@ static void open_open_window(bool open_window_flag)
     case NETTLE_TELNET:
        /* unshade the host icons, shade the command icons */
        set_icon_state (win_open, icon_open_host, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, icon_open_hostbut, 0, WIMP_ICON_SHADED_BIT);
+       /*set_icon_state (win_open, icon_open_hostbut, 0, WIMP_ICON_SHADED_BIT);*/
        set_icon_state (win_open, icon_open_command, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, icon_open_commandbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+       /*set_icon_state (win_open, icon_open_commandbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);*/
        break;
 
     case NETTLE_SSH:
        /* unshade the host and command icons */
        set_icon_state (win_open, icon_open_host, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, icon_open_hostbut, 0, WIMP_ICON_SHADED_BIT);
+       /*set_icon_state (win_open, icon_open_hostbut, 0, WIMP_ICON_SHADED_BIT);*/
        set_icon_state (win_open, icon_open_command, 0, WIMP_ICON_SHADED_BIT);
-       set_icon_state (win_open, icon_open_commandbut, 0, WIMP_ICON_SHADED_BIT);
+       /*set_icon_state (win_open, icon_open_commandbut, 0, WIMP_ICON_SHADED_BIT);*/
        break;
 
     case NETTLE_TASKWINDOW:
       /* shade the host icons, unshade the command icons */
       set_icon_state (win_open, icon_open_host, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_open, icon_open_hostbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      /*set_icon_state (win_open, icon_open_hostbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);*/
       set_icon_state (win_open, icon_open_command, 0, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_open, icon_open_commandbut, 0, WIMP_ICON_SHADED_BIT);
+      /*set_icon_state (win_open, icon_open_commandbut, 0, WIMP_ICON_SHADED_BIT);*/
       break;
   }
 

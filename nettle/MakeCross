@@ -25,7 +25,7 @@ WIPEFLAGS = -rf
 ASM = $(CC)
 ASMFLAGS = -c
 
-TEMPLATES = !Nettle/Resources/UK/Template3D,fec
+TEMPLATES = !Nettle/Resources/UK/Templates,fec
 
 OBJS = chardefn.o choices.o dnslib.o globals.o init.o keyboard.o lineedit.o \
        main.o misc.o hotlist.o nettle.o process.o socket.o quit.o seln.o \

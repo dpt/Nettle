@@ -66,7 +66,7 @@ static void hotlist_clear_states(void);
 static char *get_icon_data(int window, int icon)
 {
   static char buf[256];
-  
+
   return read_icon_data(window, icon, buf, 256);
 }
 
@@ -74,20 +74,20 @@ static void copy_hotlist(bool edit_to_live) /* true = copy the editlist to the l
 {
   hotlistnode *node = edit_to_live ? editlisthead : hotlisthead;
   hotlistnode *newnode;
-  
+
   int_lose_hotlist(edit_to_live ? &hotlisthead : &editlisthead);
-  
+
   if (edit_to_live)
     items = 0;
   else
     edititems = 0;
-  
+
   while (node)
   {
     newnode = (hotlistnode *) malloc(sizeof(hotlistnode));
     if (!newnode)
       return;
-      
+
     newnode->label = NULL;
     newnode->host = NULL;
     newnode->command = NULL;
@@ -119,7 +119,7 @@ static void copy_hotlist(bool edit_to_live) /* true = copy the editlist to the l
         goto erro;
       strcpy(newnode->command, node->command);
     }
-    
+
     if (edit_to_live)
       addnodetolist(&hotlisthead, &hotlisttail, newnode);
     else
@@ -129,13 +129,13 @@ static void copy_hotlist(bool edit_to_live) /* true = copy the editlist to the l
       items++;
     else
       edititems++;
-      
+
     node = node->next;
   }
- 
+
   return;
- 
-erro:  
+
+erro:
   free(newnode->label);
   free(newnode->host);
   free(newnode->command);
@@ -397,36 +397,36 @@ static bool save_hotlist(void)
 
       fprintf(file_handle, "# Nettle hotlist file\n");
       fprintf(file_handle, "# Created on %s", ctime(&current_time));
-      
+
       while (node)
       {
         if(node->label && node->label[0])
           fprintf(file_handle, "\n%s\n{\n", node->label);
         else
           fprintf(file_handle, "\n(Unnamed){\n");
-        
+
         if(node->host && node->host[0])
           fprintf(file_handle, "  host: %s\n", node->host);
-          
+
         if(node->command && node->command[0])
           fprintf(file_handle, "  cmnd: %s\n", node->command);
-        
+
         fprintf(file_handle, "  type: %s\n", \
           node->type != ht_task ? node->type != ht_ssh ? \
           "telnet" : "ssh" : "task");
-        
+
         fprintf(file_handle, "  term: %s\n", terminal_name[node->vttype]);
-        
+
         fprintf(file_handle, "  wide: %d\n", node->terminal_width);
-        
+
         fprintf(file_handle, "  high: %d\n", node->terminal_height);
-        
+
         fprintf(file_handle, "  scrl: %d\n", node->scrollback);
-        
+
         fprintf(file_handle, "  lned: %d\n", node->lineeditor);
-        
+
         fprintf(file_handle, "}\n");
-        
+
         node = node->next;
       }
 
@@ -523,13 +523,13 @@ int *create_hotlist_menu(void)
                                   node->type == ht_telnet ? "snettle_telnt" :
                                   "snettle_task");
       menublock[position++]=strlen(node->label)+1;
-    
+
     if (menublock[position-1]+1 * 16 > wide)
       wide =  menublock[position-1]+1 * 16;
 
       node = node->next;
     }
-    
+
     menublock[4] = wide;
   }
   return (int *) menublock;
@@ -607,13 +607,13 @@ static void hotlist_delete_selected(void)
         prev->next = node->next;
       else
         editlisthead = node->next;
-        
+
       if (editlisttail)
       {
         if (editlisttail == node)
           editlisttail = prev;
       }
-      
+
       free(node->label);
       free(node->command);
       free(node->host);
@@ -629,14 +629,14 @@ static bool copy_hotedit_to_selected(void)
   char *tmp;
   int num;
   hotlistnode *node = selectednode;
-  
+
   if (!selectednode)
     return true;  /* Shouldn't be possible */
-    
+
   tmp = get_icon_data(win_hotedit, icon_hotedit_label);
   while (*tmp==' ')
     tmp++;
-  
+
   if(*tmp<' ')
   {
     generror("HotBlankLabel",true);
@@ -646,11 +646,11 @@ static bool copy_hotedit_to_selected(void)
   free(node->label);
   node->label = strdup(tmp);
   assert(node->label);
-  
+
   tmp = get_icon_data(win_hotedit, icon_hotedit_hostname);
   while (*tmp==' ')
     tmp++;
-  
+
   if(selcon != ht_task)
   if(*tmp<' ')
   {
@@ -661,7 +661,7 @@ static bool copy_hotedit_to_selected(void)
   free(node->host);
   node->host = strdup(tmp);
   assert(node->host);
-  
+
   tmp = get_icon_data(win_hotedit, icon_hotedit_command);
   while (*tmp==' ')
     tmp++;
@@ -676,7 +676,7 @@ static bool copy_hotedit_to_selected(void)
   free(node->command);
   node->command = strdup(tmp);
   assert(node->command);
-  
+
   tmp = get_icon_data(win_hotedit, icon_hotedit_termwidth);
   num = atoi(tmp);
 
@@ -688,7 +688,7 @@ static bool copy_hotedit_to_selected(void)
 
   node->terminal_width = num;
 
-  
+
   tmp = get_icon_data(win_hotedit, icon_hotedit_termheight);
   num = atoi(tmp);
 
@@ -700,7 +700,7 @@ static bool copy_hotedit_to_selected(void)
 
   node->terminal_height = num;
 
-  
+
   tmp = get_icon_data(win_hotedit, icon_hotedit_scrollback);
   num = atoi(tmp);
 
@@ -711,7 +711,7 @@ static bool copy_hotedit_to_selected(void)
   }
 
   node->scrollback = num;
-  
+
   node->type = (hotlisttype) selcon;
   node->vttype = seltype;
   node->lineeditor = selline;
@@ -726,26 +726,26 @@ static void do_grey_hotedit(int contype)
     case ht_telnet:
       /* unshade the host icons, shade the command icons */
       set_icon_state (win_hotedit, icon_hotedit_hostname, 0, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);
+      /*set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);*/
       set_icon_state (win_hotedit, icon_hotedit_command, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_hotedit, icon_hotedit_commandbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      /*set_icon_state (win_hotedit, icon_hotedit_commandbut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);*/
       break;
 
     case ht_ssh:
        /* unshade the host and command icons */
       set_icon_state (win_hotedit, icon_hotedit_hostname, 0, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);
+      /*set_icon_state (win_hotedit, icon_hotedit_hostnamebut, 0, WIMP_ICON_SHADED_BIT);*/
       set_icon_state (win_hotedit, icon_hotedit_command, 0, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_hotedit, icon_hotedit_commandbut, 0, WIMP_ICON_SHADED_BIT);
+      /*set_icon_state (win_hotedit, icon_hotedit_commandbut, 0, WIMP_ICON_SHADED_BIT);*/
       break;
 
     case ht_task:
       /* shade the host icons, unshade the command icons */
       set_icon_state (win_hotedit, icon_hotedit_hostname, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_hotedit, icon_hotedit_hostnamebut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+      /*set_icon_state (win_hotedit, icon_hotedit_hostnamebut, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);*/
       set_icon_state (win_hotedit, icon_hotedit_command, 0, WIMP_ICON_SHADED_BIT);
-      set_icon_state (win_hotedit, icon_hotedit_commandbut, 0, WIMP_ICON_SHADED_BIT);
-      break;      
+      /*set_icon_state (win_hotedit, icon_hotedit_commandbut, 0, WIMP_ICON_SHADED_BIT);*/
+      break;
   }
 
   switch (contype)
@@ -774,7 +774,7 @@ static int hotlist_populate_selected(void)
     if(node->internal_state & 1)
     {
       selectednode = node;
-      
+
       set_icon_data(win_hotedit, icon_hotedit_label, node->label ? node->label : "<unnamed>");
       set_icon_data(win_hotedit, icon_hotedit_hostname, node->host ? node->host : "");
       set_icon_data(win_hotedit, icon_hotedit_command, node->command ? node->command : "");
@@ -792,7 +792,7 @@ static int hotlist_populate_selected(void)
 
       set_icon_data(win_hotedit, icon_hotedit_termtype, terminal_name[node->vttype]);
       seltype = node->vttype;
-      
+
       sprintf(tmp,"LineEd%d", node->lineeditor);
       set_icon_data(win_hotedit, icon_hotedit_lineedittype, lookup_static(tmp));
       selline = node->lineeditor;
@@ -828,7 +828,7 @@ static hotlistnode *hotlist_createnew(void)
 
   addnodetolist(&editlisthead, &editlisttail, node);
   edititems++;
-  
+
   return node;
 
 err:
@@ -957,12 +957,12 @@ void win_hotedit_click(int x, int y, int buttons, int icon_handle)
   case icon_hotedit_cancel:
     close_window(win_hotedit);
     break;
-      
+
   case icon_hotedit_update:
     if(copy_hotedit_to_selected())
       close_window(win_hotedit);
     break;
-      
+
   case icon_hotedit_delete:
     if (generror_question(lookup_static("DeleteHot")))
     {
@@ -978,15 +978,15 @@ void win_hotedit_click(int x, int y, int buttons, int icon_handle)
       }
     }
     break;
-  
+
   case icon_hotedit_lineeditbut:
     create_lineeditor_type_menu(win_hotedit, icon_hotedit_lineedittype, icon_hotedit_lineeditbut);
     break;
-    
+
   case icon_hotedit_contypebut:
     create_connection_type_menu(win_hotedit, icon_hotedit_contype, icon_hotedit_contypebut);
     break;
-    
+
   case icon_hotedit_termtypebut:
     create_terminal_type_menu(win_hotedit, icon_hotedit_termtype, icon_hotedit_termtypebut);
     break;
@@ -1052,12 +1052,12 @@ void fire_hotlist(int item)
 bool finish_hotlist_editing(int dowhat) /* 0=cancel, 1=set, 2=save */
 {
   copy_hotlist(dowhat ? true : false);
-  
+
   if (dowhat == 2)
   {
     return save_hotlist();
   }
-  
+
   return true;
 }
 
@@ -1076,7 +1076,7 @@ void hotlist_inform(int icon, int menuselection)
       selcon = menuselection+1;
       do_grey_hotedit(selcon);
       break;
-    
+
     case icon_hotedit_termtype:
       seltype = menuselection;
       break;

@@ -35,7 +35,7 @@ const colour_t default_palette[16]=
 0x00000000, 0x0000D000, 0x00D00000, 0x00D0D000,
 0xF0000000, 0xD000D000, 0xD0D00000, 0xD0D0D000,
 0x60606000, 0x4040FF00, 0x00FF0000, 0x00FFFF00,
-0xFF404000, 0xFF40FF00, 0xFFFF0000, 0xFFFFFF00 
+0xFF404000, 0xFF40FF00, 0xFFFF0000, 0xFFFFFF00
 };
 
 struct coords eig;
@@ -57,6 +57,8 @@ int win_hotedit;
 int win_open;
 int win_resize;
 int win_save;
+int win_spoolsave;
+
 int menu_open=0;
 
 bool logging                         =LOGGING;

@@ -22,7 +22,7 @@
 #include "wimputil.h"
 #include "url.h"
 
-#define MAX_TEMPLATES 10
+#define MAX_TEMPLATES 11
 #define LOAD_TEMPLATE_NO_FONTS          (int *)(-1)
 #define LOAD_TEMPLATE_WIMP_SPRITE_AREA  (struct os_spriteop_area *)(1)
 
@@ -100,14 +100,9 @@ static void load_sprites(void)
 
 static void open_template(void)
 {
-  int use_3d_templates=false;
   char country[16];
   char template_filename[1024];
   FILE *file_handle;
-
-  /* Check 3D bit of CMOS RAM */
-  if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 0x8c) & 1)
-    use_3d_templates=true;
 
   /* Again, set country to UK if we don't know */
   if (strlen(get_country(country, sizeof(country)))==0)
@@ -116,15 +111,8 @@ static void open_template(void)
   /* Put together filename */
   sprintf(template_filename,"<%s$Dir>.Resources.%s",application_name,country);
 
-  /* append filename according to 3D flag */
-  if (use_3d_templates==false)
-  {
-    strcat(template_filename,".Templates");
-  }
-  else
-  {
-    strcat(template_filename,".Template3D");
-  }
+  /* append filename */
+  strcat(template_filename,".Templates");
 
   file_handle=fopen(template_filename,"r");
 
@@ -141,15 +129,8 @@ static void open_template(void)
   /* Put together filename */
   sprintf(template_filename,"<%s$Dir>.Resources.%s",application_name,country);
 
-  /* append correct filename */
-  if (use_3d_templates==false)
-  {
-    strcat(template_filename,".Templates");
-  }
-  else
-  {
-    strcat(template_filename,".Template3D");
-  }
+  /* append filename */
+  strcat(template_filename,".Templates");
 
   file_handle=fopen(template_filename,"r");
 
@@ -251,6 +232,8 @@ static void load_templates(void)
   win_resize=load_template(LOAD_TEMPLATE_NO_FONTS,"resize",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   win_save=load_template(LOAD_TEMPLATE_NO_FONTS,"save",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
+
+  win_spoolsave=load_template(LOAD_TEMPLATE_NO_FONTS,"spoolsave",LOAD_TEMPLATE_WIMP_SPRITE_AREA);
 
   /* close the templates file */
   close_template();

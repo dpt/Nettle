@@ -7,7 +7,6 @@ Spooling (logging? generic?)
 
 Drag binary to ANSI Task open dialog command line
 
-Sort tab order in hotlist dialog
 Grey-out buttons on hotlist list editor when unavailable for clicking
 Drag items on hotlist
 Stop hotlist redrawing all items when one is clicked on
@@ -16,11 +15,9 @@ menu widths
  
 RO 3.1 bits (C icons, titlebar redraw...)
 
-Always use 3D templates
-
 Wimp slot size settable for new tasks?
 
-* Much faster terminal scrollback handling
+// * Much faster terminal scrollback handling
 * Reordering of hotlist items within hotlist editor
 * More choices: F12 handling, blinking cursor...
 * Use global clipboard
@@ -33,22 +30,11 @@ Wimp slot size settable for new tasks?
 
 Implement tests.
 Implement Selective Erase (it only erases characters marked as erasable)
-Implement insert characters.
-Implement delete line.
-Implement insert line.
 Implement selective erasable.
-
-Make it check for open sessions on quitting - ie. ask for confirmation
 
 Mouse events - need to prod pico -m  a bit, and find out how mouse events are done.
 
-Dynamic window resizing
-
 Source files need more comments
-
-Choices!
-c.socket            	- needs finished (not needed for Nettle, but should be done sometime)
-
 
 Bugs:
 
