@@ -11,6 +11,7 @@
 #include "misc.h"
 #include "templ.h"
 #include "wimputil.h"
+#include "spool.h"
 
 bool spool_open(struct session_struct *session, char *file_name, bool raw_bit)
 {
