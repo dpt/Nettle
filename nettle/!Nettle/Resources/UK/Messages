@@ -142,4 +142,4 @@ LoginMatch_User:ogin:
 LoginMatch_Pass:assword:
 
 # Characters for URL characters
-URL_Chars:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:/&+=;!$%-,.@?~_
+URL_Chars:'"< >
