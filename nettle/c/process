@@ -627,7 +627,7 @@ static void clear_screen(struct session_struct *session, int calc, int calc2, ch
 {
   int loop;
 
-  /* clear the specified area withe the specified fg,bg,flags and character */
+  /* clear the specified area with the specified fg,bg,flags and character */
   for (loop=calc; loop<=calc2; loop+=4)
   {
     if (loop>0 && loop<(session->terminal_size.x*
@@ -1483,6 +1483,20 @@ static bool process_escape_length_x(struct session_struct *session)
                 int move=atoi(session->escape_string+2);
 
                 row_shift_right (session, move < 1 ? 1 : move);
+
+                clear_screen(session,
+
+                             ((session->pos.y*session->terminal_size.x)+
+                              (session->pos.x))*4,
+
+                              ((session->pos.y*session->terminal_size.x)+
+                               (session->pos.x+(move < 1 ? 1 : move)))*4-4,
+
+                              session->current_fg,
+                              session->current_bg,
+                              0,
+                              32);
+
                 done=true;
               }
               break;

@@ -4,6 +4,6 @@ Logging:0
 LineEditor:0
 PassF12:0
 TerminalWidth:80
-TerminalHeight:25
-TerminalScroll:95
+TerminalHeight:24
+TerminalScroll:96
 LineEditorSize:32

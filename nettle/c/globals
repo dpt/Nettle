@@ -46,8 +46,8 @@ bool logging=false;
 bool line_editor=false;
 bool pass_f12=false;
 int line_editor_size=32;
-struct coords defaultsize = {80, 25};
-int defaultscroll = 95;
+struct coords defaultsize = {80, 24};
+int defaultscroll = 96;
 
 struct session_struct *sessions = NULL;
 struct session_struct *current_session = NULL;
