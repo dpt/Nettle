@@ -13,7 +13,6 @@
 #define MENU_CONNECTION    3
 #define MENU_TERMINAL_TYPE 4
 #define MENU_HOTLIST       5
-#define MENU_HOTLIST_IBAR  6
 
 #define RECEIVE_BLOCK_LENGTH	0x400
 

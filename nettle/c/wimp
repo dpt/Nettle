@@ -445,7 +445,7 @@ static void iconbar_click(int x, int y, int buttons, int icon_handle)
   	 create_iconbar_menu();
   	 break;
        case 1:
-         create_hotlist_menu (false);
+         create_hotlist_menu();
          break;
      }
   }
@@ -463,9 +463,6 @@ static void win_open_click(int x, int y, int buttons, int icon_handle)
       break;
     case 5:
       create_connection_menu();
-      break;
-    case 8:
-      create_hotlist_menu (true);
       break;
     case 10:
       create_terminal_type_menu();
@@ -1130,13 +1127,14 @@ void menu_choice(int *selection)
 
     case MENU_HOTLIST:
       {
-        char tmpbuf[100];
+	/* use hotlist entry selection[0]  */
+  /*
+      char tmpbuf[100];
         char connection[MESSAGE_MAX_CONNECTION];
         unsigned short port;
 	char *command;
 	char *host;
-	hotlisttype type = get_hotlist_entry(selection[0], &host, &port, &command);
-
+	
         switch(type)
 	{
 	  case ht_telnet:
@@ -1159,38 +1157,9 @@ void menu_choice(int *selection)
 	    set_icon_data(win_open, 7, command);
 	    break;
 	  case ht_invalid:
-	    break;   /* Just to keep the compiler quiet - handle all enums! */
+	    break;
 	}
-      }
-      break;
-
-    case MENU_HOTLIST_IBAR:
-      {
-        unsigned short port;
-	char *command;
-	char *host;
-	int connection_type = 0;
-	enum nettle_terminal terminal_type = NETTLE_TERMINAL_VT220;
-	hotlisttype type = get_hotlist_entry(selection[0], &host, &port, &command);
-
-	switch (type)
-	{
-	  case ht_telnet:
-	    connection_type = NETTLE_TELNET;
-	    break;
-	  case ht_ssh:
-	    connection_type = NETTLE_TELNET;
-	    break;
-	  case ht_task:
-	    connection_type = NETTLE_TELNET;
-	    break;
-	  case ht_invalid:
-	    break; /* keep the compiler quiet */
-	}
-
-	if (type != ht_invalid)
-	  start_connection_int (connection_type, terminal_type,
-				host, port, command);
+*/
       }
       break;
   }
@@ -1222,11 +1191,7 @@ void menu_choice(int *selection)
           break;
 
         case MENU_HOTLIST:
-          create_hotlist_menu (true);
-          break;
-
-        case MENU_HOTLIST_IBAR:
-          create_hotlist_menu (false);
+          create_hotlist_menu();
           break;
       }
     }

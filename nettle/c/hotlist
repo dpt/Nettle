@@ -5,6 +5,33 @@
  * $Id$
  */
 
+/**************************/
+/* PRELIMINARY IDEAS CODE */
+/**************************/
+/*
+
+Hotlist entries could look something like this:
+
+My Fave Host
+{
+  host: 192.168.1.1
+  port: telnet
+  type: telnet
+  term: vt220
+  wide: 80
+  high: 25
+  scrl: 5000
+  edit: on, always
+}
+
+Blah
+{
+  host: wibble
+}
+
+
+*/
+
 #include "generic.h"
 #include "globals.h"
 
@@ -13,26 +40,12 @@
 #include "wimp.h"
 #include <ctype.h>
 
-#define STRANDLEN(x) x,sizeof(x)-1
-
-#define _TELNET "telnet"
-#define _SSH    "ssh"
-#define _TASK   "task"
-
-typedef struct _hotlistnode
-{
-  struct _hotlistnode *next;
-  char *host;
-  char *command;
-  unsigned short port;
-  hotlisttype type;
-} hotlistnode;
-
 static hotlistnode *hotlisthead = NULL;
-static hotlistnode *hotlisttail = NULL;
+/* static hotlistnode *hotlisttail = NULL; */
 static int items = 0;
 static int *menublock = NULL;
 
+/*
 static void addnodetolist(hotlistnode *node)
 {
   node->next = NULL;
@@ -43,166 +56,7 @@ static void addnodetolist(hotlistnode *node)
   hotlisttail = node;
   items++;
 }
-
-static void load_telnet_line(char *string)
-{
-  char *tmp;
-  hotlistnode *node;
-
-  string += strlen(_TELNET);
-
-  for(;isspace((int) *string); string++)
-    if (!*string)
-      return;
-
-  tmp = strpbrk (string, ":,");
-
-  node = (hotlistnode *) malloc(sizeof(hotlistnode));
-  if (node)
-  {
-    node->type = ht_telnet;
-    node->command = NULL;
-    node->port = 23;  /* telnet default port */
-    if (tmp)
-    {
-      node->port = atoi(tmp+1);
-      node->host = malloc((tmp-string)+1);
-      if (!node->host)
-      {
-        free(node);
-        return;
-      }
-      strncpy(node->host, string, tmp-string);
-      node->host[tmp-string]=0;
-    }
-    else
-    {
-      node->host = malloc(strlen(string)+1);
-      if (!node->host)
-      {
-        free(node);
-        return;
-      }
-      strcpy(node->host, string);
-    }
-
-    addnodetolist(node);
-  }
-}
-
-static void load_ssh_line(char *string)
-{
-  char *tmp;
-  hotlistnode *node;
-
-  string += strlen(_SSH);
-
-  for(;isspace((int) *string); string++)
-    if (!*string)
-      return;
-
-  /* Chop any whitespace off the end of the string */
-  for(tmp = string+strlen(string)-1;  \
-      tmp>string && (*tmp==' ' || *tmp=='\t'); *tmp--='\0');
-
-  tmp = strpbrk (string, ":,");
-
-  if (tmp)
-  {
-    char *s = strpbrk (string, " \t");
-    if (s && s<tmp)
-      tmp = NULL;  /* the : or , was in the command, not the address part */
-  }
-
-  node = (hotlistnode *) malloc(sizeof(hotlistnode));
-  if (node)
-  {
-    node->type = ht_ssh;
-    node->command = NULL;
-    node->port = 22;  /* ssh default port */
-    if (tmp)
-    {
-      node->port = atoi(tmp+1);
-      node->host = malloc((tmp-string)+1);
-      if (!node->host)
-      {
-        free(node);
-        return;
-      }
-      strncpy(node->host, string, tmp-string);
-      node->host[tmp-string]=0;
-    }
-    else
-    {
-      tmp = strpbrk(string, " \t");
-
-      if (!tmp)
-        node->host = malloc(strlen(string)+1);
-      else
-        node->host = malloc((tmp-string)+1);
-
-      if (!node->host)
-      {
-        free(node);
-        return;
-      }
-
-      if (!tmp)
-        strcpy(node->host, string);
-      else
-      {
-        strncpy(node->host, string, tmp-string);
-        node->host[tmp-string]=0;
-      }
-    }
-
-    for (;*string && !isspace((int) *string); string++);
-
-    if (*string)
-    {
-      node->command = malloc(strlen(string)+1);
-
-      if (!node->command)
-      {
-        free(node->command);
-        free(node);
-        return;
-      }
-      strcpy(node->command, string);
-    }
-
-    addnodetolist(node);
-  }
-}
-
-static void load_task_line(char *string)
-{
-  hotlistnode *node;
-
-  string += strlen(_TASK);
-
-  for(;isspace((int) *string); string++)
-    if (!*string)
-      return;
-
-  node = (hotlistnode *) malloc(sizeof(hotlistnode));
-  if (node)
-  {
-    node->type = ht_task;
-    node->host = NULL;
-    node->port = 0;
-    node->command = malloc(strlen(string)+1);
-    if (!node->command)
-    {
-      free(node);
-      return;
-    }
-    strcpy(node->command, string);
-
-    addnodetolist(node);
-  }
-}
-
+*/
 
 void lose_hotlist(void)
 {
@@ -210,10 +64,8 @@ void lose_hotlist(void)
   {
     hotlistnode *next = hotlisthead->next;
 
-    if (hotlisthead->host)
-      free(hotlisthead->host);
-    if (hotlisthead->command)
-      free(hotlisthead->command);
+    if (hotlisthead->label)
+      free(hotlisthead->label);
     free(hotlisthead);
     hotlisthead = next;
   }
@@ -256,18 +108,7 @@ void load_hotlist(void)
       if (string[len-1]=='\n')
         string[len-1]='\0';
 
-    if (strncmp(string,STRANDLEN(_TELNET))==0)
-    {
-      load_telnet_line(string);
-    }
-    else if (strncmp(string,STRANDLEN(_SSH))==0)
-    {
-      load_ssh_line(string);
-    }
-    else if (strncmp(string,STRANDLEN(_TASK))==0)
-    {
-      load_task_line(string);
-    }
+/**** DEAL WITH LINE HERE *****/
 
   }
 
@@ -275,74 +116,47 @@ void load_hotlist(void)
 }
 
 
-void create_hotlist_menu (int window)
+void create_hotlist_menu(void)
 {
   hotlistnode *node = hotlisthead;
   struct wimp_getpointerinfo_block block;
   int position=7;
-  char *entry=NULL;
+  
+  if (!items)
+    return;
 
   if (!menublock)
   {
     menublock = (int *) malloc(24*items+28);
     if (!menublock)
       return;
+
+    strcpy((char *)menublock, "Hotlist");  /* Quick hacky title */
+
+    menublock[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
+    menublock[4]=0;
+    menublock[5]=44;
+    menublock[6]=0;
+
+    while (node)
+    {
+      menublock[position++]= node->next ? 0 : (1<<7);  /* Set "last" bit if this is the end of the list */
+      menublock[position++]=-1;  /* No submenu */
+      menublock[position++]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | \
+  			    WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT;
+
+      menublock[position+0]=(int) node->label;
+      menublock[position+2]=strlen(node->label)+1;
+      menublock[position+1]=(int) menublock[position+0]+menublock[position+2]-1;
+      position+=3;
+
+      node = node->next;
+    }
   }
 
-  strcpy((char *)menublock, "Hotlist");  /* Quick hacky title */
-
-  menublock[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
-  menublock[4]=0;
-  menublock[5]=44;
-  menublock[6]=0;
-
-  while (node)
-  {
-    menublock[position++]= node->next ? 0 : (1<<7);  /* Set "last" bit if this is the end of the list */
-    menublock[position++]=-1;  /* No submenu */
-    menublock[position++]=WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT | WIMP_ICON_FILLED_BIT | \
-                          WIMP_ICON_TEXT_BIT | WIMP_ICON_INDIRECTED_BIT;
-
-    if (node->host[0])
-      entry=node->host;
-    else
-      entry=node->command;
-
-    menublock[position++]=(int) entry;
-    menublock[position++]=(int) entry+(strlen(entry));
-    menublock[position++]=strlen(entry)+1;
-
-    node = node->next;
-  }
-
-  if (window)
-  {
-    create_menu_by_icon (menublock, win_open, 8);
-    menu_open = MENU_HOTLIST;
-  }
-  else
-  {
-    _swi(Wimp_GetPointerInfo, _IN(1), &block);
-    _swi(Wimp_CreateMenu, _INR(1,3), menublock, block.pos.x-64, 96+(items*44));
-    menu_open = MENU_HOTLIST_IBAR;
-  }
+  _swi(Wimp_GetPointerInfo, _IN(1), &block);
+  _swi(Wimp_CreateMenu, _INR(1,3), menublock, block.pos.x-64, 96+(items*44));
+  menu_open = MENU_HOTLIST;
 }
 
-
-hotlisttype get_hotlist_entry(int entry, char **host, unsigned short *port, char **command)
-{
-  hotlistnode *node = hotlisthead;
-
-  if (entry<0 || entry>=items)
-    return ht_invalid;
-
-  for(;entry;entry--)
-     node = node->next;
-
-  *host = node->host;
-  *port = node->port;
-  *command = node->command;
-
-  return node->type;
-}
 
