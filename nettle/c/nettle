@@ -220,8 +220,7 @@ void start_connection(void)
       /* start the task window */
       {
         char temp_string[1024];
-        sprintf(temp_string,"%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X \
-        		     -txt &%X",string,task_handle,(int)session);
+        sprintf(temp_string,"%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X -txt &%X",string,task_handle,(int)session);
 
         _swi(Wimp_StartTask, _IN(0), temp_string);
       }

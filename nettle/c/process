@@ -630,11 +630,7 @@ static void clear_screen(struct session_struct *session, int calc, int calc2, ch
   /* clear the specified area with the specified fg,bg,flags and character */
   for (loop=calc; loop<=calc2; loop+=4)
   {
-    if (loop>0 && loop<(session->terminal_size.x*
-             (session->terminal_size.y+session->scrollback)*4))
-    {
-      write_assigned(session,loop,fg,bg,flags,character);
-    }
+    write_assigned(session,loop,fg,bg,flags,character);
   }
 }
 

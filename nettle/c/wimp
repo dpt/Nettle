@@ -1282,7 +1282,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
       {
         struct session_struct *session = sessions;
 
-        if (session) {
+        if (!session) {
           return;
         }
 
@@ -1304,11 +1304,9 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
     case WIMP_MESSAGE_TASKWINDOW_EGO:
       {
         struct session_struct *session = sessions;
-        int s_count = 0;
         int txt_handle = wimp_block.user_message.contents.task_window_ego.txt_handle;
 
-        while (session && s_count < txt_handle) {
-          s_count++;
+        while (session && session != (struct session_struct *) txt_handle) {
           session = session->next;
         }
 
@@ -1325,7 +1323,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
       {
         struct session_struct *session = sessions;
 
-        if (session)
+        if (!session)
           return;
 
         while (session && session->socket_handle != sender_ref)
@@ -2049,18 +2047,18 @@ static void drag_start(int window_handle, int icon_handle)
 
 static void open_open_window(bool open_window_flag)
 {
-  char string[11];
+  char string[20];
   int connection_type;
   struct wimp_seticonstate_block block;
 
-  read_icon_data(win_open, 4, string, 11);
+  read_icon_data(win_open, 4, string, 20);
 
   {
     char type[20];
 
     if (strcmp(string, lookup("SSH", type, 20)) == 0)
       connection_type = NETTLE_SSH;
-    else if (strcmp(string,lookup("Taskwindow", type, 20)) == 0)
+    else if (strcmp(string, lookup("Taskwindow", type, 20)) == 0)
       connection_type = NETTLE_TASKWINDOW;
     else
       connection_type = NETTLE_TELNET;
