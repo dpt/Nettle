@@ -62,7 +62,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height,
   int loop;
   int step=char_size/height;
   char *area=(char *) int_area;
-  char *base = (char *) int_base;
+  const char *base = (const char *) int_base;
   /* define characters */
 
   /* currently defining 0x100 - 0x11C - initialise this area to 0 */
@@ -81,7 +81,7 @@ void define_zap_chars(int *int_area, int char_size, int width, int height,
     for (loop = step; loop < char_size - step; loop += step)
     {
       area[loop] = 1;
-      area[loop + step - 1] = 1 << (width - 1 & 7);
+      area[loop + step - 1] = 1 << ((width - 1) & 7);
     }
   area+=char_size;
 

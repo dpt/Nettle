@@ -195,10 +195,10 @@ bool save_choices(void)
     }
     else
     {
-      time(&current_time);
+      int loop;
+      time_t current_time;
 
-      /* Darren did an if statement here, personally I'd rather do this (even if */
-      /* it might break) - feel free to change it */
+      time(&current_time);
 
       fprintf(file_handle, "# Nettle choices file\n");
       fprintf(file_handle, "# Created on %s\n", ctime(&current_time));
@@ -214,11 +214,23 @@ bool save_choices(void)
       fprintf(file_handle, "LineEditor:%d\n", line_editor);
       fprintf(file_handle, "LineEditorSize:%d\n", line_editor_size);
 
-      fclose(file_handle);
-      file_handle=NULL;
+      fputs("Palette:", file_handle);
+
+      for (loop=0; loop<16; loop++)
+        fprintf(file_handle, "%06lX ", palette[loop] >> 8);
+
+      fputc('\n', file_handle);
+
+      if (!ferror(file_handle))
+      {
+        if (fclose(file_handle))
+          error=true;
+
+        file_handle=NULL;
+
     }
 
-    if (error)
+    while (error)
     {
       /* An error - report it */
       _kernel_oserror *err = _kernel_last_oserror();
@@ -229,10 +241,17 @@ bool save_choices(void)
 
       generror(string, false);
 
-      if (file_handle)
-        fclose(file_handle);
+      error=false;
 
-      return false;
+      if (file_handle)
+      {
+        if (fclose(file_handle))
+          error=true; /* Possible second I/O error */
+        file_handle=NULL;
+      }
+
+      if (!error)
+        return false;
     }
 
     return true;

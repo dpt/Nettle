@@ -28,7 +28,7 @@
 #define MAX_TERMINAL_WIDTH      256
 #define MIN_TERMINAL_HEIGHT     4
 #define MAX_TERMINAL_HEIGHT     128
-#define MAX_SCROLLBACK_SIZE     5000
+#define MAX_SCROLLBACK_SIZE     (1<<16)
 
 #define LOGGING                 false
 #define LINE_EDITOR             0
