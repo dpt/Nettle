@@ -1,6 +1,9 @@
-/* Nettle main code headers */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/*
+ * Nettle main code headers
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
 #ifndef RUNIMAGE_H
 #define RUNIMAGE_H

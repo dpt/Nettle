@@ -1,8 +1,9 @@
-/* Global variables header */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
-
-/* This is basically the same as c.globals, but with externs */
+/**
+ * Global variables header
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
 #ifndef GLOBALS_H
 #define GLOBALS_H
@@ -139,7 +140,7 @@ extern char *line_editor_icon_sprite;
 
 extern char terminal_name[8][6];
 
-extern union wimp_poll_block
+union wimp_poll_block
 {
   struct
   {
@@ -289,6 +290,8 @@ extern union wimp_poll_block
 
   } user_message;
 
-} wimp_block;
+};
+
+extern union wimp_poll_block wimp_block;
 
 #endif

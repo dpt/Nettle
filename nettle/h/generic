@@ -1,6 +1,9 @@
-/* Generic useful headers */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Generic useful headers
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
 #ifndef GENERIC_H
 #define GENERIC_H
@@ -8,7 +11,8 @@
 /* Include fortify.h (Debugging) */
 #include "fortify.h"
 
-typedef enum {
+typedef enum
+{
   false = 0, true = 1
 } bool;
 
@@ -63,7 +67,7 @@ extern _kernel_oserror *_swix (int swi_no, unsigned int, ...);
 #include <stdarg.h>
 #endif
 
-/* Structs */
+/* Unions/Structs */
 
 struct os_spriteop_area
 {
@@ -79,6 +83,28 @@ struct wimp_closewindow_block
   int window_handle;
 };
 
+union icon_data
+{
+  struct
+  {
+    char text[12];
+  } t;
+
+  struct
+  {
+    char *text;
+    char *validation;
+    int text_len;
+  } it;
+
+  struct
+  {
+    char *sprite;
+    struct os_spriteop_area *sprite_area;
+    int sprite_len;
+  } is;
+};
+
 struct wimp_createicon_block
 {
   int window_handle;
@@ -87,9 +113,7 @@ struct wimp_createicon_block
   int maxx;
   int maxy;
   int icon_flags;
-  char *buffer;
-  char *validation;
-  int buffer_length;
+  union icon_data contents;
 };
 
 struct wimp_createwindow_block
@@ -119,12 +143,7 @@ struct wimp_createwindow_block
   int sprite_area;
   unsigned short min_width;
   unsigned short min_height;
-
-  /* NB - this is probably wrong as it depends on the settings of the flags */
-  char *title_text;
-  char *title_validation;
-  int title_buffer_len;
-
+  union icon_data title;
   int number_of_icons;
   /* Icon definitions follow... */
 };
@@ -159,9 +178,7 @@ struct wimp_geticonstate_block
   int maxx;
   int maxy;
   int icon_flags;
-  char *buffer;
-  char *validation;
-  int buffer_length;
+  union icon_data contents;
 };
 
 struct wimp_getpointerinfo_block
@@ -205,6 +222,20 @@ struct wimp_openwindow_block
   int scroll_x;
   int scroll_y;
   int handle_behind;
+};
+
+struct wimp_reporterror_block
+{
+  int errno;
+  char errmess[252];
+};
+
+struct wimp_setextent_block
+{
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
 };
 
 struct wimp_seticonstate_block

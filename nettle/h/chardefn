@@ -1,10 +1,13 @@
-/* Zap font character definitions */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Zap font character definitions
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
 #ifndef CHARDEFN_H
 #define CHARDEFN_H
 
-extern void define_zap_chars(int *,int,int,int);
+extern void define_zap_chars(int *, int, int, int);
 
 #endif

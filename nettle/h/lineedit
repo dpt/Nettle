@@ -1,6 +1,9 @@
-/* Line editor code */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Line editor code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
 #ifndef LINEEDIT_H
 #define LINEEDIT_H

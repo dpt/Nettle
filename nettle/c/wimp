@@ -272,7 +272,7 @@ void close_window(int window_handle)
 
 
 /* Determine if there are any sessions open.  If so, query the user as to whether */
-/*  to really quit the program. */
+/* to really quit the program. */
 
 static void close_program(void)
 {
@@ -440,8 +440,8 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
       switch (buttons)
       {
         case 64:
-          /* if SELECT drag, then clear the selection and work out what where the selection start */
-          /* is */
+          /* if SELECT drag, then clear the selection and work out what where the selection */
+          /* start is */
           refresh_selection_clear();
 
           selection_session = session;
@@ -648,7 +648,7 @@ void drag_finished(void)
     strcpy(block.user_message.contents.data_save.file_name, string+loop+1);
 
     block.user_message.length      =(48+strlen(string+loop+1)) & ~3;
-    block.user_message.my_ref      =0;
+    block.user_message.your_ref    =0;
     block.user_message.message_code=1; /* DataSave */
 
     _swi(Wimp_SendMessage, _INR(0,3), 17, &block,
@@ -753,7 +753,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
   {
     struct session_struct *session = sessions;
 
-    while (session && window_handle != session->window_handle)
+    while (session && window_handle != session->pane_handle)
     {
       session = session->next;
     }
@@ -1118,7 +1118,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
           set_icon_data(drag_window_handle,2,string);
         }
 
-        wimp_block.user_message.sender_ref  =my_ref;
+        wimp_block.user_message.your_ref    =my_ref;
         wimp_block.user_message.message_code=3;
 
         _swi(Wimp_SendMessage, _INR(0,2), 17, &wimp_block, sender_ref);
@@ -1259,14 +1259,15 @@ void mode_change(void)
   /* Resize all of the terminals to fit the new font size */
   while (session)
   {
-    int block[4];
-    block[0]=0;
-    block[1]=-((session->terminal_size_y+session->scrollback)*
-                redraw.r_charh*2*zap_yeig);
-    block[2]=session->terminal_size_x*redraw.r_charw*2;
-    block[3]=12;
+    struct wimp_setextent_block block;
 
-    _swi(Wimp_SetExtent, _INR(0,1), session->window_handle, block);
+    block.minx=0;
+    block.miny=-((session->terminal_size_y+session->scrollback)*
+                 redraw.r_charh*2*zap_yeig);
+    block.maxx=session->terminal_size_x*redraw.r_charw*2;
+    block.maxy=0;
+
+    _swi(Wimp_SetExtent, _INR(0,1), session->window_handle, &block);
 
     session = session->next;
   }
@@ -1274,38 +1275,37 @@ void mode_change(void)
 
 
 
-/* */
 /* Other Wimp related code */
-/* */
 
 void generror(const char *string, bool is_message)
 {
-  char message[256];
-  int block[64];
+  char message[252];
+  struct wimp_reporterror_block block;
 
-  if (is_message) {
+  if (is_message)
     string = lookup(string, message, 256);
-  }
 
-  block[0]=0x52380; /* fill in the error number - error numbers aren't allocated the same as */
-                    /* SWIs, so this number is wrong... */
-  strcpy((char *)block+4,string);
+  block.errno=0x52380; /* fill in the error number - error numbers aren't allocated the same */
+                       /* as SWIs, so this number is wrong... */
 
-  _swi(Wimp_ReportError, _INR(0,2), block, 0, application_name);
+  strcpy(block.errmess, string);
+
+  _swi(Wimp_ReportError, _INR(0,2), &block, 0, application_name);
 }
 
 
 
 static bool generror_question(char *string)
 {
-  int block[64];
+  struct wimp_reporterror_block block;
 
-  block[0]=0x52380; /* fill in the error number - error numbers aren't allocated the same as */
-                    /* SWIs, so this number is wrong... */
-  strcpy((char *)block+4,string);
+  block.errno=0x52380; /* fill in the error number - error numbers aren't allocated the same */
+                       /* as SWIs, so this number is wrong... */
 
-  return (bool) (_swi(Wimp_ReportError, _INR(0,2)|_RETURN(1), block,
-                                        (1<<1)+(1<<0),application_name) == 1);
+  strcpy(block.errmess, string);
+
+  return (bool) (_swi(Wimp_ReportError, _INR(0,2)|_RETURN(1), &block,
+                                        (1<<1)+(1<<0), application_name) == 1);
 }
 
 
@@ -1320,22 +1320,29 @@ void set_caret_position(int window_handle, int icon_handle, int flags, int index
 
 void set_icon_data(int window_handle, int icon_handle, char *contents)
 {
-  int block[10];
+  struct wimp_geticonstate_block block;
 
-  block[0]=window_handle;
-  block[1]=icon_handle;
+  block.window_handle=window_handle;
+  block.icon_handle  =icon_handle;
 
-  _swi(Wimp_GetIconState, _IN(1), block);
+  _swi(Wimp_GetIconState, _IN(1), &block);
 
-  if (block[6] & (1<<8))
+  if (block.icon_flags & (1<<8))
   {
-    if (strcmp((char *)block[7],contents))
+    if (strcmp(block.contents.it.text, contents))
     {
-      strcpy((char *)block[7],contents);
-      block[2]=0;
-      block[3]=0;
+      strcpy(block.contents.it.text, contents);
 
-      _swi(Wimp_SetIconState, _IN(1), block);
+      {
+        struct wimp_seticonstate_block block;
+
+        block.window_handle=window_handle;
+        block.icon_handle  =icon_handle;
+        block.eor          =0;
+        block.clear        =0;
+
+        _swi(Wimp_SetIconState, _IN(1), &block);
+      }
     }
   }
   else
@@ -1808,7 +1815,7 @@ static void drag_start(int window_handle, int icon_handle)
 
   if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & 1)
   {
-    _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, string, block+8, 0);
+    _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, string, ((char *) block)+8, 0);
   }
   else
   {

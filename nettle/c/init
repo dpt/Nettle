@@ -392,9 +392,10 @@ void create_icon_bar_icon(void)
   block.maxx         =68; /* max x */
   block.maxy         =68; /* max y */
   block.icon_flags   =0x1700311a;
-  block.buffer       =application_icon_name;
-  block.validation   =(char *) sprite_area;
-  block.buffer_length=strlen(block.buffer);
+
+  block.contents.is.sprite     =application_icon_name;
+  block.contents.is.sprite_area=sprite_area;
+  block.contents.is.sprite_len =strlen(application_icon_name);
 
   iconbar_handle=_swi(Wimp_CreateIcon, _IN(1)|_RETURN(0), &block);
 }

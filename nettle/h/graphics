@@ -1,6 +1,8 @@
-/* Nettle graphics table */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Nettle graphics table
+ *
+ * $Id$
+ */
 
 /* Graphics character lookup table mappings */
 

@@ -1,11 +1,16 @@
-/* socket.h Header file */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * socket.h Header file
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
 #ifndef SOCKET_H
 #define SOCKET_H
 
+#ifndef Resolver_GetHost
 #define Resolver_GetHost   0x46001
+#endif
 
 #define RESOLVER_FAILED		0
 #define RESOLVER_INPROGRESS	1

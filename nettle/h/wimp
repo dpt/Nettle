@@ -1,6 +1,9 @@
-/* Nettle Wimp_Poll / Wimp code headers */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Nettle Wimp_Poll / Wimp code headers
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
 #ifndef WIMP_H
 #define WIMP_H

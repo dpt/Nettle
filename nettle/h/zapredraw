@@ -1,8 +1,11 @@
-/* ZapRedraw structure code */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * ZapRedraw structure code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
-/* ZapRedraw module (C) Zap Developers */
+/* ZapRedraw module (C) Zap developers */
 
 #ifndef ZAPREDRAW_H
 #define ZAPREDRAW_H

@@ -87,9 +87,9 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     {
       block.icon_flags =0x1700B113;
     }
-    block.buffer       =line_editor_icon_text;
-    block.validation   =line_editor_icon_sprite;
-    block.buffer_length=1;
+    block.contents.it.text         =line_editor_icon_text;
+    block.contents.it.validation   =line_editor_icon_sprite;
+    block.contents.it.text_len     =1;
 
     _swi(Wimp_CreateIcon, _IN(1), &block);
 
@@ -106,9 +106,9 @@ static void create_line_editor_icons(struct session_struct *session, int width)
     {
       block.icon_flags =0x0780f135;
     }
-    block.buffer       =session->line_editor_buffer;
-    block.validation   =line_editor_buffer_indirected;
-    block.buffer_length=512;
+    block.contents.it.text      =session->line_editor_buffer;
+    block.contents.it.validation=line_editor_buffer_indirected;
+    block.contents.it.text_len  =512;
 
     _swi(Wimp_CreateIcon, _IN(1), &block);
   }

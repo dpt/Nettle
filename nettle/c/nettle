@@ -321,10 +321,11 @@ void start_connection(void)
     block.min_width     =4;
     block.min_height    =4;
 
-    block.title_text      =session->title;
-    block.title_validation=0;
-    block.title_buffer_len=256;
-    block.number_of_icons =0;
+    block.title.it.text      =session->title;
+    block.title.it.validation=0;
+    block.title.it.text_len  =256;
+
+    block.number_of_icons    =0;
 
     session->window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
 
@@ -369,10 +370,11 @@ void start_connection(void)
     block.min_width  =4;
     block.min_height =4;
 
-    block.title_text      =0;
-    block.title_validation=0;
-    block.title_buffer_len=0;
-    block.number_of_icons =0;
+    block.title.it.text      =0;
+    block.title.it.validation=0;
+    block.title.it.text_len  =0;
+
+    block.number_of_icons    =0;
 
     session->pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
   }

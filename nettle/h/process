@@ -1,6 +1,9 @@
-/* Processing code */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Processing code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
 
 #ifndef PROCESS_H
 #define PROCESS_H
