@@ -53,15 +53,9 @@ void start_connection(void)
 {
   char string[1024];
   int loop;
-  int zap_yeig;
   int connection_type;
   enum nettle_terminal terminal_type;
-
-  /* get the yeig of the mode we're in */
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  zap_yeig=regs.r[2];
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   /* give up if too many sessions */
   if (current_session == Nettle_MaxSessions)
@@ -194,8 +188,7 @@ void start_connection(void)
         sprintf(temp_string,"%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X \
         		     -txt &%X",string,task_handle,current_session);
 
-        regs.r[0]=(int) temp_string;
-        _kernel_swi(Wimp_StartTask, &regs, &regs);
+        _swi(Wimp_StartTask, _IN(0), temp_string);
       }
 
       /* set ECHO bit to true */
@@ -284,10 +277,7 @@ void start_connection(void)
     block[20]=256;
     block[21]=0;
 
-    regs.r[1] = ((int)block) + 4;
-    regs.r[1]=(int) block;
-    _kernel_raise_error(_kernel_swi(Wimp_CreateWindow, &regs, &regs));
-    session[current_session].window_handle = regs.r[0];
+    session[current_session].window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), block);
 
     set_title_bar(session[current_session].window_handle,"nettle");
   }
@@ -320,10 +310,7 @@ void start_connection(void)
     block[20]=0;
     block[21]=0;
 
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_CreateWindow, &regs, &regs);
-
-    session[current_session].pane_handle=regs.r[0];
+    session[current_session].pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), block);
   }
 
   open_window(session[current_session].window_handle,false);
@@ -377,8 +364,9 @@ void write_out_string(int session_handle, char *string)
 
 void write_out_data(int session_handle, char *data, int length_data)
 {
-  int loop,calc,zap_yeig;
+  int loop, calc;
   char cursor_flags;
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   if (length_data==0)
     return;
@@ -423,10 +411,6 @@ void write_out_data(int session_handle, char *data, int length_data)
     										 | cursor_flags);
   }
 
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  zap_yeig=regs.r[2];
 
   /* force the selection back on (it may have got overwritten by new data) */
   refresh_selection_set();
@@ -456,11 +440,8 @@ void remove_session(int session_handle)
           block[3]=0;
           block[4]=0x808C4;
 
-          regs.r[0]=17;
-          regs.r[1]=(int) block;
-          regs.r[2]=session[session_handle].socket_handle;
-
-          _kernel_swi(Wimp_SendMessage, &regs, &regs);
+          _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, block,
+                                                       session[session_handle].socket_handle);
         }
         break;
     }
@@ -472,15 +453,13 @@ void remove_session(int session_handle)
 
     block[0]=session[session_handle].window_handle;
 
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_DeleteWindow, &regs, &regs);
+    _swi(Wimp_DeleteWindow, _IN(1), block);
 
     if (line_editor)
     {
       block[0]=session[session_handle].pane_handle;
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_DeleteWindow, &regs, &regs);
+      _swi(Wimp_DeleteWindow, _IN(1), block);
     }
   }
 
@@ -586,10 +565,8 @@ void nettle_senddata(int session_handle, char *data, int length)
         block[4]=0x808C0;
         block[5]=length;
 
-        regs.r[0]=17;
-        regs.r[1]=(int) block;
-        regs.r[2]=session[session_handle].socket_handle;
-        _kernel_swi(Wimp_SendMessage, &regs, &regs);
+        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, block,
+                                                     session[session_handle].socket_handle);
 
         free(block);
       }

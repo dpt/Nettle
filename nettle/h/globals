@@ -15,7 +15,7 @@ extern char *application_name;
 extern char *application_icon_name;
 extern bool quit_flag;
 
-extern _kernel_swi_regs regs;
+/* extern _kernel_oserror *e; */
 
 extern char zap_font[256];
 extern char zap_lowres_font[256];

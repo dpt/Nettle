@@ -148,22 +148,16 @@ void redraw_window(void)
 
     redraw.r_data=zapredraw_area;
 
-    regs.r[0]=(int) wimp_block;
-    regs.r[1]=(int) &redraw;
-    _kernel_swi(ZapRedraw_RedrawWindow, &regs, &regs);
+    _swi(ZapRedraw_RedrawWindow, _IN(0)|_IN(1), wimp_block, &redraw);
   }
   else
   {
     bool redraw_flag;
 
-    regs.r[1]=(int) wimp_block;
-    _kernel_swi(Wimp_RedrawWindow, &regs, &regs);
-    redraw_flag = (bool)(regs.r[0] != 0);
+    redraw_flag = (bool)(_swi(Wimp_RedrawWindow, _IN(1)|_RETURN(0), wimp_block) != 0);
     while (redraw_flag)
     {
-      regs.r[1]=(int) wimp_block;
-      _kernel_swi(Wimp_GetRectangle, &regs, &regs);
-      redraw_flag = (bool)(regs.r[0] != 0);
+      redraw_flag = (bool)(_swi(Wimp_GetRectangle, _IN(1)|_RETURN(0), wimp_block) != 0);
     }
   }
 }
@@ -197,8 +191,7 @@ void open_window(int window_handle, bool poll_flag)
     default:
       block[0]=window_handle;
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_GetWindowState, &regs, &regs);
+      _swi(Wimp_GetWindowState, _IN(1), block);
 
       block[7]=-1;
       if (session[session_handle].window_handle==window_handle)
@@ -217,12 +210,10 @@ void open_window(int window_handle, bool poll_flag)
   switch (poll_flag)
   {
     case true:
-      regs.r[1]=(int) wimp_block;
-      _kernel_swi(Wimp_OpenWindow, &regs, &regs);
+      _swi(Wimp_OpenWindow, _IN(1), wimp_block);
       break;
     default:
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_OpenWindow, &regs, &regs);
+      _swi(Wimp_OpenWindow, _IN(1), block);
       break;
   }
 }
@@ -255,8 +246,7 @@ void close_window(int window_handle)
   {
     block[0]=window_handle;
 
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_CloseWindow, &regs, &regs);
+    _swi(Wimp_CloseWindow, _IN(1), block);
   }
 }
 
@@ -326,8 +316,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
     switch (icon_handle)
     {
       case 0:
-        regs.r[1]=-1;
-        _kernel_swi(Wimp_CreateMenu,&regs, &regs);
+        _swi(Wimp_CreateMenu, _IN(1), -1);
         break;
       case 1:
         {
@@ -342,8 +331,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
             block[0]=save;
             block[1]=4;
 
-            regs.r[1]=(int) block;
-            _kernel_swi(Wimp_GetIconState,&regs, &regs);
+            _swi(Wimp_GetIconState, _IN(1), block);
 
             /* if selected bit is set, then we save with ANSI colour */
             if (block[6] & (1<<21))
@@ -355,8 +343,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
               save_selection(save_data, false);
             }
 
-            regs.r[1]=-1;
-            _kernel_swi(Wimp_CreateMenu, &regs, &regs);
+            _swi(Wimp_CreateMenu, _IN(1), -1);
           }
           else
           {
@@ -379,13 +366,8 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
 
   {
     int session_handle=0;
-    int zap_yeig;
     int block[9];
-
-    regs.r[0]=-1;
-    regs.r[1]=5;
-    _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-    zap_yeig=regs.r[2];
+    int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
     /* find the session */
     while (window_handle!=session[session_handle].window_handle &&
@@ -407,8 +389,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
         {
           int block[6];
 
-          regs.r[1]=(int) block;
-          _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
+          _swi(Wimp_GetCaretPosition, _IN(1), block);
 
           if (block[0]!=session[session_handle].pane_handle)
           {
@@ -424,8 +405,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
 
       block[0]=window_handle;
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_GetWindowState, &regs, &regs);
+      _swi(Wimp_GetWindowState, _IN(1), block);
 
       x_pos=block[1]-block[5];
       y_pos=block[4]-block[6];
@@ -537,8 +517,7 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
             block[0]=window_handle;
             block[1]=icon_handle;
 
-            regs.r[1]=(int) block;
-            _kernel_swi(Wimp_GetIconState, &regs, &regs);
+            _swi(Wimp_GetIconState, _IN(1), block);
 
             if (block[6] & (1<<21))
             {
@@ -549,11 +528,9 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
               block[2]=0;
               block[3]=1<<23;
 
-              regs.r[1]=(int) block;
-              _kernel_swi(Wimp_SetIconState, &regs, &regs);
+              _swi(Wimp_SetIconState, _IN(1), block);
 
-   	      regs.r[1]=(int) block;
-              _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
+              _swi(Wimp_GetCaretPosition, _IN(1), block);
 
               if (block[0]==session[session_handle].window_handle)
               {
@@ -570,17 +547,14 @@ void mouse_click(int x, int y, int buttons, int window_handle, int icon_handle)
               block[2]=1<<23;
               block[3]=1<<23;
 
-              regs.r[1]=(int) block;
-              _kernel_swi(Wimp_SetIconState, &regs, &regs);
+              _swi(Wimp_SetIconState, _IN(1), block);
 
- 	      regs.r[1]=(int) block;
-              _kernel_swi(Wimp_GetIconState, &regs, &regs);
+              _swi(Wimp_GetIconState, _IN(1), block);
 
-              force_redraw(session[session_handle].pane_handle,block[2],block[3],block[4],
-              									       block[5]);
+              force_redraw(session[session_handle].pane_handle, block[2], block[3], block[4],
+              									    block[5]);
 
-              regs.r[1]=(int) block;
-              _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
+              _swi(Wimp_GetCaretPosition, _IN(1), block);
 
               if (block[0]==session[session_handle].pane_handle)
               {
@@ -612,8 +586,7 @@ void drag_finished(void)
       loop--;
     }
 
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_GetPointerInfo, &regs, &regs);
+    _swi(Wimp_GetPointerInfo, _IN(1), block);
 
     block[5]=block[3];
     block[6]=block[4];
@@ -627,11 +600,7 @@ void drag_finished(void)
     block[3]=0;
     block[4]=1; /* DataSave */
 
-    regs.r[0]=17;
-    regs.r[1]=(int) block;
-    regs.r[2]=block[5];
-    regs.r[3]=block[6];
-    _kernel_swi(Wimp_SendMessage, &regs, &regs);
+    _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2)|_IN(3), 17, block, block[5], block[6]);
   }
 }
 
@@ -751,9 +720,9 @@ void key_pressed(int window_handle, int icon_handle, int key)
               key_status=true;
               if (session[session_handle].line_editor_position==0)
               {
-                _kernel_swi(OS_WriteI + 7, &regs, &regs);
+                _swi(OS_WriteI + 7, 0);
               }
-              session[session_handle].line_editor_position-=1;
+              session[session_handle].line_editor_position--;
 
               if (session[session_handle].line_editor_position<0)
               {
@@ -768,20 +737,16 @@ void key_pressed(int window_handle, int icon_handle, int key)
                     (session[session_handle].line_editor_position * 512), 1024));
               }
 
-              regs.r[0]=session[session_handle].pane_handle;
-              regs.r[1]=1;
-              regs.r[2]=-1;
-              regs.r[3]=-1;
-              regs.r[4]=-1;
-              regs.r[5]=get_icon_data_length(session[session_handle].pane_handle,1);
-              _kernel_swi(Wimp_SetCaretPosition, &regs, &regs);
+              set_caret_position(session[session_handle].pane_handle, 1, -1,
+                                 get_icon_data_length(session[session_handle].pane_handle,1));
+
               break;
             case 0x18F: /* Up arrow */
               key_status=true;
               if (session[session_handle].line_editor_position==
                 				session[session_handle].line_editor_total-1)
               {
-                _kernel_swi(OS_WriteI + 7, &regs, &regs);
+                _swi(OS_WriteI + 7, 0);
               }
               session[session_handle].line_editor_position++;
 
@@ -800,13 +765,8 @@ void key_pressed(int window_handle, int icon_handle, int key)
                      (session[session_handle].line_editor_position * 512), 1024));
               }
 
-              regs.r[0]=session[session_handle].pane_handle;
-              regs.r[1]=1;
-              regs.r[2]=-1;
-              regs.r[3]=-1;
-              regs.r[4]=-1;
-              regs.r[5]=get_icon_data_length(session[session_handle].pane_handle,1);
-              _kernel_swi(Wimp_SetCaretPosition,&regs, &regs);
+              set_caret_position(session[session_handle].pane_handle, 1, -1,
+                                 get_icon_data_length(session[session_handle].pane_handle,1));
 
               break;
           }
@@ -817,8 +777,7 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
   if (key_status==false)
   {
-    regs.r[0]=key;
-    _kernel_swi(Wimp_ProcessKey, &regs, &regs);
+    _swi(Wimp_ProcessKey, _IN(0), key);
   }
 }
 
@@ -847,12 +806,7 @@ void menu_selection()
             case 3:
               {
                 /* Clear selection */
-                int zap_yeig;
-
-                regs.r[0]=-1;
-                regs.r[1]=5;
-                _kernel_swi(OS_ReadModeVariable,&regs, &regs);
-                zap_yeig=regs.r[2];
+                int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
                 refresh_selection_clear();
                 force_redraw(session[selection_session].window_handle,0,
@@ -898,8 +852,7 @@ void menu_selection()
       break;
   }
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetPointerInfo, &regs, &regs);
+  _swi(Wimp_GetPointerInfo, _IN(1), block);
 
   /* If ADJUST, then re-open  menu where it was before */
   if (block[2]==1)
@@ -928,13 +881,8 @@ void lose_caret()
 {
   int session_handle=0;
   int calc;
-  int zap_yeig;
   int block[6];
-
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable,&regs, &regs);
-  zap_yeig=regs.r[2];
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   /* get session */
   while (wimp_block[0]!=session[session_handle].window_handle && session_handle<current_session)
@@ -944,8 +892,7 @@ void lose_caret()
 
   if (wimp_block[0]==session[session_handle].window_handle)
   {
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
+    _swi(Wimp_GetCaretPosition, _IN(1), block);
 
     /* if lineeditor is off, or the caret isn't in the pane, then make the cursor look like */
     /* we have no input */
@@ -991,12 +938,7 @@ void gain_caret()
 {
   int session_handle=0;
   int calc;
-  int zap_yeig;
-
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable,&regs, &regs);
-  zap_yeig=regs.r[2];
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   while (wimp_block[0]!=session[session_handle].window_handle && session_handle<current_session)
   {
@@ -1022,8 +964,7 @@ void gain_caret()
       /* if line editor and doesn't already have caret, then set the caret in pane */
       int block[6];
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
+      _swi(Wimp_GetCaretPosition, _IN(1), block);
 
       if (block[0]!=session[session_handle].pane_handle)
       {
@@ -1058,8 +999,7 @@ void gain_caret()
     {
       int block[6];
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
+      _swi(Wimp_GetCaretPosition, _IN(1), block);
 
       /* again, set caret if it's not already in the pane */
       if (block[0]!=session[session_handle].pane_handle)
@@ -1092,8 +1032,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         block[0]=drag_window_handle;
         block[1]=4;
 
-        regs.r[1]=(int) block;
-        _kernel_swi(Wimp_GetIconState, &regs, &regs);
+        _swi(Wimp_GetIconState, _IN(1), block);
 
         if (block[6] & (1<<21))
         {
@@ -1112,13 +1051,9 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         wimp_block[3]=my_ref;
         wimp_block[4]=3;
 
-        regs.r[0]=17;
-        regs.r[1]=(int) wimp_block;
-        regs.r[2]=sender_ref;
-        _kernel_swi(Wimp_SendMessage, &regs, &regs);
+        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 17, wimp_block, sender_ref);
 
-        regs.r[1]=-1;
-        _kernel_swi(Wimp_CreateMenu, &regs, &regs);
+        _swi(Wimp_CreateMenu, _IN(1), -1);
       }
       break;
     case 0x400C1: /* Mode change */
@@ -1143,10 +1078,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         }
         wimp_block[4]=my_ref;
 
-        regs.r[0]=19;
-        regs.r[1]=(int) wimp_block;
-        regs.r[2]=sender_ref;
-        _kernel_swi(Wimp_SendMessage,&regs, &regs);
+        _swi(Wimp_SendMessage, _IN(0)|_IN(1)|_IN(2), 19, wimp_block, sender_ref);
       }
       break;
     case 0x808C2: /* Task window started */
@@ -1182,17 +1114,12 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
 
 void mode_change(void)
 {
-  int zap_yeig;
   int *zap_font_used;
   int mem_required;
   int a;
   int b;
   int session_handle;
-
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable,&regs,&regs);
-  zap_yeig=regs.r[2];
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   /* work out which font we should be using */
   if (zap_yeig==1)
@@ -1204,8 +1131,7 @@ void mode_change(void)
     zap_font_used=zap_lowres_font_area;
   }
 
-  regs.r[1]=(int) &redraw;
-  _kernel_swi(ZapRedraw_ReadVduVars,&regs, &regs);
+  _swi(ZapRedraw_ReadVduVars, _IN(1), &redraw);
 
   mem_required=(zap_font_used[2]*zap_font_used[3]*384);
 
@@ -1226,33 +1152,20 @@ void mode_change(void)
   redraw.r_charh=zap_font_used[3];
   redraw.r_caddr=bitmaps_area;
 
-  regs.r[0]=redraw.r_bpp;
-  regs.r[1]=0;
-  regs.r[2]=redraw.r_charw;
-  regs.r[3]=redraw.r_charh;
-  _kernel_swi(ZapRedraw_CachedCharSize,&regs,&regs);
-  a=regs.r[2];
-  b=regs.r[3];
+  _swi(ZapRedraw_CachedCharSize, _IN(0)|_IN(1)|_IN(2)|_IN(3)|_OUT(2)|_OUT(3),
+                                 redraw.r_bpp, 0, redraw.r_charw, redraw.r_charh, &a, &b);
 
   redraw.r_cbpl=a;
   redraw.r_cbpc=b;
   redraw.r_linesp=0;
 
-  regs.r[1]=(int) &redraw;
-  regs.r[2]=zap_font_used[4];
-  regs.r[3]=0x11D;
-  regs.r[4]=(int) zap_font_used+32;
-  _kernel_swi(ZapRedraw_ConvertBitmap,&regs, &regs);
+  _swi(ZapRedraw_ConvertBitmap, _IN(1)|_IN(2)|_IN(3)|_IN(4), &redraw, zap_font_used[4], 0x11D,
+                                ((char *) zap_font_used)+32);
 
   redraw.r_palette=zap_palette;
 
-  regs.r[0]=2;
-  regs.r[1]=(int) &redraw;
-  regs.r[2]=(int) palette;
-  regs.r[3]=(int) zap_palette;
-  regs.r[4]=16;
-
-  _kernel_swi(ZapRedraw_CreatePalette,&regs, &regs);
+  _swi(ZapRedraw_CreatePalette, _IN(0)|_IN(1)|_IN(2)|_IN(3)|_IN(4), 2, &redraw, palette,
+                                zap_palette, 16);
 
   redraw.r_for=7;
   redraw.r_bac=0;
@@ -1268,9 +1181,7 @@ void mode_change(void)
     block[2]=session[session_handle].terminal_size_x*redraw.r_charw*2;
     block[3]=12;
 
-    regs.r[0]=session[session_handle].window_handle;
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_SetExtent, &regs, &regs);
+    _swi(Wimp_SetExtent, _IN(0)|_IN(1), session[session_handle].window_handle, block);
 
     session_handle++;
   }
@@ -1293,10 +1204,7 @@ void generror(const char *string, bool is_message)
                     /* SWIs, so this number is wrong... */
   strcpy((char *)block+4,string);
 
-  regs.r[0]=(int) block;
-  regs.r[1]=0;
-  regs.r[2]=(int) application_name;
-  _kernel_swi(Wimp_ReportError, &regs, &regs);
+  _swi(Wimp_ReportError, _IN(0)|_IN(1)|_IN(2), block, 0, application_name);
 }
 
 bool generror_question(char *string)
@@ -1307,23 +1215,14 @@ bool generror_question(char *string)
                     /* SWIs, so this number is wrong... */
   strcpy((char *)block+4,string);
 
-  regs.r[0]=(int) block;
-  regs.r[1]=(1<<1)+(1<<0);
-  regs.r[2]=(int) application_name;
-  _kernel_swi(Wimp_ReportError, &regs, &regs);
-
-  return (bool)(regs.r[1] == 1);
+  return (bool) (_swi(Wimp_ReportError, _IN(0)|_IN(1)|_IN(2)|_RETURN(1), block,
+                                        (1<<1)+(1<<0),application_name) == 1);
 }
 
 void set_caret_position(int window_handle, int icon_handle, int flags, int index)
 {
-  regs.r[0]=window_handle;
-  regs.r[1]=icon_handle;
-  regs.r[2]=-1;
-  regs.r[3]=-1;
-  regs.r[4]=flags;
-  regs.r[5]=index;
-  _kernel_swi(Wimp_SetCaretPosition, &regs, &regs);
+  _swi(Wimp_SetCaretPosition, _IN(0)|_IN(1)|_IN(2)|_IN(3)|_IN(4)|_IN(5),
+                              window_handle, icon_handle, -1, -1, flags, index);
 }
 
 void set_icon_data(int window_handle, int icon_handle, char *contents)
@@ -1333,8 +1232,7 @@ void set_icon_data(int window_handle, int icon_handle, char *contents)
   block[0]=window_handle;
   block[1]=icon_handle;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetIconState, &regs, &regs);
+  _swi(Wimp_GetIconState, _IN(1), block);
 
   if (block[6] & (1<<8))
   {
@@ -1344,8 +1242,7 @@ void set_icon_data(int window_handle, int icon_handle, char *contents)
       block[2]=0;
       block[3]=0;
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_SetIconState, &regs, &regs);
+      _swi(Wimp_SetIconState, _IN(1), block);
     }
   }
   else
@@ -1363,8 +1260,7 @@ void set_icon_validation(int window_handle, int icon_handle, char *contents)
   block[0]=window_handle;
   block[1]=icon_handle;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetIconState, &regs, &regs);
+  _swi(Wimp_GetIconState, _IN(1), block);
 
   if (block[6] & (1<<8))
   {
@@ -1374,8 +1270,7 @@ void set_icon_validation(int window_handle, int icon_handle, char *contents)
       block[2]=0;
       block[3]=0;
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_SetIconState, &regs, &regs);
+      _swi(Wimp_SetIconState, _IN(1), block);
     }
   }
   else
@@ -1393,8 +1288,7 @@ char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_l
   block[0] = window_handle;
   block[1] = icon_handle;
 
-  regs.r[1] = (int)block;
-  _kernel_swi(Wimp_GetIconState, &regs, &regs);
+  _swi(Wimp_GetIconState, _IN(1), block);
 
   if (block[6] & (1 << 8))
   {
@@ -1410,15 +1304,15 @@ char *read_icon_data(int window_handle, int icon_handle, char *buffer, int buf_l
 }
 
 
-int get_icon_data_length(int window_handle, int icon_handle) {
+int get_icon_data_length(int window_handle, int icon_handle)
+{
   int block[11];
   int length = 0;
 
   block[0] = window_handle;
   block[1] = icon_handle;
 
-  regs.r[1] = (int)block;
-  _kernel_swi(Wimp_GetIconState,&regs, &regs);
+  _swi(Wimp_GetIconState, _IN(1), block);
 
   if (block[6] & (1 << 8))
   {
@@ -1633,13 +1527,9 @@ void create_iconbar_menu(void)
 
   if (create_menu(menu_data,0,menu_title,menu_info,info,menu_choices,menu_quit))
   {
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_GetPointerInfo, &regs, &regs);
+    _swi(Wimp_GetPointerInfo, _IN(1), block);
 
-    regs.r[1]=(int) menu_data;
-    regs.r[2]=block[0]-64;
-    regs.r[3]=252;
-    _kernel_swi(Wimp_CreateMenu, &regs, &regs);
+    _swi(Wimp_CreateMenu, _IN(1)|_IN(2)|_IN(3), menu_data, block[0]-64, 252);
   }
 
   free(menu_title);
@@ -1679,13 +1569,9 @@ void create_terminal_menu(void)
     if (create_menu(menu_data2,0,menu_selection_title,menu_save,save,menu_launch_url,menu_send,
                     menu_clear))
     {
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_GetPointerInfo, &regs, &regs);
+      _swi(Wimp_GetPointerInfo, _IN(1), block);
 
-      regs.r[1]=(int) menu_data;
-      regs.r[2]=block[0]-64;
-      regs.r[3]=block[1];
-      _kernel_swi(Wimp_CreateMenu, &regs, &regs);
+      _swi(Wimp_CreateMenu, _IN(1)|_IN(2)|_IN(3), menu_data, block[0]-64, block[1]);
     }
   }
 
@@ -1713,13 +1599,9 @@ void create_connection_menu(void)
 
   if (create_menu(menu_data,0,menu_title,menu_telnet,menu_ssh,menu_taskwindow))
   {
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_GetPointerInfo, &regs, &regs);
+    _swi(Wimp_GetPointerInfo, _IN(1), block);
 
-    regs.r[1]=(int) menu_data;
-    regs.r[2]=block[0]-64;
-    regs.r[3]=block[1];
-    _kernel_swi(Wimp_CreateMenu, &regs, &regs);
+    _swi(Wimp_CreateMenu, _IN(1)|_IN(2)|_IN(3), menu_data, block[0]-64, block[1]);
   }
 
   menu_open=MENU_CONNECTION;
@@ -1742,13 +1624,9 @@ void create_terminal_type_menu(void)
   if (create_menu(menu_data,0,menu_title,menu_term0,menu_term1,menu_term2,menu_term3,
     		  menu_term4,menu_term5,menu_term6,menu_term7))
   {
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_GetPointerInfo, &regs, &regs);
+    _swi(Wimp_GetPointerInfo, _IN(1), block);
 
-    regs.r[1]=(int) menu_data;
-    regs.r[2]=block[0]-64;
-    regs.r[3]=block[1];
-    _kernel_swi(Wimp_CreateMenu, &regs, &regs);
+    _swi(Wimp_CreateMenu, _IN(1)|_IN(2)|_IN(3), menu_data, block[0]-64, block[1]);
   }
 
   free(menu_title);
@@ -1771,8 +1649,7 @@ void set_title_bar(int window_handle, char *title)
 
   block[0]=window_handle;
 
-  regs.r[1]=((int) block)+1;
-  _kernel_swi(Wimp_GetWindowInfo, &regs, &regs);
+  _swi(Wimp_GetWindowInfo, _IN(1), ((char *) block)+1);
 
   if (block[15] & (1<<8))
   {
@@ -1780,10 +1657,7 @@ void set_title_bar(int window_handle, char *title)
     {
       strcpy((char *)block[19],title);
 
-      regs.r[0]=window_handle;
-      regs.r[1]=0x4B534154;
-      regs.r[2]=3;
-      _kernel_swi(Wimp_ForceRedraw, &regs, &regs);
+      _swi(Wimp_ForceRedraw, _IN(0)|_IN(1)|_IN(2), window_handle, 0x4B534154, 3);
     }
   }
   else
@@ -1795,12 +1669,8 @@ void set_title_bar(int window_handle, char *title)
 /* Force redraw code */
 void force_redraw(int window_handle, int minx, int miny, int maxx, int maxy)
 {
-  regs.r[0]=window_handle;
-  regs.r[1]=minx;
-  regs.r[2]=miny;
-  regs.r[3]=maxx;
-  regs.r[4]=maxy;
-  _kernel_swi(Wimp_ForceRedraw, &regs, &regs);
+  _swi(Wimp_ForceRedraw, _IN(0)|_IN(1)|_IN(2)|_IN(3)|_IN(4), window_handle, minx, miny,
+                                                                            maxx, maxy);
 }
 
 
@@ -1815,31 +1685,15 @@ void drag_start(int window_handle, int icon_handle)
 
   block[0]=window_handle;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetWindowState, &regs, &regs);
+  _swi(Wimp_GetWindowState, _IN(1), block);
 
   xstart=block[1]-block[5];
   ystart=block[4]-block[6];
 
-  regs.r[0]=-1;
-  regs.r[1]=4;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  xeig=regs.r[2];
-
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  yeig=regs.r[2];
-
-  regs.r[0]=-1;
-  regs.r[1]=11;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  xsize=regs.r[2];
-
-  regs.r[0]=-1;
-  regs.r[1]=12;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  ysize=regs.r[2];
+  xeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 4);
+  yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
+  xsize=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 11);
+  ysize=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 12);
 
   xsize*=xeig*2;
   ysize*=yeig*2;
@@ -1847,8 +1701,7 @@ void drag_start(int window_handle, int icon_handle)
   block[0]=window_handle;
   block[1]=icon_handle;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetIconState, &regs, &regs);
+  _swi(Wimp_GetIconState, _IN(1), block);
 
   block[0]=window_handle;
   block[1]=5;
@@ -1863,23 +1716,13 @@ void drag_start(int window_handle, int icon_handle)
 
   read_icon_data(window_handle,icon_handle, string, 256);
 
-  regs.r[0]=161;
-  regs.r[1]=28;
-  _kernel_swi(OS_Byte, &regs, &regs);
-
-  if (regs.r[2] & 1)
+  if (_swi(OS_Byte, _IN(0)|_IN(1)|_RETURN(2), 161, 28) & 1)
   {
-    regs.r[0]=0xc5;
-    regs.r[1]=1;
-    regs.r[2]=(int) string;
-    regs.r[3]=(int) block+8;
-    regs.r[4]=0;
-    _kernel_swi(DragASprite_Start,&regs, &regs);
+    _swi(DragASprite_Start, _IN(0)|_IN(1)|_IN(2)|_IN(3)|_IN(4), 0xc5, 1, string, block+8, 0);
   }
   else
   {
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_DragBox, &regs, &regs);
+    _swi(Wimp_DragBox, _IN(1), block);
   }
 }
 
@@ -1909,17 +1752,14 @@ void open_open_window(bool open_window_flag)
       block[1]=7; /* Comnand icon */
       block[2]=1<<22;
       block[3]=1<<22;
-
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_SetIconState, &regs, &regs);
+      _swi(Wimp_SetIconState, _IN(1), block);
 
       block[0]=open;
       block[1]=0; /* Host icon */
       block[2]=0;
       block[3]=1<<22;
+      _swi(Wimp_SetIconState, _IN(1), block);
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_SetIconState, &regs, &regs);
       break;
 
     case NETTLE_SSH:
@@ -1927,17 +1767,14 @@ void open_open_window(bool open_window_flag)
       block[1]=7; /* Command icon */
       block[2]=0;
       block[3]=1<<22;
-
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_SetIconState, &regs, &regs);
+      _swi(Wimp_SetIconState, _IN(1), block);
 
       block[0]=open;
       block[1]=0; /* Host icon */
       block[2]=0;
       block[3]=1<<22;
+      _swi(Wimp_SetIconState, _IN(1), block);
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_SetIconState, &regs, &regs);
       break;
 
     case NETTLE_TASKWINDOW:
@@ -1945,17 +1782,15 @@ void open_open_window(bool open_window_flag)
       block[1]=7; /* Command icon */
       block[2]=0;
       block[3]=1<<22;
+      _swi(Wimp_SetIconState, _IN(1), block);
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_SetIconState, &regs, &regs);
 
       block[0]=open;
       block[1]=0;     /* Host icon */
       block[2]=1<<22;
       block[3]=1<<22;
+      _swi(Wimp_SetIconState, _IN(1), block);
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_SetIconState, &regs, &regs);
       break;
   }
 

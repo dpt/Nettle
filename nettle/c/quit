@@ -22,8 +22,7 @@ void closedown_application(void)
     }
   }
 
-  regs.r[0]=(int) messagetrans_area;
-  _kernel_swi(MessageTrans_CloseFile, &regs, &regs);
+  _swi(MessageTrans_CloseFile, _IN(0), messagetrans_area);
 
   free(message_list);
   free(bitmaps_area);
@@ -39,7 +38,7 @@ void closedown_application(void)
   Fortify_LeaveScope();
 #endif
 
-  _kernel_swi(Wimp_CloseDown, &regs, &regs);
+  _swi(Wimp_CloseDown, 0);
 
   exit(0);
 }

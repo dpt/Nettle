@@ -18,8 +18,7 @@ void open_pane_window(int session_handle, int *main_block)
 
   block[0]=session[session_handle].window_handle;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetWindowOutline, &regs, &regs);
+  _swi(Wimp_GetWindowOutline, _IN(1), block);
 
   block[0]=session[session_handle].pane_handle;
   block[1]=main_block[1];
@@ -39,8 +38,7 @@ void open_pane_window(int session_handle, int *main_block)
 
   create_line_editor_icons(session_handle, block[3]-block[1]);
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_OpenWindow, &regs, &regs);
+  _swi(Wimp_OpenWindow, _IN(1), block);
 }
 
 void create_line_editor_icons(int session_handle, int width)
@@ -54,8 +52,7 @@ void create_line_editor_icons(int session_handle, int width)
   int caret_icon_handle;
   int caret_index;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetCaretPosition, &regs, &regs);
+  _swi(Wimp_GetCaretPosition, _IN(1), block);
 
   caret_window_handle=block[0];
   caret_icon_handle=block[1];
@@ -64,8 +61,7 @@ void create_line_editor_icons(int session_handle, int width)
   block[0]=session[session_handle].pane_handle;
   block[1]=0;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetIconState, &regs, &regs);
+  _swi(Wimp_GetIconState, _IN(1), block);
 
   if (block[6] & (1<<23))
   {
@@ -89,8 +85,7 @@ void create_line_editor_icons(int session_handle, int width)
       block[0]=session[session_handle].pane_handle;
       block[1]=loop;
 
-      regs.r[1]=(int) block;
-      _kernel_swi(Wimp_DeleteIcon, &regs, &regs);
+      _swi(Wimp_DeleteIcon, _IN(1), block);
     }
   }
 
@@ -112,8 +107,7 @@ void create_line_editor_icons(int session_handle, int width)
   block[7]=(int) line_editor_icon_sprite;
   block[8]=1;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_CreateIcon, &regs, &regs);
+  _swi(Wimp_CreateIcon, _IN(1), block);
 
   block[0]=session[session_handle].pane_handle;
   block[1]=-4;
@@ -132,8 +126,7 @@ void create_line_editor_icons(int session_handle, int width)
   block[7]=(int) line_editor_buffer_indirected;
   block[8]=512;
 
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_CreateIcon, &regs, &regs);
+  _swi(Wimp_CreateIcon, _IN(1), block);
 
   if (width<old_width)
   {
@@ -160,8 +153,7 @@ bool line_editor_active(int session_handle)
     block[0]=session[session_handle].pane_handle;
     block[1]=0;
 
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_GetIconState, &regs, &regs);
+    _swi(Wimp_GetIconState, _IN(1), block);
 
     if ((block[6] & (1<<21)) || (block[6] & (1<<23)))
       return true;

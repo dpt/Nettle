@@ -65,12 +65,7 @@ void refresh_selection_clear(void)
 
 void selection_adjust(int x,int x_pos, int y, int y_pos)
 {
-  int zap_yeig;
-
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  zap_yeig=regs.r[2];
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   if (selection_session!=-1)
   {
@@ -130,12 +125,7 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
 
 void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 {
-  int zap_yeig;
-
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable,&regs, &regs);
-  zap_yeig=regs.r[2];
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   if (selection_session!=-1)
   {
@@ -268,26 +258,18 @@ void save_selection(char *filename, bool ansi_colour)
 
   fclose(file_handle);
 
-  regs.r[0]=18;
-  regs.r[1]=(int) filename;
-  regs.r[2]=0xFFF;
-  _kernel_swi(OS_File, &regs, &regs);
+  _swi(OS_File, _IN(0)|_IN(1)|_IN(2), 18, filename, 0xFFF);
 }
 
 void handle_selection_drag(void)
 {
   int block[23];
-  int x,y,buttons,window_handle,icon_handle;
-  int x_pos,y_pos,zap_yeig;
+  int x, y, buttons, window_handle, icon_handle;
+  int x_pos, y_pos;
   bool do_scroll;
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  zap_yeig=regs.r[2];
-
-  regs.r[1]=(int) block;
-  _kernel_swi(Wimp_GetPointerInfo, &regs, &regs);
+  _swi(Wimp_GetPointerInfo, _IN(1), block);
 
   x=block[0];
   y=block[1];
@@ -307,15 +289,14 @@ void handle_selection_drag(void)
 
   block[0]=session[selection_session].window_handle;
 
-  regs.r[1]=(int) ((char *) block)+1;
-  _kernel_swi(Wimp_GetWindowInfo, &regs, &regs);
+  _swi(Wimp_GetWindowInfo, _IN(1), ((char *) block)+1);
 
   x_pos=block[1]-block[5];
   y_pos=block[4]-block[6];
 
   /* Scroll when selection happening and we're near the edge of the window */
   do_scroll = false;
-  
+
   if (x<(block[1]+32))
   {
     block[5]-=(block[1]+32-x);
@@ -339,11 +320,10 @@ void handle_selection_drag(void)
     block[6]+=(y-block[4]+32);
     do_scroll = true;
   }
-  
+
   if (do_scroll)
   {
-    regs.r[1]=(int) block;
-    _kernel_swi(Wimp_OpenWindow, &regs, &regs);
+    _swi(Wimp_OpenWindow, _IN(1), block);
   }
 
   switch (buttons)

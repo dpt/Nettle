@@ -11,7 +11,7 @@ char *application_name="Nettle";
 char *application_icon_name="!nettle";
 bool quit_flag=false;
 
-_kernel_swi_regs regs;
+/* _kernel_oserror *e; */
 
 int wimp_block[64];
 int *sprite_area;

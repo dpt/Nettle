@@ -1490,33 +1490,31 @@ void reprocess_position_scroll(int session_handle)
     if (session[session_handle].scroll_start==1)
     {
       /* scroll scrollback as well */
-      regs.r[1]=(int) session[session_handle].assigned_area+
-      						     (session[session_handle].terminal_size_x*4);
 
-      regs.r[2]=(int) session[session_handle].assigned_area;
+      _swi(ZapRedraw_MoveBytes, _IN(1)|_IN(2)|_IN(3),
+           session[session_handle].assigned_area+(session[session_handle].terminal_size_x*4),
 
-      regs.r[3]=(session[session_handle].terminal_size_x*
-                       (session[session_handle].scroll_end+
-                         session[session_handle].scrollback-1))*4;
+           session[session_handle].assigned_area,
 
-      _kernel_swi(ZapRedraw_MoveBytes, &regs, &regs);
+           (session[session_handle].terminal_size_x*
+            (session[session_handle].scroll_end+session[session_handle].scrollback-1))*4);
     }
     else
     {
-      regs.r[1]=(int) session[session_handle].assigned_area+
-      						    ((session[session_handle].terminal_size_x*
-      						    (session[session_handle].scroll_start+
-      						     session[session_handle].scrollback))*4);
+      _swi(ZapRedraw_MoveBytes, _IN(1)|_IN(2)|_IN(3),
+                                session[session_handle].assigned_area+
+      			        ((session[session_handle].terminal_size_x*
+      			        (session[session_handle].scroll_start+
+      			        session[session_handle].scrollback))*4),
 
-      regs.r[2]=(int) session[session_handle].assigned_area+
-      						    ((session[session_handle].terminal_size_x*
-      						    (session[session_handle].scroll_start+
-      						     session[session_handle].scrollback-1))*4);
+                                session[session_handle].assigned_area+
+      				((session[session_handle].terminal_size_x*
+      				(session[session_handle].scroll_start+
+      				session[session_handle].scrollback-1))*4),
 
-      regs.r[3]=(session[session_handle].terminal_size_x*
-                                                    (session[session_handle].scroll_end-
-                                                     session[session_handle].scroll_start))*4;
-      _kernel_swi(ZapRedraw_MoveBytes, &regs, &regs);
+                                (session[session_handle].terminal_size_x*
+                                (session[session_handle].scroll_end-
+                                 session[session_handle].scroll_start))*4);
     }
 
     /* and clear the new line */
@@ -1559,21 +1557,21 @@ void reprocess_position_scroll(int session_handle)
       }
     }
 
-    regs.r[1]=(int) session[session_handle].assigned_area+
-      						    ((session[session_handle].terminal_size_x*
-      						    (session[session_handle].scroll_start+
-      						     session[session_handle].scrollback-1))*4);
 
-    regs.r[2]=(int) session[session_handle].assigned_area+
-      						    ((session[session_handle].terminal_size_x*
-      						    (session[session_handle].scroll_start+
-      						     session[session_handle].scrollback))*4);
+    _swi(ZapRedraw_MoveBytes, _IN(1)|_IN(2)|_IN(3),
+                              session[session_handle].assigned_area+
+      			      ((session[session_handle].terminal_size_x*
+      			      (session[session_handle].scroll_start+
+      			      session[session_handle].scrollback-1))*4),
 
-    regs.r[3]=(session[session_handle].terminal_size_x*
-                                                    (session[session_handle].scroll_end-
-                                                     session[session_handle].scroll_start))*4;
+                              session[session_handle].assigned_area+
+      			      ((session[session_handle].terminal_size_x*
+      			      (session[session_handle].scroll_start+
+      			      session[session_handle].scrollback))*4),
 
-    _kernel_swi(ZapRedraw_MoveBytes, &regs, &regs);
+                              (session[session_handle].terminal_size_x*
+                              (session[session_handle].scroll_end-
+                              session[session_handle].scroll_start))*4);
 
     /* and clear the new line */
     for (count=0; count<session[session_handle].terminal_size_x; count++)
@@ -1597,7 +1595,7 @@ void byte_enquiry(int session_handle)
 void byte_bell(int session_handle)
 {
   /* Bell */
-  _kernel_swi(OS_WriteI + 7, &regs, &regs);
+  _swi(OS_WriteI + 7, 0);
 }
 
 void byte_backspace(int session_handle)
@@ -1833,10 +1831,7 @@ void byte_default(char byte, int session_handle)
             ((session[session_handle].ypos+1)*session[session_handle].terminal_size_x)*4;
 
     /* Maybe... calc2-calc-4 might be wrong */
-    regs.r[1]=calc;
-    regs.r[2]=calc+4;
-    regs.r[3]=calc2-calc-4;
-    _kernel_swi(ZapRedraw_MoveBytes, &regs, &regs);
+    _swi(ZapRedraw_MoveBytes, _IN(1)|_IN(2)|_IN(3), calc, calc+4, calc2-calc-4);
   }
   data=((session[session_handle].ypos*session[session_handle].terminal_size_x)+
              session[session_handle].xpos)*4;
@@ -1858,12 +1853,7 @@ void process_wimp_key(int key, int session_handle)
   int size_of_block=0;
   int calc;
   char cursor_flags;
-  int zap_yeig;
-
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable,&regs, &regs);
-  zap_yeig=regs.r[2];
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   if (session[session_handle].other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
     return;
@@ -1962,11 +1952,6 @@ void process_wimp_key(int key, int session_handle)
     										| cursor_flags);
   }
 
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable,&regs, &regs);
-  zap_yeig=regs.r[2];
-
   /* force the selection back on (it may have got overwritten by new data) */
   refresh_selection_set();
 
@@ -1988,12 +1973,7 @@ void process_line_editor(int session_handle)
   char *send_block=0;
   int size_of_send_block=0;
   int icon_text_loop;
-  int zap_yeig;
-
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  zap_yeig=regs.r[2];
+  int zap_yeig=_swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
 
   {
     char data[512];
@@ -2111,11 +2091,6 @@ void process_line_editor(int session_handle)
 										 | cursor_flags);
   }
 
-  regs.r[0]=-1;
-  regs.r[1]=5;
-  _kernel_swi(OS_ReadModeVariable, &regs, &regs);
-  zap_yeig=regs.r[2];
-
   /* force the selection back on (it may have got overwritten by new data) */
   refresh_selection_set();
 
@@ -2136,13 +2111,7 @@ void process_line_editor(int session_handle)
 
   set_icon_data(session[session_handle].pane_handle,1,"");
 
-  regs.r[0]=session[session_handle].pane_handle;
-  regs.r[1]=1;
-  regs.r[2]=-1;
-  regs.r[3]=-1;
-  regs.r[4]=-1;
-  regs.r[5]=0;
-  _kernel_swi(Wimp_SetCaretPosition, &regs, &regs);
+  set_caret_position(session[session_handle].pane_handle, 1, -1, 0);
 
   session[session_handle].line_editor_position=0;
   session[session_handle].line_editor_total++;

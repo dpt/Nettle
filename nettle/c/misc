@@ -13,12 +13,8 @@
 
 char *lookup(const char *token, char *buffer, int buf_len)
 {
-  regs.r[0] = (int)messagetrans_area;
-  regs.r[1] = (int)token;
-  regs.r[2] = (int)buffer;
-  regs.r[3] = buf_len;
-
-  _kernel_swi(MessageTrans_Lookup, &regs, &regs);
+  _swi(MessageTrans_Lookup, _IN(0)|_IN(1)|_IN(2)|_IN(3), messagetrans_area, token, buffer,
+                                                         buf_len);
 
   return buffer;
 }
@@ -123,8 +119,7 @@ void log_string(char *string)
   }
   fputs(string,log_file);
 
-  _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);
-  log_file_time=regs.r[0];
+  log_file_time=_swi(OS_ReadMonotonicTime, _RETURN(0));
 }
 
 /* log a byte to the log file */
@@ -142,8 +137,7 @@ void log_byte(char character)
   }
   fputc(character,log_file);
 
-  _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);
-  log_file_time=regs.r[0];
+  log_file_time=_swi(OS_ReadMonotonicTime, _RETURN(0));
 }
 
 /* close the log file if we haven't used it for 5 seconds */
@@ -154,8 +148,7 @@ void close_log(void)
   if (!logging) { return; }
   if (log_file==0) { return; }
 
-  _kernel_swi(OS_ReadMonotonicTime, &regs, &regs);
-  current_time=regs.r[0];
+  current_time=_swi(OS_ReadMonotonicTime, _RETURN(0));
 
   if (current_time>log_file_time+500)
   {
@@ -171,20 +164,10 @@ char *get_country(char *string, int size)
 
   strcpy(string,"");
 
-  regs.r[0]=0x46;
-  regs.r[1]=127;
-
-  if (_kernel_swi(OS_Byte,&regs,&regs)==0)
+  if (_swix(OS_Byte,_IN(0)|_IN(1)|_OUT(2), 0x46, 127, &country_number)==0)
   {
-    country_number=regs.r[2];
-
-    regs.r[1]=0x43;
-    regs.r[2]=2;
-    regs.r[3]=country_number;
-    regs.r[4]=(int) string;
-    regs.r[5]=size;
-
-    _kernel_swi(OS_ServiceCall,&regs, &regs);
+    _swi(OS_ServiceCall, _IN(1)|_IN(2)|_IN(3)|_IN(4)|_IN(5), 0x43, 2, country_number, string,
+                                                             size);
   }
 
   return string;

@@ -24,12 +24,8 @@ char socket_resolvehost(char *host_name, unsigned int *address)
   int status;
   struct hostent *hostent;
 
-  regs.r[0]=(int) host_name;
-  if (_kernel_swi(Resolver_GetHost, &regs, &regs)==0)
+  if (_swix(Resolver_GetHost, _IN(0)|_OUT(0)|_OUT(1), host_name, &status, &hostent)==0)
   {
-    status=regs.r[0];
-    hostent=(struct hostent *) regs.r[1];
-
     switch (status)
     {
       case -1: case -2:
