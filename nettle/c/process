@@ -1641,11 +1641,9 @@ static bool process_escape_length_x(struct session_struct *session)
                 calc = session->assigned_area+
                             (session->pos.y*session->terminal_size.x)*4;
 
-                if (move>session->scroll_end-session->scroll_start-
-                         (session->pos.y-session->scrollback-1)+1)
+                if (move>session->scroll_end-(session->pos.y-session->scrollback))
                 {
-                  move=session->scroll_end-session->scroll_start-
-                       (session->pos.y-session->scrollback-1)+1;
+                  move=session->scroll_end-(session->pos.y-session->scrollback);
                 }
 
                 calc2 = session->assigned_area+
@@ -1686,11 +1684,9 @@ static bool process_escape_length_x(struct session_struct *session)
                 calc = session->assigned_area+
                             (session->pos.y*session->terminal_size.x)*4;
 
-                if (move>session->scroll_end-session->scroll_start-
-                         (session->pos.y-session->scrollback-1)+1)
+                if (move>session->scroll_end-(session->pos.y-session->scrollback))
                 {
-                  move=session->scroll_end-session->scroll_start-
-                       (session->pos.y-session->scrollback-1)+1;
+                  move=session->scroll_end-(session->pos.y-session->scrollback);
                 }
 
                 calc2 = session->assigned_area+
