@@ -3225,8 +3225,6 @@ static bool win_choices_read(int save)
 
     while (loop<LINEEDIT_NUM_TYPES)
     {
-      char string[256];
-
       sprintf(string,"LineEd%d",loop);
 
       if (strcmp(string_lineedit, lookup_static(string))==0)

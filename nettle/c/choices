@@ -97,12 +97,14 @@ void load_choices(void)
 
   if (choices_path[0]=='\0')
   {
-    sprintf(string, "<%s$Dir>.Choices.Choices", application_name);
+    sprintf(string, "<%s$Dir>.Choices", application_name);
   }
   else
   {
-    sprintf(string, "Choices:%s.Choices", application_name);
+    sprintf(string, "Choices:%s", application_name);
   }
+
+  strcat(string, ".Choices");
 
   file_handle=fopen(string,"r");
   if (file_handle==NULL)
@@ -190,12 +192,15 @@ bool save_choices(void)
 
   if (choices_path[0]=='\0')
   {
-    sprintf(string, "<%s$Dir>.Choices.Choices", application_name);
+    sprintf(string, "<%s$Dir>.Choices", application_name);
   }
   else
   {
-    sprintf(string, "<Choices$Write>.%s.Choices", application_name);
+    sprintf(string, "<Choices$Write>.%s", application_name);
   }
+
+  _swi(OS_File, _INR(0,1)|_IN(4), 8, string, 0);
+  strcat(string, ".Choices");
 
   _kernel_last_oserror();
 

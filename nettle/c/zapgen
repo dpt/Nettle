@@ -402,7 +402,7 @@ create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
   if (items)
   {
     /* we know how much memory we need - now build the menu */
-    int index = 7;
+    int index_loop = 7;
     int loop;
 
     /* free up a small amount of memory */
@@ -437,28 +437,28 @@ create_zap_font_menu_internal (int **menu_block_p, char **menu_entries_p,
 
       if (menu_entries[entry_offset++] & 2)
       {
-	menu_block[index++] = 8;		/* menu warn bit */
-	menu_block[index++] = MENU_ZAPFONTLIST;
+	menu_block[index_loop++] = 8;		/* menu warn bit */
+	menu_block[index_loop++] = MENU_ZAPFONTLIST;
       }
       else
       {
-	menu_block[index++] = 0;
-	menu_block[index++] = -1;
+	menu_block[index_loop++] = 0;
+	menu_block[index_loop++] = -1;
       }
 
-      menu_block[index++] = WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT |
-			    WIMP_ICON_FILLED_BIT | WIMP_ICON_TEXT_BIT |
-			    WIMP_ICON_INDIRECTED_BIT;
-      menu_block[index++] = (int) (menu_entries + entry_offset);
-      menu_block[index++] = (int) (menu_entries + entry_offset + length);
-      menu_block[index++] = length + 1;
+      menu_block[index_loop++] = WIMP_ICON_FGCOL(7) | WIMP_ICON_VCENT_BIT |
+			         WIMP_ICON_FILLED_BIT | WIMP_ICON_TEXT_BIT |
+			         WIMP_ICON_INDIRECTED_BIT;
+      menu_block[index_loop++] = (int) (menu_entries + entry_offset);
+      menu_block[index_loop++] = (int) (menu_entries + entry_offset + length);
+      menu_block[index_loop++] = length + 1;
       entry_offset += length + 1;
     }
 
     /* sort the entries (in case the list was read from, e.g., NFS) */
-    qsort (menu_block + 7, (index - 7) / 6, 6 * sizeof (int), menu_strcoll);
+    qsort (menu_block + 7, (index_loop - 7) / 6, 6 * sizeof (int), menu_strcoll);
 
-    menu_block[index - 6] |= 128;	/* last entry */
+    menu_block[index_loop - 6] |= 128;	/* last entry */
 
     /* done: return the pointers */
     *menu_block_p = menu_block;
