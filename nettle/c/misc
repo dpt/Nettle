@@ -1,7 +1,6 @@
 /**
  * Miscellaneous code
- * by A. Macfarlane Smith 
- * (C) Archifishal Software 2001
+ * (C) Nettle developers 2000-2001
  *
  * $Id$
  */
@@ -22,7 +21,7 @@ char *lookup(const char *token, char *buffer, int buf_size)
   assert(token != NULL);
   assert(buffer != NULL);
   assert(buf_size > 0);
-  
+
   _swi(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer,
                                                          buf_size);
 
@@ -37,11 +36,11 @@ char *get_system_variable(char *variable, const char *variable_name,
                           int variable_size)
 {
   char *string;
-  
+
   assert(variable != NULL);
   assert(variable_name != NULL);
   assert(variable_size > 0);
-  
+
   string = getenv(variable_name);
 
   /* if it exists, copy it into variable */
@@ -60,9 +59,9 @@ int binary(const char *string)
 {
   int          value = 0;
   const char  *s;
-  
+
   assert(string != NULL);
-  
+
   for (s = string; *s != 0; s++)
   {
     value *= 2;
@@ -80,7 +79,7 @@ int instr(const char *string, const char *test)
 {
   assert(string != NULL);
   assert(test   != NULL);
-  
+
   return esc_instr(string,test,strlen(string));
 }
 
@@ -90,7 +89,7 @@ int instr(const char *string, const char *test)
 int esc_instr(const char *string, const char *test, int length)
 {
   int loop;
-  
+
   assert(string != NULL);
   assert(test   != NULL);
   assert(length >= 0);
@@ -118,7 +117,7 @@ char *read_mem(char *dest, const char *source, int max_length)
 {
   int loop = 0;
 
-  assert(dest       != NULL); 
+  assert(dest       != NULL);
   assert(source     != NULL);
   assert(max_length > 0);
 
@@ -140,7 +139,7 @@ char *read_mem(char *dest, const char *source, int max_length)
 void log_string(const char *string)
 {
   assert(string != NULL);
-  
+
   if (!logging)
     return;
 
@@ -171,7 +170,7 @@ void log_byte(char character)
 
   if (log_file == NULL)
     log_file=fopen("<Nettle$Dir>.Log", "w");
-  
+
   if (log_file == NULL)
     return;
 
@@ -189,7 +188,7 @@ void close_log(void)
 
   if (!logging)
     return;
-  
+
   if (log_file == NULL)
     return;
 
@@ -208,7 +207,7 @@ void close_log(void)
 char *get_country(char *string, int size)
 {
   int country_number;
-  
+
   assert(string != NULL);
   assert(size   > 0);
 

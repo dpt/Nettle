@@ -1,6 +1,9 @@
-/* Processing code */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Processing code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id:
+ */
 
 #include "generic.h"
 #include "globals.h"
@@ -478,7 +481,7 @@ static void byte_default(struct session_struct *session, char byte)
              session->xpos)*4;
 
   /* write out the data */
-  write_assigned(session,data,session->current_fg, 
+  write_assigned(session,data,session->current_fg,
                                      session->current_bg,
                                      session->current_flags,
                                      '?');

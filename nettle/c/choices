@@ -1,7 +1,6 @@
 /**
  * Nettle Choices code
- * by A. Macfarlane Smith
- * (C) Archifishal Software 2001
+ * (C) Nettle developers 2000-2001
  *
  * $Id$
  */
@@ -17,7 +16,7 @@
 static void read_choice(char *variable, const char *line, const char *lookfor)
 {
   int len = strlen(lookfor);
-  
+
   if (strncmp(line,lookfor,len) == 0)
   {
     strcpy(variable, line+len);
@@ -30,7 +29,7 @@ static void read_boolean_choice(bool *var, const char *line,
                                 const char *lookfor)
 {
   int len = strlen(lookfor);
-  
+
   if (strncmp(line,lookfor,len) == 0)
   {
     if (strncmp(line+len,"1",1) == 0)
@@ -49,7 +48,7 @@ static void read_boolean_choice(bool *var, const char *line,
 static void read_integer_choice(int *var, const char *line, const char *lookfor)
 {
   int len = strlen(lookfor);
-  
+
   if (strncmp(line,lookfor,len) == 0)
   {
     *var=atoi(line+len);
@@ -92,7 +91,7 @@ void load_choices(void)
     str = fgets(string,256,file_handle);
     if (!str)
       break;
-    
+
     len = strlen(string);
     if (string[len-1]=='\n')
       string[len-1]='\0';

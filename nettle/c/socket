@@ -1,6 +1,9 @@
-/* Socket library */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Socket code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id:
+ */
 
 #include "generic.h"
 #include "globals.h"

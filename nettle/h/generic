@@ -34,6 +34,11 @@ struct os_spriteop_area
   /* Remaining data */
 };
 
+struct wimp_closewindow_block
+{
+  int window_handle;
+};
+
 struct wimp_createicon_block
 {
   int window_handle;
@@ -137,6 +142,19 @@ struct wimp_getwindowoutline_block
   int maxy;
 };
 
+struct wimp_getwindowstate_block
+{
+  int window_handle;
+  int minx;
+  int miny;
+  int maxx;
+  int maxy;
+  int scroll_x;
+  int scroll_y;
+  int handle_behind;
+  int window_flags;
+};
+
 struct wimp_openwindow_block
 {
   int window_handle;
@@ -147,6 +165,14 @@ struct wimp_openwindow_block
   int scroll_x;
   int scroll_y;
   int handle_behind;
+};
+
+struct wimp_seticonstate_block
+{
+  int window_handle;
+  int icon_handle;
+  int eor;
+  int clear;
 };
 
 #endif

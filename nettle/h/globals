@@ -255,6 +255,17 @@ extern union wimp_poll_block
         int size;
         int filetype;
         char file_name[212];
+      } data_save;
+
+      struct
+      {
+        int window_handle;
+        int icon_handle;
+        int x;
+        int y;
+        int size;
+        int filetype;
+        char file_name[212];
       } data_save_ack;
 
       struct

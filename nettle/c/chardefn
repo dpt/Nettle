@@ -1,6 +1,9 @@
-/* Zap font character definitions */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Zap font character definitions
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id:
+ */
 
 #include "generic.h"
 #include "globals.h"

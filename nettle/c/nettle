@@ -1,6 +1,9 @@
-/* Nettle specific code */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Nettle specific code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id:
+ */
 
 #include "generic.h"
 #include "globals.h"
@@ -277,6 +280,8 @@ void start_connection(void)
     {
       strcpy(session->line_editor_history+(loop*512),"");
     }
+
+    strcpy(session->line_editor_buffer,"");
   }
 
   /* make new terminal window */
@@ -430,7 +435,6 @@ void write_out_data(struct session_struct *session, char *data, int length_data)
   }
 
   zap_yeig = _swi(OS_ReadModeVariable, _IN(0)|_IN(1)|_RETURN(2), -1, 5);
-
 
   calc=get_cursor_position(session);
 

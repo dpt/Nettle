@@ -1,6 +1,9 @@
-/* Line editor code */
-/* by A. Macfarlane Smith */
-/* (C) Archifishal Software 2001 */
+/**
+ * Line editor code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id:
+ */
 
 #include "generic.h"
 #include "globals.h"
@@ -129,18 +132,18 @@ static void create_line_editor_icons(struct session_struct *session, int width)
 
 void open_pane_window(struct session_struct *session, struct wimp_openwindow_block *main_block)
 {
-  struct wimp_getwindowoutline_block w_gwo_block;
+  struct wimp_getwindowoutline_block gwo_block;
   struct wimp_openwindow_block block;
   int width;
 
   width=main_block->maxx;
 
-  w_gwo_block.window_handle=session->window_handle;
-  _swi(Wimp_GetWindowOutline, _IN(1), &w_gwo_block);
+  gwo_block.window_handle=session->window_handle;
+  _swi(Wimp_GetWindowOutline, _IN(1), &gwo_block);
 
   block.window_handle=session->pane_handle;
   block.minx=main_block->minx;
-  block.miny=(w_gwo_block.miny)-48;
+  block.miny=(gwo_block.miny)-48;
   block.maxx=width;
 
   /* This is wrong as it assumes a toolsprite height */
