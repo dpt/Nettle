@@ -78,6 +78,7 @@ static void open_open_window(bool open_window_flag);
 static void open_options_window(bool open_window_flag);
 static void create_terminal_menu(void);
 
+static void paste_in_data (int window_handle, char *data, int size);
 static bool parse_ant_url (union wimp_poll_block *);
 static bool parse_acorn_uri (union wimp_poll_block *);
 static bool paste_text_file (union wimp_poll_block *);
@@ -2490,7 +2491,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
 
         if (session)
         {
-          process_data_transmission (session, filename, strlen(filename));
+          paste_in_data (window_handle, filename, strlen(filename));
         }
       }
       else
@@ -3538,6 +3539,123 @@ static char *load_file (const char *name, int *size)
   return data;
 }
 
+/*
+ * paste_in_data
+ *
+ * On entry:
+ *          window_handle = window handle for data to be pasted into
+ *          data          = data to be pasted
+ *          size          = size of data to be pasted
+ *
+ * Description:
+ *             This pastes the data specified into the session and handles it depending
+ *             whether it was a drag into the terminal or into the lineeditor
+ */
+
+static void paste_in_data (int window_handle, char *data, int size)
+{
+  struct session_struct *session = get_session_from_winhan(window_handle);
+  if (session == NULL)
+    return;
+
+  if (session->pane_handle==window_handle && line_editor_active(session))
+  {
+    struct wimp_getcaretposition_block block;
+    char line_editor_buffer[MAX_LINEEDITOR_LENGTH];
+    int position_in_lineeditor;
+    int position_of_return=0;
+    int position_in_data=0;
+
+    /* First we find out if the caret is in the pane */
+    _swi(Wimp_GetCaretPosition, _IN(1), &block);
+
+    printf("block.window_handle=%x, session->pane_handle=%x\n", block.window_handle, session->pane_handle);
+    if (block.window_handle==session->pane_handle)
+    {
+      /* If so, we want the pasted data to be inserted at the relevant position */
+      position_in_lineeditor=block.index;
+    }
+    else
+    {
+      /* Otherwise, we just want it added on the end */
+      position_in_lineeditor=strlen(session->line_editor_buffer);
+    }
+
+    /* So, let's iterate through the data file */
+    while (position_in_data<size)
+    {
+      printf("position_in_data=%d, size=%d, position_in_lineeditor=%d\n", position_in_data, size, position_in_lineeditor);
+      printf("position_of_return before loop=%d\n", position_of_return);
+
+      /* Find the next return character, or til we reach the end of the file */
+      while (position_of_return<size && data[position_of_return]!=10)
+      {
+        position_of_return++;
+      }
+
+      printf("position_of_return after loop=%d\n", position_of_return);
+
+      /* If the return+the length of the existing lineeditor is less than the max length then */
+      if (position_of_return+strlen(session->line_editor_buffer)<MAX_LINEEDITOR_LENGTH)
+      {
+        int i;
+
+        printf("copying 0 to %d in session->line_editor_buffer to 0 to %d in line_editor_buffer\n", position_in_lineeditor, position_in_lineeditor);
+        /* Copy the chunk before the caret into line_editor_buffer */
+        for (i=0; i<position_in_lineeditor; i++)
+        {
+          line_editor_buffer[i]=session->line_editor_buffer[i];
+        }
+
+        printf("copying %d to %d in data to %d to %d in line_editor_buffer\n", position_in_data, position_of_return, position_in_lineeditor, position_in_lineeditor+position_of_return-position_in_data);
+        /* Copy the chunk from the data file to the line_editor_buffer */
+        for (i=0; i<position_of_return-position_in_data; i++)
+        {
+          line_editor_buffer[i+position_in_lineeditor]=data[position_in_data+i];
+        }
+
+        printf("copying %d to %d in session->line_editor_buffer to %d to %d in line_editor_buffer\n", position_in_lineeditor, strlen(session->line_editor_buffer), position_in_lineeditor+position_of_return-position_in_data, strlen(session->line_editor_buffer)+position_of_return-position_in_data);
+        /* And finally copy the chunk from after the caret to the line_editor_buffer */
+        for (i=position_in_lineeditor; i<strlen(session->line_editor_buffer); i++)
+        {
+          line_editor_buffer[i+position_of_return-position_in_data]=session->line_editor_buffer[i];
+        }
+
+        printf("setting line_editor_buffer[%d] to '\\0'\n", position_of_return+strlen(session->line_editor_buffer));
+        line_editor_buffer[position_of_return+strlen(session->line_editor_buffer)-position_in_data]='\0';
+      }
+
+      /* Plonk it into the lineeditor */
+      strcpy(session->line_editor_buffer, line_editor_buffer);
+
+      /* If the character we found was actually a return as opposed to the end of the file */
+      /* then call the line editor processor */
+      if (position_of_return<size && data[position_of_return]==10)
+      {
+        process_line_editor(session);
+      }
+
+      /* Set the position in data for next time to the position after the return */
+      /* and set the lineeditor length appropriately */
+      position_of_return++;
+      position_in_data=position_of_return;
+      position_in_lineeditor=strlen(session->line_editor_buffer);
+      printf("position_in_data is %d, position_in_lineeditor is %d\n", position_in_data, position_in_lineeditor);
+    }
+
+    if (block.window_handle==session->pane_handle)
+    {
+      /* Update the writable icon position */
+      _swi(Wimp_SetCaretPosition, _INR(0,5), block.window_handle, block.icon_handle, -1, -1, -1, position_in_lineeditor);
+    }
+
+    set_icon_state(session->pane_handle, 0, 0, 0);
+  }
+  else
+  {
+    process_data_transmission (session, data, size);
+  }
+}
 
 
 /**
@@ -3562,7 +3680,7 @@ static bool parse_ant_url (union wimp_poll_block *block)
 
   if (url)
   {
-    process_data_transmission (session, url, size);
+    paste_in_data (window_handle, url, size);
     free (url);
     return true;
   }
@@ -3610,7 +3728,7 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
         char *eol = strchr (uri + offset, '\n');
 
         /* finally (!) send it */
-        process_data_transmission (session, uri + offset, eol - uri - offset);
+        paste_in_data (window_handle, uri + offset, eol - uri - offset);
         free(uri);
         return true;
       }
@@ -3619,6 +3737,7 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
   }
   return false;
 }
+
 
 
 
@@ -3644,100 +3763,10 @@ static bool paste_text_file (union wimp_poll_block *block)
 
   if (text)
   {
-    /* This may be overly simplistic at present */
     if (session->pane_handle==window_handle && line_editor_active(session))
     {
       /* Handling for drags to the lineeditor pane */
-      struct wimp_getcaretposition_block block;
-      char line_editor_buffer[MAX_LINEEDITOR_LENGTH];
-      int position_in_lineeditor;
-      int position_of_return=0;
-      int position_in_text=0;
-
-      /* First we find out if the caret is in the pane */
-      _swi(Wimp_GetCaretPosition, _IN(1), &block);
-
-      printf("block.window_handle=%x, session->pane_handle=%x\n", block.window_handle, session->pane_handle);
-      if (block.window_handle==session->pane_handle)
-      {
-        /* If so, we want the pasted text to be inserted at the relevant position */
-        position_in_lineeditor=block.index;
-      }
-      else
-      {
-        /* Otherwise, we just want it added on the end */
-        position_in_lineeditor=strlen(session->line_editor_buffer);
-      }
-
-      /* So, let's iterate through the text file */
-      while (position_in_text<size)
-      {
-        printf("position_in_text=%d, size=%d, position_in_lineeditor=%d\n", position_in_text, size, position_in_lineeditor);
-        printf("position_of_return before loop=%d\n", position_of_return);
-
-        /* Find the next return character, or til we reach the end of the file */
-        while (position_of_return<size && text[position_of_return]!=10)
-        {
-          position_of_return++;
-        }
-
-        printf("position_of_return after loop=%d\n", position_of_return);
-
-        /* If the return+the length of the existing lineeditor is less than the max length then */
-        if (position_of_return+strlen(session->line_editor_buffer)<MAX_LINEEDITOR_LENGTH)
-        {
-          int i;
-
-          printf("copying 0 to %d in session->line_editor_buffer to 0 to %d in line_editor_buffer\n", position_in_lineeditor, position_in_lineeditor);
-          /* Copy the chunk before the caret into line_editor_buffer */
-          for (i=0; i<position_in_lineeditor; i++)
-          {
-            line_editor_buffer[i]=session->line_editor_buffer[i];
-          }
-
-          printf("copying %d to %d in text to %d to %d in line_editor_buffer\n", position_in_text, position_of_return, position_in_lineeditor, position_in_lineeditor+position_of_return-position_in_text);
-          /* Copy the chunk from the text file to the line_editor_buffer */
-          for (i=0; i<position_of_return-position_in_text; i++)
-          {
-            line_editor_buffer[i+position_in_lineeditor]=text[position_in_text+i];
-          }
-
-          printf("copying %d to %d in session->line_editor_buffer to %d to %d in line_editor_buffer\n", position_in_lineeditor, strlen(session->line_editor_buffer), position_in_lineeditor+position_of_return-position_in_text, strlen(session->line_editor_buffer)+position_of_return-position_in_text);
-          /* And finally copy the chunk from after the caret to the line_editor_buffer */
-          for (i=position_in_lineeditor; i<strlen(session->line_editor_buffer); i++)
-          {
-            line_editor_buffer[i+position_of_return-position_in_text]=session->line_editor_buffer[i];
-          }
-
-          printf("setting line_editor_buffer[%d] to '\\0'\n", position_of_return+strlen(session->line_editor_buffer));
-          line_editor_buffer[position_of_return+strlen(session->line_editor_buffer)-position_in_text]='\0';
-        }
-
-        /* Plonk it into the lineeditor */
-        strcpy(session->line_editor_buffer, line_editor_buffer);
-
-        /* If the character we found was actually a return as opposed to the end of the file */
-        /* then call the line editor processor */
-        if (text[position_of_return]==10)
-        {
-          process_line_editor(session);
-        }
-
-        /* Set the position in text for next time to the position after the return */
-        /* and set the lineeditor length appropriately */
-        position_of_return++;
-        position_in_text=position_of_return;
-        position_in_lineeditor=strlen(session->line_editor_buffer);
-        printf("position_in_text is %d, position_in_lineeditor is %d\n", position_in_text, position_in_lineeditor);
-      }
-
-      if (block.window_handle==session->pane_handle)
-      {
-        /* Update the writable icon position */
-        _swi(Wimp_SetCaretPosition, _INR(0,5), block.window_handle, block.icon_handle, -1, -1, -1, position_in_lineeditor);
-      }
-
-      set_icon_state(session->pane_handle, 0, 0, 0);
+      paste_in_data(window_handle, text, size);
     }
     else
     {
@@ -3748,14 +3777,12 @@ static bool paste_text_file (union wimp_poll_block *block)
       {
         switch (text[loop])
         {
-          case 9:
-            break;
           case 10:
             text[loop]=13;
             break;
           default:
             if (text[loop]<32)
-              text[loop]=0;
+              text[loop]=' ';
 
             break;
         }
