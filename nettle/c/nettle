@@ -13,6 +13,42 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
+
+
+#ifdef DEBUG
+typedef struct assigned_data
+{
+  char fg;
+  char bg;
+  char flags;
+  char character;
+}
+assigned_data;
+
+void dumptermdata(struct session_struct *session)
+{
+  int x;
+  int y;
+
+  for (y = 0; y < session->terminal_size_y; y++)
+  {
+    for (x = 0; x < session->terminal_size_x; x++)
+    {
+      assigned_data *ptr;
+
+      ptr = (assigned_data *) session->assigned_area;
+      ptr += y * session->terminal_size_x + x;
+      printf("[%02d,%02d]: ", x, y);
+      printf("'%c' (bg %d, fg %d, flags %x)\n",
+             ptr->character, ptr->bg, ptr->fg, ptr->flags);
+    }
+  }
+}
+
+#endif /* DEBUG */
+
+
+
 void start_connection(void)
 {
   char string[1024];
