@@ -291,12 +291,12 @@ void start_connection(void)
   {
     struct wimp_createwindow_block block;
 
-    block.minx         =102;
-    block.miny         =1088-(session->terminal_size.y*redraw.r_charh << eig.y);
-    block.maxx         =102+(session->terminal_size.x*redraw.r_charw << eig.x);
-    block.maxy         =1088;
-    block.scroll_x     =0;
-    block.scroll_y     =-((session->terminal_size.y+
+    block.min.x         =102;
+    block.min.y         =1088-(session->terminal_size.y*redraw.r_charh << eig.y);
+    block.max.x         =102+(session->terminal_size.x*redraw.r_charw << eig.x);
+    block.max.y         =1088;
+    block.scroll.x     =0;
+    block.scroll.y     =-((session->terminal_size.y+
                            session->scrollback)
                           *(redraw.r_charh << eig.y));
     block.handle_behind=-1;
@@ -311,12 +311,12 @@ void start_connection(void)
     block.title_focus_colour =12;
     block.flags              =0;
 
-    block.work_minx=0;
-    block.work_miny=-((session->terminal_size.y+
+    block.work_min.x=0;
+    block.work_min.y=-((session->terminal_size.y+
                        session->scrollback)
                       *(redraw.r_charh << eig.y));
-    block.work_maxx=session->terminal_size.x*redraw.r_charw << eig.x;
-    block.work_maxy=0;
+    block.work_max.x=session->terminal_size.x*redraw.r_charw << eig.x;
+    block.work_max.y=0;
 
     block.icon_flags    =0x00000119;
     block.workarea_flags=6<<12;
@@ -340,13 +340,13 @@ void start_connection(void)
     /* Create new pane window */
     struct wimp_createwindow_block block;
 
-    block.minx=102;
-    block.miny=1088-(session->terminal_size.y*redraw.r_charh << eig.y)-40;
-    block.maxx=102+(session->terminal_size.x*redraw.r_charw << eig.x);
-    block.maxy=1088-(session->terminal_size.y*redraw.r_charh << eig.y);
+    block.min.x=102;
+    block.min.y=1088-(session->terminal_size.y*redraw.r_charh << eig.y)-40;
+    block.max.x=102+(session->terminal_size.x*redraw.r_charw << eig.x);
+    block.max.y=1088-(session->terminal_size.y*redraw.r_charh << eig.y);
 
-    block.scroll_x=0;
-    block.scroll_y=0;
+    block.scroll.x=0;
+    block.scroll.y=0;
 
     block.handle_behind=-1;
     block.window_flags =0x80080162;
@@ -361,10 +361,10 @@ void start_connection(void)
     block.title_focus_colour =12;
     block.flags              =0;
 
-    block.work_minx=0;
-    block.work_miny=-48;
-    block.work_maxx=session->terminal_size.x*redraw.r_charw << eig.x;
-    block.work_maxy=0;
+    block.work_min.x=0;
+    block.work_min.y=-48;
+    block.work_max.x=session->terminal_size.x*redraw.r_charw << eig.x;
+    block.work_max.y=0;
 
     block.icon_flags    =0x00000000;
     block.workarea_flags=0<<12;
@@ -730,6 +730,8 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   {
     session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
     assert(session->assigned_area != NULL);
+    session->scroll_start   = 1;
+    session->scroll_end     = terminal_size_y;
     session->terminal_size.x=terminal_size_x;
     session->terminal_size.y=terminal_size_y;
     session->scrollback     =scrollback;
@@ -783,19 +785,19 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
   {
     struct wimp_setextent_block block;
 
-    block.minx=0;
-    block.miny=-((session->terminal_size.y+session->scrollback)*redraw.r_charh << eig.y);
-    block.maxx=session->terminal_size.x*redraw.r_charw << eig.x;
-    block.maxy=0;
+    block.min.x=0;
+    block.min.y=-((session->terminal_size.y+session->scrollback)*redraw.r_charh << eig.y);
+    block.max.x=session->terminal_size.x*redraw.r_charw << eig.x;
+    block.max.y=0;
 
     _swi(Wimp_SetExtent, _INR(0,1), session->window_handle, &block);
 
     if (line_editor)
     {
-      block.minx=0;
-      block.miny=-48;
-      block.maxx=session->terminal_size.x*redraw.r_charw << eig.x;
-      block.maxy=0;
+      block.min.x=0;
+      block.min.y=-48;
+      block.max.x=session->terminal_size.x*redraw.r_charw << eig.x;
+      block.max.y=0;
 
       _swi(Wimp_SetExtent, _INR(0,1), session->pane_handle, &block);
     }
@@ -809,13 +811,13 @@ void reopen_and_size_window(struct session_struct *session, int old_terminal_siz
     _swi(Wimp_GetWindowState, _IN(1), &block);
 
     /* If terminal at fullsize, then reopen window at fullsize, otherwise leave it */
-    if (block.maxx-block.minx==(old_terminal_size_x*old_charw << eig.x))
+    if (block.max.x-block.min.x==(old_terminal_size_x*old_charw << eig.x))
     {
-      block.maxx=block.minx+(session->terminal_size.x*redraw.r_charw << eig.x);
+      block.max.x=block.min.x+(session->terminal_size.x*redraw.r_charw << eig.x);
     }
-    if (block.maxy-block.miny==(old_terminal_size_y*old_charh << eig.y))
+    if (block.max.y-block.min.y==(old_terminal_size_y*old_charh << eig.y))
     {
-      block.miny=block.maxy-(session->terminal_size.y*redraw.r_charh << eig.y);
+      block.min.y=block.max.y-(session->terminal_size.y*redraw.r_charh << eig.y);
     }
 
     /* wimp_openwindow_block is essentially the same as wimp_getwindowstate_block */
