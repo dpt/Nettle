@@ -814,95 +814,93 @@ static void wimp_claimcaret(struct session_struct *session)
 }
 
 
-
 static void wimp_launchurl(struct session_struct *session, int x, int y)
 {
-  /*
-  int     x_pos;
-  int     y_pos;
+#define ICHR(x,y) ((int) read_assigned_character(session,x,y))
+
   char    url[1024];
   char   *urlptr;
   char   *urlend;
-  int     char_offset;
-  int     end_offset;
+  int     ymax = session->terminal_size.y + session->scrollback;
+  int     xmax = session->terminal_size.x;
 
-  {
-    struct wimp_getwindowstate_block block;
+  struct  wimp_getwindowstate_block block;
 
-    block.window_handle=session->window_handle;
+  block.window_handle=session->window_handle;
 
-    _swi(Wimp_GetWindowState, _IN(1), &block);
+  _swi(Wimp_GetWindowState, _IN(1), &block);
 
-    x_pos=block.min.x-block.scroll.x;
-    y_pos=block.max.y-block.scroll.y;
-  }
+  y = -( (y - (block.max.y-block.scroll.y)) >> eig.y ) / redraw.r_charh;
+  x =  ( (x - (block.min.x-block.scroll.x)) >> eig.x ) / redraw.r_charw;
 
-  char_offset = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
-                        * session->terminal_size.x
-                        + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
-  end_offset = session->terminal_size.x*
-                     (session->terminal_size.y + session->scrollback);
+  logf("\nclicked on '%c'\n", (char) ICHR(x,y) );
 
-  logf("clicked on '%c'\n",session->assigned_area[char_offset*4+3]);
-
-  if (isspace((int) session->assigned_area[char_offset*4+3]))
-    return;*/
+  if (isspace( ICHR(x,y) ) )
+    return;
 
   /* go back to the start of the clicked on 'word' */
-  /*while (char_offset > 0 && !isspace((int) session->assigned_area[char_offset*4+3]))
-    char_offset--;
-  if (!isalpha((int) session->assigned_area[char_offset*4+3]))
-    char_offset++;*/
+  /* NOTE! We deliberately do not wrap-backwards over lines */
+  while ( x > 0 && !isspace( ICHR(x,y) ))
+    x--;
+  if (!isalpha( ICHR(x,y) ))
+    x++;
 
   /* skip any leading punctuation */
-  /*while (ispunct ((int) session->assigned_area[char_offset*4+3]))
-    char_offset++;*/
+  while ( x<xmax && ispunct ( ICHR(x,y) ))
+    x++;
 
   /* go forward to the end of the form [ie. until we find whitespace] */
-  /*urlptr = url;
-  urlend = url + sizeof(url) - 8;*/ /* leave space for a '\0', and 'http://' */
-  /*while (char_offset < end_offset && urlptr < urlend &&
-         !isspace((int) session->assigned_area[char_offset*4+3]))
+  /* NOTE! We currently allow the URL to flow to the next line */
+  urlptr = url;
+  urlend = url + sizeof(url) - 8; /* leave space for a '\0', and 'http://' */
+  while ( (urlptr < urlend) && (!isspace( ICHR(x,y) )) )
   {
-    *urlptr++ = session->assigned_area[char_offset*4+3];
-    char_offset++;
+    *urlptr++ = (char) ICHR(x,y);
+    x++;
+    if ( x >= xmax )
+    {
+      x=0;
+      y++;
+      if ( y >= ymax )
+        break;
+    }
   }
   *urlptr = '\0';
-  logf("url = '%s'\n", url);*/
+  logf("url = '%s'\n", url);
 
   /* lower-case the protocol (if present) and site name */
-  /*{
+  {
     const char *endptr = strchr (url, '/');
-    if (endptr > url && endptr[-1] == ':')*/
+    if (endptr > url && endptr[-1] == ':')
       /* we have a protocol; find the end of the site name */
-/*      endptr = strchr (endptr + 1 + (endptr[1] == '/'), '/');
+      endptr = strchr (endptr + 1 + (endptr[1] == '/'), '/');
     if (!endptr)
       endptr = urlend;
     for (urlptr = url; urlptr < endptr; urlptr++)
       *urlptr = tolower (*urlptr);
-  }*/
+  }
 
   /* we've got a url, check for full formedness */
-  /*urlptr = url;
+  urlptr = url;
   while (isalpha((int) (*urlptr)))
     urlptr++;
   if (*urlptr != ':')
   {
-    const char *scheme;*/
+    const char *scheme;
     /* there's no scheme section */
-    /*if (strncmp(url, "ftp.", 4) == 0)
+    if (strncmp(url, "ftp.", 4) == 0)
       scheme = "ftp://";
     else if (strchr(url, '@') != NULL)
       scheme = "mailto:";
     else
-      scheme = "http://";*/
+      scheme = "http://";
 
     /* prefix string we have with the scheme we've guessed */
-    /*memmove(url + strlen(scheme), url, strlen(url) + 1);
+    memmove(url + strlen(scheme), url, strlen(url) + 1);
     memcpy(url, scheme, strlen(scheme));
   }
 
-  url_launch (url);*/
+  url_launch (url);
 }
 
 
