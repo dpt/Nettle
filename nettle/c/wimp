@@ -614,9 +614,9 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
       refresh_selection_clear();
 
       selection_session = session;
-      selection_start = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+      selection_start = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                         * session->terminal_size.x
-                        + (((x - x_pos) / redraw.r_charw) >> eig.x);
+                        + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
 
       if (selection_start > (selection_session->terminal_size.x*
 			    (selection_session->terminal_size.y+
@@ -642,9 +642,9 @@ static void session_window_click(int x, int y, int buttons, int icon_handle, str
 	refresh_selection_clear();
 
 	selection_session = session;
-	selection_start = -(((y - y_pos) / redraw.r_charh) >> eig.y)
-			  * session->terminal_size.x
-			  + (((x - x_pos) / redraw.r_charw) >> eig.x);
+        selection_start = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
+                          * session->terminal_size.x
+                          + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
 
 	if (selection_start>(selection_session->terminal_size.x*
 			    (selection_session->terminal_size.y+

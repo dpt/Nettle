@@ -70,9 +70,9 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
 {
   if (selection_session)
   {
-    int click_point = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+    int click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                       * selection_session->terminal_size.x
-                      + (((x - x_pos) / redraw.r_charw) >> eig.x);
+                      + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
 
     if (click_point<0)
     {
@@ -129,9 +129,9 @@ static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 {
   if (selection_session)
   {
-    int click_point = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+    int click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                       * selection_session->terminal_size.x
-                      + (((x - x_pos) / redraw.r_charw) >> eig.x);
+                      + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
 
     if (click_point<0)
     {
@@ -337,9 +337,9 @@ void handle_selection_drag(void)
       /* Drag SELECT - clear the selection, re-work it out, and set it again, then redraw */
       refresh_selection_clear();
 
-      selection_end = -(((y - y_pos) / redraw.r_charh) >> eig.y)
+      selection_end = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
                       * selection_session->terminal_size.x
-                      + (((x - x_pos) / redraw.r_charw) >> eig.x);
+                      + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
 
       if (selection_end>(selection_session->terminal_size.x*
 				(selection_session->terminal_size.y+
