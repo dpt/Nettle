@@ -189,15 +189,15 @@ static void wimp_pollsocket(struct session_struct *session)
     if (packet_length == 0)
     {
       /* EOF received */
-      write_out_strings(session, "\r\n", lookup_static("closed"), 0);
+      write_out_strings(session, "\r\n", lookup_static("closed"), "\r\n", 0);
     }
     else
     {
-      write_out_strings(session, "\r\n", "Nettle: Socket error '",
+      write_out_strings(session, "Nettle: Socket error '",
                         socket_strerror(errno), "' occurred\r\n", 0);
     }
 
-    write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
+    write_out_strings(session, lookup_static("disconn"), "\r\n", 0);
     socket_close(session->socket_handle);
     session->socket_handle=0;
     session->socket_state=NETTLE_SESSION_NONE;
