@@ -30,21 +30,21 @@ void changedbox_init (struct session_struct *session)
   changedbox.br.y = 0;
 }
 
-void changedbox_update (int x0, int y0, int x1, int y1)
+void changedbox_update (int cx0, int cy0, int cx1, int cy1)
 {
-  if (x0 < changedbox.tl.x) changedbox.tl.x = x0;
-  if (y0 < changedbox.tl.y) changedbox.tl.y = y0;
-  if (x1 > changedbox.br.x) changedbox.br.x = x1;
-  if (y1 > changedbox.br.y) changedbox.br.y = y1;
+  if (cx0 < changedbox.tl.x) changedbox.tl.x = cx0;
+  if (cy0 < changedbox.tl.y) changedbox.tl.y = cy0;
+  if (cx1 > changedbox.br.x) changedbox.br.x = cx1;
+  if (cy1 > changedbox.br.y) changedbox.br.y = cy1;
 }
 
 
-void changedbox_update_char (int x0, int y0)
+void changedbox_update_char (int cx0, int cy0)
 {
-  if (x0 < changedbox.tl.x) changedbox.tl.x = x0;
-  if (y0 < changedbox.tl.y) changedbox.tl.y = y0;
-  if (x0 > changedbox.br.x) changedbox.br.x = x0;
-  if (y0 > changedbox.br.y) changedbox.br.y = y0;
+  if (cx0 < changedbox.tl.x) changedbox.tl.x = cx0;
+  if (cy0 < changedbox.tl.y) changedbox.tl.y = cy0;
+  if (cx0 > changedbox.br.x) changedbox.br.x = cx0;
+  if (cy0 > changedbox.br.y) changedbox.br.y = cy0;
 }
 
 
