@@ -1,0 +1,23 @@
+!Help for !ModInst V0.04
+========================
+
+This program will relatively intelligently install modules into the
+!System directory, and can also install a MimeMap file into the
+appropriate place if required.
+
+When installing modules, it won't overwrite a module in !System that
+is newer than the one it was asked to install.
+
+
+This program is distributed under the GPL.
+Note that the contents of the Resources directory have their own
+licences, and may or may not be GPLed.
+
+The sources and latest version of this program can be found on:
+<http://www.ping.demon.co.uk/acorn/download.html>.
+
+Bug reports and/or suggestions can be sent to modinst@ping.demon.co.uk.
+
+-- 
+Joseph Heenan, 22/08/99
+modinst@ping.demon.co.uk

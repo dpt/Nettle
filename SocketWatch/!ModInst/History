@@ -1,0 +1,18 @@
+Summary of changes
+==================
+
+0.04		Released 
+		Fixed to create !Internet.files if it doesn't already
+		exist.
+
+0.03		Released 04/10/98
+		Changed mimemap install routine to work with the way
+		FreeNet sets up InetDbase$Path
+
+0.02		Released 03/10/98
+		Changes by Gerph: will now replace a module with one of
+		the same but a newer date stamp in the module header.
+		[to cope with the MimeMap module problems]
+
+0.01ß		Released 18/09/98
+		First public release

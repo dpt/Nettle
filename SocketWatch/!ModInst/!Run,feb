@@ -1,0 +1,9 @@
+
+Set ModInst$Dir <Obey$Dir>
+
+If "<InetDBase$Path>" = "" then Error 0 Internet databases could not be found - Please run your internet suite first
+
+If "<System$Dir>" = "" then Error 0 System resources could not be found - Please open the directory containing !System first
+
+Wimpslot -min 64k -max 64k
+Run <ModInst$Dir>.!RunImage
