@@ -18,19 +18,24 @@
 #include "wimputil.h"
 #include "zapredraw.h"
 
-static const struct session_struct *old_session;
-static int old_start, old_end;
 
 
-static void selection_changedbox_init (void)
+static const struct session_struct  *old_session;
+static int                           old_start;
+static int                           old_end;
+
+
+
+static void selection_changedbox_init(void)
 {
   old_session = selection_session;
-  old_start = MIN(selection_start, selection_end);
-  old_end   = MAX(selection_start, selection_end);
+  old_start   = MIN(selection_start, selection_end);
+  old_end     = MAX(selection_start, selection_end);
 }
 
 
-static void selection_changedbox_redraw (const struct session_struct *session, int start, int end)
+
+static void selection_changedbox_redraw(const struct session_struct *session, int start, int end)
 {
   struct coords from, to;
 
@@ -59,6 +64,7 @@ static void selection_changedbox_redraw (const struct session_struct *session, i
 }
 
 
+
 static void selection_changedbox_draw (void)
 {
   int new_start = MIN(selection_start, selection_end);
@@ -81,57 +87,75 @@ static void selection_changedbox_draw (void)
 }
 
 
+
 void refresh_selection_set(void)
 {
-  if (selection_session)
+  int start;
+  int end;
+  int loop;
+  
+  if (selection_session == NULL)
+    return;
+  
+  start = MIN(selection_start, selection_end);
+  end   = MAX(selection_start, selection_end);
+
+  for (loop=start; loop<end; loop++)
   {
-    int loop;
-    if (selection_start>selection_end)
-    {
-      for (loop=selection_end; loop<selection_start; loop++)
-      {
-	write_assigned_flags(selection_session, loop*4,
-			     read_assigned_flags(selection_session, loop*4) |
-			     NETTLE_FLAG_SELECTED);
-      }
-    }
-    else
-    {
-      for (loop=selection_start; loop<selection_end; loop++)
-      {
-	write_assigned_flags(selection_session, loop*4,
-			     read_assigned_flags(selection_session, loop*4) |
-			     NETTLE_FLAG_SELECTED);
-      }
-    }
+    write_assigned_flags(selection_session, loop*4,
+                         read_assigned_flags(selection_session, loop*4) |
+                         NETTLE_FLAG_SELECTED);
   }
 }
 
+
+
 void refresh_selection_clear(void)
 {
-  if (selection_session)
+  int start;
+  int end;
+  int loop;
+  
+  if (selection_session == NULL)
+    return;
+  
+  start = MIN(selection_start, selection_end);
+  end   = MAX(selection_start, selection_end);
+
+  for (loop=start; loop<end; loop++)
   {
-    int loop;
-    if (selection_start>selection_end)
-    {
-      for (loop=selection_end; loop<selection_start; loop++)
-      {
-	write_assigned_flags(selection_session, loop*4,
-			     read_assigned_flags(selection_session, loop*4) &
-			     ~NETTLE_FLAG_SELECTED);
-      }
-    }
-    else
-    {
-      for (loop=selection_start; loop<selection_end; loop++)
-      {
-	write_assigned_flags(selection_session, loop*4,
-			     read_assigned_flags(selection_session, loop*4) &
-			     ~NETTLE_FLAG_SELECTED);
-      }
-    }
+    write_assigned_flags(selection_session, loop*4,
+                         read_assigned_flags(selection_session, loop*4) &
+                         ~NETTLE_FLAG_SELECTED);
   }
 }
+
+
+
+void selection_click(int x, int x_pos, int y, int y_pos)
+{
+  int click_point;
+  int start;
+  int end;
+  
+  start = MIN(selection_start, selection_end);
+  end   = MAX(selection_start, selection_end);
+
+  click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
+                * selection_session->terminal_size.x
+                + ( ( (x - x_pos) >> eig.x ) / redraw.r_charw );
+  
+  if (click_point < start || click_point > end)
+  {
+    /* click is not within selection */
+    refresh_selection_clear();
+    force_redraw_selection();
+    selection_session = NULL;
+  }
+}
+
+
+
 
 void selection_adjust(int x,int x_pos, int y, int y_pos)
 {
@@ -184,8 +208,13 @@ void selection_adjust(int x,int x_pos, int y, int y_pos)
   selection_changedbox_draw();
 }
 
+
+
 static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
 {
+  if (selection_session == NULL)
+    return;
+  
   if (selection_session)
   {
     int click_point = -( ( (y - y_pos) >> eig.y ) / redraw.r_charh )
@@ -222,6 +251,8 @@ static void selection_adjust_drag(int x,int x_pos, int y, int y_pos)
     selection_changedbox_draw();
   }
 }
+
+
 
 void save_selection(char *filename, bool ansi_colour)
 {
@@ -301,6 +332,8 @@ void save_selection(char *filename, bool ansi_colour)
       misc_setfiletype(filename, 0xFFF);
   }
 }
+
+
 
 void handle_selection_drag(void)
 {
@@ -407,6 +440,7 @@ void handle_selection_drag(void)
       break;
   }
 }
+
 
 
 void force_redraw_selection (void)

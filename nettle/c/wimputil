@@ -463,7 +463,6 @@ void drag_start(int window_handle, int icon_handle)
   char string[256], *ptr;
 
   drag_window_handle=window_handle;
-  drag_icon_handle=icon_handle;
 
   {
     struct wimp_getwindowstate_block block;

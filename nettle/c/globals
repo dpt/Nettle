@@ -45,7 +45,6 @@ int iconbar_handle;
 int menu_window, menu_icon; /* for use with the currently-open menu */
 int colourpicker_handle;
 int drag_window_handle=0;
-int drag_icon_handle=0;
 
 /* Template windows */
 int win_info;

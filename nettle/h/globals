@@ -88,7 +88,6 @@ extern int iconbar_handle;
 extern int menu_window, menu_icon; /* for use with the currently-open menu */
 extern int colourpicker_handle;
 extern int drag_window_handle;
-extern int drag_icon_handle;
 
 extern int win_info;
 extern int win_choices;

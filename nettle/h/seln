@@ -22,6 +22,21 @@ extern void force_redraw_selection (void);
 
 
 /**
+ * Process click in session that has the caret
+ *
+ * If the click is not within the selection, this cases the selection
+ * to be cleared.
+ *
+ * @param x      x position of click
+ * @param y      y position of click
+ * @param x_pos  x position of window origin on screen
+ * @param y_pos  y position of window origin on screen
+ */
+extern void selection_click(int x, int x_pos, int y, int y_pos);
+
+
+
+/**
  * Paste the current selection into the current selection session's socket
  */
 extern void selection_paste(void);
