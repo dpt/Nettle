@@ -1,6 +1,6 @@
 /**
  * Nettle Wimp utilities - generic code
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2002
  *
  * $Id$
  */
@@ -27,7 +27,7 @@ enum
 extern void closedown_wimp(void);
 
 extern void generror(const char *, bool);
-extern bool generror_question(const char *buttonstok, const char *formattok,...);
+extern bool generror_question(const char *buttonstok, const char *formattok,int params,...);
 extern void gensaveerror (FILE *, const char *);
 
 extern void set_icon_state(int, int, int, int);
