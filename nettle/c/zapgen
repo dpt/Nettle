@@ -194,7 +194,10 @@ zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
 	  ZAP_WRITE_MULTIBYTE(write, 0x101); /* square cursor */
 	}
 	else
-	  *write++ = 0x7F;      /* block cursor */
+	{
+	  /* *write++ = 0x7F;      /-* block cursor -*/
+	  ZAP_WRITE_MULTIBYTE(write, 0x100); /* block cursor */
+	}
       }
       else
 	ZAP_WRITE_CHAR(write, input);
@@ -208,6 +211,25 @@ zapgen_code (int *output_buffer, struct term_char **input_line_offsets,
   *line_offsets = 0;
 
   return write;                 /* return ptr to the first unused byte */
+}
+
+/*************************************************** Gerph *********
+ Function:     update_cursors
+ Description:  Update the cursors in a given font_area
+ Parameters:   font_area-> the area, as returned from load_font
+ Returns:      none
+ Note:         Will also update all the other special characters;
+               this is not intentional and should be replaced with
+               /just/ the cursors being updated.
+ ******************************************************************/
+void update_cursors(int *font_area)
+{
+  int width  = font_area[2];
+  int height = font_area[3];
+  int char_size = ((width+ 7) & ~7)*height/8;
+
+  /* fill in graphics chars */
+  define_zap_chars(font_area+8, char_size, width, height);
 }
 
 int *load_font(char *font)
@@ -333,12 +355,14 @@ int *load_font(char *font)
   if (ferror (file_handle) || first_char == last_char)
   {
     /* Eek! Fall back on system font... */
-    zap_load_area[2] = width = 8;
-    zap_load_area[3] = height = (eig.y > 1) ? 8 : 16;
-    char_size = height;
+    width = 8;
+    char_size = height = (eig.y > 1) ? 8 : 16;
+    zap_load_area = realloc (zap_load_area, char_size * 0x11D + 0x20);
+    assert(zap_load_area);
+    zap_load_area[2] = width;
+    zap_load_area[3] = height;
     zap_load_area[4] = first_char = 32;
     zap_load_area[5] = last_char = 32;
-    zap_load_area = realloc (zap_load_area, char_size * 0x11D + 0x20);
     assert (zap_load_area != NULL);
   }
 

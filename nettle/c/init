@@ -57,8 +57,8 @@ static void initialise_wimp(void)
     WIMP_MESSAGE_QUIT /* must be last! */
   };
 
-  _swi(Wimp_Initialise, _INR(0,3)|_OUT(1), 310, 0x4b534154,
-    application_name, messages, &task_handle);
+  _swi(Wimp_Initialise, _INR(0,3)|_OUTR(0,1), 310, 0x4b534154,
+    application_name, messages, &wimp_version, &task_handle);
 }
 
 static void open_template(void)

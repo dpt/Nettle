@@ -69,21 +69,64 @@ void define_zap_chars(int *int_area, int char_size, int width, int height)
   /* currently defining 0x100 - 0x11C - initialise this area to 0 */
   memset (area, 0, 0x1D * char_size);
 
-  /*	Cursor		0x100 */
+  /*	Active Cursor	0x100 */
+  switch (cursor_type)
+  {
+    case cursor_solid:
+      /* filled rectangle */
+      memset (area, 0xff, char_size);
+      break;
+
+    case cursor_underline:
+      /* Bottom lines of the cursor */
+      {
+        int lines = (height+4)/8;
+        /* 8 pixels  -> 1 line cursor
+           12 pixels -> 2 line cursor
+           16 pixels -> 2 line cursor
+           20 pixels -> 3 line cursor */
+        for (loop = 0; loop < step*lines; loop++)
+          area[char_size - loop - 1] = 0xff;
+      }
+  }
   area += char_size;
 
-  /*	Blank cursor	0x101 */
-  for (loop = 0; loop < step; loop++)
-    area[char_size - loop - 1] = area[loop] = 0xFF;
-  if (step == 1)
-    for (loop = step; loop < char_size - step; loop += step)
-      area[loop] = 1 | 1 << (width - 1);
-  else
-    for (loop = step; loop < char_size - step; loop += step)
-    {
-      area[loop] = 1;
-      area[loop + step - 1] = 1 << ((width - 1) & 7);
-    }
+  /*	Inactive Cursor	0x101 */
+  switch (cursor_type)
+  {
+    case cursor_solid:
+      /* unfilled rectangle */
+      for (loop = 0; loop < step; loop++)
+        area[char_size - loop - 1] = area[loop] = 0xFF;
+      if (step == 1)
+        for (loop = step; loop < char_size - step; loop += step)
+          area[loop] = 1 | 1 << (width - 1);
+      else
+        for (loop = step; loop < char_size - step; loop += step)
+        {
+          area[loop] = 1;
+          area[loop + step - 1] = 1 << ((width - 1) & 7);
+        }
+      break;
+
+    case cursor_underline:
+      /* Bottom lines of the cursor as a dither pattern */
+      {
+        int lines = (height+4)/8;
+        char *areaend = &area[char_size - 1];
+        /* 8 pixels  -> 1 line cursor
+           12 pixels -> 2 line cursor
+           16 pixels -> 2 line cursor
+           20 pixels -> 3 line cursor */
+        while (lines-->0)
+        {
+          for (loop = 0; loop < step; loop++)
+            areaend[- loop] = (lines&1) ? 0xAA : 0x55;
+          areaend-=step;
+        }
+      }
+      break;
+  }
   area+=char_size;
 
   /*	Diamond		0x102 */

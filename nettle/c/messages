@@ -60,7 +60,7 @@ void lose_messages(void)
 }
 
 
-/* Looks up a messagetrans token */
+/* Looks up a messagetrans token, and writes to the buffer supplied */
 
 char *lookup(const char *token, char *buffer, int buf_size)
 {
@@ -70,6 +70,26 @@ char *lookup(const char *token, char *buffer, int buf_size)
 
   if (_swix(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer, buf_size))
     strncpy(buffer, token, buf_size - 1); /* error trap */
+
+  return buffer;
+}
+
+/*************************************************** Gerph *********
+ Function:     lookup_inbuffer
+ Description:  Look up a messagetrans token and return a pointer to
+               it in the MessageTrans buffer.
+ Parameters:   token-> the token to look up
+ Returns:      NULL if not found; pointer to buffer entry if found
+ ******************************************************************/
+char *lookup_inbuffer(const char *token)
+{
+  char *buffer;
+  assert(token != NULL);
+
+  if (_swix(MessageTrans_Lookup, _INR(0,2) | _OUT(2),
+                                 messagetrans_area, token, NULL,
+                                 &buffer))
+    return NULL;
 
   return buffer;
 }

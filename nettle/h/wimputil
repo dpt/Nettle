@@ -27,7 +27,7 @@ enum
 extern void closedown_wimp(void);
 
 extern void generror(const char *, bool);
-extern bool generror_question(const char *string);
+extern bool generror_question(const char *buttonstok, const char *formattok,...);
 extern void gensaveerror (FILE *, const char *);
 
 extern void set_icon_state(int, int, int, int);

@@ -148,6 +148,7 @@ void load_choices(void)
     read_boolean_choice(&cursor_blink, string, "CursorBlink:");
     read_boolean_choice(&blinking, string, "Blinking:");
     read_boolean_choice(&dont_require_ctrl, string, "DontRequireCtrl:");
+    read_integer_choice((int*)&cursor_type, string, "CursorType:");
 
     read_terminal_choice(&new_default_terminal, string, "TerminalType:");
     read_integer_choice(&new_termsize.x, string, "TerminalWidth:");
@@ -210,6 +211,14 @@ void load_choices(void)
     if (new_default_terminal >= 0 && new_default_terminal < NO_OF_TERMINAL_TYPES)
       default_terminal = new_default_terminal;
 
+    /* Check that the cursor type is known */
+    {
+      char string[16];
+      sprintf(string,"Cursor%d",cursor_type);
+      if (lookup_inbuffer(string) == NULL)
+        cursor_type = cursor_solid; /* Reset to solid, if invalid */
+    }
+
     /* If palette is valid then copy it as the default */
     if (valid_palette)
       memcpy(palette, new_palette, sizeof(palette));
@@ -264,6 +273,7 @@ bool save_choices(void)
       fprintf(file_handle, "CursorBlink:%d\n", (cursor_blink==true) ? 1 : 0);
       fprintf(file_handle, "Blinking:%d\n", (blinking==true) ? 1 : 0);
       fprintf(file_handle, "DontRequireCtrl:%d\n", (dont_require_ctrl==true) ? 1 : 0);
+      fprintf(file_handle, "CursorType:%d\n", cursor_type);
 
       fprintf(file_handle, "TerminalType:%d\n", default_terminal);
       fprintf(file_handle, "TerminalWidth:%d\n", defaultsize.x);
@@ -340,6 +350,13 @@ void open_choices_window(void)
 
     sprintf(string_lineedit,"LineEd%d",line_editor);
     set_icon_data(win_paneterm, icon_paneterm_lineedittype, lookup(string_lineedit, string, sizeof(string)));
+  }
+
+  {
+    char string_cursortype[32];
+
+    sprintf(string_cursortype,"Cursor%d",cursor_type);
+    set_icon_data(win_panemisc, icon_panemisc_cursortype, lookup(string_cursortype, string, sizeof(string)));
   }
 
   set_icon_data(win_paneterm, icon_paneterm_hifont, zap_font);
@@ -466,6 +483,51 @@ bool win_choices_read(int save)
     dont_require_ctrl=true;
   else
     dont_require_ctrl=false;
+
+  /* Read the cursor type in use */
+  {
+    char cursor_type_string[32]; /* JRF: Make this size a define */
+    int counter=0;
+
+    read_icon_data(win_panemisc, icon_panemisc_cursortype, cursor_type_string,
+                   sizeof(cursor_type_string));
+
+    while (1)
+    {
+      char cursor_tok[32];
+      char *name;
+      int namelen;
+      sprintf(cursor_tok,"Cursor%d",counter);
+      name = lookup_inbuffer(cursor_tok);
+
+      if (name == NULL)
+      {
+        counter=-1;
+        break;
+      }
+
+      namelen = strchr(name, '\n') - name; /* inbuffer returns \n terminated */
+      if (strncmp(cursor_type_string,name,namelen) == 0 &&
+          cursor_type_string[namelen] == '\0')
+        break;
+
+      counter++;
+    }
+
+    if (counter==-1)
+        counter=0; /* default to block cursor - should never happen */
+
+    if (cursor_type != (cursor_t) counter)
+    {
+      changed = true;
+      cursor_type = (cursor_t) counter;
+      /* JRF: Updating the cursors here may result in the cursors being
+              written twice if the font is also changed; it's not a
+              stressful operation anyhow */
+      update_cursors(zap_font_area);
+      update_cursors(zap_lowres_font_area);
+    }
+  }
 
   /* make the choices in the new_* variables permanent */
   default_terminal = new_default_terminal;
@@ -800,5 +862,11 @@ void win_panecols_click(int x, int y, int buttons, int icon_handle)
 
 void win_panemisc_click(int x, int y, int buttons, int icon_handle)
 {
+  switch (icon_handle)
+  {
+    case icon_panemisc_cursortypebut:
+      create_cursor_type_menu(win_panemisc, icon_panemisc_cursortype, icon_panemisc_cursortypebut);
+      break;
+  }
 }
 

@@ -702,6 +702,10 @@ static void byte_default(struct session_struct *session, char byte)
     work_out_character(session, session->pos.x, session->pos.y, byte);
 
     session->pos.x++;
+
+    /* If we have a login handler, call it */
+    if (session->login_data)
+      session->login_data(session,byte);
   }
 }
 

@@ -180,8 +180,10 @@ static void wimp_pollconnect(struct session_struct *session)
       {
         char string[1024];
 
-        sprintf(string,"Nettle/%s (%s,%d)",
+        sprintf(string,APPLICATION_NAME"/%s (%s%s%s,%d)",
                 terminal_name[session->terminal_type],
+                session->login_user ? session->login_user : "",
+                session->login_user ? "@" : "",
                 session->socket_host,
                 session->socket_port);
 
@@ -712,8 +714,7 @@ void close_window(int window_handle)
   {
     if (session->socket_state == NETTLE_SESSION_CONNECTED)
     {
-      char message[200];
-      bool status = generror_question(lookup("ConnectionOpen", message, sizeof(message)));
+      bool status = generror_question("ConnectionOpenButtons","ConnectionOpen");
 
       if (!status)
         return;
@@ -744,7 +745,6 @@ static void close_program(void)
 {
   struct session_struct *session = sessions;
   bool connections_open=false;
-  char buffer[200];
 
   while (session)
   {
@@ -757,7 +757,7 @@ static void close_program(void)
   quit_flag=true;
 
   if (connections_open)
-    quit_flag = generror_question(lookup("ConnectionMultiOpen", buffer, sizeof(buffer)));
+    quit_flag = generror_question("ConnectionMultiOpenButtons","ConnectionMultiOpen");
 
   if (quit_flag && shutdown_flag==0)
   {
@@ -1520,6 +1520,7 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
             /* We close the menu ourselves */
             _swi(Wimp_CreateMenu, _IN(1), -1);
             key_status=true;
+            break;
         }
         break;
     }
@@ -1844,6 +1845,15 @@ void wimp_menu_selection(int *selection)
       }
       break;
 
+    case MENU_CURSOR_TYPE:
+      if (selection[0] != -1)
+      {
+        char string[8];
+        sprintf(string, "Cursor%d", selection[0]);
+	set_icon_data(menu_window, menu_icon, lookup_static (string));
+      }
+      break;
+
     case MENU_ZAPFONTLIST:
       if (selection[0] != -1)
       {
@@ -2062,6 +2072,7 @@ void gain_caret(int window_handle)
  */
 static int wimp_handletelneturl(const char *url)
 {
+  /* JRF: This looks like it's duplicating start_connection_friedport */
   const char *hostptr;
   const char *hostend;
   int         port;
@@ -2184,7 +2195,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
       msg_ref = 0;
       switch (wimp_block->user_message.contents.data_save.filetype)
       {
-        case 0xFAF: /* Html */
+        case 0xFAF: /* HTML */
         case 0xFFF: /* Text */
           /* text must be dragged to a terminal window or its input pane */
           {
@@ -2307,16 +2318,16 @@ void wimp_message(union wimp_poll_block *wimp_block)
       {
         switch (wimp_block->user_message.contents.data_save.filetype)
         {
-          case 0xB28: /* ANT url */
+          case 0xB28: /* ANT URL */
             if (parse_ant_url (wimp_block))
               reply_to_dataload (wimp_block);
             break;
-          case 0xF91: /* Acorn uri */
+          case 0xF91: /* Acorn URI */
             if (parse_acorn_uri (wimp_block))
               reply_to_dataload (wimp_block);
             break;
-          case 0xFAF: /* html */
-          case 0xFFF: /* text */
+          case 0xFAF: /* HTML */
+          case 0xFFF: /* Text */
             if (paste_text_file (wimp_block))
               reply_to_dataload (wimp_block);
             break;
@@ -2327,12 +2338,10 @@ void wimp_message(union wimp_poll_block *wimp_block)
               /* Is there a nice way to read the proper name for a filetype other than */
               /* OS_ReadVarVal? I thought there was, but couldn't find it, so have */
               /* just left it as the base type */
-              char buffer[1024];
 
-              sprintf(buffer, "%s &%X ?", lookup_static("SureFileTypeLoad"),
-                      wimp_block->user_message.contents.data_save.filetype);
-
-              if (generror_question(buffer))
+              if (generror_question("SureFileTypeLoadButtons",
+                                    "SureFileTypeLoad",
+                                    wimp_block->user_message.contents.data_save.filetype))
               {
                 if (paste_text_file (wimp_block))
                   reply_to_dataload (wimp_block);
@@ -3003,6 +3012,39 @@ void create_terminal_type_menu(int window_handle, int text_icon, int by_icon)
   free(menu_term8);
 
   menu_open=MENU_TERMINAL_TYPE;
+  menu_window = window_handle;
+  menu_icon = text_icon;
+}
+
+
+
+/*************************************************** Gerph *********
+ Function:     create_cursor_type_menu
+ Description:  Create a menu for the cursor type and place it beside
+               the icon designated
+ Parameters:   window_handle = handle of the window we're called from
+               text_icon = the icon that holds the current text for
+                           this menu (info&menu style)
+               by_icon = the icon beside which the menu should be
+                         placed (the menu icon)
+ Returns:      none
+ ******************************************************************/
+void create_cursor_type_menu(int window_handle, int text_icon, int by_icon)
+{
+  char *menu_title     =get_menu_item("CursorType");
+  char *menu_cursor0   =get_menu_item("Cursor0");
+  char *menu_cursor1   =get_last_menu_item("Cursor1");
+
+  if (create_menu(menu_data,0,menu_title,menu_cursor0,menu_cursor1))
+  {
+    create_menu_by_icon (menu_data, window_handle, by_icon);
+  }
+
+  free(menu_title);
+  free(menu_cursor0);
+  free(menu_cursor1);
+
+  menu_open=MENU_CURSOR_TYPE;
   menu_window = window_handle;
   menu_icon = text_icon;
 }

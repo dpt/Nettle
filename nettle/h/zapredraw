@@ -70,6 +70,17 @@ struct zapredraw_block
 
 extern char *zapgen_code(int *, struct term_char **, int, int, int, int, int, int, int, int);
 
+/*************************************************** Gerph *********
+ Function:     update_cursors
+ Description:  Update the cursors in a given font_area
+ Parameters:   font_area-> the area, as returned from load_font
+ Returns:      none
+ Note:         Will also update all the other special characters;
+               this is not intentional and should be replaced with
+               /just/ the cursors being updated.
+ ******************************************************************/
+void update_cursors(int *font_area);
+
 extern int *load_font(char *);
 
 extern bool read_zap_font_selection (const int *, char *, int);

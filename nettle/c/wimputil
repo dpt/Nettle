@@ -6,6 +6,7 @@
  */
 
 #include "sys/errno.h"
+#include <stdarg.h>
 
 #include "generic.h"
 #include "globals.h"
@@ -49,16 +50,51 @@ void generror(const char *string, bool is_message)
 
 
 
-bool generror_question(const char *string)
+/*************************************************** Gerph *********
+ Function:     generror_question
+ Description:  Ask a question of the user, providing a pair of
+               buttons. The first button should be the 'yes' button
+               and the second button the 'no' button.
+ Parameters:   formattok-> the TOKEN in the messages file for the
+                           query as a formatted string; ensure that
+                           its parameters match those of the caller
+               buttonstok-> the TOKEN in messages file that gives
+                            a comma separated list of buttons -
+ Returns:      true if 'yes' pressed; false otherwise
+ Note:         This function has CHANGED from the last version in
+               that it now takes tokens instead of the caller having
+               to look them up.
+ ******************************************************************/
+bool generror_question(const char *buttonstok,const char *formattok,...)
 {
+  va_list va;
+  int button;
   struct wimp_reporterror_block block;
 
   block.errnum=255;
 
-  strcpy(block.errmess, string);
+  va_start(va,formattok);
+  vsprintf(block.errmess, lookup_static(formattok), va);
+  va_end(va);
 
-  return (bool) (_swi(Wimp_ReportError, _INR(0,2)|_RETURN(1), &block,
-                                        (1<<1)+(1<<0), application_name) == 1);
+  if (wimp_version < 350)
+  {
+    button = _swi(Wimp_ReportError, _INR(0,2)|_RETURN(1),
+                                          &block,
+                                          (1<<1) | (1<<0),
+                                          application_name);
+  }
+  else
+  {
+    button = _swi(Wimp_ReportError, _INR(0,5)|_RETURN(1),
+                                          &block,
+                                          (1<<8) | (4<<9),
+                                          application_name,
+                                          application_icon_name,
+                                          1,
+                                          lookup_inbuffer(buttonstok));
+  }
+  return (button == 1) || (button == 3) ? true : false;
 }
 
 void gensaveerror (FILE *file_handle, const char *msg)

@@ -1,5 +1,5 @@
 /*
- * Nettle messagetrans  headers
+ * Nettle messagetrans header
  * (C) Nettle Developers 2001
  *
  * $Id$
@@ -12,5 +12,14 @@ extern void load_messages(void);
 extern void lose_messages(void);
 extern char *lookup(const char *, char *, int);
 extern const char *lookup_static(const char *);
+
+/*************************************************** Gerph *********
+ Function:     lookup_inbuffer
+ Description:  Look up a messagetrans token and return a pointer to
+               it in the MessageTrans buffer.
+ Parameters:   token-> the token to look up
+ Returns:      NULL if not found; pointer to buffer entry if found
+ ******************************************************************/
+extern char *lookup_inbuffer(const char *token);
 
 #endif /* MESSAGES_H */

@@ -47,6 +47,7 @@ const colour_t default_palette[16]=
 struct coords eig;
 
 int task_handle;
+int wimp_version;
 int iconbar_handle;
 int menu_window, menu_icon; /* for use with the currently-open menu */
 int colourpicker_handle;
@@ -75,6 +76,7 @@ bool pass_f12                        =PASS_F12;
 bool cursor_blink                    =CURSOR_BLINK;
 bool blinking                        =BLINKING;
 bool dont_require_ctrl               =DONT_REQUIRE_CTRL;
+cursor_t cursor_type                 =cursor_solid;
 
 int line_editor_size                 =LINE_EDITOR_SIZE;
 enum nettle_terminal default_terminal=NETTLE_TERMINAL_VT220;

@@ -104,6 +104,9 @@ struct connection_params
   int         scrollback;
   char        line_editor_type;
   char        label[150]; /**< appears on session menu and in title bar */
+
+  char       *login_user;
+  char       *login_pass;
 };
 
 int get_host_port(char *string, int *port);

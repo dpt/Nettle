@@ -1053,7 +1053,7 @@ void win_panehot_click(int x, int y, int buttons, int icon_handle)
       close_window(win_hotedit);
       if (hotlist_populate_selected())
       {
-        if (generror_question(lookup_static("DeleteHot")))
+        if (generror_question("DeleteHotButtons","DeleteHot"))
         {
           hotlist_delete_selected();
           resize_hotpane();
@@ -1261,7 +1261,7 @@ void win_hotedit_click(int x, int y, int buttons, int icon_handle)
     break;
 
   case icon_hotedit_delete:
-    if (generror_question(lookup_static("DeleteHot")))
+    if (generror_question("DeleteHotButtons","DeleteHot"))
     {
       close_window(win_hotedit);
       hotlist_delete_selected();
@@ -1329,6 +1329,8 @@ void fire_hotlist(int item)
   params.height           = hot->terminal_height;
   params.scrollback       = hot->scrollback;
   params.line_editor_type = hot->lineeditor;
+  params.login_user       = NULL;
+  params.login_pass       = NULL;
   strcpy(params.label, hot->label);
 
   switch(hot->type)
