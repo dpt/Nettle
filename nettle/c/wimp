@@ -2057,7 +2057,27 @@ static void open_open_window(bool open_window_flag)
 
   if (open_window_flag)
   {
-    open_window(win_open,false);
+    struct wimp_openwindow_block wowb;
+    wowb.window_handle = win_open;
+    _swi(Wimp_GetWindowState, _IN(1), &wowb);
+
+    wowb.handle_behind = -1;  /* Open on top of stack */
+    
+    {
+      int width = wowb.maxx - wowb.minx;
+      int height = wowb.maxy - wowb.miny;
+      
+      struct wimp_getpointerinfo_block wgpib;
+      _swi(Wimp_GetPointerInfo, _IN(1), &wgpib);
+      
+      wowb.minx = (wgpib.x - width) + 64;
+      wowb.maxx = wowb.minx + width;
+      
+      wowb.miny = 96;
+      wowb.miny = wowb.miny + height;
+    }
+    
+    _swi(Wimp_OpenWindow, _IN(1), &wowb);
   }
 
   switch (connection_type)
