@@ -56,6 +56,7 @@ static int old_charw;
 static int old_charh;
 
 static int msg_ref;
+static bool queried_user_filetype=false;
 static int shutdown_flag=-1; /* 0 if closedown, not if single quit */
 
 static int taskmanager_taskhandle;
@@ -706,7 +707,7 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
       open_pane_window(session, (struct wimp_openwindow_block *) block);
       block->handle_behind = session->pane_handle;
     }
-       
+
     _swi(Wimp_OpenWindow, _IN(1), block);
 
     if ( block->window_handle == resize_handle )
@@ -721,16 +722,16 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
        bar.window_handle = win_sizebar;
        _swi (Wimp_GetWindowState, _IN(1), &bar);
        barwidth = bar.max.x - bar.min.x ;
-       
+
        bar.min.x = block->max.x - barwidth;
        bar.max.x = block->max.x;
        bar.min.y = block->min.y - toolheight;
        bar.max.y = block->min.y - ( 2<<eig.y ) ;
-       
+
        _swix(Wimp_ResizeIcon, _INR(0,5), win_sizebar, icon_sizebar_size, 0, -(toolheight - (2<<eig.y)), barwidth, 0);
        _swi(Wimp_OpenWindow, _INR(1,4), &bar, 0x4b534154 /* "TASK" */, resize_handle, 1<<24 );
     }
-    
+
     return;
   }
 
@@ -1326,7 +1327,7 @@ static void session_pane_click(int x, int y, int buttons, int icon_handle, struc
         {
           set_caret_position(session->window_handle,-1,-1,-1);
         }
-        
+
         set_icon_state(session->pane_handle, 0, WIMP_ICON_DELETED_BIT, WIMP_ICON_DELETED_BIT);
       }
 
@@ -2173,6 +2174,33 @@ static struct session_struct *get_session_from_winhan(int window)
   return session;
 }
 
+/* query_non_text_file */
+/* Purpose: ask the user about loading unrecognised filetypes */
+
+static bool query_non_text_file (union wimp_poll_block *wimp_block)
+{
+  /* Prompt the user if they try to paste something other than those above */
+  /* We get the filetype textual form via OS_FSControl 18 */
+
+  int buff[3];
+  char *buf=(char *) &buff[0];
+
+  _swi(OS_FSControl, _IN(0)|_IN(2)|_OUTR(2,3),
+       18,
+       wimp_block->user_message.contents.data_save.filetype,
+       &buff[0],
+       &buff[1] );
+
+  buf[8]=0;
+  while (buf[0] && buf[ strlen(buf)-1 ] == ' ' )
+    buf[ strlen(buf)-1 ] = 0;
+
+  return (generror_question("SureFileTypeLoadButtons",
+                        "SureFileTypeLoad",
+                        1,
+                        buf));
+}
+
 
 /* Wimp message */
 
@@ -2192,30 +2220,50 @@ void wimp_message(union wimp_poll_block *wimp_block)
       if (msg_ref && your_ref != msg_ref && my_ref != msg_ref)
         break;
 
-      msg_ref = 0;
-      switch (wimp_block->user_message.contents.data_save.filetype)
       {
-        case 0xFAF: /* HTML */
-        case 0xFFF: /* Text */
-          /* text must be dragged to a terminal window or its input pane */
-          {
-            struct session_struct *session = sessions;
-            int window_handle = wimp_block->user_message.contents.data_save.window_handle;
+        bool paste_flag=false;
 
-            while (session
-                   && session->window_handle != window_handle
-                   && session->pane_handle != window_handle)
+        msg_ref = 0;
+        switch (wimp_block->user_message.contents.data_save.filetype)
+        {
+          case 0xFAF: /* HTML */
+          case 0xFFF: /* Text */
+            /* text must be dragged to a terminal window or its input pane */
             {
-              session = session->next;
+              struct session_struct *session = sessions;
+              int window_handle = wimp_block->user_message.contents.data_save.window_handle;
+
+              while (session
+                     && session->window_handle != window_handle
+                     && session->pane_handle != window_handle)
+              {
+                session = session->next;
+              }
+
+              if (!session)
+                break;
+
+              paste_flag=true;
             }
+            break;
 
-            if (!session)
-              break;
-          }
-        case 0xB28: /* ANT URL */
-        case 0xF91: /* Acorn URI */
-          /* we don't care where URL and URI files are dropped */
+          case 0xB28: /* ANT URL */
+          case 0xF91: /* Acorn URI */
+            /* we don't care where URL and URI files are dropped */
+            paste_flag=true;
+            break;
+          default:
+            /* For all other filetypes, ask the user */
+            if (query_non_text_file(wimp_block))
+            {
+              paste_flag=true;
+              queried_user_filetype=true;
+            }
+            break;
+        }
 
+        if (paste_flag)
+        {
           /* Common DataSaveAck reply code */
           wimp_block->user_message.contents.data_save_ack.size = -1;
           strcpy (wimp_block->user_message.contents.data_save_ack.file_name, "<Wimp$Scrap>");
@@ -2225,7 +2273,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
 
           _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
           msg_ref = wimp_block->user_message.my_ref;
-          break;
+        }
       }
       break;
 
@@ -2298,10 +2346,10 @@ void wimp_message(union wimp_poll_block *wimp_block)
       char *filename=wimp_block->user_message.contents.data_load.file_name;
       char *tmp_filename;
       bool is_scrap = false;
-      
+
       /* You'd hope this wasn't necessary, but there's lots of broken apps out there! */
       misc_zero_terminate_ctrl_string( filename );
-      
+
       /* Now we (crudely) work out if we've been given a scrap transfer */
       tmp_filename = malloc( strlen( filename )+1 );
       if (tmp_filename)
@@ -2348,29 +2396,12 @@ void wimp_message(union wimp_poll_block *wimp_block)
           default:
             if (session)
             {
-              /* Prompt the user if they try to paste something other than those above */
-              /* We get the filetype textual form via OS_FSControl 18 */
-
-              int buff[3];
-              char *buf=(char *) &buff[0];
-
-              _swi(OS_FSControl, _IN(0)|_IN(2)|_OUTR(2,3),
-                   18,
-                   wimp_block->user_message.contents.data_save.filetype,
-                   &buff[0],
-                   &buff[1] );
-
-              buf[8]=0;
-              while (buf[0] && buf[ strlen(buf)-1 ] == ' ' )
-                buf[ strlen(buf)-1 ] = 0;
-
-              if (generror_question("SureFileTypeLoadButtons",
-                                    "SureFileTypeLoad",
-                                    1,
-                                    buf))
+              if (queried_user_filetype || query_non_text_file (wimp_block))
               {
                 if (paste_text_file (wimp_block))
                   reply_to_dataload (wimp_block);
+
+                queried_user_filetype=false;
               }
             }
             else
@@ -3440,9 +3471,8 @@ static bool paste_text_file (union wimp_poll_block *block)
   text = load_file (block->user_message.contents.data_load.file_name, &size);
   if (text)
   {
-    /* Only translate if file is 0xFFF (text) */
-    /* Is there a reason this is restricted to 0xFFF ? I can't remember... */
-    if (block->user_message.contents.data_load.filetype==0xFFF)
+    /* Removed requirement for Text filetype */
+    /*if (block->user_message.contents.data_load.filetype==0xFFF)*/
     {
       int loop;
       for (loop=0; loop<size; loop++)
