@@ -186,6 +186,8 @@ extern int selection_start;
 extern int selection_end;
 extern int selection_adjust_dragging;
 
+extern bool we_own_clipboard;
+
 extern const struct session_struct *cursor_session;
 extern int nextcursortime;
 extern bool cursor_state;
@@ -219,17 +221,21 @@ typedef struct user_message
       int size;
       int filetype;
       char file_name[212];
-    } data_save;
+    } data_save, data_save_ack, data_load;
+
+    struct
+    {
+      int flags;
+    } clip_claimentity;
 
     struct
     {
       int window_handle;
-      int icon_handle;
+      int internal_handle;
       struct coords pos;
-      int size;
-      int filetype;
-      char file_name[212];
-    } data_save_ack;
+      int opcode;
+      int types[54];
+    } clip_datarequest;
 
     struct
     {

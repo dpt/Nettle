@@ -37,6 +37,7 @@ extern void wimp_menu_selection(int */*selection*/);
 extern void lose_caret(int);
 extern void gain_caret(int);
 extern void wimp_message(union wimp_poll_block *);
+extern void wimp_message_ack(union wimp_poll_block *);
 extern void mode_change(void);
 
 extern void lose_bitmaps(void);
@@ -63,5 +64,7 @@ extern void create_connection_type_menu(int window_handle, int text_icon, int by
  */
 int wimp_handleurl(const char *url, int checkonly);
 
+extern void clipboard_claim (void);
+extern void clipboard_datarequest (struct session_struct *);
 
 #endif

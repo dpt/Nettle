@@ -325,7 +325,12 @@ struct colourpicker_block
 #define WIMP_ICON_FHANDLE(x)     ((x)<<24)
 
 #define WIMP_MESSAGE_QUIT                    0
+#define WIMP_MESSAGE_DATASAVE                1
 #define WIMP_MESSAGE_DATASAVEACK             2
+#define WIMP_MESSAGE_DATALOAD                3
+#define WIMP_MESSAGE_DATALOADACK             4
+#define WIMP_MESSAGE_CLIP_CLAIMENTITY       15
+#define WIMP_MESSAGE_CLIP_DATAREQUEST       16
 #define WIMP_MESSAGE_MENUWARNING       0x400c0
 #define WIMP_MESSAGE_MODECHANGE        0x400c1
 #define WIMP_MESSAGE_MENUSDELETED      0x400c9
