@@ -248,8 +248,8 @@ int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, .
 
     if (indirected==0)
     {
-      generror("Some fool didn't set indirected to something sane on entry to create_menu. \
-                Bloody coders.",false);
+      generror("Some fool didn't set indirected to something sane on entry to create_menu. "
+                "Bloody coders.",false);
     }
 
     strcpy (indirected, title);
@@ -342,8 +342,8 @@ int *create_menu(int *menu_defn, char *indirected, char *title, char *entries, .
 
       if (indirected==0)
       {
-        generror("Some fool didn't set indirected to something sane on entry to create_menu. \
-                  Bloody coders.",false);
+        generror("Some fool didn't set indirected to something sane on entry to create_menu. "
+                  "Bloody coders.",false);
       }
 
       strncpy(indirected, item, length);
@@ -531,6 +531,6 @@ void create_menu_by_icon (int *menu, int window, int icon)
   _swi (Wimp_GetWindowState, _IN(1), (int) &gwsblock);
 
   _swi(Wimp_CreateMenu, _INR(1,3), menu,
-       gwsblock.min.x + gwsblock.scroll.x + gisblock.max.x,
-       gwsblock.max.y + gwsblock.scroll.y + gisblock.max.y);
+       (gwsblock.min.x - gwsblock.scroll.x) + gisblock.max.x,
+       (gwsblock.max.y - gwsblock.scroll.y) + gisblock.max.y);
 }
