@@ -1,4 +1,0 @@
-RMEnsure DDEUtils 0.00 RMLoad System:Modules.DDEUtils
-Prefix <Obey$Dir>
-Wimpslot 5000K
-make -f MakefileG lib=scl
