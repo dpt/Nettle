@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Client telnet arachnéen
 AppAuthor:© Développeurs de Nettle, 2000-2002
-AppVersion:v0.2032 (07 Dec 2002)
+AppVersion:v0.2032r (07 Dec 2002)
 
 Info:Info>
 Choices:Préférences...
@@ -22,7 +22,7 @@ Resize:Redimensionner>
 PasteClip:Coller
 Options:Options...
 Spool>:Journal>
-Reconnect:Reconnect
+Reconnect:#Reconnect
 
 Selection:Sélection
 Save:Sauver>
