@@ -1,0 +1,151 @@
+/**
+ * URL launching / receiving code
+ *
+ * Implements:
+ *
+ *  + the Acorn URI protocol, as defined in
+        <http://www.acorn.com/browser/uri/funcspec.html>
+ *  + the ANT URL protocol, as defined in
+        <http://www.ant.co.uk/support/tech/notes/url.html>
+ * [Neither of these work anymore, the latter is on argonet's site somewhere,
+ *  and I'm not sure if the former is still available.]
+ *
+ * NB. Does not support sending URLs over 240ish character using the ANT
+ *     protocol - this would require claiming RMA.
+ *
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#ifndef URL_H
+#define URL_H
+
+typedef union
+{
+  char *ptr;
+  int offset;
+}
+string_value;
+
+
+
+typedef struct
+{
+  int size;
+  int sender;
+  int my_ref;
+  int your_ref;
+  int action_code;
+}
+wimp_msghdr;
+
+
+
+typedef struct
+{
+  wimp_msghdr hdr;
+  union
+  {
+    char url[236];
+    struct
+    {
+      int tag;
+      string_value url;
+      int flags;
+      string_value body_file;
+      string_value target;
+      string_value body_mimetype;
+    }
+    indirect;
+  }
+  data;
+}
+url_message;
+
+
+
+typedef struct
+{
+  wimp_msghdr  hdr;
+  int          flags;
+  const char   *uri;
+  unsigned int uri_handle;
+}
+uri_processmessage;
+
+
+
+typedef struct
+{
+  wimp_msghdr  hdr;
+  int          flags;
+  unsigned int uri_handle;
+}
+uri_returnresultmessage;
+
+
+
+/** Acorn URI system swis */
+#define URI_Dispatch 0x4E381
+#define URI_RequestURI 0x4E382
+
+
+
+/** -- Flags to URI_Dispatch in R0 -- */
+#define URI_inform_caller       0x01
+#define URI_check_only          0x02
+#define URI_no_external_process 0x04
+
+
+
+/** ANT url broadcast wimp message number */
+#define Wimp_MOpenUrl     0x4af80
+
+
+
+/** Acorn uri system wimp message numbers */
+#define URI_MProcess      0x4e382
+#define URI_MReturnResult 0x4e383
+#define URI_MProcessAck   0x4e384
+
+
+
+/**
+ * returns 1 if url is (or can be, if checkonly true) handled, 0 otherwise.
+ * must not call wimp_poll
+ */
+typedef int (*url_handler_func)(const char */*url*/, int /*checkonly*/);
+
+
+
+/**
+ * Launch a url
+ *
+ * Tries the acorn system first, then the ANT system if Acorn one fails.
+ */
+int url_launch(const char *url);
+
+
+
+/**
+ * Handle a bounced url message
+ *
+ * Call when UserMessageRecorded of URI_MReturnResult or a UserMessageAck
+ * of type Wimp_MOpenUrl is received
+ */
+void url_bounce(user_message *message);
+
+
+
+/**
+ * Decode a received url broadcast
+ *
+ * Call when UserMessageRecorded of Wimp_MOpenUrl or URI_MProcess received
+ **/
+void url_recvbroadcast(user_message */*message*/,
+                       url_handler_func /*handler*/);
+
+
+
+#endif /* URL_H */

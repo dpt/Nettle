@@ -176,6 +176,83 @@ extern struct session_struct *terminal_menu_session;
 
 extern const char terminal_name[NO_OF_TERMINAL_TYPES][12];
 
+
+
+typedef struct user_message
+{
+  int length;
+  int sender_ref;
+  int my_ref;
+  int your_ref;
+  int message_code;
+
+  union
+  {
+    char                      bytes[236];
+    
+    struct
+    {
+      int window_handle;
+      int icon_handle;
+      struct coords pos;
+      int size;
+      int filetype;
+      char file_name[212];
+    } data_save;
+
+    struct
+    {
+      int window_handle;
+      int icon_handle;
+      struct coords pos;
+      int size;
+      int filetype;
+      char file_name[212];
+    } data_save_ack;
+
+    struct
+    {
+      int submenu;
+      struct coords pos;
+      int selection[56];
+    } menu_warning;
+
+    struct
+    {
+      int picker_handle;
+      int flags;
+      colour_t colour;
+      /* extension data - ignored */
+    } colourpicker_choice;
+
+    struct
+    {
+      int picker_handle;
+    } colourpicker_close;
+
+    struct
+    {
+      int size;
+      char data[232];
+    } task_window_input;
+
+    struct
+    {
+      int size;
+      char data[232];
+    } task_window_output;
+
+    struct
+    {
+      int txt_handle;
+    } task_window_ego;
+
+  } contents;
+
+} user_message;
+
+
+
 union wimp_poll_block
 {
   struct
@@ -261,78 +338,8 @@ union wimp_poll_block
     int *address_poll_word;
     int contents_poll_word;
   } pollword_non_zero;
-
-  struct
-  {
-    int length;
-    int sender_ref;
-    int my_ref;
-    int your_ref;
-    int message_code;
-
-    union
-    {
-      struct
-      {
-        int window_handle;
-        int icon_handle;
-        struct coords pos;
-        int size;
-        int filetype;
-        char file_name[212];
-      } data_save;
-
-      struct
-      {
-        int window_handle;
-        int icon_handle;
-        struct coords pos;
-        int size;
-        int filetype;
-        char file_name[212];
-      } data_save_ack;
-
-      struct
-      {
-        int submenu;
-        struct coords pos;
-        int selection[56];
-      } menu_warning;
-
-      struct
-      {
-        int picker_handle;
-        int flags;
-        colour_t colour;
-        /* extension data - ignored */
-      } colourpicker_choice;
-
-      struct
-      {
-        int picker_handle;
-      } colourpicker_close;
-
-      struct
-      {
-        int size;
-        char data[232];
-      } task_window_input;
-
-      struct
-      {
-        int size;
-        char data[232];
-      } task_window_output;
-
-      struct
-      {
-        int txt_handle;
-      } task_window_ego;
-
-    } contents;
-
-  } user_message;
-
+  
+  user_message user_message;
 };
 
 #endif
