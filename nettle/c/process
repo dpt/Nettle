@@ -2815,10 +2815,53 @@ void process_wimp_key(struct session_struct *session, int key, int extra)
   }
 }
 
-
 void process_line_editor(struct session_struct *session)
 {
   char *icon_text;
+  char data[512];
+  int line_editor_icon=(session->line_editor_type==LINEEDIT_CHECKBOX ? 1 : 0);
+
+  read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
+
+  icon_text = malloc(strlen(data) + 3);
+  assert(icon_text != NULL);
+
+  strcpy(icon_text, data);
+  strcat(icon_text, "\r");
+
+  process_data_transmission(session, icon_text, strlen(icon_text));
+
+  {
+    int loop;
+
+    for (loop=line_editor_size-1; loop>1; loop--)
+    {
+      strcpy(session->line_editor_history+(loop*512),
+        	   session->line_editor_history+((loop-1)*512));
+    }
+  }
+
+  strcpy(session->line_editor_history+(1*512),
+         icon_text);
+
+  set_icon_data(session->pane_handle,line_editor_icon,"");
+
+  set_caret_position(session->pane_handle, line_editor_icon, -1, 0);
+
+  session->line_editor_position=0;
+  session->line_editor_total++;
+
+  if (session->line_editor_total>line_editor_size)
+  {
+    session->line_editor_total=line_editor_size;
+  }
+
+  free(icon_text);
+}
+
+void process_data_transmission(struct session_struct *session,
+                               const char *icon_text, int size_of_data)
+{
   char block[256];
   int size_of_block=0;
   int calc;
@@ -2826,21 +2869,12 @@ void process_line_editor(struct session_struct *session)
   char *send_block=0;
   int size_of_send_block=0;
   int icon_text_loop;
-  int line_editor_icon=(session->line_editor_type==LINEEDIT_CHECKBOX ? 1 : 0);
-
-  {
-    char data[512];
-
-    read_icon_data(session->pane_handle, line_editor_icon, data, sizeof(data));
-
-    icon_text = malloc(strlen(data) + 3);
-    assert(icon_text != NULL);
-
-    strcpy(icon_text, data);
-    strcat(icon_text, "\r");
-  }
 
   if (session->other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
+    return;
+
+  /* Just for safety */
+  if (session->socket_state!=NETTLE_SESSION_CONNECTED)
     return;
 
   calc=get_cursor_position(session);
@@ -2860,7 +2894,7 @@ void process_line_editor(struct session_struct *session)
 
   changedbox_init (session);
 
-  for (icon_text_loop=0; icon_text_loop<strlen(icon_text); icon_text_loop++)
+  for (icon_text_loop=0; icon_text_loop<size_of_data; icon_text_loop++)
   {
     int key=icon_text[icon_text_loop];
 
@@ -2964,33 +2998,7 @@ void process_line_editor(struct session_struct *session)
     force_redraw_changedbox ();
   }
 
-  {
-    int loop;
-
-    for (loop=line_editor_size-1; loop>1; loop--)
-    {
-      strcpy(session->line_editor_history+(loop*512),
-        	   session->line_editor_history+((loop-1)*512));
-    }
-  }
-
-  strcpy(session->line_editor_history+(1*512),
-         icon_text);
-
-  set_icon_data(session->pane_handle,line_editor_icon,"");
-
-  set_caret_position(session->pane_handle, line_editor_icon, -1, 0);
-
-  session->line_editor_position=0;
-  session->line_editor_total++;
-
-  if (session->line_editor_total>line_editor_size)
-  {
-    session->line_editor_total=line_editor_size;
-  }
-
   free(send_block);
-  free(icon_text);
 }
 
 

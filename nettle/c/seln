@@ -11,6 +11,7 @@
 #include "messages.h"
 #include "misc.h"
 #include "nettle.h"
+#include "process.h"
 #include "seln.h"
 #include "socket.h"
 #include "wimp.h"
@@ -258,8 +259,7 @@ void save_selection(char *filename, bool ansi_colour)
 
     if (ansi_colour)
     {
-      int inverted = read_assigned_flags(selection_session, loop) &
-        NETTLE_FLAG_INVERTED;
+      int inverted = read_assigned_flags(selection_session, loop) & NETTLE_FLAG_INVERTED;
       int new_fg = read_assigned_fg(selection_session,loop);
       int new_bg = read_assigned_bg(selection_session,loop);
 
@@ -416,8 +416,8 @@ void force_redraw_selection (void)
 
 void selection_paste(void)
 {
-  char    buffer[1024];
-  char   *bufferptr;
+  char   *buffer;
+  int     bufferptr=0;
   int     loop_start;
   int     loop_end;
   int     loop;
@@ -428,7 +428,10 @@ void selection_paste(void)
   loop_start = MIN(selection_start, selection_end);
   loop_end   = MAX(selection_start, selection_end);
 
-  bufferptr = buffer;
+  buffer=malloc(loop_end-loop_start+
+                ((loop_end-loop_start)/selection_session->terminal_size.x)+3);
+
+  _swi(Hourglass_On, 0);
 
   for (loop=loop_start*4; loop<loop_end*4; loop+=4)
   {
@@ -436,32 +439,24 @@ void selection_paste(void)
     {
       if ((loop % (selection_session->terminal_size.x*4))==0)
       {
-        *bufferptr++ = '\r';
-        *bufferptr++ = '\n';
+        *(buffer+bufferptr) = '\r';
+        bufferptr++;
       }
     }
 
-    *bufferptr++ = read_assigned_character(selection_session,loop);
-    if (bufferptr - buffer >= sizeof(buffer) - 3)
-    {
-      /* less than three characters spare in the buffer, flush it */
-      if (socket_senddata(selection_session->socket_handle,
-                          buffer,
-                          bufferptr - buffer) != bufferptr - buffer)
-      {
-        generror("Socket error writing selection", false);
-        return;
-      }
-      bufferptr = buffer;
-    }
+    *(buffer+bufferptr) = read_assigned_character(selection_session,loop);
+    bufferptr++;
   }
 
-  /* flush any data left in the buffer */
-  if (socket_senddata(selection_session->socket_handle,
-                      buffer,
-                      bufferptr - buffer) != bufferptr - buffer)
+  for (loop=0; loop<bufferptr; loop+=1024)
   {
-    generror("Socket error writing selection", false);
-    return;
+    if ((bufferptr-loop)>1024)
+      process_data_transmission(terminal_menu_session, buffer+loop, 1024);
+    else
+      process_data_transmission(terminal_menu_session, buffer+loop, bufferptr-loop);
   }
+
+  _swi(Hourglass_Smash, 0);
+
+  free(buffer);
 }

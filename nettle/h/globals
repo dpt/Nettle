@@ -168,6 +168,8 @@ extern const struct session_struct *cursor_session;
 extern int nextcursortime;
 extern bool cursor_state;
 
+extern struct session_struct *terminal_menu_session;
+
 extern const char terminal_name[NO_OF_TERMINAL_TYPES][12];
 
 union wimp_poll_block

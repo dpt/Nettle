@@ -75,6 +75,8 @@ const struct session_struct *cursor_session=NULL;
 int nextcursortime;
 bool cursor_state = false;
 
+struct session_struct *terminal_menu_session = NULL;
+
 const char terminal_name[NO_OF_TERMINAL_TYPES][12]={"vt100",
                                                     "vt102",
                                                     "vt220",
