@@ -20,5 +20,6 @@ extern void win_hotedit_click(int x, int y, int buttons, int icon_handle);
 extern void fire_hotlist(int item);
 extern bool finish_hotlist_editing(int dowhat); /* 0=cancel, 1=set, 2=save */
 extern void hotlist_inform(int icon, int menuselection);
+extern void hotlist_dragdone(void);
 
 #endif /* HOTLIST_H */

@@ -32,6 +32,10 @@ typedef unsigned long colour_t;
 #include "kernel.h"
 #include "swis.h"
 
+#ifndef Wimp_AutoScroll
+#define Wimp_AutoScroll 0x000400fd
+#endif
+
 /* Compiler warning suppression */
 
 #define NOT_USED(a) (a=a)
@@ -149,6 +153,18 @@ struct wimp_dragbox_block
   int *drawbox_routine;
   int *removebox_routine;
   int *movebox_routine;
+};
+
+struct wimp_autoscroll_block
+{
+  int window_handle;
+  int left_pause;
+  int bottom_pause;
+  int right_pause;
+  int top_pause;
+  int pause_duration;
+  int statechange_handler;
+  int r12_value;
 };
 
 struct wimp_getcaretposition_block
