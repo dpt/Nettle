@@ -122,7 +122,7 @@ void lineedit_allocate_space(struct session_struct *session, bool dont_discard)
   bool has_checkbox = BOOL(session->line_editor_type==LINEEDIT_CHECKBOX_OFF || session->line_editor_type==LINEEDIT_CHECKBOX_ON);
 
   /* Note - this *must* be called if the lineeditor is turned on at any point */
-  if (!dont_discard)
+  if (!dont_discard || session->line_editor_history == NULL)
   {
     session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
     assert(session->line_editor_history != NULL);
@@ -134,6 +134,9 @@ void lineedit_allocate_space(struct session_struct *session, bool dont_discard)
       strcpy(session->line_editor_history+(loop*512),"");
     }
 
+    /* When we create the line editor buffer we must always clear the input
+     * buffer.
+     */
     strcpy(session->line_editor_buffer,"");
   }
 
