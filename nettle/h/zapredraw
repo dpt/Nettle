@@ -1,6 +1,6 @@
 /**
  * ZapRedraw structure code
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2002
  *
  * $Id$
  */
@@ -10,31 +10,30 @@
 #ifndef ZAPREDRAW_H
 #define ZAPREDRAW_H
 
-/* Slightly lazy, but I couldn't be bothered doing all the SWIs */
 #ifndef ZapRedraw_RedrawArea
 
-#define ZapRedraw_RedrawArea          	0x48480
-#define ZapRedraw_GetPaletteEntry	0x48481
-#define ZapRedraw_RedrawRaster		0x48482
-#define ZapRedraw_ConvertBitmap		0x48483
-#define ZapRedraw_PrepareDataLine	0x48484
-#define ZapRedraw_AddCursor		0x48485
-#define ZapRedraw_FindCharacter		0x48486
-#define ZapRedraw_MoveBytes		0x48487
-#define ZapRedraw_CachedCharSize	0x48488
-#define ZapRedraw_ConvBitmapChar	0x48489
-#define ZapRedraw_CreatePalette		0x4848A
-#define ZapRedraw_InsertChar		0x4848B
-#define ZapRedraw_ReadSystemChars	0x4848C
-#define ZapRedraw_ReverseBitmaps	0x4848D
-#define ZapRedraw_ReadVduVars		0x4848E
-#define ZapRedraw_GetRectangle		0x4848F
-#define ZapRedraw_AddVduBitmaps		0x48490
-#define	ZapRedraw_CacheFontChars	0x48491
-#define ZapRedraw_SpriteSize		0x48492
-#define ZapRedraw_RedrawWindow		0x48493
-#define ZapRedraw_Divide		0x48494
-#define ZapRedraw_PlotRectangle		0x48495
+#define ZapRedraw_RedrawArea        0x48480
+#define ZapRedraw_GetPaletteEntry   0x48481
+#define ZapRedraw_RedrawRaster      0x48482
+#define ZapRedraw_ConvertBitmap     0x48483
+#define ZapRedraw_PrepareDataLine   0x48484
+#define ZapRedraw_AddCursor         0x48485
+#define ZapRedraw_FindCharacter     0x48486
+#define ZapRedraw_MoveBytes         0x48487
+#define ZapRedraw_CachedCharSize    0x48488
+#define ZapRedraw_ConvBitmapChar    0x48489
+#define ZapRedraw_CreatePalette     0x4848A
+#define ZapRedraw_InsertChar        0x4848B
+#define ZapRedraw_ReadSystemChars   0x4848C
+#define ZapRedraw_ReverseBitmaps    0x4848D
+#define ZapRedraw_ReadVduVars       0x4848E
+#define ZapRedraw_GetRectangle      0x4848F
+#define ZapRedraw_AddVduBitmaps     0x48490
+#define ZapRedraw_CacheFontChars    0x48491
+#define ZapRedraw_SpriteSize        0x48492
+#define ZapRedraw_RedrawWindow      0x48493
+#define ZapRedraw_Divide            0x48494
+#define ZapRedraw_PlotRectangle     0x48495
 
 #endif
 
@@ -70,15 +69,14 @@ struct zapredraw_block
 
 extern char *zapgen_code(int *, struct term_char **, int, int, int, int, int, int, int, int);
 
-/*************************************************** Gerph *********
- Function:     update_cursors
- Description:  Update the cursors in a given font_area
- Parameters:   font_area-> the area, as returned from load_font
- Returns:      none
- Note:         Will also update all the other special characters;
-               this is not intentional and should be replaced with
-               /just/ the cursors being updated.
- ******************************************************************/
+/*
+ * Description:  Update the cursors in a given font_area
+ * Parameters:   font_area-> the area, as returned from load_font
+ * Returns:      none
+ * Note:         Will also update all the other special characters;
+ *               this is not intentional and should be replaced with
+ *               /just/ the cursors being updated.
+ */
 void update_cursors(int *font_area);
 
 extern int *load_font(char *);
@@ -88,5 +86,7 @@ extern bool create_zap_font_menu (int, int);
 extern void create_zap_font_submenu (const int *, struct coords);
 extern void reopen_zap_font_menu (void);
 extern void delete_zap_font_menu (void);
+extern void allocate_zapredraw_area(int, int, int);
+extern void lose_zapredraw_area(void);
 
 #endif

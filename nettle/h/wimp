@@ -10,7 +10,7 @@
 
 #include "nettle.h"
 
-/* JRF: These would be better as an enum, surely ? */
+/* These may be better as an enum */
 #define MENU_NONE          0
 #define MENU_ICONBAR       1
 #define MENU_TERMINAL      2
@@ -43,7 +43,6 @@ extern void wimp_message_ack(union wimp_poll_block *);
 extern void mode_change(void);
 
 extern void lose_bitmaps(void);
-extern void lose_zapredraw_area(void);
 extern void set_caret_position(int, int, int, int);
 extern void check_set_caret_position(int, int);
 
@@ -56,20 +55,19 @@ extern void create_terminal_type_menu(int window_handle, int text_icon, int by_i
 extern void create_lineeditor_type_menu(int window_handle, int text_icon, int by_icon);
 extern void create_connection_type_menu(int window_handle, int text_icon, int by_icon);
 
-/*************************************************** Gerph *********
- Function:     create_cursor_type_menu
- Description:  Create a menu for the cursor type and place it beside
-               the icon designated
- Parameters:   window_handle = handle of the window we're called from
-               text_icon = the icon that holds the current text for
-                           this menu (info&menu style)
-               by_icon = the icon beside which the menu should be
-                         placed (the menu icon)
- Returns:      none
- ******************************************************************/
+/*
+ * Description:  Create a menu for the cursor type and place it beside
+ *               the icon designated
+ * Parameters:   window_handle = handle of the window we're called from
+ *               text_icon = the icon that holds the current text for
+ *                           this menu (info&menu style)
+ *               by_icon = the icon beside which the menu should be
+ *                         placed (the menu icon)
+ * Returns:      none
+ */
 void create_cursor_type_menu(int window_handle, int text_icon, int by_icon);
 
-/**
+/*
  * Call back function for url_receivebroadcast.
  *
  * @param url        Url to be handled

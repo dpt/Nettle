@@ -1,6 +1,6 @@
 /**
  * Processing code
- * (C) Nettle developers 2000-2001
+ * (C) Nettle developers 2000-2002
  *
  * $Id$
  */
@@ -66,23 +66,80 @@
 #define TELOPT_SUB_IS   0
 #define TELOPT_SUB_SEND 1
 
-extern void changedbox_init (struct session_struct *);
-extern void changedbox_update (int, int, int, int); /* tl, br */
-extern void changedbox_update_char (int, int);
+extern void changedbox_init (struct session_struct *session);
+extern void changedbox_update (int cx0, int cy0, int cx1, int cy1);
+extern void changedbox_update_char (int cx0, int cy0);
 extern void changedbox_update_offset (int calc);
 extern void changedbox_update_whole (void);
 extern void force_redraw_changedbox (void);
+extern void clear_screen(struct session_struct *session, int calc, int calc2, char fg, char bg,
+                  char flags, char character);
+extern void clear_alt_screen(struct session_struct *session, int calc, int calc2, char fg,
+                             char bg,char flags, char character);
+extern void copy_main_alternate(struct session_struct *session);
+extern void process_data(struct session_struct *session, char byte);
+extern void process_wimp_key(struct session_struct *session, int key, int extra);
+extern void process_line_editor(struct session_struct *session);
+extern void process_data_transmission(struct session_struct *session,
+                               const char *icon_text, int size_of_data);
+extern struct coords get_cursor_position(struct session_struct *session);
+extern void primary_da_request(struct session_struct *session);
+extern void shuffle_up(struct session_struct *session, int start, int end);
+extern void shuffle_down(struct session_struct *session, int start, int end);
+extern void scroll_up(struct session_struct *session, bool wrap);
+extern void scroll_down (struct session_struct *session, bool wrap);
+extern void reprocess_position_scroll(struct session_struct *session);
+extern void reprocess_position(struct session_struct *session);
+extern void row_shift_right (struct session_struct *session, int chars);
+extern void work_out_character_character_set(struct session_struct *session,int character_set,
+                                      int xpos, int ypos, unsigned char byte);
+extern void work_out_character(struct session_struct *session, int xpos, int ypos,
+                        unsigned char byte);
+extern void byte_null(struct session_struct *session);
+extern void byte_enquiry(struct session_struct *session);
+extern void byte_bell(struct session_struct *session);
+extern void byte_backspace(struct session_struct *session);
+extern void byte_horizontal_tabulation(struct session_struct *session);
+extern void byte_reverse_horizontal_tabulation(struct session_struct *session);
+extern void byte_linefeed(struct session_struct *session);
+extern void byte_carriage_return(struct session_struct *session);
+extern void byte_shift_out(struct session_struct *session);
+extern void byte_shift_in(struct session_struct *session);
+extern void byte_device_control_1(struct session_struct *session);
+extern void byte_device_control_3(struct session_struct *session);
+extern void byte_cancel(struct session_struct *session);
+extern void byte_substitute(struct session_struct *session);
+extern void byte_escape(struct session_struct *session);
+extern void byte_delete(struct session_struct *session);
+extern void byte_index(struct session_struct *session);
+extern void byte_next_line(struct session_struct *session);
+extern void byte_horizontal_tab_set(struct session_struct *session);
+extern void byte_reverse_index(struct session_struct *session);
+extern void byte_single_shift_g2(struct session_struct *session);
+extern void byte_single_shift_g3(struct session_struct *session);
+extern void byte_device_control_string(struct session_struct *session);
+extern void byte_control_sequence_intro(struct session_struct *session);
+extern void byte_string_terminator(struct session_struct *session);
+extern void byte_telnet(struct session_struct *session);
+extern void byte_default(struct session_struct *session, char byte);
+extern void snap_cursor_to_terminal(struct session_struct *session);
+extern void save_cursor_position (struct session_struct *session);
+extern void restore_cursor_position (struct session_struct *session);
+extern void swap_alternate_main(struct session_struct *session);
+extern void copy_alternate_main(struct session_struct *session);
+extern void clear_main_screen(struct session_struct *session);
+extern void clear_alternate_screen(struct session_struct *session);
+extern void determine_character_set(struct session_struct *session);
+extern void append_paste_block (struct session_struct *session,
+                         struct paste_buffer *paste, size_t size);
+extern void process_handle_buffer(struct session_struct *session,
+                                  struct paste_buffer *send_block,
+                                  int size_of_send_block);
 
-extern void clear_screen(struct session_struct *, int, int, char, char, char, char);
-extern void clear_alt_screen(struct session_struct *, int, int, char, char, char, char);
-extern void copy_main_alternate(struct session_struct *);
-
-extern void process_data(struct session_struct *, char);
-
-extern void process_wimp_key(struct session_struct *, int, int);
-extern void process_data_transmission(struct session_struct *, const char *, int);
-extern void process_line_editor(struct session_struct *);
-
-extern struct coords get_cursor_position(struct session_struct *);
+extern void handle_iac_will(struct session_struct *session);
+extern void handle_iac_wont(struct session_struct *session);
+extern void handle_iac_do(struct session_struct *session);
+extern void handle_iac_dont(struct session_struct *session);
+extern bool process_escape(struct session_struct *session);
 
 #endif
