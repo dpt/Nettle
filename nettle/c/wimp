@@ -173,9 +173,10 @@ void null_reason_code(void)
 
 /* Redraw window */
 
-void redraw_window(int window_handle)
+void redraw_window(union wimp_poll_block *wimp_block)
 {
   struct session_struct *session = sessions;
+  int window_handle = wimp_block->redraw_window.window_handle;
 
   while (session && window_handle != session->window_handle)
   {
@@ -186,21 +187,20 @@ void redraw_window(int window_handle)
   {
     zapgen_code(zapredraw_area,
                 session->assigned_area,
-                session->terminal_size.x,
-                session->terminal_size.y + session->scrollback,
+                session->terminal_size.x,                session->terminal_size.y + session->scrollback,
                 session->other_session_flags);
 
     redraw.r_data = zapredraw_area;
 
-    _swi(ZapRedraw_RedrawWindow, _INR(0,1), &wimp_block, &redraw);
+    _swi(ZapRedraw_RedrawWindow, _INR(0,1), wimp_block, &redraw);
   }
   else
   {
     int more;
 
-    more = _swi(Wimp_RedrawWindow, _IN(1)|_RETURN(0), &wimp_block);
+    more = _swi(Wimp_RedrawWindow, _IN(1)|_RETURN(0), wimp_block);
     while (more)
-      more = _swi(Wimp_GetRectangle, _IN(1)|_RETURN(0), &wimp_block);
+      more = _swi(Wimp_GetRectangle, _IN(1)|_RETURN(0), wimp_block);
   }
 }
 
@@ -208,7 +208,7 @@ void redraw_window(int window_handle)
 
 /* Open window */
 
-void open_window(int window_handle, bool poll_flag)
+void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
 {
   struct wimp_openwindow_block local_block, *block=&local_block;
   struct session_struct *session = sessions;
@@ -220,10 +220,10 @@ void open_window(int window_handle, bool poll_flag)
     session = session->next;
   }
 
-  if (poll_flag)
+  if (wimp_block)
   {
     /* Called from Wimp_Poll, so use that block, which contains an OpenWindow struct */
-    block = (struct wimp_openwindow_block *) &wimp_block;
+    block = wimp_block;
   }
   else
   {
@@ -940,12 +940,12 @@ void key_pressed(int window_handle, int icon_handle, int key)
 
 /* Menu selection */
 
-void menu_choice()
+void menu_choice(int *selection)
 {
   switch (menu_open)
   {
     case MENU_ICONBAR:
-      switch (wimp_block.menu_selection.menu[0])
+      switch (selection[0])
       {
         case 2:
           /* Quit */
@@ -954,10 +954,10 @@ void menu_choice()
       break;
 
     case MENU_TERMINAL:
-      switch (wimp_block.menu_selection.menu[0])
+      switch (selection[0])
       {
         case 0:
-          switch (wimp_block.menu_selection.menu[1])
+          switch (selection[1])
           {
             case 3:
               {
@@ -981,7 +981,7 @@ void menu_choice()
       {
         char connection[MESSAGE_MAX_CONNECTION];
 
-        switch (wimp_block.menu_selection.menu[0])
+        switch (selection[0])
         {
           case 0:
             set_icon_data(win_open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
@@ -1001,7 +1001,7 @@ void menu_choice()
       {
         char terminal[MESSAGE_MAX_TERMINAL];
         char string[6];
-        sprintf(string, "Term%d", wimp_block.menu_selection.menu[0]);
+        sprintf(string, "Term%d", selection[0]);
 
         set_icon_data(win_open, 9, lookup(string, terminal, MESSAGE_MAX_TERMINAL));
       }
@@ -1014,7 +1014,7 @@ void menu_choice()
         unsigned short port;
 	char *command;
 	char *host;
-	hotlisttype type = get_hotlist_entry(wimp_block.menu_selection.menu[0], &host, &port, &command);
+	hotlisttype type = get_hotlist_entry(selection[0], &host, &port, &command);
 
         switch(type)
 	{
@@ -1087,12 +1087,12 @@ void menu_choice()
 
 /* Lose caret */
 
-void lose_caret()
+void lose_caret(int window_handle)
 {
   struct session_struct *session = sessions;
   int calc;
 
-  while (session && wimp_block.caret.window_handle != session->window_handle)
+  while (session && window_handle != session->window_handle)
   {
     session = session->next;
   }
@@ -1123,7 +1123,7 @@ void lose_caret()
 
   session = sessions;
 
-  while (session && wimp_block.caret.window_handle != session->pane_handle)
+  while (session && window_handle != session->pane_handle)
   {
     session = session->next;
   }
@@ -1147,12 +1147,12 @@ void lose_caret()
 
 /* Gain caret */
 
-void gain_caret()
+void gain_caret(int window_handle)
 {
   struct session_struct *session = sessions;
   int calc;
 
-  while (session && wimp_block.caret.window_handle != session->window_handle)
+  while (session && window_handle != session->window_handle)
   {
     session = session->next;
   }
@@ -1190,7 +1190,7 @@ void gain_caret()
 
   session = sessions;
 
-  while (session && wimp_block.caret.window_handle != session->pane_handle)
+  while (session && window_handle != session->pane_handle)
   {
     session = session->next;
   }
@@ -1228,8 +1228,12 @@ void gain_caret()
 
 /* Wimp message */
 
-void wimp_message(int message_number, int sender_ref, int my_ref)
+void wimp_message(union wimp_poll_block *wimp_block)
 {
+  int message_number = wimp_block->user_message.message_code;
+  int sender_ref     = wimp_block->user_message.sender_ref;
+  int my_ref         = wimp_block->user_message.my_ref;
+
   switch (message_number)
   {
     case WIMP_MESSAGE_QUIT:
@@ -1240,7 +1244,7 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
       {
         char string[1024];
 
-        read_mem(string, wimp_block.user_message.contents.data_save_ack.file_name, sizeof(string));
+        read_mem(string, wimp_block->user_message.contents.data_save_ack.file_name, sizeof(string));
 
         {
           struct wimp_geticonstate_block block;
@@ -1265,10 +1269,10 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
           set_icon_data(drag_window_handle,2,string);
         }
 
-        wimp_block.user_message.your_ref    =my_ref;
-        wimp_block.user_message.message_code=3;
+        wimp_block->user_message.your_ref    =my_ref;
+        wimp_block->user_message.message_code=3;
 
-        _swi(Wimp_SendMessage, _INR(0,2), 17, &wimp_block, sender_ref);
+        _swi(Wimp_SendMessage, _INR(0,2), 17, wimp_block, sender_ref);
 
         _swi(Wimp_CreateMenu, _IN(1), -1);
       }
@@ -1293,18 +1297,18 @@ void wimp_message(int message_number, int sender_ref, int my_ref)
         if (session)
         {
           write_out_data(session,
-                         wimp_block.user_message.contents.task_window_output.data,
-                         wimp_block.user_message.contents.task_window_output.size);
+                         wimp_block->user_message.contents.task_window_output.data,
+                         wimp_block->user_message.contents.task_window_output.size);
         }
-        wimp_block.user_message.my_ref=wimp_block.user_message.your_ref;
+        wimp_block->user_message.my_ref=wimp_block->user_message.your_ref;
 
-        _swi(Wimp_SendMessage, _INR(0,2), 19, &wimp_block, sender_ref);
+        _swi(Wimp_SendMessage, _INR(0,2), 19, wimp_block, sender_ref);
       }
       break;
     case WIMP_MESSAGE_TASKWINDOW_EGO:
       {
         struct session_struct *session = sessions;
-        int txt_handle = wimp_block.user_message.contents.task_window_ego.txt_handle;
+        int txt_handle = wimp_block->user_message.contents.task_window_ego.txt_handle;
 
         while (session && session != (struct session_struct *) txt_handle) {
           session = session->next;

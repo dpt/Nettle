@@ -60,4 +60,3 @@ int selection_adjust_dragging=0;
 
 char terminal_name[8][6]={"vt100","vt102","vt220","vt320","vt420","vt510","rxvt","xterm"};
 
-union wimp_poll_block wimp_block;

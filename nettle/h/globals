@@ -277,6 +277,4 @@ union wimp_poll_block
 
 };
 
-extern union wimp_poll_block wimp_block;
-
 #endif

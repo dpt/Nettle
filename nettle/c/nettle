@@ -250,6 +250,7 @@ void start_connection(void)
   session->terminal_type=terminal_type;
   reset_terminal(session);
 
+Fortify_CheckAllMemory();
   /* clear out the assigned area with black bg, white fg, no flags and ' ' */
   {
     int loop_limit=((session->terminal_size.x)*
@@ -269,6 +270,7 @@ void start_connection(void)
     session->tabs[session->number_of_tabs]=loop;
     session->number_of_tabs++;
   }
+Fortify_CheckAllMemory();
 
   /* if line editor is turned on, allocate all the lineeditor space */
   if (line_editor)
@@ -286,6 +288,7 @@ void start_connection(void)
     strcpy(session->line_editor_buffer,"");
   }
 
+Fortify_CheckAllMemory();
   /* make new terminal window */
   {
     struct wimp_createwindow_block block;
@@ -333,6 +336,7 @@ void start_connection(void)
 
     set_title_bar(session->window_handle,"nettle");
   }
+Fortify_CheckAllMemory();
 
   if (line_editor)
   {
@@ -381,7 +385,7 @@ void start_connection(void)
     session->pane_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), &block);
   }
 
-  open_window(session->window_handle,false);
+  open_window(NULL, session->window_handle);
 
   if (line_editor)
   {
@@ -403,6 +407,7 @@ void start_connection(void)
   }
 
   allocate_zapredraw_area(session->terminal_size.x, session->terminal_size.y, session->scrollback);
+Fortify_CheckAllMemory();
 
 }
 

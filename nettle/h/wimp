@@ -19,16 +19,16 @@
 extern void closedown_wimp(void);
 
 extern void null_reason_code(void);
-extern void redraw_window(int);
-extern void open_window(int, bool);
+extern void redraw_window(union wimp_poll_block *);
+extern void open_window(struct wimp_openwindow_block *, int);
 extern void close_window(int);
 extern void mouse_click(int, int, int, int, int);
 extern void drag_finished(void);
 extern void key_pressed(int, int, int);
-extern void menu_choice(void);
-extern void lose_caret(void);
-extern void gain_caret(void);
-extern void wimp_message(int, int, int);
+extern void menu_choice(int *);
+extern void lose_caret(int);
+extern void gain_caret(int);
+extern void wimp_message(union wimp_poll_block *);
 extern void mode_change(void);
 
 extern void lose_bitmaps(void);

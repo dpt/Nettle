@@ -46,6 +46,7 @@ int main(void)
 
   while (!quit_flag)
   {
+    union wimp_poll_block wimp_block;
     int event;
     int time;
 
@@ -63,12 +64,12 @@ int main(void)
         break;
       case 1:
         /* redraw request */
-        redraw_window(wimp_block.redraw_window.window_handle);
+        redraw_window(&wimp_block);
         break;
       case 2:
         /* open window request - call with window handle and whether this */
         /* is a wimp poll or not */
-        open_window(wimp_block.open_window.window_handle, true);
+        open_window((struct wimp_openwindow_block*)&wimp_block, wimp_block.open_window.window_handle);
         break;
       case 3:
         /* close window request - call with window handle  */
@@ -95,22 +96,20 @@ int main(void)
         break;
       case 9:
         /* menu selection */
-        menu_choice();
+        menu_choice(wimp_block.menu_selection.menu);
         break;
       case 11:
         /* lose caret */
-        lose_caret();
+        lose_caret(wimp_block.caret.window_handle);
         break;
       case 12:
         /* gain caret */
-        gain_caret();
+        gain_caret(wimp_block.caret.window_handle);
         break;
       case 17:
       case 18:
         /* wimp message */
-        wimp_message(wimp_block.user_message.message_code,
-                     wimp_block.user_message.sender_ref,
-                     wimp_block.user_message.my_ref);
+        wimp_message(&wimp_block);
         break;
     }
   }
