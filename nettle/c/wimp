@@ -1423,10 +1423,6 @@ static void wimp_initiatesave(const char *filename)
   block.user_message.your_ref    =0;
   block.user_message.message_code=WIMP_MESSAGE_DATASAVE;
 
-  printf("Sending WIMP_MESSAGE_DATASAVE to win %d, ic %d\n",
-                         block.user_message.contents.data_save.window_handle,
-                         block.user_message.contents.data_save.icon_handle);
-
   _swi(Wimp_SendMessage, _INR(0,3), 18, &block,
                          block.user_message.contents.data_save.window_handle,
                          block.user_message.contents.data_save.icon_handle);
@@ -1440,7 +1436,6 @@ static void reply_to_dataload (union wimp_poll_block *block)
   block->user_message.your_ref     = block->user_message.my_ref;
   block->user_message.message_code = /*WIMP_MESSAGE_DATASAVE*/WIMP_MESSAGE_DATALOADACK; /*surely?*/
 
-  printf("Sending WIMP_MESSAGE_DATALOADACK to %d\n", block->user_message.sender_ref);
   _swi (Wimp_SendMessage, _INR(0,2), 18, block, block->user_message.sender_ref);
   msg_ref = block->user_message.my_ref;
 }
@@ -2226,7 +2221,6 @@ void wimp_message(union wimp_poll_block *wimp_block)
       if (msg_ref && your_ref != msg_ref && my_ref != msg_ref)
         break;
 
-      printf("received WIMP_MESSAGE_DATASAVE\n");
       {
         bool paste_flag=false;
 
@@ -2278,8 +2272,6 @@ void wimp_message(union wimp_poll_block *wimp_block)
           wimp_block->user_message.your_ref = my_ref;
           wimp_block->user_message.message_code = WIMP_MESSAGE_DATASAVEACK;
 
-          printf("Sending WIMP_MESSAGE_DATASAVEACK to %d\n", sender_ref);
-
           _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
           msg_ref = wimp_block->user_message.my_ref;
         }
@@ -2287,7 +2279,6 @@ void wimp_message(union wimp_poll_block *wimp_block)
       break;
 
     case WIMP_MESSAGE_DATASAVEACK:
-      printf("Received WIMP_MESSAGE_DATASAVEACK\n");
       {
         char string[1024];
 
@@ -2342,8 +2333,6 @@ void wimp_message(union wimp_poll_block *wimp_block)
         wimp_block->user_message.your_ref    =my_ref;
         wimp_block->user_message.message_code=WIMP_MESSAGE_DATALOAD;
 
-        printf("Sending WIMP_MESSAGE_DATALOAD to %d\n", sender_ref);
-
         _swi(Wimp_SendMessage, _INR(0,2), 18, wimp_block, sender_ref);
         msg_ref = wimp_block->user_message.my_ref;
 
@@ -2358,8 +2347,6 @@ void wimp_message(union wimp_poll_block *wimp_block)
       char *filename=wimp_block->user_message.contents.data_load.file_name;
       char *tmp_filename;
       bool is_scrap = false;
-
-      printf("Received WIMP_MESSAGE_DATALOAD\n");
 
       /* You'd hope this wasn't necessary, but there's lots of broken apps out there! */
       misc_zero_terminate_ctrl_string( filename );
@@ -2715,7 +2702,7 @@ void mode_change(void)
   toolheight = 40;
 
   sizes.window_handle = 0;
-  if (_swix(Wimp_Extend, _INR(0,1), 11 /* Read furniture sizes */, &sizes)==NULL)
+  if (wimp_version>400 && _swix(Wimp_Extend, _INR(0,1), 11 /* Read furniture sizes */, &sizes)==NULL)
   {
     /* Great we're running on a WIMP that can tell us toolsizes cleanly (RISC OS 4) */
     toolheight = sizes.bottom_border;
@@ -2733,6 +2720,7 @@ void mode_change(void)
       {
         /* We know what the suffix is on sprites */
         int mode,height;
+
         sprintf(sprite,"sicon%s",suffix);
         if (_swix(OS_SpriteOp,_INR(0,2)|_OUT(4)|_OUT(6),
                                256+40 /* Read sprite info */,
