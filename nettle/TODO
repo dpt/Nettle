@@ -3,6 +3,20 @@
 
 This file needs some structure... ;-)
 
+Spooling (logging? generic?)
+
+Drag binary to ANSI Task open dialog command line
+
+Sort tab order in hotlist dialog
+
+menu widths
+ 
+RO 3.1 bits (C icons, titlebar redraw...)
+
+Always use 3D templates
+
+Wimp slot size settable for new tasks?
+
 * Respond to "telnet://" URL launch messages
 * Much faster terminal scrollback handling
 * Reordering of hotlist items within hotlist editor
