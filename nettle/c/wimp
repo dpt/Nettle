@@ -703,6 +703,7 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   int     y_pos;
   char    url[1024];
   char   *urlptr;
+  char   *urlend;
   int     char_offset;
   int     end_offset;
 
@@ -733,7 +734,8 @@ static void wimp_launchurl(struct session_struct *session, int x, int y)
   
   /* go forward to the end of the form [ie. until we find whitespace] */
   urlptr = url;
-  while (char_offset < end_offset && 
+  urlend = url + sizeof(url) - 8; /* leave space for a '\0', and 'http://' */
+  while (char_offset < end_offset && urlptr < urlend &&
          !isspace(session->assigned_area[char_offset*4+3]))
   {
     *urlptr++ = session->assigned_area[char_offset*4+3];
