@@ -24,16 +24,16 @@ typedef struct _hotlistnode
   char *host;
   char *command;
   unsigned short port;
-  /* rest of these are just ideas ... */
   unsigned char vttype;               /* An index in to the vt type array -- the user gives a string, and we match that to the array at load time */
   unsigned char uselineeditor;        /* bit=0:use yes/no.    bit1:intially active?    bit3:type (inline or below) */
   unsigned short terminal_width;
   unsigned short terminal_height;
-  unsigned int scrollback;
+  unsigned short scrollback;
 } hotlistnode;
 
 extern void lose_hotlist(void);
 extern void load_hotlist(void);
 extern void create_hotlist_menu(void);
+extern hotlistnode *decode_hotlist_menu(int entry);
 
 #endif /* HOTLIST_H */

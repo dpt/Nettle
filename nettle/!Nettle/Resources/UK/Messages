@@ -6,7 +6,7 @@
 AppName:Nettle
 AppPurpose:Arachnid telnet client
 AppAuthor:© Nettle developers, 2000-2001
-AppVersion:v0.1605b (25-Aug-2001)
+AppVersion:v0.1606b (25-Aug-2001)
 
 Info:Info>
 Choices:Choices...
@@ -35,6 +35,7 @@ LineEd1:Optional
 LineEd2:Permanent
 
 MenuFont:Font
+Hotlist:Hotlist
 
 NoTemplates:No Templates file was found.
 NoSprites:No Sprites file was found.
@@ -83,6 +84,8 @@ disconn:Nettle: Disconnected
 twclosed:Nettle: Task window has been closed
 
 # Errors
+DeleteHot:Are you sure you wish to delete this hotlist entry?
+BadHotlist:Error in hotlist file. Has it been mis-edited by hand?
 nocreate:Couldn't create file.  Is the disc write-protected?
 CantSaveChoices:Nettle was unable to save its Choices file:
 esctoolong:Escape sequence too long. This is probably due to an unsupported escape sequence. Please contact the authors.

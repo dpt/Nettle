@@ -507,6 +507,27 @@ void open_window(struct wimp_openwindow_block *wimp_block, int window_handle)
       window.max.y = block->max.y-4;
       window.handle_behind=block->handle_behind;
 
+      if (window_id_to_open == win_panehot)
+      {
+        /* Uhoh. Need to open the hotlist pane's list pane! */
+
+        struct wimp_getwindowinfo_block window2;
+        window2.window_handle=win_hotpane;
+
+        _swi(Wimp_GetWindowInfo, _IN(1), 1 + (int) &window2); /* no icons */
+
+        window2.max.x += window.max.x - (40+12);  /* Guessing the scrollbar width... */
+        window2.min.x = window.min.x+12;
+        window2.min.y = (window.max.y-12) - (window2.max.y - window2.min.y);
+        window2.max.y = window.max.y-12;
+        window2.handle_behind=block->handle_behind;
+
+        _swi(Wimp_OpenWindow, _IN(1), &window2);
+
+        window.handle_behind=win_hotpane;
+
+      }
+
       _swi(Wimp_OpenWindow, _IN(1), &window);
 
       block->handle_behind=window_id_to_open;
@@ -601,6 +622,12 @@ void close_window(int window_handle)
     block.window_handle = window_handle;
 
     _swi(Wimp_CloseWindow, _IN(1), &block);
+
+    if (window_handle == win_panehot)
+    {
+      block.window_handle = win_hotpane;
+      _swi(Wimp_CloseWindow, _IN(1), &block);
+    }
   }
 }
 
@@ -922,6 +949,36 @@ static void win_panecols_click(int x, int y, int buttons, int icon_handle)
 
 static void win_panehot_click(int x, int y, int buttons, int icon_handle)
 {
+  switch (icon_handle)
+  {
+    case icon_panehot_new:
+      open_window_centred(win_hotedit);
+      break;
+
+    case icon_panehot_edit:
+      if (0)/* if(something is selected) */
+        open_window_centred(win_hotedit);
+      break;
+
+    case icon_panehot_delete:
+      if (0)/* if(something is selected) */
+      {
+        if (generror_question((void *)lookup_static("DeleteHot")))
+        {
+          /* delete it! */
+        }
+      }
+      break;
+
+  }
+}
+
+static void win_hotpane_click(int x, int y, int buttons, int icon_handle)
+{
+}
+
+static void win_hotedit_click(int x, int y, int buttons, int icon_handle)
+{
 }
 
 /** Button enumeration for a click/drag/double click icon */
@@ -1237,43 +1294,36 @@ static void session_pane_click(int x, int y, int buttons, int icon_handle, struc
 }
 
 
+static int win_iconbar = -2;
+static struct { int *window; void (*handler)(int,int,int,int); } mousehandlers[] =
+{
+  {&win_iconbar, iconbar_click     },
+  {&win_open,    win_open_click    },
+  {&win_save,    win_save_click    },
+  {&win_resize,  win_resize_click  },
+  {&win_choices, win_choices_click },
+  {&win_paneterm,win_paneterm_click},
+  {&win_panecols,win_panecols_click},
+  {&win_panehot, win_panehot_click },
+  {&win_hotpane, win_hotpane_click },
+  {&win_hotedit, win_hotedit_click },
+  {NULL,NULL}
+};
+
 /* Mouse click */
 
 void wimp_mouseclick(int x, int y, int buttons, int window_handle, int icon_handle)
 {
-  if (window_handle==-2)
+  int i;
+  for(i=0; mousehandlers[i].window; i++)
   {
-    iconbar_click(x,y,buttons,icon_handle);
+    if (window_handle==*mousehandlers[i].window)
+    {
+      mousehandlers[i].handler(x, y, buttons, icon_handle);
+      return;
+    }
   }
-  else if (window_handle == win_open)
-  {
-    win_open_click(x,y,buttons,icon_handle);
-  }
-  else if (window_handle == win_save)
-  {
-    win_save_click(x,y,buttons,icon_handle);
-  }
-  else if (window_handle == win_resize)
-  {
-    win_resize_click(x,y,buttons,icon_handle);
-  }
-  else if (window_handle == win_choices)
-  {
-    win_choices_click(x, y, buttons, icon_handle);
-  }
-  else if (window_handle == win_paneterm)
-  {
-    win_paneterm_click(x, y, buttons, icon_handle);
-  }
-  else if (window_handle == win_panecols)
-  {
-    win_panecols_click(x, y, buttons, icon_handle);
-  }
-  else if (window_handle == win_panehot)
-  {
-    win_panehot_click(x, y, buttons, icon_handle);
-  }
-  else
+
   {
     struct session_struct *session = sessions;
 
@@ -1656,39 +1706,39 @@ void wimp_menuchoice(int *selection)
 
     case MENU_HOTLIST:
       {
-	/* use hotlist entry selection[0]  */
-  /*
-      char tmpbuf[100];
-        char connection[MESSAGE_MAX_CONNECTION];
-        unsigned short port;
-	char *command;
-	char *host;
+        hotlistnode *hot = decode_hotlist_menu(selection[0]);
 
-        switch(type)
+        char tmpbuf[100];
+        char connection[MESSAGE_MAX_CONNECTION];
+
+        if (!hot)
+          return;
+
+        switch(hot->type)
 	{
 	  case ht_telnet:
 	    set_icon_data(win_open, 4, lookup("Telnet", connection, MESSAGE_MAX_CONNECTION));
-	    if (port!=23) sprintf(tmpbuf, "%s:%d", host, port);
-	      else strcpy(tmpbuf, host);
+	    if (hot->port!=23) sprintf(tmpbuf, "%s:%d", hot->host, hot->port);
+	      else strcpy(tmpbuf, hot->host);
 	    set_icon_data(win_open, 0, tmpbuf);
 	    set_icon_data(win_open, 7, "");
 	    break;
 	  case ht_ssh:
 	    set_icon_data(win_open, 4, lookup("SSH",  connection, MESSAGE_MAX_CONNECTION));
-	    if (port!=22) sprintf(tmpbuf, "%s:%d", host, port);
-	      else strcpy(tmpbuf, host);
+	    if (hot->port!=22) sprintf(tmpbuf, "%s:%d", hot->host, hot->port);
+	      else strcpy(tmpbuf, hot->host);
 	    set_icon_data(win_open, 0, tmpbuf);
-	    set_icon_data(win_open, 7, command);
+	    set_icon_data(win_open, 7, hot->command);
 	    break;
 	  case ht_task:
 	    set_icon_data(win_open, 4, lookup("Taskwindow", connection, MESSAGE_MAX_CONNECTION));
 	    set_icon_data(win_open, 0, "");
-	    set_icon_data(win_open, 7, command);
+	    set_icon_data(win_open, 7, hot->command);
 	    break;
 	  case ht_invalid:
 	    break;
 	}
-*/
+
       }
       break;
     case MENU_LINEED_TYPE:

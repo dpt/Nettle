@@ -83,6 +83,8 @@ extern int win_choices;
 extern int win_paneterm;
 extern int win_panecols;
 extern int win_panehot;
+extern int win_hotpane;
+extern int win_hotedit;
 extern int win_open;
 extern int win_resize;
 extern int win_save;

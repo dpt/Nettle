@@ -5,47 +5,85 @@
  * $Id$
  */
 
-/**************************/
-/* PRELIMINARY IDEAS CODE */
-/**************************/
-/*
-
-Hotlist entries could look something like this:
-
-My Fave Host
-{
-  host: 192.168.1.1
-  port: telnet
-  type: telnet
-  term: vt220
-  wide: 80
-  high: 25
-  scrl: 5000
-  edit: on, always
-}
-
-Blah
-{
-  host: wibble
-}
-
-
-*/
-
 #include "generic.h"
 #include "globals.h"
 
 #include "hotlist.h"
 #include "misc.h"
 #include "wimp.h"
+#include "messages.h"
 #include <ctype.h>
 
 static hotlistnode *hotlisthead = NULL;
-/* static hotlistnode *hotlisttail = NULL; */
+static hotlistnode *hotlisttail = NULL;
 static int items = 0;
 static int *menublock = NULL;
 
-/*
+static int hash_type(hotlisttype *type, char *value)
+{
+  if (strncmp(value,"telnet",6)==0)
+    *type = ht_telnet;
+  else if (strncmp(value,"ssh",3)==0)
+    *type = ht_ssh;
+  else if (strncmp(value,"task",4)==0)
+    *type = ht_task;
+  else return 1;
+
+  return 0;
+}
+
+static int hash_term(unsigned char *type, char *value)
+{
+  int i;
+  *type = 0;
+  for(i=0; i<NO_OF_TERMINAL_TYPES; i++)
+  {
+    if (strcmp(value,terminal_name[i])==0)
+    {
+      *type = i;
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
+static int read_hot_string(char **dest, char *value, char *check, char *compare)
+{
+  if (strncmp(check,compare,strlen(compare))==0)
+  {
+    if (*dest)
+      return 1;
+    *dest = malloc(strlen(value)+1);
+    if (!*dest)
+      return 1;
+    strcpy(*dest, value);
+  }
+  return 0;
+}
+
+static int read_hot_number(unsigned short *dest, char *value, char *check, char *compare)
+{
+  if (strncmp(check,compare,strlen(compare))==0)
+  {
+    unsigned long val = strtoul(value, NULL, 10);
+    if (val >= (1<<(8*sizeof(short))) ) /* 65535 */
+      return 1;
+    *dest = (unsigned short) val;
+  }
+  return 0;
+}
+
+static int read_hot_present(char *flag, char *value, char *check, char *compare)
+{
+  *flag = '\0';
+  if (strncmp(check,compare,strlen(compare))==0)
+  {
+    *flag = 'y';
+  }
+  return 0;
+}
+
 static void addnodetolist(hotlistnode *node)
 {
   node->next = NULL;
@@ -56,7 +94,6 @@ static void addnodetolist(hotlistnode *node)
   hotlisttail = node;
   items++;
 }
-*/
 
 void lose_hotlist(void)
 {
@@ -66,6 +103,10 @@ void lose_hotlist(void)
 
     if (hotlisthead->label)
       free(hotlisthead->label);
+    if (hotlisthead->command)
+      free(hotlisthead->command);
+    if (hotlisthead->host)
+      free(hotlisthead->host);
     free(hotlisthead);
     hotlisthead = next;
   }
@@ -74,13 +115,116 @@ void lose_hotlist(void)
     free(menublock);
 }
 
+static char *get_line(FILE *in)
+{
+  static char string[256];
+  char *str;
+  int len;
+
+  str = fgets(string, sizeof(string), in);
+  if (!str)
+   return NULL;
+
+  /* strip CRs, spaces etc off the end */
+  len = strlen(string);
+  for(;len;len--)
+  {
+    if (string[len-1]>' ')
+      break;
+    else
+      string[len-1]='\0';
+  }
+
+  return string;
+}
+
+static void create_entry(char *title, FILE *in)
+{
+  char *str,*tail,tmp;
+  hotlistnode *node = (hotlistnode *) malloc(sizeof(hotlistnode));
+  if (!node)
+    goto error;
+
+  node->type = ht_invalid;
+  node->label = NULL;
+  node->host = NULL;
+  node->command = NULL;
+  node->port = 23;
+  /* The following should be pulled from the global choices! */
+  hash_term(&node->vttype, "vt220");
+  node->uselineeditor = line_editor;
+  node->terminal_width = defaultsize.x;
+  node->terminal_height = defaultsize.y;
+  node->scrollback = defaultscroll;
+
+  node->label = malloc(strlen(title)+1);
+  if (!node->label)
+    goto error;
+
+  strcpy(node->label, title);
+
+  str = get_line(in);
+  if (!(str[0]=='{' && str[1]=='\0'))
+    goto errbarf;
+
+  do
+  {
+    str = get_line(in);
+    if (str)
+    {
+      if (str[0]=='}')
+      {
+        addnodetolist(node);
+        return;
+      }
+
+      if (!(*str=='#' || *str=='\0'))
+      {
+        while (*str==' ')
+          str++;
+
+        if (strlen(str)<6 || str[4]!=':')
+          goto errbarf;
+
+        tail = str+5;
+        while (*tail==' ')
+          tail++;
+
+        if(read_hot_string(&node->host           , tail, str, "host")) goto errbarf;
+        if(read_hot_string(&node->command        , tail, str, "cmnd")) goto errbarf;
+        if(read_hot_number(&node->port           , tail, str, "port")) goto errbarf;
+        if(read_hot_number(&node->terminal_width , tail, str, "wide")) goto errbarf;
+        if(read_hot_number(&node->terminal_height, tail, str, "high")) goto errbarf;
+        if(read_hot_number(&node->scrollback     , tail, str, "scrl")) goto errbarf;
+        if(read_hot_present(&tmp                 , tail, str, "type")) goto errbarf;
+          else if (tmp) if (hash_type(&node->type, tail)) goto errbarf;
+        if(read_hot_present(&tmp                 , tail, str, "term")) goto errbarf;
+          else if (tmp) if (hash_term(&node->vttype, tail)) goto errbarf;
+
+      }
+    }
+  } while (str);
+
+errbarf:
+  generror((void*)lookup_static("BadHotlist"), false);
+error:
+  if (node)
+  {
+    if (node->label)   free(node->label);
+    if (node->host)    free(node->host);
+    if (node->command) free(node->command);
+    free(node);
+  }
+  fseek(in, 0, SEEK_END);
+
+}
+
 void load_hotlist(void)
 {
   FILE *file_handle;
   char hotlist_path[256];
   char string[256];
   char *str;
-  int len;
 
   get_system_variable(hotlist_path, "Choices$Write", sizeof(hotlist_path));
 
@@ -97,31 +241,27 @@ void load_hotlist(void)
   if (!file_handle)
     return;
 
-  for(;;)
+  do
   {
-    str = fgets(string, sizeof(string), file_handle);
-    if (!str)
-      break;
-
-    len = strlen(string);
-    if (len)
-      if (string[len-1]=='\n')
-        string[len-1]='\0';
-
-/**** DEAL WITH LINE HERE *****/
-
-  }
+    str = get_line(file_handle);
+    if (str)
+    {
+      if (!(*str=='#' || *str=='\0'))
+      {
+        create_entry(str, file_handle);
+      }
+    }
+  } while (str);
 
   fclose(file_handle);
 }
-
 
 void create_hotlist_menu(void)
 {
   hotlistnode *node = hotlisthead;
   struct wimp_getpointerinfo_block block;
   int position=7;
-  
+
   if (!items)
     return;
 
@@ -131,7 +271,7 @@ void create_hotlist_menu(void)
     if (!menublock)
       return;
 
-    strcpy((char *)menublock, "Hotlist");  /* Quick hacky title */
+    strcpy((char *)menublock, lookup_static("Hotlist"));
 
     menublock[3]=(7<<0)+(2<<8)+(7<<16)+(0<<24); /* black on white items, black on grey title text */
     menublock[4]=0;
@@ -160,3 +300,15 @@ void create_hotlist_menu(void)
 }
 
 
+hotlistnode *decode_hotlist_menu(int entry)
+{
+  hotlistnode *node = hotlisthead;
+
+  if (entry<0 || entry>=items)
+    return NULL;
+
+  for(;entry>0;entry--)
+    node = node->next;
+
+  return node;
+}

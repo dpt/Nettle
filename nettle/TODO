@@ -1,15 +1,27 @@
-Very crude hotlist added - the menu's crap - will work on that very soon
+
+ $Id$ 
+
+New design hotlist code - the menu's still crap - will work on that on Sunday
 An example hotlist file (Choices:Nettle.Hotlist) would be:
 ---
-#
-# Nettle hotlist
-#
+# Nettle Hotlist, saved on some day
 
-telnet electron.mono.org:23
-telnet absolute.spod.org:6250
-ssh    ijeffray@sourceforge.net:22 ls
-task   go
-task   basic
+Nice Host
+{
+  host: 192.168.1.1
+  port: 23
+  type: telnet
+  term: vt220
+  wide: 80
+  high: 24
+  scrl: 5000
+}
+
+BASIC
+{
+  type: taskwindow
+  cmnd: BASIC
+}
 ----
 
 
@@ -22,19 +34,12 @@ Implement selective erasable.
 
 Make it check for open sessions on quitting - ie. ask for confirmation
 
-Ian         >Chocks and I
-             were discussing how it could be made quicker. It's currently
-             faster than FreeTerm, but actually quite "chuggy" even with the
-             new accellerated ZapRedrawForViewFinder module.  I guess
-             hotlists would be something I'd appreciate... a-la freeterm
-             hotlists etc.
-
 Mouse events - need to prod pico -m  a bit, and find out how mouse events are done.
 
 Dynamic window resizing
 
 Source files need more comments
 
-Try 'links' in Nettle (I've put it on Tardis now)
 Choices!
 c.socket            	- needs finished (not needed for Nettle, but should be done sometime)
+

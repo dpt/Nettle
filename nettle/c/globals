@@ -49,6 +49,8 @@ int win_choices;
 int win_paneterm;
 int win_panecols;
 int win_panehot;
+int win_hotpane;
+int win_hotedit;
 int win_open;
 int win_resize;
 int win_save;
