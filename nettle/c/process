@@ -1284,6 +1284,22 @@ static bool process_escape_length_x(struct session_struct *session)
               }
               done=true;
               break;
+            case 'G':
+              /* Cursor character absolute */
+              if (session->escape_string[2]!='G')
+              {
+                session->pos.x = atoi(session->escape_string+2)-1;
+              }
+              else
+              {
+                session->pos.x=0;
+              }
+              if (session->pos.x>session->terminal_size.x-1)
+              {
+                session->pos.x=session->terminal_size.x-1;
+              }
+              done=true;
+              break;
             case 'H': case 'f':
               /* Direct cursor addressing */
               if (esc_instr(session->escape_string,";", session->escape_string_length)>=0)
@@ -2042,6 +2058,12 @@ static bool process_escape_length_x(struct session_struct *session)
                 session->scroll_start=1;
                 session->scroll_end=session->terminal_size.y;
               }
+
+              if (session->scroll_start<1)
+                session->scroll_start=1;
+
+              if (session->scroll_end>session->terminal_size.y)
+                session->scroll_end=session->terminal_size.y;
 
               if (session->pos.y<session->scrollback+session->scroll_start-1)
               {

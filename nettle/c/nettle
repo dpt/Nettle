@@ -568,7 +568,6 @@ void write_assigned(struct session_struct *session ,int pointer, char fg, char b
     			    session->terminal_size.x*4)
   {
     printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
-    generror("Erk", false);
     return;
   }
 
@@ -585,7 +584,6 @@ char read_assigned_fg(struct session_struct *session, int pointer)
     			    session->terminal_size.x*4)
   {
     printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
-    generror("Erk", false);
     return 0;
   }
 
@@ -599,7 +597,6 @@ char read_assigned_bg(struct session_struct *session, int pointer)
     			    session->terminal_size.x*4)
   {
     printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
-    generror("Erk", false);
     return 0;
   }
 
@@ -613,7 +610,6 @@ char read_assigned_flags(struct session_struct *session, int pointer)
     			    session->terminal_size.x*4)
   {
     printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
-    generror("Erk", false);
     return 0;
   }
 
@@ -627,7 +623,6 @@ char read_assigned_character(struct session_struct *session, int pointer)
     			    session->terminal_size.x*4)
   {
     printf("Attempt to read from outside assigned area: session %p, pointer %d\n",session,pointer);
-    generror("Erk", false);
     return 0;
   }
 
@@ -641,7 +636,6 @@ void write_assigned_flags(struct session_struct *session, int pointer, char flag
     			    session->terminal_size.x*4)
   {
     printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
-    generror("Erk", false);
     return;
   }
 
@@ -655,7 +649,6 @@ void write_assigned_character(struct session_struct *session, int pointer, char 
     			    session->terminal_size.x*4)
   {
     printf("Attempt to write to outside assigned area: session %p, pointer %d\n",session,pointer);
-    generror("Erk", false);
     return;
   }
 
