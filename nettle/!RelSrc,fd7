@@ -6,12 +6,12 @@ Echo Releasing Nettle <RelVer> *SOURCE CODE* ...
 Set This$Dir <Obey$Dir>
 
 %CDir <This$Dir>.Release
-%CDir <This$Dir>.Release.<RelVer>.Source
-%CDir <This$Dir>.Release.<RelVer>.Source.c
-%CDir <This$Dir>.Release.<RelVer>.Source.h
-%CDir <This$Dir>.Release.<RelVer>.Source.s
+%CDir <This$Dir>.Release.src<RelVer>
+%CDir <This$Dir>.Release.src<RelVer>.c
+%CDir <This$Dir>.Release.src<RelVer>.h
+%CDir <This$Dir>.Release.src<RelVer>.s
 
-Set DestApp <This$Dir>.Release.<RelVer>.Source.!Nettle
+Set DestApp <This$Dir>.Release.src<RelVer>.!Nettle
 
 %Copy <This$Dir>.!Nettle  <DestApp>  A~C~DF~L~N~PQR~S~T~V
 %Copy <This$Dir>.License  <DestApp>.^.License A~C~DF~L~N~PQR~S~T~V
@@ -30,6 +30,9 @@ X Delete <DestApp>.Log
 Set Alias$NukeCvs X Wipe <DestApp>.%%0.CVS ~CFR~V
 
 NukeCvs ^.!Nettle
+NukeCvs ^.c
+NukeCvs ^.h
+NukeCvs ^.s
 NukeCvs Choices
 NukeCvs Fonts
 NukeCvs Fonts.08x08
