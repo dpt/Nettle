@@ -32,7 +32,7 @@ static void rehash_blink(void)
 {
   struct session_struct *session = sessions;
   want_blink = false;
-  
+
   for(;session;session=session->next)
   {
     if (session->want_blink)
@@ -674,13 +674,13 @@ void remove_session(struct session_struct *session)
     cursor_session = NULL;
 
   free(session);
-  
+
   rehash_blink();
 }
 
 int nettle_senddata(struct session_struct *session, const char *data, int length)
 {
-  int ret = length;
+  /*int ret = length;*/
 
   switch (session->connection_type)
   {
@@ -689,7 +689,7 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
       return socket_senddata(session->socket_handle,data,length);
       break;
     case NETTLE_TASKWINDOW:
-      while (length)
+      /*while (length)*/
       {
         /* send a WIMP message */
         union wimp_poll_block block;
@@ -704,10 +704,11 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
 
         _swi(Wimp_SendMessage, _INR(0,2), 17, &block, session->socket_handle);
 
-        data += copy;
-        length -= copy;
+        /*data += copy;*/
+        /*length -= copy;*/
+        return copy;
       }
-      return ret;
+      /*return ret;*/
       break;
   }
   return 0;
