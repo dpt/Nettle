@@ -201,7 +201,7 @@ static int load_template(int *font_array, const char *window_name, struct os_spr
   int size_of_template_data;
   int size_of_indirected_data;
   int window_handle;
-  
+
   assert(maxindirected<MAX_TEMPLATES);
 
   /* template name must be in a writable 12-byte buffer */
@@ -216,7 +216,7 @@ static int load_template(int *font_array, const char *window_name, struct os_spr
   assert(indirected_data != NULL);
   template_data = malloc(size_of_template_data);
   assert(template_data != NULL);
-  
+
   indirected[maxindirected++]=indirected_data;
 
   /* load the template */
@@ -410,10 +410,10 @@ void create_icon_bar_icon(void)
   struct wimp_createicon_block block;
 
   block.window_handle=-1; /* window handle */
-  block.minx         =0;  /* min x */
-  block.miny         =0;  /* min y */
-  block.maxx         =68; /* max x */
-  block.maxy         =68; /* max y */
+  block.min.x         =0;  /* min x */
+  block.min.y         =0;  /* min y */
+  block.max.x         =68; /* max x */
+  block.max.y         =68; /* max y */
   block.icon_flags   =WIMP_ICON_BGCOL(1) | WIMP_ICON_FGCOL(7) | WIMP_ICON_TYPE(3) | \
                       WIMP_ICON_VCENT_BIT | WIMP_ICON_HCENT_BIT | WIMP_ICON_SPRITE_BIT ;
 
