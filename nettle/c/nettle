@@ -15,12 +15,10 @@
 #include "process.h"
 #include "seln.h"
 #include "socket.h"
+#include "templ.h"
 #include "wimp.h"
 #include "zapredraw.h"
 #include "messages.h"
-
-#include "stdarg.h"
-
 
 static void allocate_zapredraw_area(int, int, int);
 
@@ -105,7 +103,7 @@ int get_host_port (char *string, int *port)
 }
 
 
-void start_connection(void)
+bool start_connection(void)
 {
   char string[1024];
   int loop;
@@ -113,7 +111,7 @@ void start_connection(void)
   enum nettle_terminal terminal_type;
   int port;
 
-  read_icon_data(win_open, 4, string, sizeof(string));
+  read_icon_data(win_open, icon_open_contype, string, sizeof(string));
 
   {
     char connection[MESSAGE_MAX_CONNECTION];
@@ -126,37 +124,33 @@ void start_connection(void)
       connection_type=NETTLE_TELNET;
   }
 
-  terminal_type = read_terminal_type (win_open, 9);
+  terminal_type = read_terminal_type (win_open, icon_open_termtype);
 
   switch (connection_type)
   {
     case NETTLE_TELNET:
-      read_icon_data(win_open, 0, string, sizeof(string));
+      read_icon_data(win_open, icon_open_host, string, sizeof(string));
       if (get_host_port (string, &port))
-        return;
-      start_connection_int (connection_type, terminal_type, string, port, 0);
-      close_window(win_open);
+        return false;
+      start_connection_int (connection_type, terminal_type, string, port, icon_open_host);
       break;
 
     case NETTLE_TASKWINDOW:
-      read_icon_data (win_open, 7, string, sizeof (string));
+      read_icon_data (win_open, icon_open_command, string, sizeof (string));
       loop = strlen (string);
       while (string[loop - 1] == ' ')
 	loop--;
       string[loop] = '\0';		/* trim trailing spaces */
       loop = strspn (string, " ");	/* number of leading spaces */
-      if (! string[loop])
-      {
-	generror("InvalidComm", true);
-	return;
-      }
-      start_connection_int (connection_type, terminal_type, 0, 0, string);
-      close_window(win_open);
+
+      generror(string, false);
+      start_connection_int (connection_type, terminal_type, 0, 0, string+loop);
       break;
 
     default:
       break;
   }
+  return true;
 }
 
 
@@ -204,7 +198,15 @@ void start_connection_int (int connection_type, enum nettle_terminal terminal_ty
       /* start the task window */
       {
         char temp_string[1024];
-        sprintf (temp_string, "%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X -txt &%X", command, task_handle, (int)session);
+
+        if (command[0]!='\0')
+        {
+          sprintf (temp_string, "%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X -txt &%X", command, task_handle, (int)session);
+        }
+        else
+        {
+          sprintf (temp_string, "%%TaskWindow -ctrl -name \"Nettle task\" -task &%X -txt &%X", task_handle, (int)session);
+        }
 
         _swi(Wimp_StartTask, _IN(0), temp_string);
       }
@@ -458,7 +460,7 @@ void remove_session(struct session_struct *session)
 
           block.user_message.length      =20;
           block.user_message.my_ref      =0;
-          block.user_message.message_code=0x808C4;
+          block.user_message.message_code=WIMP_MESSAGE_TASKWINDOW_MORITE;
 
           _swi(Wimp_SendMessage, _INR(0,2), 17, &block, session->socket_handle);
         }
@@ -535,7 +537,7 @@ void nettle_senddata(struct session_struct *session, const char *data, int lengt
 
         block.user_message.length                         =(27+length) & ~3;
         block.user_message.my_ref                         =0;
-        block.user_message.message_code                   =0x808C0;
+        block.user_message.message_code                   =WIMP_MESSAGE_TASKWINDOW_INPUT;
         block.user_message.contents.task_window_input.size=length;
 
         _swi(Wimp_SendMessage, _INR(0,2), 17, &block, session->socket_handle);

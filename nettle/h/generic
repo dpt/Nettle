@@ -21,6 +21,7 @@ typedef unsigned long colour_t;
 /* Standard includes */
 #include <assert.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -28,8 +29,6 @@ typedef unsigned long colour_t;
 /* RISC OS includes */
 #include "kernel.h"
 #include "swis.h"
-
-#include <stdarg.h>
 
 /* Compiler warning suppression */
 
@@ -296,9 +295,11 @@ struct colourpicker_block
 #define WIMP_MESSAGE_MENUSDELETED      0x400c9
 #define COLOURPICKER_COLOUR_CHOICE     0x47700
 #define COLOURPICKER_CLOSE_REQUEST     0x47702
+#define WIMP_MESSAGE_TASKWINDOW_INPUT  0x808c0
 #define WIMP_MESSAGE_TASKWINDOW_OUTPUT 0x808c1
 #define WIMP_MESSAGE_TASKWINDOW_EGO    0x808c2
 #define WIMP_MESSAGE_TASKWINDOW_MORIO  0x808c3
+#define WIMP_MESSAGE_TASKWINDOW_MORITE 0x808c4
 
 
 #endif

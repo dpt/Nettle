@@ -680,11 +680,15 @@ static void win_open_click(int x, int y, int buttons, int icon_handle)
   switch (icon_handle)
   {
     case icon_open_cancel:
-      close_window(win_open);
+      if ((buttons & 1)==0)
+        close_window(win_open);
+
       break;
 
     case icon_open_connect:
-      start_connection();
+      if (start_connection() && (buttons & 1)==0)
+        close_window(win_open);
+
       break;
 
     case icon_open_contypebut:
@@ -760,7 +764,9 @@ static void win_resize_click(int x, int y, int buttons, int icon_handle)
   switch (icon_handle)
   {
     case icon_resize_cancel:
-      _swi(Wimp_CreateMenu, _IN(1), -1);
+      if ((buttons & 1)==0)
+        _swi(Wimp_CreateMenu, _IN(1), -1);
+
       break;
 
     case icon_resize_set:
@@ -773,7 +779,7 @@ static void win_resize_click(int x, int y, int buttons, int icon_handle)
           &new_size, &new_scrollback))
 	{
 	  resize_terminal(terminal_menu_session, new_size.x, new_size.y, new_scrollback, true);
-	  if (buttons != 1)
+	  if ((buttons & 1)==0)
 	  {
 	    _swi(Wimp_CreateMenu, _IN(1), -1);
 	  }
@@ -2924,7 +2930,12 @@ static void open_open_window(bool open_window_flag)
   char string[MESSAGE_MAX_CONNECTION];
   int connection_type;
 
-  set_icon_data(win_open, icon_open_termtype, terminal_name[default_terminal]);
+  if (open_window_flag)
+  {
+    /* Only do this if first opening window, otherwise terminal type changes when */
+    /* connection type is changed */
+    set_icon_data(win_open, icon_open_termtype, terminal_name[default_terminal]);
+  }
 
   read_icon_data(win_open, icon_open_contype, string, MESSAGE_MAX_CONNECTION);
 
@@ -3171,7 +3182,7 @@ static void set_colour_icon(int colour_handle, colour_t colour, bool is_an_icon)
 
   if (icon_handle==-1)
   {
-    char string[64];
+    char string[128];
 
     sprintf(string,"Failed to set icon handle for set_colour_icon (colour_handle %d)",colour_handle);
     generror(string,false);
