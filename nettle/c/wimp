@@ -744,9 +744,13 @@ void key_pressed(int window_handle, int icon_handle, int key)
                 session[session_handle].line_editor_position=0;
               }
 
-              set_icon_data(session[session_handle].pane_handle,1,
-                    read_mem((char *) temp_block, session[session_handle].line_editor_history +
-                    (session[session_handle].line_editor_position * 512), TEMP_BLOCK_SIZE));
+              {
+                char icon_data[1024];
+
+                set_icon_data(session[session_handle].pane_handle, 1,
+                    read_mem((char *)icon_data, session[session_handle].line_editor_history +
+                    (session[session_handle].line_editor_position * 512), 1024));
+              }
 
               regs.r[0]=session[session_handle].pane_handle;
               regs.r[1]=1;
@@ -772,9 +776,13 @@ void key_pressed(int window_handle, int icon_handle, int key)
                 				session[session_handle].line_editor_total-1;
               }
 
-              set_icon_data(session[session_handle].pane_handle,1,
-                    read_mem((char *) temp_block, session[session_handle].line_editor_history+
-                     (session[session_handle].line_editor_position * 512), TEMP_BLOCK_SIZE));
+              {
+                char icon_data[1024];
+
+                 set_icon_data(session[session_handle].pane_handle,1,
+                    read_mem(icon_data, session[session_handle].line_editor_history+
+                     (session[session_handle].line_editor_position * 512), 1024));
+              }
 
               regs.r[0]=session[session_handle].pane_handle;
               regs.r[1]=1;

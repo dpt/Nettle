@@ -14,7 +14,6 @@ bool quit_flag=false;
 _kernel_swi_regs regs;
 
 int wimp_block[64];
-int temp_block[256];
 int *sprite_area;
 int messagetrans_area[4];
 int *messagetrans_buffer;
