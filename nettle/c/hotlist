@@ -1,0 +1,278 @@
+/**
+ * Nettle Hotlist code
+ * (C) Nettle developers 2000-2001
+ *
+ * $Id$
+ */
+
+#include "generic.h"
+#include "globals.h"
+
+#include "hotlist.h"
+#include "misc.h"
+#include <ctype.h>
+
+#define STRANDLEN(x) x,sizeof(x)-1
+
+#define _TELNET "telnet"
+#define _SSH    "ssh"
+#define _TASK   "task"
+
+typedef enum
+{
+  ht_telnet,
+  ht_ssh,
+  ht_task
+} hotlisttype;
+
+typedef struct _hotlistnode
+{
+  struct _hotlistnode *next;
+  char *host;
+  char *command;
+  unsigned short port;
+  hotlisttype type;
+} hotlistnode;
+
+static hotlistnode *hotlisthead = NULL;
+static hotlistnode *hotlisttail = NULL;
+
+static void addnodetolist(hotlistnode *node)
+{
+  node->next = NULL;
+  if (!hotlisthead)
+    hotlisthead = node;
+  else
+    hotlisttail->next = node;
+  hotlisttail = node;
+}
+
+static void load_telnet_line(char *string)
+{
+  char *tmp;
+  hotlistnode *node;
+
+  string += strlen(_TELNET);
+
+  for(;isspace((int) *string); string++)
+    if (!*string)
+      return;
+
+  tmp = strchr(string, ':');
+  if (!tmp)
+     tmp = strchr(string, ',');
+
+  node = (hotlistnode *) malloc(sizeof(hotlistnode));
+  if (node)
+  {
+    node->type = ht_telnet;
+    node->command = NULL;
+    node->port = 23;  /* telnet default port */
+    if (tmp)
+    {
+      node->port = atoi(tmp+1);
+      node->host = malloc((tmp-string)+1);
+      if (!node->host)
+      {
+        free(node);
+        return;
+      }
+      strncpy(node->host, string, tmp-string);
+      node->host[tmp-string]=0;
+    }
+    else
+    {
+      node->host = malloc(strlen(string)+1);
+      if (!node->host)
+      {
+        free(node);
+        return;
+      }
+      strcpy(node->host, string);
+    }
+
+    addnodetolist(node);
+  }
+}
+
+static void load_ssh_line(char *string)
+{
+  char *tmp;
+  hotlistnode *node;
+
+  string += strlen(_SSH);
+
+  for(;isspace((int) *string); string++)
+    if (!*string)
+      return;
+
+  /* Chop any whitespace off the end of the string */
+  for(tmp = string+strlen(string)-1;  \
+      tmp>string && (*tmp==' ' || *tmp=='\t'); *tmp--='\0');
+
+  tmp = strchr(string, ':');
+  if (!tmp)
+     tmp = strchr(string, ',');
+
+  if (tmp)
+    if ((strchr(string, ' ')<tmp) || (strchr(string, '\t')<tmp))
+      tmp=NULL;  /* the : or , was in the command, not the address part */
+
+  node = (hotlistnode *) malloc(sizeof(hotlistnode));
+  if (node)
+  {
+    node->type = ht_ssh;
+    node->command = NULL;
+    node->port = 22;  /* ssh default port */
+    if (tmp)
+    {
+      node->port = atoi(tmp+1);
+      node->host = malloc((tmp-string)+1);
+      if (!node->host)
+      {
+        free(node);
+        return;
+      }
+      strncpy(node->host, string, tmp-string);
+      node->host[tmp-string]=0;
+    }
+    else
+    {
+      tmp=strchr(string,' ');
+      if (!tmp)
+        tmp=strchr(string,'\t');
+
+      if (!tmp)
+        node->host = malloc(strlen(string)+1);
+      else
+        node->host = malloc((tmp-string)+1);
+
+      if (!node->host)
+      {
+        free(node);
+        return;
+      }
+
+      if (!tmp)
+        strcpy(node->host, string);
+      else
+      {
+        strncpy(node->host, string, tmp-string);
+        node->host[tmp-string]=0;
+      }
+    }
+
+    for (;*string && !isspace((int) *string); string++);
+
+    if (*string)
+    {
+      node->command = malloc(strlen(string)+1);
+
+      if (!node->command)
+      {
+        free(node->command);
+        free(node);
+        return;
+      }
+      strcpy(node->command, string);
+    }
+
+    addnodetolist(node);
+  }
+}
+
+static void load_task_line(char *string)
+{
+  hotlistnode *node;
+
+  string += strlen(_TASK);
+
+  for(;isspace((int) *string); string++)
+    if (!*string)
+      return;
+
+  node = (hotlistnode *) malloc(sizeof(hotlistnode));
+  if (node)
+  {
+    node->type = ht_task;
+    node->host = NULL;
+    node->port = 0;
+    node->command = malloc(strlen(string)+1);
+    if (!node->command)
+    {
+      free(node);
+      return;
+    }
+    strcpy(node->command, string);
+
+    addnodetolist(node);
+  }
+}
+
+
+void lose_hotlist(void)
+{
+  while (hotlisthead)
+  {
+    hotlistnode *next = hotlisthead->next;
+    
+    if (hotlisthead->host)
+      free(hotlisthead->host);
+    if (hotlisthead->command)
+      free(hotlisthead->command);
+    free(hotlisthead);
+    hotlisthead = next;
+  }
+}
+
+void load_hotlist(void)
+{
+  FILE *file_handle;
+  char hotlist_path[256];
+  char string[256];
+  char *str;
+  int len;
+
+  get_system_variable(hotlist_path, "Choices$Write", sizeof(hotlist_path));
+
+  if (hotlist_path[0] == '\0' )
+  {
+    sprintf(string, "<%s$Dir>.Choices.Hotlist", application_name);
+  }
+  else
+  {
+    sprintf(string, "Choices:%s.Hotlist", application_name);
+  }
+
+  file_handle = fopen(string,"r");
+  if (!file_handle)
+    return;
+
+  for(;;)
+  {
+    str = fgets(string, sizeof(string), file_handle);
+    if (!str)
+      break;
+
+    len = strlen(string);
+    if (len)
+      if (string[len-1]=='\n')
+        string[len-1]='\0';
+
+    if (strncmp(string,STRANDLEN(_TELNET))==0)
+    {
+      load_telnet_line(string);
+    }
+    else if (strncmp(string,STRANDLEN(_SSH))==0)
+    {
+      load_ssh_line(string);
+    }
+    else if (strncmp(string,STRANDLEN(_TASK))==0)
+    {
+      load_task_line(string);
+    }
+
+  }
+
+  fclose(file_handle);
+}

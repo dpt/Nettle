@@ -14,7 +14,7 @@
 #include "misc.h"
 #include "quit.h"
 #include "wimp.h"
-
+#include "hotlist.h"
 
 int main(void)
 {
@@ -30,6 +30,7 @@ int main(void)
 
   /* load things in */
   load_choices();
+  load_hotlist();
   load_messages();
   load_sprites();
   load_templates();
@@ -90,6 +91,7 @@ int main(void)
         key_pressed(wimp_block.key_pressed.window_handle,
                     wimp_block.key_pressed.icon_handle,
                     wimp_block.key_pressed.code);
+        null_reason_code();
         break;
       case 9:
         /* menu selection */

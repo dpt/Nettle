@@ -1,0 +1,14 @@
+/**
+ * Nettle Hotlist code
+ * (C) Nettle developers 2001
+ *
+ * $Id$
+ */
+
+#ifndef HOTLIST_H
+#define HOTLIST_H
+
+extern void lose_hotlist(void);
+extern void load_hotlist(void);
+
+#endif /* HOTLIST_H */

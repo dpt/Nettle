@@ -23,7 +23,7 @@ WIPEFLAGS = ~CFR~V
 OBJASM = gcc
 OBJASMFLAGS = -c
 
-OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o \
+OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o hotlist.o \
        nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
 
 RUNIMAGE = !Nettle.!RunImage
@@ -42,6 +42,7 @@ clean:
 	$(CC) $(CFLAGS) -o $@ $<
 
 
+hotlist.o:      hotlist.c hotlist.h generic.h globals.h misc.h
 chardefn.o:	chardefn.c generic.h globals.h chardefn.h misc.h
 choices.o:	choices.c generic.h globals.h choices.h misc.h
 fortify.o:	fortify.c fortify.h ufortify.h
@@ -50,13 +51,13 @@ init.o: 	init.c generic.h globals.h chardefn.h init.h misc.h \
               	nettle.h quit.h wimp.h zapredraw.h
 lineedit.o:   	lineedit.c generic.h globals.h lineedit.h misc.h wimp.h
 main.o: 	main.c generic.h globals.h choices.h init.h main.h misc.h \
-              	quit.h wimp.h
+              	quit.h wimp.h hotlist.h
 misc.o: 	misc.c generic.h globals.h misc.h
 nettle.o:	nettle.h generic.h globals.h misc.h nettle.h seln.h socket.h \
 	      	wimp.h zapredraw.h
 process.o:	process.h generic.h globals.h graphics.h misc.h nettle.h \
 		process.h seln.h wimp.h zapredraw.h
-quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h
+quit.o: 	quit.c generic.h globals.h misc.h nettle.h quit.h hotlist.h
 seln.o: 	seln.c generic.h globals.h nettle.h seln.h wimp.h zapredraw.h
 socket.o:	socket.c generic.h globals.h socket.h
 wimp.o: 	wimp.c generic.h globals.h misc.h nettle.h process.h seln.h \

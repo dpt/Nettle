@@ -16,9 +16,8 @@ WIPEFLAGS = ~CFR~V
 ASM = objasm
 ASMFLAGS =
 
-OBJS = o.chardefn o.choices o.globals o.init o.lineedit o.main o.misc \
-	o.nettle o.process o.quit o.seln o.socket o.wimp o.zapgen \
-	o.fortify
+OBJS = chardefn.o choices.o globals.o init.o lineedit.o main.o misc.o hotlist.o \
+       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o
 
 all:	!Nettle.!RunImage
 
