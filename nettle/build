@@ -30,7 +30,7 @@ else
 fi
 
 
-rm *.o *.c *.h *.s 2>/dev/null
+rm *.[chos] 2>/dev/null
 
 for i in c h s
 do
@@ -47,3 +47,6 @@ done
 
 
 make -f MakeCross GCCDIR=$cross_path NETLIB=$INTERNET_PATH LIB=$library
+rm *.[chos]
+
+
