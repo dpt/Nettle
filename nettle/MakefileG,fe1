@@ -10,14 +10,13 @@ SCLINK=NetLib:o.NetLib
 endif
 
 CC = gcc
-CFLAGS = -v -c $(SCINC) $(SCLIB) -mthrowback -O2 -Wall -Wno-unknown-pragmas \
+CFLAGS = -c $(SCINC) $(SCLIB) -mthrowback -O2 -Wall -Wno-unknown-pragmas \
    -Wshadow -Wundef -Wpointer-arith -Wcast-align -Wwrite-strings \
    -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations \
-   -Wnested-externs -Wcast-qual -DFORTIFY
-# -mamu : generate !Depend file - only useful with AMU
+   -Wnested-externs -Wcast-qual #-DFORTIFY
 
 LINK = gcc
-LINKFLAGS = $(SCLIB) -debug
+LINKFLAGS = $(SCLIB)
 
 WIPE = wipe
 WIPEFLAGS = ~CFR~V
@@ -27,9 +26,10 @@ OBJASMFLAGS = -c
 
 TEMPLATES = !Nettle.Resources.UK.Templates
 
-OBJS = chardefn.o choices.o globals.o init.o keyboard.o lineedit.o main.o misc.o hotlist.o \
-       nettle.o process.o socket.o quit.o seln.o wimp.o zapgen.o fortify.o sockwatch.o \
-       messages.o termlist.o wimputil.o spool.o mouse.o
+OBJS = chardefn.o choices.o dnslib.o fortify.o globals.o hotlist.o init.o \
+       keyboard.o lineedit.o main.o messages.o  misc.o mouse.o nettle.o \
+       process.o quit.o seln.o socket.o spool.o sockwatch.o termlist.o \
+       url.o  wimputil.o wimp.o zapgen.o 
 
 RUNIMAGE = !Nettle.!RunImage
 
@@ -39,13 +39,13 @@ $(RUNIMAGE): $(OBJS)
 	$(LINK) $(LINKFLAGS) $(SCLINK) $(OBJS) -o $(RUNIMAGE)
 
 templheadr: templheadr.o
-        $(LINK) $(LINKFLAGS) $(SCLINK) $? -o $@
+	$(LINK) $(LINKFLAGS) $(SCLINK) $? -o $@
 
 clean:
 	$(WIPE) o.* $(WIPEFLAGS)
 
-templ.h: templheadr $(TEMPLATES)
-	<Obey$Dir>.templheadr $(TEMPLATES) $@
+h.templ: templheadr $(TEMPLATES)
+	templheadr $(TEMPLATES) $@
 
 .SUFFIXES: .o .s .c
 
