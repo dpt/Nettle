@@ -40,6 +40,7 @@
 #include "wimputil.h"
 #include "zapredraw.h"
 
+
 static int menu_data[96];
 static int menu_data2[96];
 static int menu_data3[96];
@@ -76,6 +77,8 @@ static void paste_in_data (int window_handle, char *data, int size);
 static bool parse_ant_url (union wimp_poll_block *);
 static bool parse_acorn_uri (union wimp_poll_block *);
 static bool paste_text_file (union wimp_poll_block *);
+
+static void wimp_pollsocket(struct session_struct *session);
 
 void open_window_centred (int window_handle)
 {
@@ -119,9 +122,11 @@ static void wimp_connectsession(struct session_struct *session)
   }
 
   session->socket_state = NETTLE_SESSION_CONNECT;
-  write_out_strings(session, lookup_static("connecting"),
-                    socket_ip_string(session->socket_ip),
-                    "...\r\n", 0);
+  write_out_strings(session,
+                    lookup_static_var("connecting", 1,
+                                      socket_ip_string(session->socket_ip)),
+                    "\r\n",
+                    0);
   /* take a null so the state machine gets kicked and wimp_pollconect
    * starts taking null polls */
   main_requirenull = true;
@@ -182,9 +187,12 @@ static void wimp_pollconnect(struct session_struct *session)
         set_title_bar(session->window_handle,string);
 
         session->socket_state = NETTLE_SESSION_CONNECTED;
-        write_out_strings(session, lookup_static("connected"),
-                          socket_ip_string(session->socket_ip),
-                          "\r\n", 0);
+        write_out_strings(session,
+                          lookup_static_var("connected", 1,
+                                       socket_ip_string(session->socket_ip)),
+                          "\r\n",
+                          0);
+
         main_requirenull = true; /* read any data waiting on the socket */
         break;
       }
@@ -199,8 +207,11 @@ static void wimp_pollconnect(struct session_struct *session)
       /* error, retval contains errno */
       set_title_bar(session->window_handle,
                      lookup_static("title_noconn"));
-      write_out_strings(session, lookup_static("noconn"),
-                        socket_strerror(retval), "\r\n", 0);
+      write_out_strings(session,
+                        lookup_static_var("noconn", 1,
+                                          socket_strerror(retval)),
+                        "\r\n", 0);
+
       socket_close(session->socket_handle);
 
       session->socket_handle=-1;
@@ -214,11 +225,19 @@ static void wimp_pollconnect(struct session_struct *session)
 
 static void wimp_pollsocket(struct session_struct *session)
 {
-  int packet_length;
+  int packet_length=-1;
   char receive_block[RECEIVE_BLOCK_LENGTH];
 
-  packet_length = recv(session->socket_handle, receive_block,
-                       RECEIVE_BLOCK_LENGTH, 0);
+  switch (session->connection_type)
+  {
+    case NETTLE_TELNET:
+      packet_length = recv(session->socket_handle, receive_block,
+                           RECEIVE_BLOCK_LENGTH, 0);
+      break;
+
+    case NETTLE_SSH:
+      break;
+  }
 
   if (packet_length == -1 && errno == EWOULDBLOCK)
     /* we've read all the available data */
@@ -236,9 +255,10 @@ static void wimp_pollsocket(struct session_struct *session)
     }
     else
     {
-      write_out_strings(session, "\r\n", lookup_static("socketerror"),
-                        socket_strerror(errno), " ", 0);
-      write_out_strings(session, lookup_static ("occurred"), "\r\n", 0);
+      write_out_strings(session, "\r\n",
+                        lookup_static_var("socketerror", 1,
+                                          socket_strerror(errno)),
+                        "\r\n", 0);
     }
 
     write_out_strings(session, lookup_static("disconn"), "\r\n", 0);
@@ -356,7 +376,7 @@ static void wimp_pollsessions(void)
 
   for (session = sessions; session != NULL; session = session->next)
   {
-    if (session->connection_type != NETTLE_TELNET)
+    if (session->connection_type == NETTLE_TASKWINDOW)
       continue;
 
     if (session->socket_state != NETTLE_SESSION_CONNECTED)
@@ -3314,7 +3334,7 @@ static void open_open_window(bool open_window_flag)
        /* unshade the host and command icons */
        set_icon_state (win_open, icon_open_host, 0, WIMP_ICON_SHADED_BIT);
        /*set_icon_state (win_open, icon_open_hostbut, 0, WIMP_ICON_SHADED_BIT);*/
-       set_icon_state (win_open, icon_open_command, WIMP_ICON_SHADED_BIT, WIMP_ICON_SHADED_BIT);
+       set_icon_state (win_open, icon_open_command, 0, WIMP_ICON_SHADED_BIT);
        /*set_icon_state (win_open, icon_open_commandbut, 0, WIMP_ICON_SHADED_BIT);*/
        break;
 

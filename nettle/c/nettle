@@ -23,7 +23,6 @@
 #include "wimputil.h"
 #include "zapredraw.h"
 
-
 static void start_connection_int (struct connection_params *params );
 static bool get_user_pass (char *string, char *tempbuf, struct connection_params *params);
 static int get_host_port (char *string, int *port);
@@ -271,7 +270,6 @@ bool nettle_start_taskwindow(const char *cmd)
 }
 
 
-
 bool start_connection(void)
 {
   struct connection_params params;
@@ -508,9 +506,6 @@ static void start_connection_int (struct connection_params *params )
   int loop;
   struct session_struct *session;
 
-  if (params->connection_type == NETTLE_SSH)
-    return; /* Not implemented yet! */
-
   if (params->label[0]=='\0')
   {
     switch(params->connection_type)
@@ -572,6 +567,7 @@ static void start_connection_int (struct connection_params *params )
   switch (params->connection_type)
   {
     case NETTLE_TELNET:
+    case NETTLE_SSH:
       /* host, port already parsed */
       session->socket_handle=-1;
       session->socket_state=NETTLE_SESSION_RESOLVE;
@@ -579,6 +575,12 @@ static void start_connection_int (struct connection_params *params )
       strcpy (session->socket_host, params->host);
       session->dns = dns_gethostbyname(session->socket_host);
       assert(session->dns != NULL);
+
+      if (params->connection_type==NETTLE_SSH)
+      {
+        session->local_echo=false;
+      }
+
       break;
 
     case NETTLE_TASKWINDOW:
@@ -678,7 +680,7 @@ static void start_connection_int (struct connection_params *params )
   if (params->login_pass)
     assert(session->login_pass);
 
-  if (session->login_user && params->connection_type!=NETTLE_SSH)
+  if (session->login_user && params->connection_type!=NETTLE_TASKWINDOW)
   {
     /* Where a user/password exists, we want to set up the login details */
     session->login_index = 0; /* We're 0 characters into the match string */
@@ -757,9 +759,12 @@ static void start_connection_int (struct connection_params *params )
   switch (params->connection_type)
   {
     case NETTLE_TELNET:
+    case NETTLE_SSH:
       set_title_bar(session->window_handle, lookup_static ("title_conn"));
-      write_out_strings (session, lookup_static ("lookup"),
-                         session->socket_host, "...\r\n", 0);
+      write_out_strings (session,
+                         lookup_static_var ("lookup", 1,
+                                            session->socket_host),
+                          "\r\n", 0);
       main_requirenull = true;
       break;
   }
@@ -904,6 +909,8 @@ void remove_session(struct session_struct *session)
       case NETTLE_TELNET:
         socket_close(session->socket_handle);
         break;
+      case NETTLE_SSH:
+        break;
       case NETTLE_TASKWINDOW:
         {
           /* terminate the taskwindow */
@@ -993,6 +1000,8 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
     case NETTLE_TELNET:
       /* just use socket_senddata */
       return socket_senddata(session->socket_handle,data,length);
+      break;
+    case NETTLE_SSH:
       break;
     case NETTLE_TASKWINDOW:
       {
@@ -1529,21 +1538,27 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
 
   if (use_naws)
   {
-    if (session->session_flags[TELOPT_NAWS])
+    switch (session->connection_type)
     {
-      /* NAWS is on */
-      char block[9];
+      case NETTLE_TELNET:
+        if (session->session_flags[TELOPT_NAWS])
+        {
+          /* NAWS is on */
+          char block[9];
 
-      block[0]=TELNET_IAC;
-      block[1]=TELNET_SB;
-      block[2]=TELOPT_NAWS;
-      block[3]=session->terminal_size.x / 256;
-      block[4]=session->terminal_size.x % 256;
-      block[5]=session->terminal_size.y / 256;
-      block[6]=session->terminal_size.y % 256;
-      block[7]=TELNET_IAC;
-      block[8]=TELNET_SE;
-      nettle_senddata(session, block, 9);
+          block[0]=TELNET_IAC;
+          block[1]=TELNET_SB;
+          block[2]=TELOPT_NAWS;
+          block[3]=session->terminal_size.x / 256;
+          block[4]=session->terminal_size.x % 256;
+          block[5]=session->terminal_size.y / 256;
+          block[6]=session->terminal_size.y % 256;
+          block[7]=TELNET_IAC;
+          block[8]=TELNET_SE;
+          nettle_senddata(session, block, 9);
+        }
+
+        break;
     }
   }
 }

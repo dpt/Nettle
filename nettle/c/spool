@@ -26,10 +26,7 @@ bool spool_open(struct session_struct *session, char *file_name, bool raw_bit)
   session->spool_file_handle=fopen(file_name, "w");
   if (session->spool_file_handle==NULL)
   {
-    char string[1024];
-
-    sprintf(string,"%s '%s'", lookup_static("SpoolFailedToOpen"), file_name);
-    generror(string, false);
+    generror(lookup_static_var("SpoolFailedToOpen", 1, file_name), false);
 
     return false;
   }

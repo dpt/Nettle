@@ -121,3 +121,17 @@ const char *lookup_static_sub(const char *token, int params, va_list va)
   return buffer;
 }
 
+/* Looks up a messagetrans token and puts it in a static buffer with substitution */
+
+const char *lookup_static_var(const char *token, int params, ...)
+{
+  va_list va;
+  const char *buffer;
+
+  va_start(va, params);
+  buffer=lookup_static_sub(token, params, va);
+  va_end(va);
+
+  return buffer;
+}
+

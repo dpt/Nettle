@@ -176,9 +176,10 @@ void load_choices(void)
 
   if (choices_file_version_number>CHOICES_VERSION_KNOWN)
   {
-    char buffer[128];
-    sprintf(string,"%s %d %s",lookup("ChoicesNotKnown", buffer, sizeof(buffer)),choices_file_version_number, lookup_static("ChoicesRevert"));
-    generror(string, false);
+    char buffer[4];
+    sprintf(buffer, "%d", choices_file_version_number);
+
+    generror(lookup_static_var("ChoicesNotKnown", 1, buffer), false);
   }
   else
   {

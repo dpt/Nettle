@@ -106,11 +106,14 @@ void gensaveerror (FILE *file_handle, const char *msg)
 
     if (msg)
     {
-      lookup (msg, string, 256);
-      strcat (string, err ? err->errmess : strerror(errno));
+      strcpy (string,
+              lookup_static_var (msg, 1,
+                                err ? err->errmess : strerror(errno)));
     }
     else
+    {
       strcpy (string, err ? err->errmess : strerror(errno));
+    }
     string[251] = '\0'; /* Terminate to fit error block (just in case it went further) */
 
     generror (string, false);

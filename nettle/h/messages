@@ -13,6 +13,7 @@ extern void lose_messages(void);
 extern char *lookup(const char *, char *, int);
 extern const char *lookup_static(const char *);
 extern const char *lookup_static_sub(const char *token, int params, va_list va);
+extern const char *lookup_static_var(const char *token, int params, ...);
 
 /*******************************************************************
  Function:     lookup_inbuffer
