@@ -213,7 +213,7 @@ void open_window(int window_handle, bool poll_flag)
   {
     session = session->next;
   }
-  
+
   if (poll_flag)
   {
     /* Called from Wimp_Poll, so use that block, which contains an OpenWindow struct */
@@ -301,6 +301,9 @@ static void close_program(void)
   quit_flag = true;
 }
 
+
+
+/* Mouse click */
 
 static void iconbar_click(int x, int y, int buttons, int icon_handle)
 {

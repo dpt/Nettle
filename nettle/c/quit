@@ -31,7 +31,6 @@ void closedown_application(void)
   free(sprite_area);
   free(zap_font_area);
   free(zap_lowres_font_area);
-  free(zapredraw_area);
 
   close_log(true);
 

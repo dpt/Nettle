@@ -548,7 +548,7 @@ static void clear_screen(struct session_struct *session, int calc, int calc2, ch
   /* clear the specified area withe the specified fg,bg,flags and character */
   for (loop=calc; loop<=calc2; loop+=4)
   {
-    if (loop<(session->terminal_size_x*
+    if (loop>0 && loop<(session->terminal_size_x*
              (session->terminal_size_y+session->scrollback)*4))
     {
       write_assigned(session,loop,fg,bg,flags,character);
@@ -1296,11 +1296,52 @@ static bool process_escape_length_x(struct session_struct *session)
                   break;
               }
               break;
+            case 'L':
+              /* Insert line(s) */
+              if (session->ypos-session->scrollback<session->scroll_end-1
+                  &&
+                  session->ypos-session->scrollback>session->scroll_start-1)
+              {
+                int calc, calc2;
+                int move=atoi(session->escape_string+2);
+
+                if (move==0)
+                  move=1;
+
+                calc=(int) session->assigned_area+
+                            (session->ypos*session->terminal_size_x)*4;
+
+                if (move>session->scroll_end-(session->ypos-session->scrollback-1))
+                {
+                  move=session->scroll_end-(session->ypos-session->scrollback-1);
+                }
+
+                calc2=(int) session->assigned_area+
+                             ((session->ypos+move)*session->terminal_size_x)*4;
+
+                _swi(ZapRedraw_MoveBytes, _INR(1,3), calc, calc2,
+                                              move*session->terminal_size_x*4);
+
+                clear_screen(session,
+                             (session->ypos*session->terminal_size_x)*4,
+
+                             ((session->ypos+move)*session->terminal_size_x)*4-4,
+
+                             session->current_fg,
+                             session->current_bg,
+                             0,
+                             32);
+              }
+              done=true;
+              break;
             case 'P':
               {
                 /* Delete character(s) */
                 int calc, calc2;
                 int move=atoi(session->escape_string+2);
+
+                if (move==0)
+                  move=1;
 
                 calc=(int) session->assigned_area+
                            ((session->ypos*session->terminal_size_x)+
@@ -1308,22 +1349,21 @@ static bool process_escape_length_x(struct session_struct *session)
                 calc2=(int) session->assigned_area+
                             ((session->ypos+1)*session->terminal_size_x)*4;
 
-                switch (move)
-                {
-                  case 0:
-                    _swi(ZapRedraw_MoveBytes, _INR(1,3), calc+4, calc, calc2-calc-4);
-
-                    clear_screen(session, calc+4, calc2-4, session->current_fg,
-                                 session->current_bg, 0, 32);
-                    break;
-                  default:
-                    _swi(ZapRedraw_MoveBytes, _INR(1,3), calc+(4*move), calc,
+                _swi(ZapRedraw_MoveBytes, _INR(1,3), calc+(4*move), calc,
                                               calc2-calc-(4*move));
 
-                    clear_screen(session, calc+(4*move), calc2-4, session->current_fg,
-                                 session->current_bg, 0, 32);
-                    break;
-                }
+                clear_screen(session,
+
+                             ((session->ypos*session->terminal_size_x)+
+                              (session->xpos+move))*4,
+
+                              ((session->ypos+1)*session->terminal_size_x)*4-4,
+
+                              session->current_fg,
+                              session->current_bg,
+                              0,
+                              32);
+
                 done=true;
               }
               break;
