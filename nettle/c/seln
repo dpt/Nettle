@@ -374,3 +374,35 @@ void handle_selection_drag(void)
       break;
   }
 }
+
+
+void force_redraw_selection (struct session_struct *session)
+{
+  int top, bottom;
+  int xeig, yeig;
+
+  if (session != selection_session)
+    return;
+
+  xeig = _swi (OS_ReadModeVariable, _INR(0,1) | _RETURN(2), -1, 4);
+  yeig = _swi (OS_ReadModeVariable, _INR(0,1) | _RETURN(2), -1, 5);
+
+  if (selection_start <= selection_end)
+  {
+    top = selection_start;
+    bottom = selection_end;
+  }
+  else
+  {
+    top = selection_end;
+    bottom = selection_start;
+  }
+
+  top /= session->terminal_size_x;
+  bottom /= session->terminal_size_x;
+
+  force_redraw (session->window_handle, 0,
+	        (-bottom - 1) * redraw.r_charh << yeig,
+		selection_session->terminal_size_x * redraw.r_charw << xeig,
+		-top * redraw.r_charh << yeig);
+}

@@ -16,6 +16,67 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
+
+static struct session_struct *changedsession;
+static struct coordspair changedbox;
+
+
+void changedbox_init (struct session_struct *session)
+{
+  changedsession = session;
+  changedbox.tl.x = 255;
+  changedbox.tl.y = 255;
+  changedbox.br.x = 0;
+  changedbox.br.y = 0;
+}
+
+void changedbox_update (int x0, int y0, int x1, int y1)
+{
+  if (x0 < changedbox.tl.x) changedbox.tl.x = x0;
+  if (y0 < changedbox.tl.y) changedbox.tl.y = y0;
+  if (x1 > changedbox.br.x) changedbox.br.x = x1;
+  if (y1 > changedbox.br.y) changedbox.br.y = y1;
+}
+
+
+void changedbox_update_char (int x0, int y0)
+{
+  if (x0 < changedbox.tl.x) changedbox.tl.x = x0;
+  if (y0 < changedbox.tl.y) changedbox.tl.y = y0;
+  if (x0 > changedbox.br.x) changedbox.br.x = x0;
+  if (y0 > changedbox.br.y) changedbox.br.y = y0;
+}
+
+
+void changedbox_update_offset (int calc)
+{
+  int x = (calc / 4) % changedsession->terminal_size_x;
+  int y = (calc / 4) / changedsession->terminal_size_x;
+  changedbox_update_char (x, y);
+}
+
+
+void changedbox_update_whole (void)
+{
+  changedbox_update (0, changedsession->scrollback,
+                    changedsession->terminal_size_x - 1,
+                    changedsession->scrollback + changedsession->terminal_size_y - 1);
+}
+
+
+void force_redraw_changedbox (void)
+{
+  int xeig = _swi (OS_ReadModeVariable, _INR(0,1) | _RETURN(2), -1, 4);
+  int yeig = _swi (OS_ReadModeVariable, _INR(0,1) | _RETURN(2), -1, 5);
+
+  force_redraw (changedsession->window_handle,
+                changedbox.tl.x * redraw.r_charw << xeig,
+                (-changedbox.br.y - 1) * redraw.r_charh << yeig,
+                (changedbox.br.x + 1) * redraw.r_charw << xeig,
+                -changedbox.tl.y * redraw.r_charh << yeig);
+}
+
+
 static char status_positive(char iac_type)
 {
   switch (iac_type)
@@ -69,12 +130,16 @@ static int status_negative(int iac_type)
 static void reprocess_position_scroll(struct session_struct *session)
 {
   int count,calc;
+  int scrolled = 0;
+
+  /* TODO: use Wimp_BlockCopy to scroll the (rendered) window contemt */
 
   /* scroll if y>scroll_end */
 
   while (session->ypos>(session->scroll_end+session->scrollback-1))
   {
     session->ypos--;
+    scrolled = 1;
 
     if (selection_session)
     {
@@ -128,6 +193,7 @@ static void reprocess_position_scroll(struct session_struct *session)
 
        write_assigned(session,calc,7,0,0,32);
     }
+
   }
 
 
@@ -137,6 +203,7 @@ static void reprocess_position_scroll(struct session_struct *session)
                                         session->scrollback-1))
   {
     session->ypos++;
+    scrolled = 1;
 
     if (selection_session)
     {
@@ -185,6 +252,9 @@ static void reprocess_position_scroll(struct session_struct *session)
        write_assigned(session,calc,7,0,0,32);
     }
   }
+
+  if (scrolled)
+    changedbox_update_whole ();
 }
 
 
@@ -194,7 +264,7 @@ static void reprocess_position(struct session_struct *session)
   /* to sit at  (81,24) without causing a newline (which would break pine and things) */
   /* It also shuffles up the selection areas */
 
-  if (session->xpos>session->terminal_size_x-1)
+  if (session->xpos >= session->terminal_size_x)
   {
     if (session->other_session_flags & NETTLE_OTHER_WRAP_MODE)
     {
@@ -204,12 +274,33 @@ static void reprocess_position(struct session_struct *session)
     }
     else
     {
-      while (session->xpos>session->terminal_size_x-1)
-      {
-        session->xpos--;
-      }
+      session->xpos = session->terminal_size_x - 1;
     }
   }
+}
+
+
+static void row_shift_right (struct session_struct *session, int chars)
+{
+  char *start, *end;
+
+  /* don't do too much */
+  if (chars > session->terminal_size_x - session->xpos)
+    chars = session->terminal_size_x - session->xpos;
+
+  /* do nothing if cursor is at/beyond RHS */
+  if (session->xpos >= session->terminal_size_x)
+    return;
+
+  changedbox_update (session->xpos, session->ypos,
+                     session->terminal_size_x - 1, session->ypos);
+
+  start = session->assigned_area +
+          (session->ypos * session->terminal_size_x + session->xpos) * 4;
+  end = session->assigned_area +
+        (session->ypos + 1) * session->terminal_size_x * 4;
+
+  memmove (start + 4 * chars, start, end - start - 4 * chars);
 }
 
 
@@ -515,19 +606,13 @@ static void byte_default(struct session_struct *session, char byte)
 
   if (session->other_session_flags & NETTLE_OTHER_INSERT_MODE)
   {
-    int calc, calc2;
     /* If we're inserting a character, then shuffle all the characters along a byte */
-    calc=(int) session->assigned_area+
-           ((session->ypos*session->terminal_size_x)+
-             session->xpos)*4;
-    calc2=(int) session->assigned_area+
-            ((session->ypos+1)*session->terminal_size_x)*4;
-
-    /* Maybe... calc2-calc-4 might be wrong */
-    _swi(ZapRedraw_MoveBytes, _INR(1,3), calc, calc+4, calc2-calc-4);
+    row_shift_right (session, 1);
   }
-  data=((session->ypos*session->terminal_size_x)+
-             session->xpos)*4;
+
+  changedbox_update_char (session->xpos, session->ypos);
+
+  data = ((session->ypos*session->terminal_size_x)+session->xpos)*4;
 
   /* write out the data */
   write_assigned(session,data,session->current_fg,
@@ -789,6 +874,9 @@ static bool process_escape_length_2(struct session_struct *session)
           if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
             /* Erase to end of screen */
+            changedbox_update (0, session->ypos,
+                               session->terminal_size_x - 1,
+                               session->scrollback + session->terminal_size_y - 1);
             clear_screen(session,
 
                        ((session->ypos*session->terminal_size_x)+
@@ -809,6 +897,8 @@ static bool process_escape_length_2(struct session_struct *session)
           if (session->other_session_flags & NETTLE_OTHER_VT52_MODE)
           {
             /* Erase to end of line */
+            changedbox_update (session->xpos, session->ypos,
+                               session->terminal_size_x - 1, session->ypos);
             clear_screen(session,
 
                        ((session->ypos*session->terminal_size_x)+
@@ -906,6 +996,7 @@ static bool process_escape_length_3(struct session_struct *session)
               break;
             case '8':
               /* Clear screen with E's */
+              changedbox_update_whole ();
               clear_screen(session,
 
                            session->scrollback*
@@ -1040,15 +1131,7 @@ static bool process_escape_length_x(struct session_struct *session)
               if (session->escape_string[2]!='A')
               {
                 int move=atoi(session->escape_string+2);
-                switch (move)
-                {
-                  case 0:
-                    session->ypos--;
-                    break;
-                  default:
-                    session->ypos-=move;
-                    break;
-                }
+                session->ypos -= move ? move : 1;
               }
               else
               {
@@ -1065,15 +1148,7 @@ static bool process_escape_length_x(struct session_struct *session)
               if (session->escape_string[2]!='B')
               {
                 int move=atoi(session->escape_string+2);
-                switch (move)
-                {
-                  case 0:
-                    session->ypos++;
-                    break;
-                  default:
-                    session->ypos+=move;
-                    break;
-                }
+                session->ypos += move ? move : 1;
               }
               else
               {
@@ -1090,15 +1165,7 @@ static bool process_escape_length_x(struct session_struct *session)
               if (session->escape_string[2]!='C')
               {
                 int move=atoi(session->escape_string+2);
-                switch (move)
-                {
-                  case 0:
-                    session->xpos++;
-                    break;
-                  default:
-                    session->xpos+=move;
-                    break;
-                }
+                session->xpos += move ? move : 1;
               }
               else
               {
@@ -1115,15 +1182,7 @@ static bool process_escape_length_x(struct session_struct *session)
               if (session->escape_string[2]!='D')
               {
                 int move=atoi(session->escape_string+2);
-                switch (move)
-                {
-                  case 0:
-                    session->xpos--;
-                    break;
-                  default:
-                    session->xpos-=move;
-                    break;
-                }
+                session->xpos -= move ? move : 1;
               }
               else
               {
@@ -1176,6 +1235,9 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 case '0': case 'J':
                   /* Clear screen from cursor to end of screen */
+                  changedbox_update (0, session->ypos,
+                                     session->terminal_size_x - 1,
+                                     session->scrollback + session->terminal_size_y - 1);
                   clear_screen(session,
 
                        ((session->ypos*session->terminal_size_x)+
@@ -1193,6 +1255,8 @@ static bool process_escape_length_x(struct session_struct *session)
                   break;
                 case '1':
                   /* Clear screen from beginning of screen to cursor */
+                  changedbox_update (0, 0, session->terminal_size_x - 1,
+                                     session->ypos);
                   clear_screen(session,
 
                        (session->scrollback*
@@ -1210,6 +1274,7 @@ static bool process_escape_length_x(struct session_struct *session)
                   break;
                 case '2':
                   /* Clear screen */
+                  changedbox_update_whole ();
                   clear_screen(session,
 
                        (session->scrollback*
@@ -1233,6 +1298,8 @@ static bool process_escape_length_x(struct session_struct *session)
               {
                 case '0': case 'K':
                   /* Clear line from cursor to end of line */
+                  changedbox_update (session->xpos, session->ypos,
+                                     session->terminal_size_x - 1, session->ypos);
                   clear_screen(session,
 
                        ((session->ypos*session->terminal_size_x)+
@@ -1249,6 +1316,8 @@ static bool process_escape_length_x(struct session_struct *session)
                   break;
                 case '1':
                   /* Clear from beginning of line to cursor */
+                  changedbox_update (0, session->ypos,
+                                     session->xpos, session->ypos);
                   clear_screen(session,
 
                        (session->ypos*session->terminal_size_x)*4,
@@ -1264,6 +1333,8 @@ static bool process_escape_length_x(struct session_struct *session)
                   break;
                 case '2':
                   /* Clear entire line */
+                  changedbox_update (0, session->ypos,
+                                     session->terminal_size_x - 1, session->ypos);
                   clear_screen(session,
 
                        (session->ypos*session->terminal_size_x)*4,
@@ -1310,6 +1381,9 @@ static bool process_escape_length_x(struct session_struct *session)
                                           ((session->scroll_end+session->scrollback-
                                             session->ypos-move)*session->terminal_size_x*4));
 
+                changedbox_update (0, session->ypos,
+                                   session->terminal_size_x - 1,
+                                   session->scrollback + session->terminal_size_y - 1);
                 clear_screen(session,
                              (session->ypos*session->terminal_size_x)*4,
 
@@ -1354,6 +1428,9 @@ static bool process_escape_length_x(struct session_struct *session)
                                             session->scrollback)-move)*
                                             session->terminal_size_x*4));
 
+                changedbox_update (0, session->ypos,
+                                   session->terminal_size_x - 1,
+                                   session->scrollback + session->terminal_size_y - 1);
                 clear_screen(session,
                              ((session->scrollback+session->scroll_end-move)*
                               session->terminal_size_x)*4,
@@ -1386,6 +1463,8 @@ static bool process_escape_length_x(struct session_struct *session)
                 _swi(ZapRedraw_MoveBytes, _INR(1,3), calc+(4*move), calc,
                                               calc2-calc-(4*move));
 
+                changedbox_update (session->xpos, session->ypos,
+                                   session->terminal_size_x - 1, session->ypos);
                 clear_screen(session,
 
                              ((session->ypos*session->terminal_size_x)+
@@ -1404,53 +1483,32 @@ static bool process_escape_length_x(struct session_struct *session)
             case '@':
               {
                 /* Insert character(s) */
-                int calc, calc2;
                 int move=atoi(session->escape_string+2);
 
-                if (move==0)
-                  move=1;
-
-                calc=(int) session->assigned_area+
-                           ((session->ypos*session->terminal_size_x)+
-                           session->xpos)*4;
-                calc2=(int) session->assigned_area+
-                            ((session->ypos+1)*session->terminal_size_x)*4;
-
-                _swi(ZapRedraw_MoveBytes, _INR(1,3), calc, calc+(4*move),
-                                              calc2-calc-(4*move));
-
-                clear_screen(session,
-
-                             ((session->ypos*session->terminal_size_x)+
-                              (session->xpos))*4,
-
-                              ((session->ypos*session->terminal_size_x)+
-                               (session->xpos+move))*4-4,
-
-                              session->current_fg,
-                              session->current_bg,
-                              0,
-                              32);
-
+                row_shift_right (session, move < 1 ? 1 : move);
                 done=true;
               }
               break;
             case 'X':
               /* Erase character(s) */
-              clear_screen(session,
-
+              {
+                int move=atoi(session->escape_string+2);
+                if (move == 0)
+                  move = 1;
+                changedbox_update (session->xpos, session->ypos,
+                                   session->xpos + move - 1, session->ypos);
+                clear_screen(session,
               	       ((session->ypos*session->terminal_size_x)+
                        session->xpos)*4,
 
               	       ((session->ypos*session->terminal_size_x)+
-                       session->xpos+
-                       atoi(session->escape_string+2))*4,
+                        session->xpos + move) * 4,
 
                        session->current_fg,
                        session->current_bg,
                        0,
                        32);
-
+              }
               done=true;
               break;
             case 'c':
@@ -1644,8 +1702,7 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 2:
                           /* Sets the terminal to VT52 mode */
-                          session->other_session_flags=
-                                           session->other_session_flags | NETTLE_OTHER_VT52_MODE;
+                          session->other_session_flags |= NETTLE_OTHER_VT52_MODE;
                           break;
                         case 3:
                           /* Selects 80 columns per line */
@@ -1659,29 +1716,22 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 5:
                           /* Selects normal video */
-                          session->other_session_flags=
-                           session->other_session_flags &
-                         					     ~NETTLE_OTHER_REVERSE_VIDEO;
+                          session->other_session_flags &= ~NETTLE_OTHER_REVERSE_VIDEO;
                           break;
                         case 6:
                           /* Home position based in top-left of screen */
-                          session->other_session_flags=
-                           session->other_session_flags &
-                           					       ~NETTLE_OTHER_ORIGIN_MODE;
+                          session->other_session_flags &= ~NETTLE_OTHER_ORIGIN_MODE;
                           break;
                         case 7:
                           /* No autowrap */
-                          session->other_session_flags=
-                           session->other_session_flags & ~NETTLE_OTHER_WRAP_MODE;
+                          session->other_session_flags &= ~NETTLE_OTHER_WRAP_MODE;
                           break;
                         case 8:
                           /* Turn off auto repeat */
                           break;
                         case 25:
                           /* Make cursor invisible */
-                          session->other_session_flags=
-                            session->other_session_flags &
-                            						~NETTLE_OTHER_CURSOR_VIS;
+                          session->other_session_flags &= ~NETTLE_OTHER_CURSOR_VIS;
                           break;
                       }
                     }
@@ -1706,15 +1756,11 @@ static bool process_escape_length_x(struct session_struct *session)
                       {
                         case 2:
                           /* Turn off keyboard lock */
-                          session->other_session_flags=
-                            session->other_session_flags
-                            					    & ~NETTLE_OTHER_KEYLOCK_MODE;
+                          session->other_session_flags &= ~NETTLE_OTHER_KEYLOCK_MODE;
                           break;
                         case 4:
                           /* Turn off insert mode */
-                          session->other_session_flags=
-                            session->other_session_flags
-                            					     & ~NETTLE_OTHER_INSERT_MODE;
+                          session->other_session_flags &= ~NETTLE_OTHER_INSERT_MODE;
                           break;
                         case 12:
                           /* Turn on local echo (NB. just using telnet's echo stuff) */
@@ -1722,9 +1768,7 @@ static bool process_escape_length_x(struct session_struct *session)
                           break;
                         case 20:
                           /* Make LF,FF,VT move to next line (normal behaviour) */
-                          session->other_session_flags=
-                            session->other_session_flags &
-                         					~NETTLE_OTHER_LINEFEED_MODE;
+                          session->other_session_flags &= ~NETTLE_OTHER_LINEFEED_MODE;
                           break;
                       }
                     }
@@ -1767,21 +1811,19 @@ static bool process_escape_length_x(struct session_struct *session)
                       break;
                     case 1: case 5:
                       /* Bold, Blink */
-                      session->current_fg=session->current_fg | 8;
+                      session->current_fg |= 8;
                       status=true;
                       break;
                     case 27:
                       /* Cancel invert */
-                      session->current_flags=
-                      		session->current_flags & ~NETTLE_FLAG_INVERTED;
+                      session->current_flags &= ~NETTLE_FLAG_INVERTED;
                       break;
                     case 30: case 31: case 32: case 33: case 34: case 35: case 36: case 37:
                       /* Foreground */
                       session->current_fg=atoi(string)-30;
                       if (status)
                       {
-                        session->current_fg=
-                                                          session->current_fg | 8;
+                        session->current_fg |= 8;
                       }
                       break;
                     case 39:
@@ -1796,8 +1838,7 @@ static bool process_escape_length_x(struct session_struct *session)
                       break;
                     case 7:
                       /* Invert */
-                      session->current_flags=
-                              session->current_flags | (NETTLE_FLAG_INVERTED);
+                      session->current_flags |= NETTLE_FLAG_INVERTED;
                       break;
                   }
                 }
@@ -2095,227 +2136,123 @@ static int decode_key(struct session_struct *session, int key, char *block)
 {
   int size_of_block;
 
+#define SETBLOCK(LEN,STR) { strcpy (block, STR); size_of_block = LEN; }
+
   switch (key)
   {
-    case 0x00D:
-      /* Return */
+    case 0x00D: /* Return */
       if (session->other_session_flags & NETTLE_OTHER_LINEFEED_MODE)
       {
-        strcpy(block,"\r\n\n");
-        size_of_block=3;
+        SETBLOCK (3, "\r\n\n");
       }
       else
       {
-        strcpy(block,"\r\n");
-        size_of_block=2;
+        SETBLOCK (2, "\r\n");
       }
       break;
-    case 0x01E:
-      /* Home */
-      strcpy(block,"\x1B[1~");
-      size_of_block=4;
+    case 0x01E: /* Home */
+      SETBLOCK (4, "\x1B[1~");
       break;
-    case 0x07F:
-      /* Delete */
-      strcpy(block,"\x1B[3~");
-      size_of_block=4;
+    case 0x07F: /* Delete */
+      SETBLOCK (4, "\x1B[3~");
       break;
-    case 0x181:
-      /* F1 */
-      strcpy(block,"\x1BOP");
-      size_of_block=3;
+    case 0x181: /* F1 */
+      SETBLOCK (3, "\x1BOP");
       break;
-    case 0x182:
-      /* F2 */
-      strcpy(block,"\x1BOQ");
-      size_of_block=3;
+    case 0x182: /* F2 */
+      SETBLOCK (3, "\x1BOQ");
       break;
-    case 0x183:
-      /* F3 */
-      strcpy(block,"\x1BOR");
-      size_of_block=3;
+    case 0x183: /* F3 */
+      SETBLOCK (3, "\x1BOR");
       break;
-    case 0x184:
-      /* F4 */
-      strcpy(block,"\x1BOS");
-      size_of_block=3;
+    case 0x184: /* F4 */
+      SETBLOCK (3, "\x1BOS");
       break;
-    case 0x185:
-      /* F5 */
-      strcpy(block,"\x1B[15~");
-      size_of_block=5;
+    case 0x185: /* F5 */
+      SETBLOCK (5, "\x1B[15~");
       break;
-    case 0x186:
-      /* F6 */
-      strcpy(block,"\x1B[17~");
-      size_of_block=5;
+    case 0x186: /* F6 */
+      SETBLOCK (5, "\x1B[17~");
       break;
-    case 0x187:
-      /* F7 */
-      strcpy(block,"\x1B[18~");
-      size_of_block=5;
+    case 0x187: /* F7 */
+      SETBLOCK (5, "\x1B[18~");
       break;
-    case 0x188:
-      /* F8 */
-      strcpy(block,"\x1B[19~");
-      size_of_block=5;
+    case 0x188: /* F8 */
+      SETBLOCK (5, "\x1B[19~");
       break;
-    case 0x189:
-      /* F9 */
-      strcpy(block,"\x1B[20~");
-      size_of_block=5;
+    case 0x189: /* F9 */
+      SETBLOCK (5, "\x1B[20~");
       break;
-    case 0x18A:
-      /* Tab */
-      strcpy(block,"\t");
-      size_of_block=1;
+    case 0x18A: /* Tab */
+      SETBLOCK (1, "\t");
       break;
-    case 0x18B:
-      /* Copy */
-      strcpy(block,"\x1B[4~");
-      size_of_block=4;
+    case 0x18B: /* Copy */
+      SETBLOCK (4, "\x1B[4~");
       break;
-    case 0x18C:
-      /* Left */
-      if (session->other_session_flags & NETTLE_OTHER_APPLI_MODE)
-      {
-        strcpy(block,"\x1BOD");
-        size_of_block=3;
-      }
-      else
-      {
-        strcpy(block,"\x1B[D");
-        size_of_block=3;
-      }
+    case 0x18C: /* Left */
+      SETBLOCK (3, (session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOD" : "\x1B[D");
       break;
-    case 0x18D:
-      /* Right */
-      if (session->other_session_flags & NETTLE_OTHER_APPLI_MODE)
-      {
-        strcpy(block,"\x1BOC");
-        size_of_block=3;
-      }
-      else
-      {
-        strcpy(block,"\x1B[C");
-        size_of_block=3;
-      }
+    case 0x18D: /* Right */
+      SETBLOCK (3, (session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOC" : "\x1B[C");
       break;
-    case 0x18E:
-      /* Down */
-      if (session->other_session_flags & NETTLE_OTHER_APPLI_MODE)
-      {
-        strcpy(block,"\x1BOB");
-        size_of_block=3;
-      }
-      else
-      {
-        strcpy(block,"\x1B[B");
-        size_of_block=3;
-      }
+    case 0x18E: /* Down */
+      SETBLOCK (3, (session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOB" : "\x1B[B");
       break;
-    case 0x18F:
-      /* Up */
-      if (session->other_session_flags & NETTLE_OTHER_APPLI_MODE)
-      {
-        strcpy(block,"\x1BOA");
-        size_of_block=3;
-      }
-      else
-      {
-        strcpy(block,"\x1B[A");
-        size_of_block=3;
-      }
+    case 0x18F: /* Up */
+      SETBLOCK (3, (session->other_session_flags & NETTLE_OTHER_APPLI_MODE) ? "\x1BOA" : "\x1B[A");
+    case 0x191: /* Shift+F1 */
+      SETBLOCK (5, "\x1B[23~");
       break;
-    case 0x191:
-      /* Shift+F1 */
-      strcpy(block,"\x1B[23~");
-      size_of_block=5;
+    case 0x192: /* Shift+F2 */
+      SETBLOCK (5, "\x1B[24~");
       break;
-    case 0x192:
-      /* Shift+F2 */
-      strcpy(block,"\x1B[24~");
-      size_of_block=5;
+    case 0x193: /* Shift+F3 */
+      SETBLOCK (5, "\x1B[25~");
       break;
-    case 0x193:
-      /* Shift+F3 */
-      strcpy(block,"\x1B[25~");
-      size_of_block=5;
+    case 0x194: /* Shift+F4 */
+      SETBLOCK (5, "\x1B[26~");
       break;
-    case 0x194:
-      /* Shift+F4 */
-      strcpy(block,"\x1B[26~");
-      size_of_block=5;
+    case 0x195: /* Shift+F5 */
+      SETBLOCK (5, "\x1B[28~");
       break;
-    case 0x195:
-      /* Shift+F5 */
-      strcpy(block,"\x1B[28~");
-      size_of_block=5;
+    case 0x196: /* Shift+F6 */
+      SETBLOCK (5, "\x1B[29~");
       break;
-    case 0x196:
-      /* Shift+F6 */
-      strcpy(block,"\x1B[29~");
-      size_of_block=5;
+    case 0x197: /* Shift+F7 */
+      SETBLOCK (5, "\x1B[31~");
       break;
-    case 0x197:
-      /* Shift+F7 */
-      strcpy(block,"\x1B[31~");
-      size_of_block=5;
+    case 0x198: /* Shift+F8 */
+      SETBLOCK (5, "\x1B[32~");
       break;
-    case 0x198:
-      /* Shift+F8 */
-      strcpy(block,"\x1B[32~");
-      size_of_block=5;
+    case 0x199: /* Shift+F9 */
+      SETBLOCK (5, "\x1B[33~");
       break;
-    case 0x199:
-      /* Shift+F9 */
-      strcpy(block,"\x1B[33~");
-      size_of_block=5;
+    case 0x19E: /* Page down */
+      SETBLOCK (4, "\x1B[6~");
       break;
-    case 0x19E:
-      /* Page down */
-      strcpy(block,"\x1B[6~");
-      size_of_block=4;
+    case 0x19F: /* Page up */
+      SETBLOCK (4, "\x1B[5~");
       break;
-    case 0x19F:
-      /* Page up */
-      strcpy(block,"\x1B[5~");
-      size_of_block=4;
+    case 0x1CA: /* F10 */
+      SETBLOCK (5, "\x1B[21~");
       break;
-    case 0x1CA:
-      /* F10 */
-      strcpy(block,"\x1B[21~");
-      size_of_block=5;
+    case 0x1CB: /* F11 */
+      SETBLOCK (5, "\x1B[23~");
       break;
-    case 0x1CB:
-      /* F11 */
-      strcpy(block,"\x1B[23~");
-      size_of_block=5;
+    case 0x1CC: /* F12 */
+      SETBLOCK (5, "\x1B[24~");
       break;
-    case 0x1CC:
-      /* F12 */
-      strcpy(block,"\x1B[24~");
-      size_of_block=5;
+    case 0x1CD: /* Insert */
+      SETBLOCK (4, "\x1B[2~");
       break;
-    case 0x1CD:
-      /* Insert */
-      strcpy(block,"\x1B[2~");
-      size_of_block=4;
+    case 0x1DA: /* Shift+F10 */
+      SETBLOCK (5, "\x1B[34~");
       break;
-    case 0x1DA:
-      /* Shift+F10 */
-      strcpy(block,"\x1B[34~");
-      size_of_block=5;
+    case 0x1DB: /* Shift+F11 */
+      SETBLOCK (5, "\x1B[23~");
       break;
-    case 0x1DB:
-      /* Shift+F11 */
-      strcpy(block,"\x1B[23~");
-      size_of_block=5;
-      break;
-    case 0x1DC:
-      /* Shift+F12 */
-      strcpy(block,"\x1B[24~");
-      size_of_block=5;
+    case 0x1DC: /* Shift+F12 */
+      SETBLOCK (5, "\x1B[24~");
       break;
     default:
       if (key<0x100)
@@ -2340,7 +2277,6 @@ void process_wimp_key(struct session_struct *session, int key)
   int size_of_block=0;
   int calc;
   char cursor_flags;
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   if (session->other_session_flags & NETTLE_OTHER_KEYLOCK_MODE)
     return;
@@ -2351,14 +2287,16 @@ void process_wimp_key(struct session_struct *session, int key)
   cursor_flags=read_assigned_flags(session,calc) & (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
-  if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
-  {
-    cursor_flags=(cursor_flags | (NETTLE_FLAG_CURSOR));
-  }
+  cursor_flags |= NETTLE_FLAG_CURSOR;
 
   /* remove the cursor from the position */
+  changedbox_init (session);
+  changedbox_update_offset (calc);
   write_assigned_flags(session,calc,read_assigned_flags(session,calc)
 						 & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
+  force_redraw_changedbox ();
+
+  changedbox_init (session);
 
   size_of_block=decode_key(session,key,block);
 
@@ -2374,6 +2312,7 @@ void process_wimp_key(struct session_struct *session, int key)
         case 7: byte_bell                  (session); break;
         case 8: byte_backspace             (session);
 
+          changedbox_update_char (session->xpos, session->ypos);
           data=((session->ypos*session->terminal_size_x)+
              session->xpos)*4;
 
@@ -2395,6 +2334,7 @@ void process_wimp_key(struct session_struct *session, int key)
 
           if (block[loop]<32)
           {
+            changedbox_update_char (session->xpos, session->ypos);
             write_assigned(session,data,session->current_fg,
             				       session->current_bg,
             				       session->current_flags,
@@ -2407,6 +2347,7 @@ void process_wimp_key(struct session_struct *session, int key)
           }
 
           /* write out the data */
+          changedbox_update_char (session->xpos, session->ypos);
           write_assigned(session,data,session->current_fg,
             				     session->current_bg,
             				     session->current_flags,
@@ -2437,14 +2378,19 @@ void process_wimp_key(struct session_struct *session, int key)
     write_assigned_flags(session,calc,read_assigned_flags(session,calc) | cursor_flags);
   }
 
-  /* force the selection back on (it may have got overwritten by new data) */
-  refresh_selection_set();
+  /* redraw the window */
+  force_redraw_changedbox ();
 
-  /* and redraw the window */
-  force_redraw(session->window_handle,0,
-               (-session->terminal_size_y-session->scrollback)*
-               redraw.r_charh*2*zap_yeig,
-                      session->terminal_size_x*redraw.r_charw*2,0);
+  /* force the selection back on (it may have got overwritten by new data) */
+  force_redraw_selection (session);
+
+  /* redraw the cursor, in case it isn't in the main redraw block */
+  if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
+  {
+    changedbox_init (session);
+    changedbox_update_offset (calc);
+    force_redraw_changedbox ();
+  }
 }
 
 
@@ -2458,7 +2404,6 @@ void process_line_editor(struct session_struct *session)
   char *send_block=0;
   int size_of_send_block=0;
   int icon_text_loop;
-  int zap_yeig=_swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
   {
     char data[512];
@@ -2482,14 +2427,16 @@ void process_line_editor(struct session_struct *session)
                                  		     (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
-  if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
-  {
-    cursor_flags=(cursor_flags | (NETTLE_FLAG_CURSOR));
-  }
+  cursor_flags |= NETTLE_FLAG_CURSOR;
 
   /* remove the cursor from the position */
+  changedbox_init (session);
+  changedbox_update_offset (calc);
   write_assigned_flags(session,calc,read_assigned_flags(session,calc)
 						 & ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
+  force_redraw_changedbox ();
+
+  changedbox_init (session);
 
   for (icon_text_loop=0; icon_text_loop<strlen(icon_text); icon_text_loop++)
   {
@@ -2508,6 +2455,8 @@ void process_line_editor(struct session_struct *session)
         {
           case 7: byte_bell                  (session); break;
           case 8: byte_backspace             (session);
+
+            changedbox_update_char (session->xpos, session->ypos);
 
             data=((session->ypos*session->terminal_size_x)+
                session->xpos)*4;
@@ -2530,6 +2479,7 @@ void process_line_editor(struct session_struct *session)
 
             if (block[loop]<32)
             {
+              changedbox_update_char (session->xpos, session->ypos);
               write_assigned(session,data,session->current_fg,
               					 session->current_bg,
               					 session->current_flags,
@@ -2542,7 +2492,8 @@ void process_line_editor(struct session_struct *session)
             }
 
             /* write out the data */
-              write_assigned(session,data,session->current_fg,
+            changedbox_update_char (session->xpos, session->ypos);
+            write_assigned(session,data,session->current_fg,
               					 session->current_bg,
               					 session->current_flags,
               					 '?');
@@ -2568,7 +2519,6 @@ void process_line_editor(struct session_struct *session)
 
   nettle_senddata(session,send_block,size_of_send_block);
 
-
   calc=get_cursor_position(session);
 
   /* OR back in the cursor flags */
@@ -2577,14 +2527,19 @@ void process_line_editor(struct session_struct *session)
     write_assigned_flags(session,calc,read_assigned_flags(session,calc) | cursor_flags);
   }
 
-  /* force the selection back on (it may have got overwritten by new data) */
-  refresh_selection_set();
+  /* redraw the window */
+  force_redraw_changedbox ();
 
-  /* and redraw the window */
-  force_redraw(session->window_handle,0,
-               (-session->terminal_size_y-session->scrollback)*
-               redraw.r_charh*2*zap_yeig,
-                      session->terminal_size_x*redraw.r_charw*2,0);
+  /* force the selection back on (it may have got overwritten by new data) */
+  force_redraw_selection (session);
+
+  /* redraw the cursor, in case it isn't in the main redraw block */
+  if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
+  {
+    changedbox_init (session);
+    changedbox_update_offset (calc);
+    force_redraw_changedbox ();
+  }
 
   {
     int loop;
@@ -2619,24 +2574,15 @@ void process_line_editor(struct session_struct *session)
 /* get the current cursor position */
 int get_cursor_position(struct session_struct *session)
 {
-  int xpos;
-  int calc;
+  int xpos = session->xpos;
 
-  xpos=session->xpos;
+  /* get a sanitised x coordinate */
+  if (xpos >= session->terminal_size_x)
+    xpos = session->terminal_size_x - 1;
 
-  while (xpos>=session->terminal_size_x)
-  {
-    xpos--;
-  }
-
-  calc=((session->ypos*session->terminal_size_x)+
-         xpos)*4;
-
-  while (calc>=((session->terminal_size_y+session->scrollback)*
-    			session->terminal_size_x)*4)
-  {
-    calc-=4;
-  }
-
-  return calc;
+  /* return real offset or, if outside terminal, the last available offset */
+  return (session->ypos >= session->terminal_size_y + session->scrollback)
+    ? (session->terminal_size_y + session->scrollback)
+       * session->terminal_size_x * 4 - 4
+    : ((session->ypos * session->terminal_size_x) + xpos) * 4;
 }

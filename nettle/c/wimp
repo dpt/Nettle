@@ -239,6 +239,16 @@ void open_window(int window_handle, bool poll_flag)
       open_pane_window(session, block);
       block->handle_behind = session->pane_handle;
     }
+
+    if (_swi (OS_Byte, _INR(0,2) | _RETURN(1), 129, 254, 255))
+    {
+      /* Ctrl pressed - limit to the number of rows */
+      int yeig = _swi (OS_ReadModeVariable, _INR(0,1) | _RETURN(2), -1, 5);
+      int height = block->maxy - block->miny;
+      int maxheight = (session->terminal_size_y * redraw.r_charh) << yeig;
+      if (height > maxheight)
+        block->miny = block->maxy - maxheight;
+    }
   }
 
   _swi(Wimp_OpenWindow, _IN(1), block);
@@ -2062,21 +2072,21 @@ static void open_open_window(bool open_window_flag)
     _swi(Wimp_GetWindowState, _IN(1), &wowb);
 
     wowb.handle_behind = -1;  /* Open on top of stack */
-    
+
     {
       int width = wowb.maxx - wowb.minx;
       int height = wowb.maxy - wowb.miny;
-      
+
       struct wimp_getpointerinfo_block wgpib;
       _swi(Wimp_GetPointerInfo, _IN(1), &wgpib);
-      
+
       wowb.minx = (wgpib.x - width) + 64;
       wowb.maxx = wowb.minx + width;
-      
+
       wowb.miny = 96;
       wowb.miny = wowb.miny + height;
     }
-    
+
     _swi(Wimp_OpenWindow, _IN(1), &wowb);
   }
 

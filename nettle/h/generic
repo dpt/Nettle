@@ -35,6 +35,16 @@ typedef enum
 
 /* Unions/Structs */
 
+struct coords
+{
+  int x, y;
+};
+
+struct coordspair
+{
+  struct coords tl, br;
+};
+
 struct os_spriteop_area
 {
   int total_size;

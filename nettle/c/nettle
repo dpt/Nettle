@@ -234,8 +234,8 @@ void start_connection(void)
 
   /* set all the attributes to their defaults */
   session->terminal_size_x=80;
-  session->terminal_size_y=24;
-  session->scrollback=96;
+  session->terminal_size_y=25;
+  session->scrollback=95;
   session->title=malloc(256);
   assert(session->title != NULL);
   strcpy(session->title,"");
@@ -430,14 +430,16 @@ void write_out_data(struct session_struct *session, const char *data, int length
         (NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT);
 
   /* if the cursor flags don't have cursor set, make it so */
-  if ((cursor_flags & (NETTLE_FLAG_CURSOR))==0)
-  {
-    cursor_flags=(cursor_flags | (NETTLE_FLAG_CURSOR));
-  }
+  cursor_flags |= NETTLE_FLAG_CURSOR;
 
   /* remove the cursor from the position */
+  changedbox_init (session);
+  changedbox_update_offset (calc);
   write_assigned_flags(session, calc, read_assigned_flags(session, calc) &
       ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
+  force_redraw_changedbox ();
+
+  changedbox_init (session);
 
   for (loop = 0; loop < length_data; loop++)
   {
@@ -459,14 +461,19 @@ void write_out_data(struct session_struct *session, const char *data, int length
     write_assigned_flags(session, calc, read_assigned_flags(session, calc) | cursor_flags);
   }
 
-  /* force the selection back on (it may have got overwritten by new data) */
-  refresh_selection_set();
+  /* redraw the window */
+  force_redraw_changedbox ();
 
-  /* and redraw the window */
-  force_redraw(session->window_handle,0,
-               (-session->terminal_size_y-session->scrollback)*
-               redraw.r_charh*2*zap_yeig,
-                      session->terminal_size_x*redraw.r_charw*2,0);
+  /* force the selection back on (it may have got overwritten by new data) */
+  force_redraw_selection (session);
+
+  /* redraw the cursor, in case it isn't in the main redraw block */
+  if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
+  {
+    changedbox_init (session);
+    changedbox_update_offset (calc);
+    force_redraw_changedbox ();
+  }
 }
 
 
@@ -706,29 +713,33 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   int old_terminal_size_x=session->terminal_size_x;
   int old_terminal_size_y=session->terminal_size_y;
 
-  session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
-  assert(session->assigned_area != NULL);
-  session->terminal_size_x=terminal_size_x;
-  session->terminal_size_y=terminal_size_y;
-  session->scrollback     =scrollback;
-
-  /* Blank area */
-  /* remove once move is implemented */
+  if (terminal_size_x != old_terminal_size_x || terminal_size_y !=
+      old_terminal_size_y || scrollback != session->scrollback)
   {
-    int loop;
+    session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
+    assert(session->assigned_area != NULL);
+    session->terminal_size_x=terminal_size_x;
+    session->terminal_size_y=terminal_size_y;
+    session->scrollback     =scrollback;
 
-    for (loop=0; loop<terminal_size_x*(terminal_size_y+scrollback)*4; loop+=4)
+    /* Blank area */
+    /* remove once move is implemented */
     {
-      write_assigned(session, loop, 7, 0, 0, 32);
+      int loop;
+
+      for (loop=0; loop<terminal_size_x*(terminal_size_y+scrollback)*4; loop+=4)
+      {
+        write_assigned(session, loop, 7, 0, 0, 32);
+      }
     }
+
+    /* move old data to new area */
+    /* Implement... */
+
+    free(old_assigned_area);
+
+    allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
   }
-
-  /* move old data to new area */
-  /* Implement... */
-
-  free(old_assigned_area);
-
-  allocate_zapredraw_area(terminal_size_x, terminal_size_y, scrollback);
 
   reopen_and_size_window(session, old_terminal_size_x, old_terminal_size_y,
                          redraw.r_charw, redraw.r_charh);
