@@ -248,7 +248,6 @@ static void load_templates(void)
 static int *load_font(char *font)
 {
   char string[5]="ZFLK";
-  char character;
   int *zap_load_area;
   int width;
   int height;
@@ -290,25 +289,32 @@ static int *load_font(char *font)
           /* If it's a directory, plonk .0 on the end */
           strcat(file_end,".0");
           strcat(file_name,".0");
+	  
+	  /* and pretend it's a file */
+	  object_type = 1;
       }
 
-      file_handle=fopen(file_name,"r");
-
-      if (file_handle != NULL)
+      if (object_type == 1)
       {
-        fgets(string,5,file_handle);
+      	file_handle=fopen(file_name,"rb");
 
-        /* if it's redirection then */
-        if (strcmp(string,"ZFLK")==0)
-        {
-          /* get the new line character */
-          character=fgetc(file_handle);
+      	if (file_handle != NULL)
+      	{
+      	  fread(&string[0],1,5,file_handle);
+	  string[4]='\0';
 
-          /* get the redirection font */
-          fgets(file_end, sizeof(file_end), file_handle);
+      	  /* if it's redirection then */
+      	  if (strcmp(string,"ZFLK")==0)
+      	  {
+	    size_t chrs;
+	
+      	    /* get the redirection font */
+      	    chrs = fread(&file_end[0], 1, sizeof(file_end)-1, file_handle);
+	    file_end[chrs]='\0';
 
-          fclose(file_handle);
-        }
+      	    fclose(file_handle);
+      	  }
+      	}
       }
     }
     else
@@ -321,20 +327,20 @@ static int *load_font(char *font)
   {
     /* if we didn't find a font, use Nettle's internal one */
     strcpy(file_name,"<Nettle$Dir>.Fonts.08x16.Default.0");
-    file_handle=fopen(file_name,"r");
+    file_handle=fopen(file_name,"rb");
   }
+  
+  assert(file_handle);
 
   fseek(file_handle,8,SEEK_SET);
 
   /* Get font information */
-  width=((fgetc(file_handle))<<0)+((fgetc(file_handle))<<8)+((fgetc(file_handle))<<16)+
-         ((fgetc(file_handle))<<24);
-  height=((fgetc(file_handle))<<0)+((fgetc(file_handle))<<8)+((fgetc(file_handle))<<16)+
-          ((fgetc(file_handle))<<24);
-  first_char=((fgetc(file_handle))<<0)+((fgetc(file_handle))<<8)+((fgetc(file_handle))<<16)+
-              ((fgetc(file_handle))<<24);
-  last_char=((fgetc(file_handle))<<0)+((fgetc(file_handle))<<8)+((fgetc(file_handle))<<16)+
-             ((fgetc(file_handle))<<24);
+  fread((char *) &width, 1, 4, file_handle);
+  fread((char *) &height, 1, 4, file_handle);
+  fread((char *) &first_char, 1, 4, file_handle);
+  fread((char *) &last_char, 1, 4, file_handle);
+
+  fclose(file_handle);
 
   /* Set real character size (will be needed to implement graphics characters) */
   if ((width % 8)==0)
@@ -347,8 +353,6 @@ static int *load_font(char *font)
   }
   zap_load_area=malloc(char_size*(0x11D-first_char)+0x20);
   assert(zap_load_area != NULL);
-
-  fclose(file_handle);
 
   _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);
 
