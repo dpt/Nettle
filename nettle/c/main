@@ -33,8 +33,7 @@ int main(void)
   _swi(Hourglass_On, 0);
 
   /* Initialise application */
-  task_handle= _swi(Wimp_Initialise, _INR(0,3)|_RETURN(1), 310, 0x4B534154,
-                                    application_name, initialise_messages());
+  initialise_wimp();
 
   /* load things in */
   load_choices();

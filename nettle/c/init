@@ -16,19 +16,20 @@
 #include "wimp.h"
 #include "zapredraw.h"
 
-int *initialise_messages(void)
+void initialise_wimp(void)
 {
-  static int message_list[] =
+  static int messages[] =
   {
     2,       /* DataSaveAck */
-    0x400C1, /* ModeChange */
-    0x808C1, /* TW_Output */
-    0x808C2, /* TW_Ego */
-    0x808C3, /* TW_Morio */
+    0x400c1, /* ModeChange */
+    0x808c1, /* TW_Output */
+    0x808c2, /* TW_Ego */
+    0x808c3, /* TW_Morio */
     0        /* Quit */
   };
 
-  return message_list;
+  _swi(Wimp_Initialise, _INR(0,3)|_OUT(1), 310, 0x4b534154,
+    application_name, messages, &task_handle);
 }
 
 
@@ -40,31 +41,34 @@ void load_messages(void)
   int size_of_messagetrans_buffer;
 
   /* Get the country - if it has null length, then default to UK */
-  if (strlen(get_country(country, sizeof(country)))==0)
-    strcpy(country,"UK");
+  if (strlen(get_country(country, sizeof(country))) == 0)
+    strcpy(country, "UK");
 
   /* put together filename */
-  sprintf(messages_file_name,"<%s$Dir>.Resources.%s.Messages",application_name,country);
+  sprintf(messages_file_name, "<%s$Dir>.Resources.%s.Messages",
+    application_name, country);
 
   /* open the file */
-  file_handle=fopen(messages_file_name,"r");
+  file_handle = fopen(messages_file_name, "r");
 
   /* if we don't open it, then definitely set country to UK */
-  if (file_handle==0)
+  if (file_handle == 0)
     strcpy(country,"UK");
   else
     fclose(file_handle);
 
-  sprintf(messages_file_name,"<%s$Dir>.Resources.%s.Messages",application_name,country);
+  sprintf(messages_file_name, "<%s$Dir>.Resources.%s.Messages",
+    application_name, country);
 
   /* Now re-open it */
-  size_of_messagetrans_buffer=_swi(MessageTrans_FileInfo,_IN(1)|_RETURN(2), messages_file_name);
+  size_of_messagetrans_buffer = _swi(MessageTrans_FileInfo,
+    _IN(1)|_RETURN(2), messages_file_name);
 
-  messagetrans_buffer=malloc(size_of_messagetrans_buffer);
+  messagetrans_buffer = malloc(size_of_messagetrans_buffer);
+  assert(messagetrans_buffer != NULL);
 
   _swi(MessageTrans_OpenFile, _INR(0,2), messagetrans_area,
-                                                    messages_file_name,
-                                                    messagetrans_buffer);
+    messages_file_name, messagetrans_buffer);
 }
 
 
@@ -72,43 +76,43 @@ void load_sprites(void)
 {
   int yeig;
   char file_name[1024];
-  FILE *file_handle;
+  int obj_type;
+  int obj_size;
 
   /* find out what sprites we need to load */
-  yeig=(int) pow(2, _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5) );
+  yeig = 1 << _swi(OS_ReadModeVariable, _INR(0,1)|_RETURN(2), -1, 5);
 
-  sprintf(file_name,"<%s$Dir>.Resources.Sprites",application_name);
+  sprintf(file_name, "<%s$Dir>.Resources.Sprites", application_name);
 
   /* if we're in a 2 high pixel mode, append 22 */
-  if (yeig==2)
-    strcat(file_name,"22");
-
-  file_handle=fopen(file_name,"r");
-  if (file_handle==0)
+  /* FIXME: strictly this should be using the appropriate Wimp_ReadSysInfo
+   * call */
+  if (yeig == 2)
+    strcat(file_name, "22");
+  
+  _swi(OS_File, _INR(0,1)|_OUT(0)|_OUT(4), 17, file_name, &obj_type, &obj_size);
+  if (obj_type == 1)
   {
-    generror("NoSprites", true);
-    closedown_application();
+    obj_size += 64;
+
+    /* malloc a block big enough for it */
+    sprite_area = malloc(obj_size);
+    assert(sprite_area != NULL);
+
+    /* set up the block */
+    sprite_area->total_size = obj_size;
+    sprite_area->offset_to_1st_sprite = 16;
+
+    /* initialise area */
+    _swi(OS_SpriteOp, _INR(0,1), 0x109, sprite_area);
+
+    /* load sprites into it */
+    _swi(OS_SpriteOp, _INR(0,2), 0x10a, sprite_area, file_name);
   }
   else
   {
-    int size;
-    fclose(file_handle);
-
-    /* get the sprite file size */
-    size=_swi(OS_File, _INR(0,1)|_RETURN(4), 5, file_name)+64;
-
-    /* malloc a block big enough for it */
-    sprite_area=malloc(size);
-
-    /* set up the block */
-    sprite_area->total_size=size;
-    sprite_area->offset_to_1st_sprite=16;
-
-    /* initialise area */
-    _swi(OS_SpriteOp, _INR(0,1), 256+9, sprite_area);
-
-    /* load sprites into it */
-    _swi(OS_SpriteOp, _INR(0,2), 256+10, sprite_area, file_name);
+    generror("NoSprites", true);
+    closedown_application();
   }
 }
 
@@ -121,7 +125,7 @@ static void open_template(void)
   FILE *file_handle;
 
   /* Check 3D bit of CMOS RAM */
-  if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 0x8C) & 1)
+  if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 0x8c) & 1)
     use_3d_templates=true;
 
   /* Again, set country to UK if we don't know */
@@ -183,7 +187,7 @@ static void open_template(void)
 }
 
 
-static int load_template(int *font_array,char *window_name, int *templ_sprites)
+static int load_template(int *font_array, char *window_name, int *templ_sprites)
 {
   char window_name_copy[12];
   struct wimp_createwindow_block *template_data;
@@ -196,23 +200,24 @@ static int load_template(int *font_array,char *window_name, int *templ_sprites)
   strcpy(window_name_copy, window_name);
 
   /* get sizes of template data and indirected_data */
-  _swi(Wimp_LoadTemplate, _IN(1)|_INR(5,6)|_OUTR(1,2),
-                          0, window_name_copy, 0,
-                          &size_of_template_data, &size_of_indirected_data);
+  _swi(Wimp_LoadTemplate, _IN(1)|_INR(5,6)|_OUTR(1,2), 0, window_name_copy,
+    0, &size_of_template_data, &size_of_indirected_data);
 
   /* malloc this amount, indirected first to be heap friendly */
-  indirected_data=malloc(size_of_indirected_data);
-  template_data=malloc(size_of_template_data);
+  indirected_data = malloc(size_of_indirected_data);
+  assert(indirected_data != NULL);
+  template_data = malloc(size_of_template_data);
+  assert(template_data != NULL);
 
   /* load the template */
-  _swi(Wimp_LoadTemplate, _INR(1,6), template_data,
-                          indirected_data, indirected_data+size_of_indirected_data,
-                          font_array, window_name_copy, 0);
+  _swi(Wimp_LoadTemplate, _INR(1,6), template_data, indirected_data,
+    indirected_data+size_of_indirected_data, font_array, window_name_copy,
+    0);
 
   /* set the sprite area pointer */
-  template_data->sprite_area= (int)templ_sprites;
+  template_data->sprite_area = (int) templ_sprites;
 
-  window_handle=_swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), template_data);
+  window_handle = _swi(Wimp_CreateWindow, _IN(1)|_RETURN(0), template_data);
 
   /* free the template data (indirected is still needed) */
   free(template_data);
@@ -292,21 +297,20 @@ static int *load_font(char *font)
     /* if it's there, what sort of object is it */
     if (_swix(OS_File, _INR(0,1)|_OUT(0), 17, file_name, &object_type)==0)
     {
-      switch (object_type)
+      if (object_type == 0)
       {
-        case 0:
           strcpy(string,"");
-          break;
-        case 2:
+      }
+      else if (object_type == 2)
+      {
           /* If it's a directory, plonk .0 on the end */
           strcat(file_end,".0");
           strcat(file_name,".0");
-          break;
       }
 
       file_handle=fopen(file_name,"r");
 
-      if (file_handle!=0)
+      if (file_handle != NULL)
       {
         fgets(string,5,file_handle);
 
@@ -358,6 +362,8 @@ static int *load_font(char *font)
     char_size=(width+(8-(width % 8)))*height/8;
   }
   zap_load_area=malloc(char_size*(0x11D-first_char)+0x20);
+  assert(zap_load_area != NULL);
+  
   fclose(file_handle);
 
   _swi(OS_File, _INR(0,3), 16, file_name, zap_load_area, 0);
@@ -393,6 +399,7 @@ void create_icon_bar_icon(void)
   block.maxy         =68; /* max y */
   block.icon_flags   =0x1700311a;
 
+  /* FIXME: this is an indirect sprite, doesn't need to be */
   block.contents.is.sprite     =application_icon_name;
   block.contents.is.sprite_area=sprite_area;
   block.contents.is.sprite_len =strlen(application_icon_name);

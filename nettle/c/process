@@ -202,8 +202,7 @@ static void work_out_character(struct session_struct *session, int data, unsigne
         }
         else
         {
-          write_assigned_flags(session,data,read_assigned_flags(session,data)
-									  | NETTLE_FLAG_PLUS100);
+          write_assigned_flags(session,data,read_assigned_flags(session,data) | NETTLE_FLAG_PLUS100);
           write_assigned_character(session,data,(char) graphics_byte-0x100);
         }
       }
@@ -227,14 +226,18 @@ static void work_out_character(struct session_struct *session, int data, unsigne
 
 static void byte_null(struct session_struct *session)
 {
+  NOT_USED(session);
 }
 
 static void byte_enquiry(struct session_struct *session)
 {
+  NOT_USED(session);
 }
 
 static void byte_bell(struct session_struct *session)
 {
+  NOT_USED(session);
+
   /* Bell */
   _swi(OS_WriteI + 7, 0);
 }
@@ -299,10 +302,12 @@ static void byte_shift_in(struct session_struct *session)
 
 static void byte_device_control_1(struct session_struct *session)
 {
+  NOT_USED(session);
 }
 
 static void byte_device_control_3(struct session_struct *session)
 {
+  NOT_USED(session);
 }
 
 static void byte_cancel(struct session_struct *session)
@@ -351,6 +356,7 @@ static void byte_escape(struct session_struct *session)
 
 static void byte_delete(struct session_struct *session)
 {
+  NOT_USED(session);
 }
 
 static void byte_index(struct session_struct *session)
@@ -436,10 +442,8 @@ static void byte_string_terminator(struct session_struct *session)
       {
         if (session->escape_string[1]=='[')
         {
-          session->escape_string[session->escape_string_length]='\x1B';
-          session->escape_string_length++;
-          session->escape_string[session->escape_string_length]='\\';
-          session->escape_string_length++;
+          session->escape_string[session->escape_string_length++]='\x1B';
+          session->escape_string[session->escape_string_length++]='\\';
         }
       }
     }
@@ -989,8 +993,7 @@ static bool process_escape_length_3(struct session_struct *session)
               default:
                 {
                   char block[3];
-                  session->session_flags[
-                                  (unsigned char)session->escape_string[2]]=false;
+                  session->session_flags[(unsigned char)session->escape_string[2]]=false;
 
                   block[0]=255; /* IAC */
                   block[1]=status_negative(iac_type);
@@ -2344,6 +2347,8 @@ void process_line_editor(struct session_struct *session)
     read_icon_data(session->pane_handle, 1, data, sizeof(data));
 
     icon_text = malloc(strlen(data) + 3);
+    assert(icon_text != NULL);
+    
     strcpy(icon_text, data);
     strcat(icon_text, "\r");
   }
@@ -2436,7 +2441,7 @@ void process_line_editor(struct session_struct *session)
         }
       }
     }
-    send_block=realloc(send_block,size_of_send_block+size_of_block);
+    send_block=realloc(send_block,size_of_send_block+size_of_block); /* FIXME: Dangerous use of realloc() */
     strncpy(send_block+size_of_send_block,block,size_of_block);
     size_of_send_block+=size_of_block;
   }

@@ -63,13 +63,9 @@ void start_connection(void)
   struct session_struct *session;
 
   session = malloc(sizeof(struct session_struct));
-  session->next = NULL;
-  session->prev = NULL;
-
-  /* ought to give a different message, really */
-  if (!session)
+  if (session == NULL)
   {
-    generror("TooMany", true);
+    generror("TooMany", true); /* ought to give a different message, really */
     return;
   }
 
@@ -239,10 +235,12 @@ void start_connection(void)
   session->terminal_size_y=24;
   session->scrollback=96;
   session->title=malloc(256);
+  assert(session->title != NULL);
   strcpy(session->title,"");
   session->assigned_area=malloc(session->terminal_size_x*
                                                 (session->terminal_size_y+
                                                  session->scrollback)*4);
+  assert(session->assigned_area);
   session->xpos=0;
   session->ypos=session->scrollback;
   session->connection_type=connection_type;
@@ -273,6 +271,7 @@ void start_connection(void)
   if (line_editor)
   {
     session->line_editor_history=malloc(line_editor_size*512*sizeof(char));
+    assert(session->line_editor_history != NULL);
     session->line_editor_position=0;
     session->line_editor_total=1;
 
@@ -297,7 +296,7 @@ void start_connection(void)
                            session->scrollback)
                           *(redraw.r_charh*2*zap_yeig));
     block.handle_behind=-1;
-    block.window_flags =0xff080182;
+    block.window_flags =0xff000002;
     block.title_fg     =7;
     block.title_bg     =2;
     block.work_fg      =7;
@@ -401,23 +400,26 @@ void start_connection(void)
       break;
   }
 
-  /* make a ZapRedraw area big enough - note: the assembly is quite inefficient, so writes out */
-  /* the stuff to change the colour every 'character', which means typically each character */
-  /* takes up 5 bytes, so 6 is a number >5. Basically if you start getting screens full of */
-  /* graphics characters and stuff, 6 isn't enough. Possibly the draw routine should stop */
-  /* writing when it falls outside the area, and the number returned at the end - it could */
-  /* make a larger buffer, but not done yet. */
+  /* make a ZapRedraw area big enough - note: the assembly is quite
+   * inefficient, so writes out the stuff to change the colour every
+   * 'character', which means typically each character takes up 5 bytes, so 6
+   * is a number >5. Basically if you start getting screens full of graphics
+   * characters and stuff, 6 isn't enough. Possibly the draw routine should
+   * stop writing when it falls outside the area, and the number returned at
+   * the end - it could  make a larger buffer, but not done yet.
+   */
 
-  if (size_of_zapredraw_area<(session->terminal_size_x*
-                              (session->terminal_size_y+
-                               session->scrollback)*8)) /* 8 is 'some value' */
+  if (size_of_zapredraw_area < session->terminal_size_x *
+    (session->terminal_size_y + session->scrollback) * 8) /* 8 is 'some value' */
   {
-    size_of_zapredraw_area=(session->terminal_size_x*
-                              (session->terminal_size_y+
-                               session->scrollback)*8); /* same here */
+    int *new_zapredraw_area;
 
-    zapredraw_area=realloc(zapredraw_area,size_of_zapredraw_area);
+    size_of_zapredraw_area = session->terminal_size_x *
+      (session->terminal_size_y + session->scrollback) * 8; /* same here */
 
+    new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
+    assert(new_zapredraw_area != NULL);
+    zapredraw_area = new_zapredraw_area;
   }
 }
 
@@ -454,8 +456,7 @@ void write_out_data(struct session_struct *session, char *data, int length_data)
   write_assigned_flags(session, calc, read_assigned_flags(session, calc) &
       ~(NETTLE_FLAG_CURSOR | NETTLE_FLAG_NO_INPUT));
 
-  loop=0;
-  while (loop<length_data)
+  for (loop = 0; loop < length_data; loop++)
   {
     /* log the byte */
     log_byte(data[loop]);
@@ -465,8 +466,6 @@ void write_out_data(struct session_struct *session, char *data, int length_data)
 
     /* process the current byte at this position */
     process_data(session, data[loop]);
-
-    loop++;
   }
 
   calc=get_cursor_position(session);
@@ -474,10 +473,8 @@ void write_out_data(struct session_struct *session, char *data, int length_data)
   /* OR back in the cursor flags */
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)
   {
-    write_assigned_flags(session, calc, read_assigned_flags(session, calc)
-    										 | cursor_flags);
+    write_assigned_flags(session, calc, read_assigned_flags(session, calc) | cursor_flags);
   }
-
 
   /* force the selection back on (it may have got overwritten by new data) */
   refresh_selection_set();
@@ -508,8 +505,7 @@ void remove_session(struct session_struct *session)
           block.user_message.my_ref      =0;
           block.user_message.message_code=0x808C4;
 
-          _swi(Wimp_SendMessage, _INR(0,2), 17, &block,
-                                                       session->socket_handle);
+          _swi(Wimp_SendMessage, _INR(0,2), 17, &block, session->socket_handle);
         }
         break;
     }
@@ -594,8 +590,7 @@ void nettle_senddata(struct session_struct *session, char *data, int length)
         block.user_message.message_code                   =0x808C0;
         block.user_message.contents.task_window_input.size=length;
 
-        _swi(Wimp_SendMessage, _INR(0,2), 17, &block,
-                                                     session->socket_handle);
+        _swi(Wimp_SendMessage, _INR(0,2), 17, &block, session->socket_handle);
       }
       break;
   }
@@ -729,6 +724,7 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
   int old_terminal_size_y=session->terminal_size_y;
 
   session->assigned_area  =malloc(terminal_size_x*(terminal_size_y+scrollback)*4);
+  assert(session->assigned_area != NULL);
   session->terminal_size_x=terminal_size_x;
   session->terminal_size_y=terminal_size_y;
   session->scrollback     =scrollback;
@@ -749,15 +745,18 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
 
   free(old_assigned_area);
 
-  if (size_of_zapredraw_area<(session->terminal_size_x*
-                              (session->terminal_size_y+
-                               session->scrollback)*8)) /* 8 is 'some value' */
+  if (size_of_zapredraw_area < session->terminal_size_x *
+    (session->terminal_size_y + session->scrollback) * 8) /* 8 is 'some
+    value' */
   {
-    size_of_zapredraw_area=(session->terminal_size_x*
-                              (session->terminal_size_y+
-                               session->scrollback)*8); /* same here */
+    int *new_zapredraw_area;
+    
+    size_of_zapredraw_area = session->terminal_size_x *
+      (session->terminal_size_y + session->scrollback) * 8; /* same here */
 
-    zapredraw_area=realloc(zapredraw_area,size_of_zapredraw_area);
+    new_zapredraw_area = realloc(zapredraw_area, size_of_zapredraw_area);
+    assert(new_zapredraw_area != NULL);
+    zapredraw_area = new_zapredraw_area;
   }
 
   reopen_and_size_window(session, old_terminal_size_x, old_terminal_size_y,

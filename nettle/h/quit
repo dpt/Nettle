@@ -8,6 +8,7 @@
 #ifndef QUIT_H
 #define QUIT_H
 
+extern void closedown_wimp(void);
 extern void closedown_application(void);
 
-#endif
+#endif /* QUIT_H */

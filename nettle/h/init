@@ -11,14 +11,11 @@
 #define LOAD_TEMPLATE_NO_FONTS          (int *)(-1)
 #define LOAD_TEMPLATE_WIMP_SPRITE_AREA  (int *)(1)
 
-extern int *initialise_messages(void);
+extern void initialise_wimp(void);
 extern void load_messages(void);
 extern void load_sprites(void);
-
 extern void load_templates(void);
-
 extern void load_zap_fonts(void);
-
 extern void create_icon_bar_icon(void);
 
-#endif
+#endif /* INIT_H */

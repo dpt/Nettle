@@ -1288,9 +1288,8 @@ void mode_change(void)
   }
 
   /* Reallocate the bitmaps area */
-  switch (dynamic_areas_available())
+  if (dynamic_areas_available())
   {
-    case true:
       if (bitmaps_area_number==0)
       {
         char string[]="Nettle bitmaps area";
@@ -1310,9 +1309,10 @@ void mode_change(void)
           _swi(OS_ChangeDynamicArea, _INR(0,1), bitmaps_area_number, mem_required-current_size);
         }
       }
-      break;
-    case false:
-      bitmaps_area=realloc(bitmaps_area, mem_required);
+  }
+  else
+  {
+      bitmaps_area=realloc(bitmaps_area, mem_required); /* FIXME: Dangerous use of realloc() */
   }
 
   redraw.r_flags=0;
@@ -1630,6 +1630,8 @@ static char *get_menu_item(char *name)
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 1);
+  
+  assert(item != NULL);
 
   return strcpy(item, value);
 }
@@ -1641,6 +1643,8 @@ static char *get_last_menu_item(char *name)
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 2);
+  
+  assert(item != NULL);
 
   strcpy(item, value);
   return strcat(item, "\\");
@@ -1653,6 +1657,8 @@ static char *get_grey_menu_item(char *name)
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, MESSAGE_MAX_MENU);
   char *item = malloc(strlen(value) + 2);
+  
+  assert(item != NULL);
 
   item[0] = '#';
   item[1] = '\0';
@@ -1666,6 +1672,8 @@ static char *get_grey_last_menu_item(char *name)
   char contents[MESSAGE_MAX_MENU];
   char *value = lookup(name, contents, 20);
   char *item = malloc(strlen(value) + 3);
+  
+  assert(item != NULL);
 
   item[0] = '#';
   strcpy(item + 1, value);

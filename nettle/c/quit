@@ -12,6 +12,11 @@
 #include "nettle.h"
 #include "quit.h"
 
+void closedown_wimp(void)
+{
+  _swi(Wimp_CloseDown, _INR(0,1), task_handle, 0x4b534154);
+}
+
 void closedown_application(void)
 {
   /* Quit! */
@@ -48,7 +53,7 @@ void closedown_application(void)
   Fortify_LeaveScope();
 #endif
 
-  _swi(Wimp_CloseDown, 0);
+  closedown_wimp();
 
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
