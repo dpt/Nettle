@@ -1,7 +1,7 @@
 Nettle - Telnet and terminal emulation for RISC OS
 ==================================================
 
-Version : 0.202x : February 21st, 2002.  (BETA DEVELOPMENT VERSION)
+Version : 0.2032 : December 7th, 2002.
 
 Nettle is *the* terminal emulator and telnet client for the RISC OS
 operating system. It utilises the ZapRedraw module for speedy display and
@@ -30,7 +30,10 @@ Nettle currently requires Wimp 3.50 or better.  All versions of RISC OS
 can have at least Wimp 3.98 ("Nested Wimp") loaded, however, users of
 RISC OS 3.1 may not have this installed and see some reduction in
 functionality.  This will be addressed in a future release where we
-intend to directly support older WIMP versions.
+intend to directly support older WIMP versions.   Nettle makes use of
+menus with sprites - there is a known bug in WIMP versions prior to
+RISC OS Select 2i3 (RISC OS 4.33) which means that these menus may
+occasionally display incorrectly.
 
 In common with other RISC OS internet access software, to connect to
 other machines, either !Internet or !FreeNet must be operational on your
@@ -179,17 +182,16 @@ too slow to be really useful, so after some encouragement, the move was
 made to a C-language based development. This is when the other developers
 started work. 
 
-Nettle currently supports vt100, vt102, vt220 and xterm terminal
+Nettle currently supports vt100, vt102, vt220, linux and xterm terminal
 emulation. This is now fairly fully fledged and working well - support
 for other common terminal standards (vt320, vt52) is planned for later. 
 
 For various reasons, Nettle can be built on RISC OS (with gcc / Norcroft)
 and on Linux, with gcc. Either UnixLib or the standard shared C library
 can be used! None of this makes much odds to the workings of Nettle, but
-provides a nice variety of choice for build environment. (Nightly Linux-
-based snapshot builds will be undertaken soon). Current releases are
-built in traditional fashion with "Norcroft" CC and Shared C Library
-stubs, due to stability problems with gcc's output. 
+provides a nice variety of choice for build environment.  Current releases
+are built in traditional fashion with "Norcroft" CC and Shared C Library
+stubs.
 
 Opensource development is managed via SourceForge - feel free to submit
 patches and bug reports via that system: http://nettle.sourceforge.net/
@@ -205,7 +207,8 @@ Ian Jeffray ("ijeffray")              - gui/ui/wimp/stubs
 Joseph Heenan ("jogu")                - url/general os expert
 
 Contributions, assistance and patches have also been received from
-David Thomas, Darren Salt and Justin Fletcher.
+David Thomas, Darren Salt, Justin Fletcher, Ainsley Pereira and
+Jerome Mathevet.
 
 
 "To do" list - forthcoming features and ideas
@@ -330,6 +333,27 @@ Release History
       Read size of toolsprites from WIMP -- correctly position line editor
       Save as ANSI inserts proper ANSI sequences!
 
+0.2032r : December 7th, 2002
+    New Features:
+      French messages
+      Ctrl-F2 closes disconnected sessions
+      Added "linux" terminal type
 
-(C) Nettle developers, February 20th, 2002.
+    Changes/Improvements:
+      Improved method for detecting URLs
+      Menu ticks added
+      Selection-pasting only adds newlines at line end
+      Small change to selected-area highlight colouring
+      Caret drawn in window when it first opens
 
+    Bugs fixed:
+      Corrected pasting of large amounts of text to ANSI tasks
+      Various optimisations and speedups
+      Data load ack now sent
+      Country lookup fixed
+      Terminal scrolling on NEL
+      Fixed memory leak on URI loading
+      Fix pasting of large files
+      Don't report errors twice
+
+(C) Nettle developers, December 7th, 2002.
