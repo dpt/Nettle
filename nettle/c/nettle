@@ -56,6 +56,52 @@ void dumptermdata(struct session_struct *session)
 #endif /* DEBUG */
 
 
+int get_host_port (char *string, int *port)
+/* modifies string, returns true on error */
+{
+  int loop;
+  char *sptr;
+
+  if (! *string)
+  {
+    generror("InvalidAddr", true);
+    return true;
+  }
+
+  /* strip off telnet: if it's there */
+  if (strncmp (string, "telnet:", 7) == 0)
+    strcpy (string, string + 7);
+
+  /* strip out any /s anywhere in the string */
+  loop=0;
+  while (string[loop])
+  {
+    if (string[loop] == '/')
+      memmove (string + loop, string + loop + 1, strlen (string + loop));
+    loop++;
+  }
+
+  /* look at the string to find a port if any (separated by colon or comma) */
+  sptr = strpbrk (string, ":,");
+  if (sptr)
+  {
+    *sptr = '\0';
+    *port = atoi (sptr + 1);
+  }
+  else
+    *port = 23;
+
+  /* if the port is <1, then it's either invalid or was too big and got wrapped */
+  if (*port < 1)
+  {
+    generror("InvalidPort", true);
+    return true;
+  }
+
+  /* success */
+  return false;
+}
+
 
 void start_connection(void)
 {
@@ -63,29 +109,7 @@ void start_connection(void)
   int loop;
   int connection_type;
   enum nettle_terminal terminal_type;
-  struct session_struct *session;
-
-  session = malloc(sizeof(struct session_struct));
-  if (session == NULL)
-  {
-    generror("TooMany", true); /* ought to give a different message, really */
-    return;
-  }
-
-  /* Insert into list */
-  session->prev = NULL;
-  session->next = sessions;
-  if (sessions)
-  {
-    sessions->prev = session;
-  }
-  sessions = session;
-
-  /* clear all the session flags */
-  for (loop=0; loop<256; loop++)
-  {
-    session->session_flags[loop]=false;
-  }
+  int port;
 
   read_icon_data(win_open, 4, string, sizeof(string));
 
@@ -116,96 +140,64 @@ void start_connection(void)
   {
     case NETTLE_TELNET:
       read_icon_data(win_open, 0, string, sizeof(string));
-
-      if (strlen(string)==0)
-      {
-        generror("InvalidAddr", true);
-        sessions = session->next;
-        if (sessions)
-        {
-          sessions->prev = NULL;
-        }
-        free(session);
+      if (get_host_port (string, &port))
         return;
-      }
+      start_connection_int (connection_type, terminal_type, string, port, 0);
+      close_window(win_open);
+      break;
 
-      /* strip off telnet: if it's there */
-      if (strncmp(string,"telnet:",strlen("telnet:"))==0)
-      {
-        strcpy(string,string+strlen("telnet:")+1);
-      }
+    case NETTLE_TASKWINDOW:
+      read_icon_data (win_open, 7, string, sizeof (string));
+      start_connection_int (connection_type, terminal_type, 0, 0, string);
+      close_window(win_open);
+      break;
 
-      /* strip out any /s anywhere in the string */
-      loop=0;
-      while (loop<strlen(string))
-      {
-        char temp_string[256];
+    default:
+      break;
+  }
+}
 
-        if (string[loop]=='/')
-        {
-          if (loop>0)
-          {
-            strncpy(temp_string,string,loop-1);
-            temp_string[loop]='\0';
-          }
-          else
-          {
-            strcpy(temp_string,"");
-          }
 
-          strcat(temp_string,string+loop+1);
-          strcpy(string,temp_string);
-        }
-        else
-        {
-          loop++;
-        }
-      }
+void start_connection_int (int connection_type, enum nettle_terminal terminal_type,
+			   char *host, int port, char *command)
+{
+  int loop;
+  struct session_struct *session;
 
-      /* look at the string to find a port if any (separated by colon or comma) */
-      if (instr(string,",")>=0)
-      {
-        strncpy(session->socket_host,string,instr(string,","));
-        session->socket_host[instr(string,",")]='\0';
-        session->socket_port=atoi(string+instr(string,",")+1);
-      }
-      else
-      {
-        if (instr(string,":")>=0)
-        {
-          strncpy(session->socket_host,string,instr(string,":"));
-          session->socket_host[instr(string,":")]='\0';
-          session->socket_port=atoi(string+instr(string,":")+1);
-        }
-        else
-        {
-          strcpy(session->socket_host,string);
-          session->socket_port=23;
-        }
-      }
+  session = malloc(sizeof(struct session_struct));
+  if (session == NULL)
+  {
+    generror("TooMany", true); /* ought to give a different message, really */
+    return;
+  }
 
-      /* if the port is <1, then it's either invalid or was too big and got wrapped */
-      if (session->socket_port<1)
-      {
-        generror("InvalidPort", true);
-        sessions = session->next;
-        if (sessions)
-        {
-          sessions->prev = NULL;
-        }
-        free(session);
-        return;
-      }
+  /* Insert into list */
+  session->prev = NULL;
+  session->next = sessions;
+  if (sessions)
+  {
+    sessions->prev = session;
+  }
+  sessions = session;
 
+  /* clear all the session flags */
+  for (loop=0; loop<256; loop++)
+  {
+    session->session_flags[loop]=false;
+  }
+
+  switch (connection_type)
+  {
+    case NETTLE_TELNET:
+      /* host, port already parsed */
       session->socket_handle=0;
       session->socket_state=NETTLE_SESSION_RESOLVE;
-
-      close_window(win_open);
-
+      session->socket_port = port;
+      strcpy (session->socket_host, host);
       break;
+
     case NETTLE_TASKWINDOW:
-      read_icon_data(win_open, 7, string, sizeof(string));
-      if (strlen(string)==0)
+      if (! *command)
       {
         generror("InvalidComm", true);
         sessions = session->next;
@@ -220,15 +212,13 @@ void start_connection(void)
       /* start the task window */
       {
         char temp_string[1024];
-        sprintf(temp_string,"%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X -txt &%X",string,task_handle,(int)session);
+        sprintf (temp_string, "%%TaskWindow \"%s\" -ctrl -name \"Nettle task\" -quit -task &%X -txt &%X", command, task_handle, (int)session);
 
         _swi(Wimp_StartTask, _IN(0), temp_string);
       }
 
       /* set ECHO bit to true */
       session->session_flags[1]=true;
-
-      close_window(win_open);
 
       break;
   }
@@ -389,8 +379,9 @@ Fortify_CheckAllMemory();
 
   if (line_editor)
   {
+    char string[1024];
     set_caret_position(session->pane_handle,1,-1,
-				strlen(read_icon_data(session->pane_handle, 1, string, 1024)));
+				strlen(read_icon_data(session->pane_handle, 1, string, sizeof (string))));
   }
   else
   {
