@@ -570,7 +570,7 @@ static void start_connection_int (struct connection_params *params )
   {
     case NETTLE_TELNET:
       /* host, port already parsed */
-      session->socket_handle=0;
+      session->socket_handle=-1;
       session->socket_state=NETTLE_SESSION_RESOLVE;
       session->socket_port = params->port;
       strcpy (session->socket_host, params->host);
@@ -845,7 +845,7 @@ void remove_session(struct session_struct *session)
     session->next->prev = session->prev;
   }
 
-  if (session->socket_handle != 0)
+  if (session->socket_handle != -1)
   {
     switch (session->connection_type)
     {

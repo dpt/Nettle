@@ -205,7 +205,7 @@ static void wimp_pollconnect(struct session_struct *session)
                         socket_strerror(retval), "\r\n", 0);
       socket_close(session->socket_handle);
 
-      session->socket_handle=0;
+      session->socket_handle=-1;
       session->socket_state=NETTLE_SESSION_NONE;
       break;
     }
@@ -245,7 +245,7 @@ static void wimp_pollsocket(struct session_struct *session)
 
     write_out_strings(session, lookup_static("disconn"), "\r\n", 0);
     socket_close(session->socket_handle);
-    session->socket_handle=0;
+    session->socket_handle=-1;
     session->socket_state=NETTLE_SESSION_NONE;
 
     return;
@@ -2559,7 +2559,7 @@ void wimp_message(union wimp_poll_block *wimp_block)
         {
           set_title_bar (session->window_handle, lookup_static ("title_closed"));
           session->socket_state=NETTLE_SESSION_NONE;
-          session->socket_handle=0;
+          session->socket_handle=-1;
           reset_terminal (session);
           write_out_strings (session, "\r\n", lookup_static ("twclosed"), "\r\n", 0);
         }
