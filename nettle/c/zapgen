@@ -8,10 +8,7 @@
 #include "generic.h"
 #include "globals.h"
 #include "nettle.h"
-
-/* Note that the order of functions in this file is important */
-/* GCC won't ACTUALLY inline the functions if they are not DEFINED before use! */
-
+#include "zapredraw.h"
 
 struct term_char
 {
@@ -47,12 +44,12 @@ struct term_char
 
 
 char *
-zapgen_code (char *output_buffer, const char *input_buffer,
+zapgen_code (int *output_buffer, const char *input_buffer,
 	     int width, int height, int session_flags)
 {
-  int *line_offsets = (int *) output_buffer;
+  int *line_offsets = output_buffer;
   char *write = (char *)(line_offsets + height + 1);
-  const struct term_char *input = (struct term_char *) input_buffer;
+  const struct term_char *input = (const struct term_char *)(const void *) input_buffer;
 
   /* offsets -> list of offsets of lines (in the data block) */
   /* write -> next location at which to place data in the output buffer */
@@ -64,7 +61,7 @@ zapgen_code (char *output_buffer, const char *input_buffer,
     int current_fg = -1;
     int current_flags = 0;
 
-    *line_offsets++ = write - output_buffer;
+    *line_offsets++ = write - ((char *) output_buffer);
 
     for (; loop; --loop)
     {

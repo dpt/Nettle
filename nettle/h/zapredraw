@@ -68,6 +68,6 @@ struct zapredraw_block
   int r_mode        /*=0*/;    /* screen mode */
 };
 
-extern int zapgen_code(int *, char *, int, int, int);
+extern char *zapgen_code(int *, const char *, int, int, int);
 
 #endif
