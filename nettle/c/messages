@@ -93,15 +93,29 @@ char *lookup_inbuffer(const char *token)
   return buffer;
 }
 
-
-/* Looks up a messagetrans token and puts it in a static buffer*/
+/* Looks up a messagetrans token and puts it in a static buffer */
 
 const char *lookup_static(const char *token)
 {
-  static char buffer[256];
-  assert(token != NULL);
+  return lookup_static_sub(token, 0, 0);
+}
 
-  if (_swix(MessageTrans_Lookup, _INR(0,3), messagetrans_area, token, buffer, sizeof (buffer)))
+
+/* Looks up a messagetrans token and puts it in a static buffer with substitution */
+
+const char *lookup_static_sub(const char *token, int params, va_list va)
+{
+  static char buffer[256];
+  int vars[4]={0,0,0,0};
+  int pos=0;
+  assert(token != NULL);
+  assert(params < 5 );
+
+  for(;params;params--, pos++)
+    vars[pos]=(int) va_arg(va, char *);
+
+  if (_swix(MessageTrans_Lookup, _INR(0,7), messagetrans_area, token, buffer, sizeof (buffer),
+    vars[0], vars[1], vars[2], vars[3] ))
     strncpy (buffer, token, sizeof (buffer) - 1); /* error trap */
 
   return buffer;
