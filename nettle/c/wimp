@@ -8,7 +8,6 @@
 #include "generic.h"
 #include "globals.h"
 
-#include <errno.h>
 #include "sys/errno.h"
 #include "sys/socket.h"
 #include "sys/select.h"
@@ -73,7 +72,7 @@ static void wimp_pollresolve(struct session_struct *session)
       session->socket_handle =
                       socket_connecttoip(session->socket_ip,
                                          session->socket_port);
-  
+
       if (session->socket_handle!=-1)
       {
         session->socket_state = NETTLE_SESSION_CONNECT;
@@ -151,7 +150,7 @@ static void wimp_pollsocket(struct session_struct *session)
       write_out_strings(session, "\r\n", "Nettle: Socket error ", errorstr,
                         " occurred", 0);
     }
-    
+
     write_out_strings(session, "\r\n", lookup_static("disconn"), "\r\n", 0);
     socket_close(session->socket_handle);
     session->socket_handle=0;
@@ -176,67 +175,67 @@ static void wimp_pollsessions(void)
 
   FD_ZERO(&readfds);
   fdupperbound = 0;
-  
+
   /* for each session, either poll it if necessary, or add its socket to
    * the list of ones to check with select() */
   for (session = sessions; session != NULL; session = session->next)
   {
     if (session->connection_type != NETTLE_TELNET)
       continue;
-    
+
     switch (session->socket_state)
     {
       case NETTLE_SESSION_RESOLVE:
         wimp_pollresolve(session);
         break;
-        
+
       case NETTLE_SESSION_CONNECT:
         wimp_pollconnect(session);
         break;
-        
+
       case NETTLE_SESSION_CONNECTED:
         assert(session->socket_handle >= 0 && session->socket_handle < 256);
         FD_SET(session->socket_handle, &readfds);
         if (session->socket_handle >= fdupperbound)
           fdupperbound = session->socket_handle + 1;
         break;
-      
+
       case NETTLE_SESSION_NONE:
         /* do nothing */
         break;
-        
+
       default:
         assert(0);
     }
   }
-  
+
   if (fdupperbound == 0)
     /* no sockets to be polled */
     return;
-    
+
   timeval.tv_sec  = 0;
   timeval.tv_usec = 0;
-    
+
   numberready = select(fdupperbound, &readfds, NULL, NULL, &timeval);
   if (numberready == 0)
     /* no sockets need attention */
     return;
-  
+
   if (numberready == -1 && errno != EBADF)
     /* error other than an invalid descriptor, nothing we can do */
     return;
-  
+
   for (session = sessions; session != NULL; session = session->next)
   {
     if (session->connection_type != NETTLE_TELNET)
       continue;
-    
+
     if (session->socket_state != NETTLE_SESSION_CONNECTED)
       continue;
-    
+
     if (FD_ISSET(session->socket_handle, &readfds))
       wimp_pollsocket(session);
-  }      
+  }
 }
 
 
@@ -268,7 +267,8 @@ void redraw_window(union wimp_poll_block *wimp_block)
   {
     zapgen_code(zapredraw_area,
                 session->assigned_area,
-                session->terminal_size.x,                session->terminal_size.y + session->scrollback,
+                session->terminal_size.x,
+                session->terminal_size.y + session->scrollback,
                 session->other_session_flags);
 
     redraw.r_data = zapredraw_area;
@@ -2015,11 +2015,11 @@ static void create_terminal_menu(void)
     menu_selection=get_menu_item("Selection>");
   }
 
-  if (create_menu(menu_data,0,menu_title,menu_selection,menu_data2,menu_resize,win_resize,
+  if (create_menu(menu_data, 0, menu_title, menu_selection, menu_data2, menu_resize, win_resize,
     		  menu_options))
   {
-    if (create_menu(menu_data2,0,menu_selection_title,menu_save,win_save,menu_launch_url,menu_send,
-                    menu_clear))
+    if (create_menu(menu_data2, 0, menu_selection_title, menu_save, win_save, menu_launch_url,
+                    menu_send, menu_clear))
     {
       _swi(Wimp_GetPointerInfo, _IN(1), &block);
 
@@ -2186,7 +2186,7 @@ static void drag_start(int window_handle, int icon_handle)
 
     read_icon_data(window_handle, icon_handle, string, sizeof(string));
 
-    if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & 1)
+    if (_swi(OS_Byte, _INR(0,1)|_RETURN(2), 161, 28) & (1<<1))
     {
       _swi(DragASprite_Start, _INR(0,4), 0xc5, 1, string, &block.min.x, 0);
     }
@@ -2272,9 +2272,9 @@ static void open_open_window(bool open_window_flag)
 
     window.window_handle = win_open;
     _swi(Wimp_GetWindowState, _IN(1), &window);
-    
+
     window.handle_behind = -1;  /* Open on top of stack */
-  
+
     if ((window.window_flags & (1 << 16)) == 0)
     {
       /* window is not open, open it centred on the pointer taking care to

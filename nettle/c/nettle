@@ -419,10 +419,11 @@ void write_out_data(struct session_struct *session, const char *data, int length
   }
 
   /* redraw the window */
-  force_redraw_changedbox ();
+  force_redraw_changedbox();
 
   /* force the selection back on (it may have got overwritten by new data) */
-  force_redraw_selection (session);
+  refresh_selection_set();
+  force_redraw_selection();
 
   /* redraw the cursor, in case it isn't in the main redraw block */
   if (session->other_session_flags & NETTLE_OTHER_CURSOR_VIS)

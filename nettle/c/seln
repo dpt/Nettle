@@ -371,11 +371,11 @@ void handle_selection_drag(void)
 }
 
 
-void force_redraw_selection (struct session_struct *session)
+void force_redraw_selection (void)
 {
   int top, bottom;
 
-  if (session != selection_session)
+  if (selection_session != NULL)
     return;
 
   if (selection_start <= selection_end)
@@ -389,10 +389,10 @@ void force_redraw_selection (struct session_struct *session)
     bottom = selection_start;
   }
 
-  top /= session->terminal_size.x;
-  bottom /= session->terminal_size.x;
+  top /= selection_session->terminal_size.x;
+  bottom /= selection_session->terminal_size.x;
 
-  force_redraw (session->window_handle, 0,
+  force_redraw (selection_session->window_handle, 0,
 	        (-bottom - 1) * redraw.r_charh << eig.y,
 		selection_session->terminal_size.x * redraw.r_charw << eig.x,
 		-top * redraw.r_charh << eig.y);

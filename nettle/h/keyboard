@@ -5,4 +5,9 @@
  * $Id$
  */
 
+#ifndef KEYBOARD_H
+#define KEYBOARD_H
+
 int decode_key (struct session_struct *, int key, int extra, char *block);
+
+#endif

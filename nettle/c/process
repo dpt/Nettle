@@ -872,7 +872,7 @@ static bool process_escape_length_2(struct session_struct *session)
 
                        session->current_fg,
                        session->current_bg,
-                       0,
+                       session->current_flags,
                        32);
             done=true;
           }
@@ -893,7 +893,7 @@ static bool process_escape_length_2(struct session_struct *session)
 
                        session->current_fg,
                        session->current_bg,
-                       0,
+                       session->current_flags,
                        32);
             done=true;
           }
@@ -1233,7 +1233,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        session->current_fg,
                        session->current_bg,
-                       0,
+                       session->current_flags,
                        32);
 
                   break;
@@ -1252,7 +1252,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        session->current_fg,
                        session->current_bg,
-                       0,
+                       session->current_flags,
                        32);
 
                   break;
@@ -1270,7 +1270,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        session->current_fg,
                        session->current_bg,
-                       0,
+                       session->current_flags,
                        32);
 
                   break;
@@ -1294,7 +1294,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        session->current_fg,
                        session->current_bg,
-                       0,
+                       session->current_flags,
                        32);
 
                   break;
@@ -1311,7 +1311,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        session->current_fg,
                        session->current_bg,
-                       0,
+                       session->current_flags,
                        32);
 
                   break;
@@ -1328,7 +1328,7 @@ static bool process_escape_length_x(struct session_struct *session)
 
                        session->current_fg,
                        session->current_bg,
-                       0,
+                       session->current_flags,
                        32);
 
                   break;
@@ -1814,7 +1814,7 @@ static bool process_escape_length_x(struct session_struct *session)
                     case 27:
                       /* Cancel invert */
                       session->current_flags &= ~NETTLE_FLAG_INVERTED;
-                      break;
+                     break;
                     case 30: case 31: case 32: case 33: case 34: case 35: case 36: case 37:
                       /* Foreground */
                       session->current_fg=atoi(string)-30;

@@ -18,6 +18,6 @@ extern void selection_adjust(int, int, int, int);
 extern void save_selection(char *, bool);
 extern void handle_selection_drag(void);
 
-extern void force_redraw_selection (struct session_struct *);
+extern void force_redraw_selection (void);
 
 #endif
