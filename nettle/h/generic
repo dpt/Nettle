@@ -98,7 +98,7 @@ struct wimp_createicon_block
   int window_handle;
   struct coords min;
   struct coords max;
-  int icon_flags;
+  unsigned int icon_flags;
   union icon_data contents;
 };
 
@@ -108,7 +108,7 @@ struct wimp_createwindow_block
   struct coords max;
   struct coords scroll;
   int handle_behind;
-  int window_flags;
+  unsigned int window_flags;
   unsigned char title_fg;
   unsigned char title_bg;
   unsigned char work_fg;
@@ -119,8 +119,8 @@ struct wimp_createwindow_block
   unsigned char flags;
   struct coords work_min;
   struct coords work_max;
-  int icon_flags;
-  int workarea_flags;
+  unsigned int icon_flags;
+  unsigned int workarea_flags;
   struct os_spriteop_area *sprite_area;
   unsigned short min_width;
   unsigned short min_height;
@@ -183,7 +183,7 @@ struct wimp_geticonstate_block
   int icon_handle;
   struct coords min;
   struct coords max;
-  int icon_flags;
+  unsigned int icon_flags;
   union icon_data contents;
 };
 
@@ -202,7 +202,7 @@ struct wimp_getwindowinfo_block
   struct coords max;
   struct coords scroll;
   int handle_behind;
-  int window_flags;
+  unsigned int window_flags;
   unsigned char title_fg;
   unsigned char title_bg;
   unsigned char work_fg;
@@ -213,8 +213,8 @@ struct wimp_getwindowinfo_block
   unsigned char flags;
   struct coords work_min;
   struct coords work_max;
-  int icon_flags;
-  int workarea_flags;
+  unsigned int icon_flags;
+  unsigned int workarea_flags;
   struct os_spriteop_area *sprite_area;
   unsigned short min_width;
   unsigned short min_height;
@@ -237,7 +237,7 @@ struct wimp_getwindowstate_block
   struct coords max;
   struct coords scroll;
   int handle_behind;
-  int window_flags;
+  unsigned int window_flags;
 };
 
 struct wimp_getrectangle_block
@@ -288,7 +288,7 @@ struct wimp_ploticon_block
 {
   struct coords min;
   struct coords max;
-  int icon_flags;
+  unsigned int icon_flags;
   union icon_data contents;
 };
 
@@ -323,7 +323,7 @@ struct wimp_gadgetsizes
 
 struct colourpicker_block
 {
-  int flags;
+  unsigned int flags;
   char *title;
   struct coords bl, tr; /* bl.y = 0x80000000, tr.x =0x7FFFFFFF */
   int zero0, zero1; /* 0, 0 */
