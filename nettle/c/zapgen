@@ -16,29 +16,38 @@
 #include "wimputil.h"
 #include "zapredraw.h"
 
+#define ZR_CTRL 0
+
+#define ZR_CTRL_FGBGCOLS 1
+#define ZR_CTRL_END      2
+#define ZR_CTRL_EXTEND   3
+#define ZR_CTRL_FGCOL    6
+#define ZR_CTRL_BGCOL    7
+#define ZR_CTRL_CURSORM  8
+
 #define REDRAW_FLAGS_MASK (NETTLE_FLAG_INVERTED | NETTLE_FLAG_SELECTED)
 
 /* These used to be functions, and were fine in gcc... */
 /* ...but Norcroft doesn't do inlines in C!! :-(      */
 
 #define ZAP_WRITE_MULTIBYTE(write, chr)             \
-{                                  		    \
-  *write++ = 0;                    		    \
-  *write++ = 3;                    		    \
-  *write++ = (char) (chr);         		    \
-  *write++ = (char) ((chr) >> 8);  		    \
+{                                                   \
+  *write++ = ZR_CTRL;                               \
+  *write++ = ZR_CTRL_EXTEND;                        \
+  *write++ = (char) (chr);                          \
+  *write++ = (char) ((chr) >> 8);                   \
 }
 
 #define ZAP_WRITE_CHAR(write, input)                \
-{                                         	    \
-  if (input->flags & NETTLE_FLAG_PLUS100) 	    \
-  {                                       	    \
+{                                                   \
+  if (input->flags & NETTLE_FLAG_PLUS100)           \
+  {                                                 \
     ZAP_WRITE_MULTIBYTE(write, input->chr | 0x100); \
   }                                                 \
   else                                              \
   {                                                 \
     *write++ = input->chr;                          \
-    if (!input->chr)                                \
+    if (input->chr == ZR_CTRL)                      \
       *write++ = 0;                                 \
   }                                                 \
 }
@@ -54,15 +63,48 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
   char *write = (char *)(line_offsets + last_line + 1);
   const struct term_char *input;
   int line_number = 0;
+  bool selected = false;
+  int *startoffset, *endoffset;
 
   /* line_offsets -> list of offsets of lines (in the data block) */
   /* write -> next location at which to place data in the output buffer */
 
   if (first_line)
   {
-    *write++ = 0;
-    *write++ = 2;
+    *write++ = ZR_CTRL;
+    *write++ = ZR_CTRL_END;
   }
+
+  /* Why isn't this lot a tautology? */
+  if (selection_start_line > selection_end_line)
+  {
+    int tmp = selection_start_line;
+    selection_start_line = selection_end_line;
+    selection_end_line = tmp;
+    tmp = selection_start_x;
+    selection_start_x = selection_end_x;
+    selection_end_x = tmp;
+  }
+  else if (selection_start_line == selection_end_line)
+  {
+    if (selection_start_x > selection_end_x)
+    {
+      int tmp = selection_start_x;
+      selection_start_x = selection_end_x;
+      selection_end_x = tmp;
+    }
+    else if (selection_start_x == selection_end_x)
+    {
+      selection_start_x = selection_end_x = -1;
+    }
+  }
+  /* End tautological moan */
+  
+  if (selection_start_line < first_line && selection_end_line >= first_line)
+    selected = true;
+  
+  startoffset = input_line_offsets[selection_start_line]+selection_start_x;
+  endoffset = input_line_offsets[selection_end_line]+selection_end_x;
 
   for (; line_number < last_line; line_number++)
   {
@@ -75,6 +117,7 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
     if (line_number < first_line)
     {
       /* if not in the window, mark the line as blank and move on */
+      /* (this is done by pointing the line at the previous EOL marker) */
       *line_offsets++ = write - 2 - (char *) output_buffer;
       continue;
     }
@@ -90,78 +133,16 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
 
       /* swap foreground and background if inverted or selected or inverse video etc. */
       if (input->flags & NETTLE_FLAG_INVERTED)
-        invert=invert ? false : true;
-
-
-      /* This can probably be optimised quite a bit... */
-      if (selection_end_line>selection_start_line)
-      {
-        if (line_number==selection_start_line)
-        {
-          if ((width-loop)>=selection_start_x)
-          {
-            invert=invert ? false : true;
-          }
-        }
-        else if (line_number>selection_start_line && line_number<selection_end_line)
-        {
-          invert=invert ? false : true;
-        }
-        else if (line_number==selection_end_line)
-        {
-          if ((width-loop)<selection_end_x)
-          {
-            invert=invert ? false : true;
-          }
-        }
-      }
-      else if (selection_end_line==selection_start_line)
-      {
-        if (line_number==selection_start_line)
-        {
-          if (selection_end_x>selection_start_x)
-          {
-            if ((width-loop)>=selection_start_x && (width-loop)<selection_end_x)
-            {
-              invert=invert ? false : true;
-            }
-          }
-          else
-          {
-            if ((width-loop)<selection_start_x && (width-loop)>=selection_end_x)
-            {
-              invert=invert ? false : true;
-            }
-          }
-        }
-      }
-      else if (selection_end_line<selection_start_line)
-      {
-        if (line_number==selection_start_line)
-        {
-          if ((width-loop)<selection_start_x)
-          {
-            invert=invert ? false : true;
-          }
-        }
-        else if (line_number>selection_end_line && line_number<selection_start_line)
-        {
-          invert=invert ? false : true;
-        }
-        else if (line_number==selection_end_line)
-        {
-          if ((width-loop)>=selection_end_x)
-          {
-            invert=invert ? false : true;
-          }
-        }
-      }
-      /* */
-
-
+        invert=NOT(invert);
+      
+      if ((const int*)input == startoffset || (const int*)input == endoffset)
+        selected=NOT(selected);
+      
+      if (selected)
+        invert=NOT(invert);
 
       if (session_flags & NETTLE_OTHER_REVERSE_VIDEO)
-        invert=invert ? false : true;
+        invert=NOT(invert);
 
       if (invert)
       {
@@ -172,16 +153,16 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
 
       if (fg != current_fg || bg != current_bg)
       {
-        *write++ = 0;
-        colour_type = (fg == current_fg) ? 7 /* bg only if fg unchanged */
-        	    : (bg == current_bg) ? 6 /* fg only if bg unchanged */
-        	    : 1;                     /* both if neither unchanged */
+        *write++ = ZR_CTRL;
+        colour_type = (fg == current_fg) ? ZR_CTRL_BGCOL /* bg only if fg unchanged */
+        	    : (bg == current_bg) ? ZR_CTRL_FGCOL /* fg only if bg unchanged */
+        	    :                      ZR_CTRL_FGBGCOLS; /* both if neither unchanged */
         *write++ = colour_type;
 
-        if (colour_type != 7)
+        if (colour_type != ZR_CTRL_BGCOL)
           *write++ = fg;
 
-        if (colour_type != 6)
+        if (colour_type != ZR_CTRL_FGCOL)
           *write++ = bg;
 
         /* save the current settings */
@@ -198,9 +179,9 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
 	else
 	  blink = bg;
 
-	*write++ = 0;
-	*write++ = 8;		/* cursor merge */
-	*write++ = blink;       /* foreground colour */
+	*write++ = ZR_CTRL;
+	*write++ = ZR_CTRL_CURSORM; /* cursor merge */
+	*write++ = blink;           /* foreground colour */
 	*write++ = ((blink & 2) ? 0 : 7) | (8 & ~blink);
 				/* contrasting background, inverted bright */
 	ZAP_WRITE_CHAR(write, input);
@@ -210,7 +191,7 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
 	  ZAP_WRITE_MULTIBYTE(write, 0x101); /* square cursor */
 	}
 	else
-	  *write++ = 0x7F;	/* block cursor */
+	  *write++ = 0x7F;      /* block cursor */
       }
       else
 	ZAP_WRITE_CHAR(write, input);
@@ -218,12 +199,12 @@ zapgen_code (int *output_buffer, int **input_line_offsets,
       input++;
     }
 
-    *write++ = 0;
-    *write++ = 2;		/* end of line marker */
+    *write++ = ZR_CTRL;
+    *write++ = ZR_CTRL_END;     /* end of line marker */
   }
   *line_offsets = 0;
 
-  return write;			/* return ptr to the first unused byte */
+  return write;                 /* return ptr to the first unused byte */
 }
 
 int *load_font(char *font)
