@@ -3376,7 +3376,7 @@ static char *load_file (const char *name, int *size)
 /**
  * 'type' in an ant url file
  *
- * @return true if url could not be sent
+ * @return true if url was sent successfully
  */
 static bool parse_ant_url (union wimp_poll_block *block)
 {
@@ -3407,7 +3407,7 @@ static bool parse_ant_url (union wimp_poll_block *block)
 /**
  * 'type' in an acorn url file
  *
- * @return true if url could not be sent
+ * @return true if url was sent successfully
  */
 static bool parse_acorn_uri (union wimp_poll_block *block)
 {
@@ -3457,7 +3457,7 @@ static bool parse_acorn_uri (union wimp_poll_block *block)
 /**
  * 'type' in a text file
  *
- * @return true if text could not be sent
+ * @return true if text was sent successfully
  */
 static bool paste_text_file (union wimp_poll_block *block)
 {
@@ -3498,6 +3498,7 @@ static bool paste_text_file (union wimp_poll_block *block)
     }
     process_data_transmission (session, text, size);
     free (text);
+    return true;
   }
   return false;
 }
