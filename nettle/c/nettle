@@ -142,7 +142,30 @@ bool nettle_start_telnet_connection(const char *host, int port)
   params.height           = defaultsize.y;
   params.scrollback       = defaultscroll;
   params.line_editor_type = line_editor;
-  sprintf(params.label, "%.*s:%d", sizeof(params.label) - 16, host, port);
+  sprintf(params.label, "%.*s:%d", (int)sizeof(params.label) - 16, host, port);
+
+  start_connection_int(&params);
+
+  return true;
+}
+
+
+
+bool nettle_start_taskwindow(const char *cmd)
+{
+  struct connection_params params;
+
+  params.connection_type  = NETTLE_TASKWINDOW;
+  params.terminal_type    = default_terminal;
+  params.host             = NULL;
+  params.port             = 0;
+  params.command          = cmd;
+  params.width            = defaultsize.x;
+  params.height           = defaultsize.y;
+  params.scrollback       = defaultscroll;
+  params.line_editor_type = line_editor;
+  params.label[0]         = '\0';
+  strncat(params.label, cmd, sizeof(params.label) - 1);
 
   start_connection_int(&params);
 

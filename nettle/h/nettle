@@ -100,6 +100,15 @@ bool start_connection_friedport(struct connection_params *params );
  */
 bool nettle_start_telnet_connection(const char *host, int port);
 
+/**
+ * Start a taskwindow command with default choices
+ *
+ * @param cmd      Command to run in taskwindow
+ *
+ * @return true if taskwindow started successfully, false otherwise
+ */
+bool nettle_start_taskwindow(const char *cmd);
+
 void write_out_string(struct session_struct *, const char *);
 void write_out_strings(struct session_struct *, ...); /* term with NUL ptr */
 void write_out_data(struct session_struct *, const char *, int);
