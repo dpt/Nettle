@@ -17,7 +17,7 @@ NETLIBFLAG =
 
 
 CC = cc
-CFLAGS = -c -strict -IC: -I$(NETINCLUDE) -fa -apcs 3/26 -throwback -depend !Depend $(NETLIBFLAG) -DBETA_VERSION #-g #-DFORTIFY
+CFLAGS = -c -strict -IC: -I$(NETINCLUDE) -fa -apcs 3/26 -throwback -depend !Depend $(NETLIBFLAG) #-DBETA_VERSION #-g #-DFORTIFY
 
 LINK = link
 LINKFLAGS = #-d
