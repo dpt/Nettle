@@ -135,6 +135,10 @@ void load_choices(void)
     if (string[len-1]=='\n')
       string[len-1]='\0';
 
+    read_integer_choice(&choices_file_version_number, string, "Version:");
+    if (choices_file_version_number>CHOICES_VERSION_KNOWN)
+      break;
+
     read_choice(zap_font, string, "ZapFontHi:");
     read_choice(zap_lowres_font, string, "ZapFontLo:");
 
@@ -167,28 +171,48 @@ void load_choices(void)
     }
   }
 
-  fclose(file_handle);
+  if (choices_file_version_number>CHOICES_VERSION_KNOWN)
+  {
+    char buffer[128];
+    sprintf(string,"%s %d %s",lookup("ChoicesNotKnown", buffer, sizeof(buffer)),choices_file_version_number, lookup_static("ChoicesRevert"));
+    generror(string, false);
+  }
+  else
+  {
+    switch (choices_file_version_number)
+    {
+      case 0:
+        if (line_editor==LINEEDIT_CHECKBOX_OFF)
+          line_editor=LINEEDIT_CHECKBOX_ON;
+        else if (line_editor==LINEEDIT_CHECKBOX_ON)
+          line_editor=LINEEDIT_ANTTERM;
 
-  /* sanity checking in case of breakage through direct edit */
-  /* May sanity check fonts, although if they're wrong, it'll default back to 08x16/08x08 */
-  if (new_termsize.x >= MIN_TERMINAL_WIDTH && new_termsize.x <= MAX_TERMINAL_WIDTH)
-    defaultsize.x = new_termsize.x;
+        break;
+    }
 
-  if (new_termsize.y >= MIN_TERMINAL_HEIGHT && new_termsize.y <= MAX_TERMINAL_HEIGHT)
-    defaultsize.y = new_termsize.y;
+    fclose(file_handle);
 
-  if (new_scrollback >= 0 && new_scrollback <= MAX_SCROLLBACK_SIZE)
-    defaultscroll=new_scrollback;
+    /* sanity checking in case of breakage through direct edit */
+    /* May sanity check fonts, although if they're wrong, it'll default back to 08x16/08x08 */
+    if (new_termsize.x >= MIN_TERMINAL_WIDTH && new_termsize.x <= MAX_TERMINAL_WIDTH)
+      defaultsize.x = new_termsize.x;
 
-  if (new_line_editor_size > 0 && new_line_editor_size <= MAX_LINE_EDITOR_SIZE)
-    line_editor_size = new_line_editor_size;
+    if (new_termsize.y >= MIN_TERMINAL_HEIGHT && new_termsize.y <= MAX_TERMINAL_HEIGHT)
+      defaultsize.y = new_termsize.y;
 
-  if (new_default_terminal >= 0 && new_default_terminal < NO_OF_TERMINAL_TYPES)
-    default_terminal = new_default_terminal;
+    if (new_scrollback >= 0 && new_scrollback <= MAX_SCROLLBACK_SIZE)
+      defaultscroll=new_scrollback;
 
-  /* If palette is valid then copy it as the default */
-  if (valid_palette)
-    memcpy(palette, new_palette, sizeof(palette));
+    if (new_line_editor_size > 0 && new_line_editor_size <= MAX_LINE_EDITOR_SIZE)
+      line_editor_size = new_line_editor_size;
+
+    if (new_default_terminal >= 0 && new_default_terminal < NO_OF_TERMINAL_TYPES)
+      default_terminal = new_default_terminal;
+
+    /* If palette is valid then copy it as the default */
+    if (valid_palette)
+      memcpy(palette, new_palette, sizeof(palette));
+  }
 }
 
 bool save_choices(void)
@@ -230,6 +254,7 @@ bool save_choices(void)
 
       fprintf(file_handle, "# Nettle choices file\n");
       fprintf(file_handle, "# Created on %s\n", ctime(&current_time));
+      fprintf(file_handle, "Version:1\n");
       fprintf(file_handle, "ZapFontHi:%s\n", zap_font);
       fprintf(file_handle, "ZapFontLo:%s\n", zap_lowres_font);
 
@@ -285,6 +310,9 @@ void close_choices_window(void)
   if (win_is_open(win_panehot))
     close_window(win_panehot);
 
+  if (win_is_open(win_panemisc))
+    close_window(win_panemisc);
+
   close_window(win_choices);
 }
 
@@ -297,9 +325,9 @@ void open_choices_window(void)
   set_icon_state(win_choices, icon_choices_size, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
   set_icon_state(win_choices, icon_choices_colour, 0, WIMP_ICON_SELECTED_BIT);
   set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_choices, icon_choices_misc, 0, WIMP_ICON_SELECTED_BIT);
 
   /* Set paneterm type options */
-
   set_icon_data(win_paneterm, icon_paneterm_termtype, terminal_name[default_terminal]);
   set_termsize_icons(win_paneterm, icon_paneterm_termwidth, icon_paneterm_termheight, icon_paneterm_scrollback, defaultsize, defaultscroll);
   sprintf(string, "%d", line_editor_size);
@@ -312,6 +340,9 @@ void open_choices_window(void)
     set_icon_data(win_paneterm, icon_paneterm_lineedittype, lookup(string_lineedit, string, sizeof(string)));
   }
 
+  set_icon_data(win_paneterm, icon_paneterm_hifont, zap_font);
+  set_icon_data(win_paneterm, icon_paneterm_lofont, zap_lowres_font);
+
   /* Set panecol type options */
   {
     int loop;
@@ -320,10 +351,10 @@ void open_choices_window(void)
       set_colour_icon (loop, palette[loop], false);
   }
 
-  /* Set panehot type options */
-
-  set_icon_data(win_paneterm, icon_paneterm_hifont, zap_font);
-  set_icon_data(win_paneterm, icon_paneterm_lofont, zap_lowres_font);
+  /* Set panemisc type options */
+  set_icon_state(win_panemisc, icon_panemisc_passf12, (pass_f12==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_panemisc, icon_panemisc_blinking, (blinking==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
+  set_icon_state(win_panemisc, icon_panemisc_cursorblink, (cursor_blink==true) ? WIMP_ICON_SELECTED_BIT : 0, WIMP_ICON_SELECTED_BIT);
 
   if (win_is_open(win_choices))
     open_window(NULL, win_choices);
@@ -336,6 +367,7 @@ void open_choices_window(void)
   resize_hotpane();
   close_window(win_panehot);
   close_window(win_panecols);
+  close_window(win_panemisc);
 }
 
 
@@ -410,8 +442,21 @@ bool win_choices_read(int save)
 
   }
 
-  /* Read panehot type options */
+  /* Read panemisc type options */
+  if (read_icon_ticked(win_panemisc, icon_panemisc_passf12))
+    pass_f12=true;
+  else
+    pass_f12=false;
 
+  if (read_icon_ticked(win_panemisc, icon_panemisc_blinking))
+    blinking=true;
+  else
+    blinking=false;
+
+  if (read_icon_ticked(win_panemisc, icon_panemisc_cursorblink))
+    cursor_blink=true;
+  else
+    cursor_blink=false;
 
   /* make the choices in the new_* variables permanent */
   default_terminal = new_default_terminal;
@@ -539,9 +584,13 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
       if (win_is_open(win_panehot))
         close_window(win_panehot);
 
+      if (win_is_open(win_panemisc))
+        close_window(win_panemisc);
+
       set_icon_state(win_choices, icon_choices_size, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
       set_icon_state(win_choices, icon_choices_colour, 0, WIMP_ICON_SELECTED_BIT);
       set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_misc, 0, WIMP_ICON_SELECTED_BIT);
 
       {
         struct wimp_getwindowstate_block block;
@@ -561,9 +610,13 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
       if (win_is_open(win_panehot))
         close_window(win_panehot);
 
+      if (win_is_open(win_panemisc))
+        close_window(win_panemisc);
+
       set_icon_state(win_choices, icon_choices_size, 0, WIMP_ICON_SELECTED_BIT);
       set_icon_state(win_choices, icon_choices_colour, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
       set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_misc, 0, WIMP_ICON_SELECTED_BIT);
 
       {
         struct wimp_getwindowstate_block block;
@@ -583,9 +636,39 @@ void win_choices_click (int x, int y, int buttons, int icon_handle)
       if (win_is_open(win_panecols))
         close_window(win_panecols);
 
+      if (win_is_open(win_panemisc))
+        close_window(win_panemisc);
+
       set_icon_state(win_choices, icon_choices_size, 0, WIMP_ICON_SELECTED_BIT);
       set_icon_state(win_choices, icon_choices_colour, 0, WIMP_ICON_SELECTED_BIT);
       set_icon_state(win_choices, icon_choices_hotlist, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_misc, 0, WIMP_ICON_SELECTED_BIT);
+
+      {
+        struct wimp_getwindowstate_block block;
+
+        block.window_handle=win_choices;
+        _swi(Wimp_GetWindowState, _IN(1), &block);
+
+        open_window((struct wimp_openwindow_block *) &block, win_choices);
+      }
+
+      break;
+
+    case icon_choices_misc:
+      if (win_is_open(win_paneterm))
+        close_window(win_paneterm);
+
+      if (win_is_open(win_panecols))
+        close_window(win_panecols);
+
+      if (win_is_open(win_panehot))
+        close_window(win_panehot);
+
+      set_icon_state(win_choices, icon_choices_size, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_colour, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_hotlist, 0, WIMP_ICON_SELECTED_BIT);
+      set_icon_state(win_choices, icon_choices_misc, WIMP_ICON_SELECTED_BIT, WIMP_ICON_SELECTED_BIT);
 
       {
         struct wimp_getwindowstate_block block;
@@ -704,5 +787,9 @@ void win_panecols_click(int x, int y, int buttons, int icon_handle)
       set_colour_icon (loop, colour^0xffffff00, false);
     }
   }
+}
+
+void win_panemisc_click(int x, int y, int buttons, int icon_handle)
+{
 }
 
