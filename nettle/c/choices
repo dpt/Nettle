@@ -18,7 +18,13 @@
 #include "wimputil.h"
 #include "zapredraw.h"
 
-#include <errno.h>
+/* FIXME archifishal 11/04/2010: The version of errno.h I have doesn't build
+ * with -c90 defined, for now just define 'errno' locally */
+/*#include <errno.h>*/
+
+#define errno __errno
+extern int errno;
+
 #include <time.h>
 
 static colour_t get_colour_icon(int colour_handle, bool is_an_icon);

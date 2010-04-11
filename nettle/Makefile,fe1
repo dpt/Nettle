@@ -1,11 +1,11 @@
 # Makefile for Nettle
 # by A. Macfarlane Smith
-# (C) Nettle developers 2001-2004
+# (C) Nettle developers 2001-2010
 #
 # $Id$
 
 CC = cc
-CFLAGS = -c -strict -IC: -DCOMPAT_INET4 -ITCPIPLibs: -fa -apcs 3/32/fpe2/swst/fp/nofpr -throwback -depend !Depend
+CFLAGS = -c -c90 -strict -IC: -DCOMPAT_INET4 -ITCPIPLibs: -fa -apcs 3/32/fpe2/swst/fp/nofpr -throwback -depend !Depend -Wp -memaccess -L22-S22-L41
 DBGFLAGS = #-DBETA_VERSION #-g #-DFORTIFY
 
 LIBS = C:o.stubsg TCPIPLibs:o.socklib-32 TCPIPLibs:o.inetlib-32

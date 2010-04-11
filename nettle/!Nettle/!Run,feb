@@ -1,6 +1,6 @@
 |
 | !Nettle.!Run
-| © Nettle developers 2000-2004
+| © Nettle developers 2000-2010
 
 Set Nettle$Dir <Obey$Dir>
 Set NettleFonts$Path <Nettle$Dir>.Fonts.
@@ -8,14 +8,17 @@ Set NettleFonts$Path <Nettle$Dir>.Fonts.
 Set Alias$Open_URI_telnet  <Nettle$Dir>.!Run
 Set Alias$URLOpen_telnet   <Nettle$Dir>.!Run -url %%*0
 
-IconSprites <Nettle$Dir>.!Sprites
+IconSprites <Nettle$Dir>.!Sprites    
+
+| If we don't have proper ZapFonts resources, fall back to the ones inside Nettle
+If "<ZapFontsMessages$Path>" = "" Then Set ZapFontsMessages$Path <Nettle$Dir>.Resources.ZRMessages.<Sys$Country>.,<Nettle$Dir>.Resources.ZRMessages.UK.
 
 Set Nettle$ZapRedrawPath <Zap$Redraw>
 If "<Nettle$ZapRedrawPath>"="" Then Set Nettle$ZapRedrawPath <Nettle$Dir>.Resources.ZapRedraw
-RMEnsure ZapRedraw 0.39 RMLoad <Nettle$ZapRedrawPath>
+RMEnsure ZapRedraw 0.48 RMLoad <Nettle$ZapRedrawPath>
 
 | If there's a legacy version of ZapRedraw at Zap$Redraw, then load our one
-RMEnsure ZapRedraw 0.39 RMLoad <Nettle$Dir>.Resources.ZapRedraw
+RMEnsure ZapRedraw 0.48 RMLoad <Nettle$Dir>.Resources.ZapRedraw
 Unset Nettle$ZapRedrawPath
 
 | PollTest sets Nettle$NeedSockWatch to 1 if the OS has Internet but no FIOPOLLWORD

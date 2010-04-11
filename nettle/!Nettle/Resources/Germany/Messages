@@ -2,9 +2,9 @@
 # $Id$
 
 AppName:Nettle
-AppPurpose:Telnet Client
-AppAuthor:© Nettle Entwickler, 2000-2004
-AppVersion:v0.2040pre (04 April 2004)
+AppPurpose:Telnet client
+AppAuthor:© Nettle Entwickler, 2000-2010
+AppVersion:v0.2043b (11 April 2010)
 
 Info:Info>
 Choices:Einstellungen...
