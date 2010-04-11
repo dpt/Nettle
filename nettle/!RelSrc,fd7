@@ -37,7 +37,10 @@ NukeCvs Fonts.08x08
 NukeCvs Fonts.08x16
 NukeCvs Resources
 NukeCvs Resources.France
+NukeCvs Resources.Germany
 NukeCvs Resources.UK
+NukeCvs Resources.ZRMessages
+NukeCvs Resources.ZRMessages.UK
 
 X Wipe <DestApp>.!RunImage ~CFR~V
 X Wipe <DestApp>.Fonts.08x16.Default ~CFR~V
