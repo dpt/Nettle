@@ -9,7 +9,9 @@
 #include "generic.h"
 
 #include "sys/types.h"
+#ifndef __UNIXLIB_TYPES_H
 #include "inetlib.h"
+#endif
 #include "netinet/in.h"
 
 #include "arpa/inet.h" /* inet_aton */

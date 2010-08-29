@@ -14,8 +14,10 @@
 
 #include "sys/ioctl.h"
 #include "sys/socket.h"
+#ifndef __UNIXLIB_TYPES_H
 #include "socklib.h"
 #include "inetlib.h"
+#endif
 #include "sys/errno.h"
 #include "sys/time.h"
 
@@ -27,8 +29,12 @@
 #include "socket.h"
 #include "sockwatch.h"
 
+#ifndef __UNIXLIB_TYPES_H
 #define ioctl socketioctl
 #define close socketclose
+#else
+#define timerclear(tvp) ((tvp)->tv_sec = (tvp)->tv_usec = 0)
+#endif
 
 int socket_connecttoip(unsigned long ip_address,int port_number)
 {

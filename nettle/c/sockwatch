@@ -10,6 +10,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "kernel.h"
 #include "swis.h"
@@ -18,8 +19,10 @@
 #include "sys/types.h"
 #include "sys/ioctl.h"
 #include "sys/socket.h"
+#ifndef __UNIXLIB_TYPES_H
 #include "socklib.h"
 #include "sys/filio.h"
+#endif
 #include "generic.h"
 
 int *socketwatch_pollword = NULL;
@@ -31,8 +34,10 @@ static bool newinternet = false;
 #define SocketWatch_AllocPW       0x52283
 #define SocketWatch_DeallocPW     0x52284
 
+#ifndef __UNIXLIB_TYPES_H
 #define ioctl socketioctl
 #define close socketclose
+#endif
 
 typedef struct
 {
@@ -45,6 +50,11 @@ void socketwatch_register(int socket)
 {
   if ( !socketwatch_pollword )
     return;
+
+#ifdef __UNIXLIB_TYPES_H
+  /* get the underlying RISC OS socket handle from the Unixlib socket */
+  socket = __unixlib_getdev(socket);
+#endif
 
   if ( newinternet )
   {
@@ -66,6 +76,10 @@ void socketwatch_deregister(int socket)
 {
   if ( !socketwatch_pollword )
     return;
+
+#ifdef __UNIXLIB_TYPES_H
+  socket = __unixlib_getdev(socket);
+#endif
 
   if ( newinternet )
   {

@@ -22,7 +22,10 @@
  * with -c90 defined, for now just define 'errno' locally */
 /*#include <errno.h>*/
 
+#include "sys/types.h"
+#ifndef __UNIXLIB_TYPES_H
 #define errno __errno
+#endif
 extern int errno;
 
 #include <time.h>
