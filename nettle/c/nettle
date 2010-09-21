@@ -164,8 +164,6 @@ static int get_host_port (char *string, int *port)
       *port = socket_port_number_from_name(sptr + 1);
     }
   }
-  else
-    *port = 23;
 
   /* if the port is <1, then it's either invalid or was too big and got wrapped */
   if (*port < 1)
@@ -194,6 +192,9 @@ bool start_connection_friedport(struct connection_params *params )
     if (get_user_pass(host, tempbuf, params) == false)
       return false;
 
+    port = 23;
+    if (params->connection_type == NETTLE_SSH)
+      port = 22;
     if (get_host_port (host, &port) == false)
       return false;
 
@@ -322,6 +323,9 @@ bool start_connection(void)
       if (get_user_pass(string, tempbuf, &params) == false)
         return false;
 
+      port = 23;
+      if (connection_type == NETTLE_SSH)
+        port = 22;
       if (get_host_port(string, &port) == false)
         return false;
 
@@ -566,6 +570,12 @@ static void start_connection_int (struct connection_params *params )
   session->local_echo = true;
   session->want_blink = false;
   session->socket_state = NETTLE_SESSION_NONE;
+#ifdef WITH_SSH
+  session->ssh_session = NULL;
+  session->ssh_channel = NULL;
+  session->ssh_negotiate_state = 0;
+  session->ssh_more_read = false;
+#endif
 
   session->dns = NULL; /* Should be null for non telnet/ssh sessions */
 
@@ -573,19 +583,14 @@ static void start_connection_int (struct connection_params *params )
   {
     case NETTLE_TELNET:
     case NETTLE_SSH:
-      /* host, port already parsed */
-      session->socket_handle=-1;
-      session->socket_state=NETTLE_SESSION_RESOLVE;
+      session->socket_handle = -1;
+      session->socket_state = NETTLE_SESSION_START;
       session->socket_port = params->port;
-      strcpy (session->socket_host, params->host);
-      session->dns = dns_gethostbyname(session->socket_host);
-      assert(session->dns != NULL);
-
-      if (params->connection_type==NETTLE_SSH)
+      strcpy(session->socket_host, params->host);
+      if (params->connection_type == NETTLE_SSH)
       {
         session->local_echo=false;
       }
-
       break;
 
     case NETTLE_TASKWINDOW:
@@ -766,10 +771,6 @@ static void start_connection_int (struct connection_params *params )
     case NETTLE_TELNET:
     case NETTLE_SSH:
       set_title_bar(session->window_handle, lookup_static ("title_conn"));
-      write_out_strings (session,
-                         lookup_static_var ("lookup", 1,
-                                            session->socket_host),
-                          "\r\n", 0);
       main_requirenull = true;
       break;
   }
@@ -796,6 +797,123 @@ static void start_connection_int (struct connection_params *params )
     }
   }
 }
+
+
+#ifdef WITH_SSH
+/**
+ * Start SSH on a connected socket.
+ *
+ * Returns true on success, false on failure.
+ */
+bool connect_session_ssh(struct session_struct *session)
+{
+  LIBSSH2_SESSION *ssh = session->ssh_session;
+  LIBSSH2_CHANNEL *channel = session->ssh_channel;
+  const char *fingerprint;
+  unsigned int i;
+  int code = 0;
+  char *errmsg;
+
+  assert(session->connection_type == NETTLE_SSH);
+  assert(session->socket_state == NETTLE_SESSION_NEGOTIATE);
+
+  if (ssh == NULL)
+  {
+    write_out_strings(session, "Nettle: Creating SSH session", 0);
+
+    ssh = libssh2_session_init();
+    if (!ssh)
+      return false;
+
+    libssh2_session_set_blocking(ssh, 0);
+
+    session->ssh_session = ssh;
+  }
+
+  switch (session->ssh_negotiate_state)
+  {
+    case 0:
+      code = libssh2_session_startup(ssh, session->socket_handle);
+      if (code == 0)
+      {
+        fingerprint = libssh2_hostkey_hash(ssh, LIBSSH2_HOSTKEY_HASH_MD5);
+        write_out_strings(session, "\r\n", "Nettle: Fingerprint: ", 0);
+        for (i = 0; i < 16; i++) {
+          char hex[10];
+          snprintf(hex, sizeof hex, "%02x ", (unsigned char) fingerprint[i]);
+          write_out_strings(session, hex, 0);
+        }
+        write_out_strings(session, "\r\n", 0);
+      }
+      break;
+
+    case 1:
+      code = libssh2_userauth_password(ssh, session->login_user,
+                                       session->login_pass);
+      break;
+
+    case 2:
+      channel = libssh2_channel_open_session(ssh);
+      if (channel)
+        session->ssh_channel = channel;
+      else
+        code = libssh2_session_last_errno(ssh);
+      break;
+
+    case 3:
+      code = libssh2_channel_request_pty_ex(channel,
+                      terminal_name[session->terminal_type],
+                      strlen(terminal_name[session->terminal_type]),
+                      NULL, 0,
+                      session->terminal_size.x,
+                      session->terminal_size.y,
+                      0, 0);
+      break;
+
+    case 4:
+      code = libssh2_channel_shell(channel);
+      if (code == 0)
+        session->socket_state = NETTLE_SESSION_CONNECTED;
+      break;
+  }
+
+  if (code == 0)
+  {
+    char state[10];
+    session->ssh_negotiate_state++;
+    snprintf(state, sizeof state, "%i", session->ssh_negotiate_state);
+    write_out_strings(session, state, 0);
+  }
+  else if (code == LIBSSH2_ERROR_EAGAIN)
+  {
+    write_out_strings(session, ".", 0);
+    main_requirenull = true;
+  }
+  else
+  {
+    char message[20];
+    snprintf(message, sizeof message, "%i",
+             session->ssh_negotiate_state);
+    libssh2_session_last_error(ssh, &errmsg, 0, 0);
+    write_out_strings(session, "\r\n",
+                      "Nettle: SSH connection failed in step ",
+                      message, ": ", errmsg, "\r\n", 0);
+    if (channel)
+      libssh2_channel_free(channel);
+    libssh2_session_disconnect(ssh, "");
+    libssh2_session_free(ssh);
+    return false;
+  }
+
+  if (session->socket_state == NETTLE_SESSION_CONNECTED)
+  {
+    write_out_strings(session, "\r\n", "Nettle: SSH connected", "\r\n", 0);
+  }
+
+  return true;
+}
+#endif
+
 
 void write_out_string(struct session_struct *session, const char *string)
 {
@@ -1007,6 +1125,9 @@ int nettle_senddata(struct session_struct *session, const char *data, int length
       return socket_senddata(session->socket_handle,data,length);
       break;
     case NETTLE_SSH:
+#ifdef WITH_SSH
+      return libssh2_channel_write(session->ssh_channel, data, length);
+#endif
       break;
     case NETTLE_TASKWINDOW:
       {
@@ -1563,6 +1684,14 @@ void resize_terminal(struct session_struct *session, int terminal_size_x, int te
           nettle_senddata(session, block, 9);
         }
 
+        break;
+
+      case NETTLE_SSH:
+#ifdef WITH_SSH
+        libssh2_channel_request_pty_size(session->ssh_channel,
+                        session->terminal_size.x,
+                        session->terminal_size.y);
+#endif
         break;
     }
   }

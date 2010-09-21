@@ -189,12 +189,19 @@ static void wimp_pollconnect(struct session_struct *session)
 
         set_title_bar(session->window_handle,string);
 
-        session->socket_state = NETTLE_SESSION_CONNECTED;
-        write_out_strings(session,
-                          lookup_static_var("connected", 1,
-                                       socket_ip_string(session->socket_ip)),
-                          "\r\n",
-                          0);
+        if (session->connection_type == NETTLE_SSH)
+        {
+          session->socket_state = NETTLE_SESSION_NEGOTIATE;
+        }
+        else
+        {
+          session->socket_state = NETTLE_SESSION_CONNECTED;
+          write_out_strings(session,
+                            lookup_static_var("connected", 1,
+                                         socket_ip_string(session->socket_ip)),
+                            "\r\n",
+                            0);
+        }
 
         main_requirenull = true; /* read any data waiting on the socket */
         break;
@@ -225,42 +232,70 @@ static void wimp_pollconnect(struct session_struct *session)
 }
 
 
+static void wimp_pollnegotiate(struct session_struct *session)
+{
+#ifdef WITH_SSH
+  if (!connect_session_ssh(session)) {
+    socket_close(session->socket_handle);
+    session->socket_handle = -1;
+    session->socket_state = NETTLE_SESSION_NONE;
+  }
+#endif
+}
+
 
 static void wimp_pollsocket(struct session_struct *session)
 {
   int packet_length=-1;
   char receive_block[RECEIVE_BLOCK_LENGTH];
+  bool eof = false;
+  const char *error = NULL;
 
   switch (session->connection_type)
   {
     case NETTLE_TELNET:
       packet_length = recv(session->socket_handle, receive_block,
                            RECEIVE_BLOCK_LENGTH, 0);
+      if (packet_length == -1 && errno == EWOULDBLOCK)
+        /* we've read all the available data */
+        return;
+      else if (packet_length == -1)
+        error = socket_strerror(errno);
+      else if (packet_length == 0)
+        /* EOF received */
+        eof = true;
       break;
 
     case NETTLE_SSH:
+#ifdef WITH_SSH
+      packet_length = libssh2_channel_read(session->ssh_channel, receive_block,
+                                           RECEIVE_BLOCK_LENGTH);
+      if (packet_length == 0 || packet_length == LIBSSH2_ERROR_EAGAIN)
+        /* we've read all the available data */
+        return;
+      else if (packet_length < 0)
+        libssh2_session_last_error(session->ssh_session, &error, 0, 0);
+      else
+        /* there may be more data to read next time */
+        session->ssh_more_read = true;
+#endif
       break;
   }
 
-  if (packet_length == -1 && errno == EWOULDBLOCK)
-    /* we've read all the available data */
-    return;
-
-  if (packet_length == 0 || packet_length == -1)
+  if (eof || error)
   {
     /* EOF or error condition */
     set_title_bar(session->window_handle, lookup_static("title_disconnect"));
     reset_terminal(session);
-    if (packet_length == 0)
+    if (eof)
     {
-      /* EOF received */
       write_out_strings(session, "\r\n", lookup_static("closed"), "\r\n", 0);
     }
     else
     {
       write_out_strings(session, "\r\n",
                         lookup_static_var("socketerror", 1,
-                                          socket_strerror(errno)),
+                                          error),
                         "\r\n", 0);
     }
 
@@ -303,6 +338,34 @@ static void wimp_pollsessions(void)
   {
     switch (session->socket_state)
     {
+      case NETTLE_SESSION_START:
+        if (session->connection_type == NETTLE_SSH &&
+            session->login_user == NULL) {
+          write_out_strings(session, "SSH user: ", 0);
+          session->line_editor_buffer[0] = 0;
+          session->socket_state = NETTLE_SESSION_PROMPT_USER;
+        } else if (session->connection_type == NETTLE_SSH &&
+            session->login_pass == NULL) {
+          write_out_strings(session, "SSH password: ", 0);
+          session->line_editor_buffer[0] = 0;
+          session->socket_state = NETTLE_SESSION_PROMPT_PASS;
+        } else {
+          write_out_strings (session,
+                             lookup_static_var ("lookup", 1,
+                                                session->socket_host),
+                              "\r\n", 0);
+          session->dns = dns_gethostbyname(session->socket_host);
+          assert(session->dns != NULL);
+          session->socket_state = NETTLE_SESSION_RESOLVE;
+          main_requirenull = true;
+        }
+        break;
+
+      case NETTLE_SESSION_PROMPT_USER:
+      case NETTLE_SESSION_PROMPT_PASS:
+        /* awaiting entry - see key_pressed() */
+        break;
+
       case NETTLE_SESSION_RESOLVE:
         wimp_pollresolve(session);
         break;
@@ -311,7 +374,16 @@ static void wimp_pollsessions(void)
         wimp_pollconnect(session);
         break;
 
+      case NETTLE_SESSION_NEGOTIATE:
+        wimp_pollnegotiate(session);
+        break;
+
       case NETTLE_SESSION_CONNECTED:
+#ifdef WITH_SSH
+        if (session->ssh_more_read)
+          wimp_pollsocket(session);
+#endif
+
         if (session->connection_type != NETTLE_TASKWINDOW)
         {
           assert(session->socket_handle >= 0 && session->socket_handle < 256);
@@ -1767,6 +1839,64 @@ void key_pressed(int window_handle, int icon_handle, int key, int extra)
                 open_window((struct wimp_openwindow_block *) &block, session->window_handle);
               }
             }
+            else if (session->socket_state == NETTLE_SESSION_PROMPT_USER)
+            {
+              if ((' ' <= key && key <= '~') ||
+                       (128 <= key && key <= 255))
+              {
+                char s[2];
+
+                s[0] = key;
+                s[1] = '\0';
+
+                if (strlen(session->line_editor_buffer) <
+                                            MAX_LINEEDITOR_LENGTH - 2)
+                {
+                  strcat(session->line_editor_buffer, s);
+                  write_out_strings(session, s, 0);
+                }
+                key_status = true;
+              }
+              else if (key == 13)
+              {
+                session->login_user = strdup(session->line_editor_buffer);
+                write_out_strings(session, "\r\n", "SSH password: ", 0);
+                session->line_editor_buffer[0] = 0;
+                session->socket_state = NETTLE_SESSION_PROMPT_PASS;
+                key_status = true;
+              }
+            }
+            else if (session->socket_state == NETTLE_SESSION_PROMPT_PASS)
+            {
+              if ((' ' <= key && key <= '~') ||
+                       (128 <= key && key <= 255))
+              {
+                char s[2];
+
+                s[0] = key;
+                s[1] = '\0';
+
+                if (strlen(session->line_editor_buffer) <
+                                            MAX_LINEEDITOR_LENGTH - 2)
+                {
+                  strcat(session->line_editor_buffer, s);
+                  write_out_strings(session, "*", 0);
+                }
+                key_status = true;
+              }
+              else if (key == 13)
+              {
+                session->login_pass = strdup(session->line_editor_buffer);
+                write_out_strings (session, "\r\n",
+                                   lookup_static_var ("lookup", 1,
+                                                      session->socket_host),
+                                    "\r\n", 0);
+                session->dns = dns_gethostbyname(session->socket_host);
+                assert(session->dns != NULL);
+                session->socket_state = NETTLE_SESSION_RESOLVE;
+                key_status = true;
+              }
+            }
           }
         }
       }
@@ -3169,7 +3299,11 @@ void create_connection_type_menu(int window_handle, int text_icon, int by_icon)
 
   char *menu_title     =get_menu_item("Connection");
   char *menu_telnet    =get_menu_item("Telnet");
+#ifdef WITH_SSH
+  char *menu_ssh       =get_menu_item("SSH");
+#else
   char *menu_ssh       =get_grey_menu_item("SSH");
+#endif
   char *menu_taskwindow=get_last_menu_item("Taskwindow");
 
   if (create_menu(menu_data,0,menu_title,menu_telnet,menu_ssh,menu_taskwindow))

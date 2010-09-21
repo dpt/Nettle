@@ -11,6 +11,10 @@
 #include "nettle.h"
 #include "dnslib.h"
 
+#ifdef WITH_SSH
+#include <libssh2.h>
+#endif
+
 /**** GLOBAL DEFAULT/OPTIONS ***************/
 
 #define APPLICATION_NAME        "Nettle"
@@ -163,6 +167,16 @@ struct session_struct
   unsigned int socket_ip;	/* IP */
   dns_t *dns;                   /* handle for dns lookup */
   char socket_state;		/* state of socket (see nettle.h for states) */
+
+#ifdef WITH_SSH
+  LIBSSH2_SESSION *ssh_session;	/* SSH session object (libssh2) */
+  LIBSSH2_CHANNEL *ssh_channel;	/* SSH channel object (libssh2) */
+  unsigned int ssh_negotiate_state; /* SSH negotiation state
+				       see connect_session_ssh() */
+  bool ssh_more_read;		/* wimp_pollsocket() needs to be called on
+				   this session */
+#endif
+
   char current_fg;		/* current foreground colour */
   char current_bg;		/* current background colour */
   int current_flags;		/* current flags */

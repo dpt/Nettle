@@ -13,9 +13,13 @@
 #define NETTLE_TASKWINDOW  3
 
 #define NETTLE_SESSION_NONE        0
-#define NETTLE_SESSION_RESOLVE     1
-#define NETTLE_SESSION_CONNECT     2
-#define NETTLE_SESSION_CONNECTED   3
+#define NETTLE_SESSION_START       1
+#define NETTLE_SESSION_PROMPT_USER 2
+#define NETTLE_SESSION_PROMPT_PASS 3
+#define NETTLE_SESSION_RESOLVE     4
+#define NETTLE_SESSION_CONNECT     5
+#define NETTLE_SESSION_NEGOTIATE   6
+#define NETTLE_SESSION_CONNECTED   7
 
 #define NETTLE_ESCAPE_NONE         0
 #define NETTLE_ESCAPE_ESCAPE       1
@@ -136,6 +140,8 @@ bool nettle_start_telnet_connection_friedport(const char *host);
  * @return true if taskwindow started successfully, false otherwise
  */
 bool nettle_start_taskwindow(const char *cmd);
+
+bool connect_session_ssh(struct session_struct *session);
 
 void write_out_string(struct session_struct *, const char *);
 void write_out_strings(struct session_struct *, ...); /* term with NUL ptr */

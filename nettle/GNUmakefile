@@ -4,6 +4,7 @@
 
 CC = /home/riscos/cross/bin/arm-unknown-riscos-gcc
 CFLAGS = -c -std=c9x -Wall -mpoke-function-name -I/home/riscos/env/include
+CONFIG = -DWITH_SSH
 
 LIBS = -L/home/riscos/env/lib -lssh2 -lgcrypt -lgpg-error
 OBJS = chardefn.o choices.o dnslib.o globals.o init.o keyboard.o lineedit.o \
@@ -26,13 +27,13 @@ all:	!Nettle/!RunImage,ff8
 
 RunImage,e1f: $(OBJS)
 	@echo "    LINK:" $@
-	@$(CC) -o $@ $(OBJS) $(LIBS)
+	@$(CC) -static -o $@ $(OBJS) $(LIBS)
 
-$(OBJS): $(HEADERS)
+$(OBJS): $(HEADERS) GNUmakefile
 
 %.o: %.c
 	@echo " COMPILE:" $<
-	@$(CC) $(CFLAGS) -o $@ $<
+	@$(CC) $(CFLAGS) $(CONFIG) -o $@ $<
 
 # intentionally compiled using native compiler
 templheadr: templheadr.c
