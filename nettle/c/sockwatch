@@ -19,10 +19,12 @@
 #include "sys/types.h"
 #include "sys/ioctl.h"
 #include "sys/socket.h"
-#ifndef __UNIXLIB_TYPES_H
+#ifdef __UNIXLIB_TYPES_H
+#include <unixlib/local.h>
+#else /* __UNIXLIB_TYPES_H */
 #include "socklib.h"
 #include "sys/filio.h"
-#endif
+#endif /* __UNIXLIB_TYPES_H */
 #include "generic.h"
 
 int *socketwatch_pollword = NULL;
@@ -51,11 +53,6 @@ void socketwatch_register(int socket)
   if ( !socketwatch_pollword )
     return;
 
-#ifdef __UNIXLIB_TYPES_H
-  /* get the underlying RISC OS socket handle from the Unixlib socket */
-  socket = __unixlib_getdev(socket);
-#endif
-
   if ( newinternet )
   {
     pollwordinfo pwi;
@@ -68,6 +65,11 @@ void socketwatch_register(int socket)
   {
     const unsigned int bitmask = 1;
 
+#ifdef __UNIXLIB_TYPES_H
+    /* get the underlying RISC OS socket handle from the Unixlib socket */
+    socket = __get_ro_socket(socket);
+#endif
+
     _swi(SocketWatch_Register, _INR(0,2), socketwatch_pollword, bitmask, socket);
   }
 }
@@ -76,10 +78,6 @@ void socketwatch_deregister(int socket)
 {
   if ( !socketwatch_pollword )
     return;
-
-#ifdef __UNIXLIB_TYPES_H
-  socket = __unixlib_getdev(socket);
-#endif
 
   if ( newinternet )
   {
@@ -92,6 +90,10 @@ void socketwatch_deregister(int socket)
   }
   else
   {
+#ifdef __UNIXLIB_TYPES_H
+    socket = __get_ro_socket(socket);
+#endif
+
     _swi(SocketWatch_Deregister, _INR(0,1), socket, socketwatch_pollword);
   }
 }

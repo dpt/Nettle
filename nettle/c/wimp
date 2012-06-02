@@ -3828,7 +3828,7 @@ static void paste_in_data (int window_handle, char *data, int size)
           line_editor_buffer[i+position_of_return-position_in_data]=session->line_editor_buffer[i];
         }
 
-        printf("setting line_editor_buffer[%d] to '\\0'\n", position_of_return+strlen(session->line_editor_buffer));
+        printf("setting line_editor_buffer[%lu] to '\\0'\n", position_of_return+strlen(session->line_editor_buffer));
         line_editor_buffer[position_of_return+strlen(session->line_editor_buffer)-position_in_data]='\0';
       }
 

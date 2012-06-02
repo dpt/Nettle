@@ -335,7 +335,7 @@ void save_selection(char *filename, bool ansi_colour)
 
 void handle_selection_drag(void)
 {
-  int x, y, buttons, window_handle, icon_handle;
+  int x, y, buttons;
   int x_pos, y_pos;
   bool do_scroll;
 
@@ -347,8 +347,6 @@ void handle_selection_drag(void)
     x            =block.pos.x;
     y            =block.pos.y;
     buttons      =block.buttons;
-    window_handle=block.window_handle;
-    icon_handle  =block.icon_handle;
   }
 
   if (buttons==0)

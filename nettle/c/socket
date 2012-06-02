@@ -33,6 +33,7 @@
 #define ioctl socketioctl
 #define close socketclose
 #else
+#include "unistd.h"
 #define timerclear(tvp) ((tvp)->tv_sec = (tvp)->tv_usec = 0)
 #endif
 
@@ -106,7 +107,7 @@ int socket_connected(int socket_handle)
      * ready for writing.
      */
     int result;
-    int size = sizeof(result);
+    socklen_t size = sizeof(result);
 
     /* read the pending socket error in 'result' */
     if (getsockopt(socket_handle, SOL_SOCKET, SO_ERROR,
