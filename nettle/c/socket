@@ -107,7 +107,11 @@ int socket_connected(int socket_handle)
      * ready for writing.
      */
     int result;
+#if 1
+    int size = sizeof(result); /* JRF: Apparently I don't have socklen_t in my TCPIPLibs. */
+#else
     socklen_t size = sizeof(result);
+#endif
 
     /* read the pending socket error in 'result' */
     if (getsockopt(socket_handle, SOL_SOCKET, SO_ERROR,
