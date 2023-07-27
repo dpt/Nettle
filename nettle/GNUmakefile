@@ -2,8 +2,8 @@
 # Makefile for cross-compiling Nettle
 #
 
-CC = /home/riscos/gccsdk/cross/bin/arm-unknown-riscos-gcc
-NATIVE_CC = /usr/bin/gcc
+CC ?= /home/riscos/gccsdk/cross/bin/arm-unknown-riscos-gcc
+NATIVE_CC ?= /usr/bin/gcc
 CFLAGS = -c -D_BSD_SOURCE -std=c9x -Wall -mpoke-function-name -I/home/riscos/gccsdk/env/include
 CONFIG = -DWITH_SSH
 
