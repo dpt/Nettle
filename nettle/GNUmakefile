@@ -2,12 +2,15 @@
 # Makefile for cross-compiling Nettle
 #
 
-CC = /home/riscos/gccsdk/cross/bin/arm-unknown-riscos-gcc
-NATIVE_CC = /usr/bin/gcc
+CC ?= /home/riscos/gccsdk/cross/bin/arm-unknown-riscos-gcc
+NATIVE_CC ?= /usr/bin/gcc
 CFLAGS = -c -D_BSD_SOURCE -std=c9x -Wall -mpoke-function-name -I/home/riscos/gccsdk/env/include
 CONFIG = -DWITH_SSH
+ELF2AIF ?= /home/riscos/gccsdk/cross/bin/elf2aif
 
 LIBS = -L/home/riscos/gccsdk/env/lib -lssh2 -lgcrypt -lgpg-error -lcrypto
+LIBS += -lz -ldl
+
 OBJS = chardefn.o choices.o dnslib.o globals.o init.o keyboard.o lineedit.o \
        main.o misc.o hotlist.o nettle.o process.o socket.o quit.o seln.o \
        wimp.o zapgen.o fortify.o sockwatch.o messages.o termlist.o url.o \
@@ -24,7 +27,7 @@ all:	!Nettle/!RunImage,ff8
 
 !Nettle/!RunImage,ff8: !Nettle/!RunImage,e1f
 	@echo " ELF2AIF:" $@
-	@/home/riscos/gccsdk/cross/bin/elf2aif $< $@
+	@$(ELF2AIF) $< $@
 	@rm !Nettle/!RunImage,e1f
 
 !Nettle/!RunImage,e1f: $(OBJS)
